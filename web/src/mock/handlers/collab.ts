@@ -35,7 +35,7 @@ import { collabSignatureProblems, fillForSender } from "./templates";
 
 /** The account's addresses besides its own live in `aliases`; its own is built from the account (contracts/collab.md "Addresses"). */
 type Account = Omit<MailAccount, "identities" | "default_from"> & { ownerId: string | null; aliases: MailIdentity[]; defaultFrom: string };
-type ThreadMeta = { id: string; account_id: string; subject: string; shares: MailAudience; assignees: string[]; comments: MailComment[] };
+type ThreadMeta = { id: string; account_id: string; subject: string; shares: MailAudience; assignees: string[]; comments: MailComment[]; needsAction?: boolean };
 type State = { accounts: Account[]; folders: MailFolder[]; threads: Map<string, ThreadMeta>; messages: MailMessage[]; prefs: Record<string, SidebarPrefs> };
 
 const states = new Map<string, State>();
@@ -184,6 +184,7 @@ function seedState(ws: WsData): State {
     last_synced_at: new Date(now - 2 * MIN).toISOString(),
     can_manage: true,
     unread: 0,
+    handling_enabled: false,
     created_at: new Date(now - 40 * DAY).toISOString(),
     signature_sync: "none",
     signature_synced_at: null,
@@ -838,6 +839,7 @@ function threadOut(ws: WsData, t: ThreadMeta): MailThread {
     unread: ms.some((m) => m.unread),
     starred: ms.some((m) => m.starred),
     has_attachments: ms.some((m) => m.attachments.some((x) => !x.inline)),
+    needs_action: t.needsAction === true,
     folder_ids: [...new Set(ms.flatMap((m) => m.folder_ids))],
     shared: t.shares.everyone || t.shares.team_ids.length > 0 || t.shares.user_ids.length > 0,
     assignees: t.assignees.map((id) => userRef(id)).filter((x): x is NonNullable<typeof x> => !!x),
@@ -887,7 +889,7 @@ function listThreads(ws: WsData, ctx: Ctx) {
   else {
     if (accountId) rows = rows.filter((t) => t.account_id === accountId);
     // A person's conversations (with) include those shared with you on their own.
-    else if (box !== "shared" && box !== "assigned" && !ctx.query.get("with")) rows = rows.filter((t) => seeAcc.has(t.account_id));
+    else if (box !== "shared" && box !== "assigned" && box !== "needs_action" && !ctx.query.get("with")) rows = rows.filter((t) => seeAcc.has(t.account_id));
     rows = rows.filter((t) => {
       const junk = inRole(s, t, "trash") || inRole(s, t, "spam");
       switch (box) {
@@ -909,6 +911,8 @@ function listThreads(ws: WsData, ctx: Ctx) {
           return t.shared || (s.accounts.find((a) => a.id === t.account_id)?.ownerId !== me && !junk && !!s.accounts.find((a) => a.id === t.account_id && a.visibility === "shared"));
         case "assigned":
           return t.assignees.some((x) => x.id === me);
+        case "needs_action":
+          return t.needs_action && inRole(s, t, "inbox");
         default:
           return false;
       }
@@ -998,6 +1002,7 @@ function counts(ws: WsData) {
       shared: all.filter((t) => t.shared && inRole(s, t, "inbox")).length,
       assigned: assignedOpen.length,
       drafts: mine.filter((t) => inRole(s, t, "drafts")).length,
+      needs_action: all.filter((t) => t.needs_action && inRole(s, t, "inbox")).length,
     },
     accounts,
     folders,
@@ -1063,6 +1068,10 @@ function applyAction(ws: WsData, t: ThreadMeta, action: MailThreadAction, folder
   const rid = (role: MailFolderRole) => roleIdOf(s, a.id, role)!;
   const keep = (m: MailMessage) => m.folder_ids.filter((f) => f === rid("sent") || f === rid("drafts"));
   const isLabel = (id: string) => s.folders.find((f) => f.id === id)?.kind === "label" && !s.folders.find((f) => f.id === id)?.role;
+  if (action === "done" || action === "needs_action") {
+    t.needsAction = action === "needs_action";
+    return;
+  }
   for (const m of ms) {
     switch (action) {
       case "read":
@@ -1162,6 +1171,7 @@ export function registerCollab() {
       ownerId: me,
       visibility: b.visibility === "shared" ? "shared" : "private",
       shared_with: b.visibility === "shared" ? audienceFrom(b.shared_with) : emptyAudience(),
+      handling_enabled: false,
       signature_html: "",
       status: "syncing",
       reconnect: false,
@@ -1230,8 +1240,15 @@ export function registerCollab() {
       a.defaultFrom = b.default_from.trim().toLowerCase() === a.email.toLowerCase() ? "" : b.default_from.trim().toLowerCase();
     }
     if (b.visibility === "private" || b.visibility === "shared") a.visibility = b.visibility;
+    if (typeof b.handling_enabled === "boolean") {
+      if (a.visibility !== "shared") throw invalid("Handling state is available on shared accounts.");
+      a.handling_enabled = b.handling_enabled;
+    }
     if (b.shared_with !== undefined) a.shared_with = audienceFrom(b.shared_with);
-    if (a.visibility === "private") a.shared_with = emptyAudience();
+    if (a.visibility === "private") {
+      a.shared_with = emptyAudience();
+      a.handling_enabled = false;
+    }
     if (isRecord(b.imap) && a.imap) {
       if (b.imap.password === "wrong") throw new HttpError(422, "connection_failed", "IMAP: authentication failed (AUTHENTICATIONFAILED)");
       a.imap = { ...a.imap, ...(b.imap as Partial<typeof a.imap>) };
@@ -1594,6 +1611,12 @@ export function registerCollab() {
     const folderId = typeof ctx.body.folder_id === "string" ? ctx.body.folder_id : undefined;
     const ts = ids.map((id) => threadOr404(ctx.ws, id));
     const s = state(ctx.ws);
+    if (action === "done" || action === "needs_action") {
+      for (const t of ts) {
+        const account = s.accounts.find((a) => a.id === t.account_id);
+        if (!account?.handling_enabled || account.visibility !== "shared") throw invalid("Handling state is not enabled for this account.");
+      }
+    }
     if (action === "label" || action === "unlabel") {
       for (const t of ts) if (s.accounts.find((a) => a.id === t.account_id)?.provider === "imap") throw new HttpError(422, "labels_unsupported", "IMAP accounts have no labels. Move the conversation to a folder instead.");
     }

@@ -369,6 +369,18 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
           menu={{ badge: { key: "box:assigned", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "assigned" }, hideId: hid.box("assigned") }}
         />
       )}
+      {!hidden.has(hid.box("needs_action")) && (here.box === "needs_action" || !!counts?.boxes.needs_action) && (
+        <MailRow
+          link={{ box: "needs_action" }}
+          active={here.box === "needs_action"}
+          icon={boxIcon.needs_action}
+          label={t("box.needs_action")}
+          shown={mailShown(prefs, "box:needs_action", ["mail"], listBoxNumbers("needs_action", counts))}
+          rail={rail}
+          prefs={prefs}
+          menu={{ badge: { key: "box:needs_action", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "needs_action" }, hideId: hid.box("needs_action") }}
+        />
+      )}
       {shown.map((a) => (
         <AccountGroup key={a.id} account={a} folders={folders[a.id]} prefs={prefs} hidden={hidden} counts={counts} here={here} rail={rail} />
       ))}

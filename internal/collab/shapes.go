@@ -112,7 +112,7 @@ func (s *service) accountsOut(ctx context.Context, q db.Querier, p *auth.Princip
 		m := MailAccount{ID: a.ID, Provider: a.Provider, Email: a.Email, Name: a.Name, DisplayName: a.DisplayName, Color: a.Color,
 			Owner: refOf(refs, a.OwnerID), Visibility: a.Visibility, SharedWith: Audience{TeamIDs: []uuid.UUID{}, UserIDs: []uuid.UUID{}},
 			SignatureHTML: a.SignatureHTML, Status: a.Status, Reconnect: a.Reconnect, LastError: a.LastError,
-			LastSyncedAt: a.LastSyncedAt, CanManage: canManageAccount(p, a), Unread: unread[a.ID], CreatedAt: a.CreatedAt,
+			LastSyncedAt: a.LastSyncedAt, CanManage: canManageAccount(p, a), Unread: unread[a.ID], HandlingEnabled: a.HandlingEnabled, CreatedAt: a.CreatedAt,
 			History: hist[a.ID], OldestMessageAt: oldest[a.ID], FoldersLeftOut: leftOut[a.ID]}
 		if m.Name == "" {
 			m.Name = a.Email
@@ -227,7 +227,7 @@ func threadsOut(ctx context.Context, q db.Querier, list []*threadRow) ([]MailThr
 	for _, t := range list {
 		m := MailThread{ID: t.ID, AccountID: t.AccountID, Subject: t.Subject, Snippet: t.Snippet, Participants: t.Participants,
 			LastMessageAt: t.LastMessageAt, MessageCount: t.MessageCount, Unread: t.Unread, Starred: t.Starred,
-			HasAttachments: t.HasAttachments, FolderIDs: t.FolderIDs, Shared: slices.Contains(sharedList, t.ID),
+			HasAttachments: t.HasAttachments, NeedsAction: t.NeedsAction, FolderIDs: t.FolderIDs, Shared: slices.Contains(sharedList, t.ID),
 			Assignees: assignees[t.ID], CommentCount: comments[t.ID]}
 		if m.Assignees == nil {
 			m.Assignees = []domain.UserRef{}

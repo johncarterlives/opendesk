@@ -29,6 +29,7 @@
     "all": "All mail",
     "shared": "Shared with me",
     "assigned": "Assigned to me",
+    "needs_action": "Needs action",
     "folder": "Folder"
   },
   "customize": {
@@ -152,6 +153,8 @@
     "unstar": "Remove star",
     "read": "Mark as read",
     "unread": "Mark as unread",
+    "done": "Mark as done",
+    "needsAction": "Mark as needing action",
     "share": "Share",
     "assign": "Assign",
     "more": "More actions",
@@ -441,6 +444,12 @@
     "signatureHint": "Added to new mail and replies from this account",
     "sharing": "Sharing",
     "sharingHint": "Who reads and answers this account's mail with you",
+    "handling": {
+      "title": "Handling",
+      "hint": "Keep shared inbox work separate from read and unread mail",
+      "enabled": "Track conversations needing action",
+      "enabledHint": "New incoming mail needs action until someone marks it done. This does not change mail at your provider."
+    },
     "server": "Server settings",
     "serverHint": "New settings are tried before they are saved",
     "passwordUnchanged": "Leave empty to keep the current password. A new server needs the password again.",

@@ -44,23 +44,25 @@ const (
 
 // Actions on conversations (contracts/collab.md "Actions").
 const (
-	ActionRead    = "read"
-	ActionUnread  = "unread"
-	ActionStar    = "star"
-	ActionUnstar  = "unstar"
-	ActionArchive = "archive"
-	ActionInbox   = "inbox"
-	ActionTrash   = "trash"
-	ActionSpam    = "spam"
-	ActionNotSpam = "not_spam"
-	ActionMove    = "move"
-	ActionLabel   = "label"
-	ActionUnlabel = "unlabel"
+	ActionRead        = "read"
+	ActionUnread      = "unread"
+	ActionStar        = "star"
+	ActionUnstar      = "unstar"
+	ActionArchive     = "archive"
+	ActionInbox       = "inbox"
+	ActionTrash       = "trash"
+	ActionSpam        = "spam"
+	ActionNotSpam     = "not_spam"
+	ActionMove        = "move"
+	ActionLabel       = "label"
+	ActionUnlabel     = "unlabel"
+	ActionDone        = "done"
+	ActionNeedsAction = "needs_action"
 )
 
 // Actions lists every action, for request validation.
 var Actions = []string{ActionRead, ActionUnread, ActionStar, ActionUnstar, ActionArchive, ActionInbox, ActionTrash,
-	ActionSpam, ActionNotSpam, ActionMove, ActionLabel, ActionUnlabel}
+	ActionSpam, ActionNotSpam, ActionMove, ActionLabel, ActionUnlabel, ActionDone, ActionNeedsAction}
 
 // Colors are the tone keys an account may use.
 var Colors = []string{"gray", "red", "orange", "amber", "green", "teal", "blue", "indigo", "violet", "pink"}
@@ -94,24 +96,25 @@ type IMAPSettings struct {
 }
 
 type MailAccount struct {
-	ID            uuid.UUID       `json:"id"`
-	Provider      string          `json:"provider" enum:"google,microsoft,imap"`
-	Email         string          `json:"email"`
-	Name          string          `json:"name"`
-	DisplayName   string          `json:"display_name"`
-	Color         string          `json:"color"`
-	Owner         *domain.UserRef `json:"owner"`
-	Visibility    string          `json:"visibility" enum:"private,shared"`
-	SharedWith    Audience        `json:"shared_with"`
-	SignatureHTML string          `json:"signature_html"`
-	Status        string          `json:"status" enum:"syncing,active,error,paused"`
-	Reconnect     bool            `json:"reconnect"`
-	LastError     string          `json:"last_error"`
-	LastSyncedAt  *time.Time      `json:"last_synced_at"`
-	CanManage     bool            `json:"can_manage"`
-	Unread        int             `json:"unread"`
-	IMAP          *IMAPSettings   `json:"imap,omitempty"`
-	CreatedAt     time.Time       `json:"created_at"`
+	ID              uuid.UUID       `json:"id"`
+	Provider        string          `json:"provider" enum:"google,microsoft,imap"`
+	Email           string          `json:"email"`
+	Name            string          `json:"name"`
+	DisplayName     string          `json:"display_name"`
+	Color           string          `json:"color"`
+	Owner           *domain.UserRef `json:"owner"`
+	Visibility      string          `json:"visibility" enum:"private,shared"`
+	SharedWith      Audience        `json:"shared_with"`
+	SignatureHTML   string          `json:"signature_html"`
+	Status          string          `json:"status" enum:"syncing,active,error,paused"`
+	Reconnect       bool            `json:"reconnect"`
+	LastError       string          `json:"last_error"`
+	LastSyncedAt    *time.Time      `json:"last_synced_at"`
+	CanManage       bool            `json:"can_manage"`
+	Unread          int             `json:"unread"`
+	HandlingEnabled bool            `json:"handling_enabled"`
+	IMAP            *IMAPSettings   `json:"imap,omitempty"`
+	CreatedAt       time.Time       `json:"created_at"`
 
 	// How its own settings sync with the provider (contracts/collab.md "Account settings").
 	SignatureSync     string       `json:"signature_sync" enum:"two_way,read_only,none"`
@@ -220,6 +223,7 @@ type MailThread struct {
 	Unread         bool             `json:"unread"`
 	Starred        bool             `json:"starred"`
 	HasAttachments bool             `json:"has_attachments"`
+	NeedsAction    bool             `json:"needs_action"`
 	FolderIDs      []uuid.UUID      `json:"folder_ids"`
 	Shared         bool             `json:"shared"`
 	Assignees      []domain.UserRef `json:"assignees"`

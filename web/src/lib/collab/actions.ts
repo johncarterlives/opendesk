@@ -19,6 +19,10 @@ export function applyAction(t: MailThread, action: MailThreadAction, folderId?: 
       return { ...t, starred: true };
     case "unstar":
       return { ...t, starred: false };
+    case "done":
+      return { ...t, needs_action: false };
+    case "needs_action":
+      return { ...t, needs_action: true };
     case "label":
     case "move":
       return folderId && !t.folder_ids.includes(folderId) ? { ...t, folder_ids: [...t.folder_ids, folderId] } : t;
@@ -59,6 +63,8 @@ export function leavesList(action: MailThreadAction, place: ListPlace, targetFol
       return where === "inbox" || where === "unread";
     case "unlabel":
       return !!place.folderId && place.folderId === targetFolder;
+    case "done":
+      return where === "needs_action";
     default:
       return false;
   }
@@ -153,6 +159,7 @@ export function countsAfter(
       for (const id of t.folder_ids) bump(out.folders, id, sign);
     }
     if (t.shared && inInbox) out.boxes.shared = Math.max(0, out.boxes.shared + sign);
+    if (t.needs_action && inInbox) out.boxes.needs_action = Math.max(0, out.boxes.needs_action + sign);
   };
   for (const t of threads) {
     const next = { ...applyAction(t, action, folderId), folder_ids: foldersAfter(t, action, folders, folderId) };

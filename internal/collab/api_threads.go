@@ -23,17 +23,18 @@ import (
 
 // Boxes of the thread list (contracts/collab.md "GET /v1/collab/threads").
 const (
-	BoxInbox    = "inbox"
-	BoxUnread   = "unread"
-	BoxStarred  = "starred"
-	BoxSent     = "sent"
-	BoxDrafts   = "drafts"
-	BoxArchive  = "archive"
-	BoxTrash    = "trash"
-	BoxSpam     = "spam"
-	BoxAll      = "all"
-	BoxShared   = "shared"
-	BoxAssigned = "assigned"
+	BoxInbox       = "inbox"
+	BoxUnread      = "unread"
+	BoxStarred     = "starred"
+	BoxSent        = "sent"
+	BoxDrafts      = "drafts"
+	BoxArchive     = "archive"
+	BoxTrash       = "trash"
+	BoxSpam        = "spam"
+	BoxAll         = "all"
+	BoxShared      = "shared"
+	BoxAssigned    = "assigned"
+	BoxNeedsAction = "needs_action"
 )
 
 // maxAssignees bounds a conversation's assignees.
@@ -73,6 +74,8 @@ func boxSQL(box, u string) string {
 		return `EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND ` + notJunk
 	case BoxAssigned:
 		return `EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = ` + u + `) AND ` + notJunk
+	case BoxNeedsAction:
+		return `t.needs_action AND t.folder_ids && ` + inboxSQL
 	}
 	return `t.folder_ids && ` + inboxSQL
 }
@@ -83,7 +86,7 @@ func visibleAccountsSQL(u string) string {
 }
 
 type listThreadsInput struct {
-	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned" default:"inbox"`
+	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned,needs_action" default:"inbox"`
 	AccountID string `query:"account_id" doc:"Only this account's conversations"`
 	FolderID  string `query:"folder_id" doc:"Only this folder's conversations; replaces box"`
 	Q         string `query:"q" maxLength:"200" doc:"Matches each message's subject, sender and text, and the conversation's subject and participants"`
@@ -112,11 +115,12 @@ type CollabCounts struct {
 
 // CollabBoxCounts are unread conversations; assigned and shared: open ones (in an inbox).
 type CollabBoxCounts struct {
-	Inbox    int `json:"inbox"`
-	Unread   int `json:"unread"`
-	Shared   int `json:"shared"`
-	Assigned int `json:"assigned"`
-	Drafts   int `json:"drafts"`
+	Inbox       int `json:"inbox"`
+	Unread      int `json:"unread"`
+	Shared      int `json:"shared"`
+	Assigned    int `json:"assigned"`
+	Drafts      int `json:"drafts"`
+	NeedsAction int `json:"needs_action"`
 }
 
 type threadIDInput struct {
@@ -272,7 +276,7 @@ func (s *service) registerThreadRoutes(api huma.API) {
 		func(ctx context.Context, in *struct {
 			Body struct {
 				ThreadIDs []uuid.UUID `json:"thread_ids" minItems:"1" maxItems:"100"`
-				Action    string      `json:"action" enum:"read,unread,star,unstar,archive,inbox,trash,spam,not_spam,move,label,unlabel"`
+				Action    string      `json:"action" enum:"read,unread,star,unstar,archive,inbox,trash,spam,not_spam,move,label,unlabel,done,needs_action"`
 				FolderID  *uuid.UUID  `json:"folder_id,omitempty" doc:"The folder or label of move, label and unlabel"`
 			}
 		}) (*struct {
@@ -328,6 +332,9 @@ func (s *service) registerThreadRoutes(api huma.API) {
 				}
 				if (b.Action == ActionLabel || b.Action == ActionUnlabel) && a.Provider == ProviderIMAP {
 					return nil, errLabels
+				}
+				if (b.Action == ActionDone || b.Action == ActionNeedsAction) && (a.Visibility != VisibilityShared || !a.HandlingEnabled) {
+					return nil, httpx.Validation("Handling state is not enabled for this account.")
 				}
 				list := byAccount[aid]
 				err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
@@ -613,11 +620,12 @@ func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND t.unread AND t.folder_ids && `+inboxSQL+`),
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+boxSQL(BoxUnread, "$2")+`),
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+boxSQL(BoxDrafts, "$2")+`),
+		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+boxSQL(BoxNeedsAction, "$2")+`),
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1 AND `+threadVisibleSQL("t", "$2")+`
 			AND EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND t.folder_ids && `+inboxSQL+`),
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1
 			AND EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = $2) AND t.folder_ids && `+inboxSQL+`)`,
-		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.Shared, &out.Boxes.Assigned)
+		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.NeedsAction, &out.Boxes.Shared, &out.Boxes.Assigned)
 	if err != nil {
 		return out, err
 	}

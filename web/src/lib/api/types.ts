@@ -2130,6 +2130,8 @@ export type MailAccount = {
   can_manage: boolean;
   /** Unread conversations in its inbox. */
   unread: number;
+  /** Shared accounts can track work separately from provider read state. */
+  handling_enabled: boolean;
   /** IMAP accounts, can_manage only. */
   imap?: MailImapSettings;
   created_at: string;
@@ -2287,6 +2289,8 @@ export type MailThread = {
   unread: boolean;
   starred: boolean;
   has_attachments: boolean;
+  /** A shared inbox conversation that still needs a person to handle it. */
+  needs_action: boolean;
   folder_ids: string[];
   /** Shared on its own beyond its account's audience. */
   shared: boolean;
@@ -2460,7 +2464,7 @@ export type SidebarPrefs = {
 /** unread / total / none for mail rows; count / awaiting / urgent / overdue / none for ticket rows, and open for team rows. */
 export type SidebarBadge = "unread" | "total" | "count" | "awaiting" | "urgent" | "overdue" | "open" | "none";
 
-export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned";
+export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned" | "needs_action";
 
 export type MailThreadAction =
   | "read"
@@ -2474,11 +2478,13 @@ export type MailThreadAction =
   | "not_spam"
   | "move"
   | "label"
-  | "unlabel";
+  | "unlabel"
+  | "done"
+  | "needs_action";
 
 export type MailCounts = {
   /** Unread conversations; assigned and shared: open ones. */
-  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number };
+  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number };
   accounts: Record<string, number>;
   folders: Record<string, number>;
   /** By account with aliases, then address (its own included): unread conversations in its inbox with it on a message; missing = 0. */

@@ -5,7 +5,7 @@ import { countsAfter } from "./actions";
 const folder = (id: string, role: MailFolder["role"], account = "a1") => ({ id, account_id: account, role }) as MailFolder;
 const folders = [folder("in1", "inbox"), folder("tr1", "trash"), folder("sp1", "spam"), folder("ar1", "archive"), folder("lb1", null), folder("in2", "inbox", "a2")];
 const thread = (over: Partial<MailThread>) => ({ id: "t1", account_id: "a1", unread: true, shared: false, folder_ids: ["in1"], ...over }) as MailThread;
-const counts = (): MailCounts => ({ boxes: { inbox: 3, unread: 4, shared: 1, assigned: 0, drafts: 0 }, assigned: {}, accounts: { a1: 2, a2: 1 }, folders: { in1: 2, in2: 1, lb1: 1 } });
+const counts = (): MailCounts => ({ boxes: { inbox: 3, unread: 4, shared: 1, assigned: 0, drafts: 0, needs_action: 0 }, assigned: {}, accounts: { a1: 2, a2: 1 }, folders: { in1: 2, in2: 1, lb1: 1 } });
 
 describe("countsAfter", () => {
   it("takes a conversation read on opening out of every number it was in", () => {
@@ -38,8 +38,15 @@ describe("countsAfter", () => {
     expect(trashed.boxes).toMatchObject({ inbox: 2, unread: 3, shared: 0 });
   });
 
+  it("updates the handling count without changing unread state", () => {
+    const needingAction = countsAfter(counts(), [thread({ unread: false })], "needs_action", folders);
+    expect(needingAction.boxes).toMatchObject({ inbox: 3, unread: 4, needs_action: 1 });
+    const done = countsAfter(needingAction, [thread({ unread: false, needs_action: true })], "done", folders);
+    expect(done.boxes.needs_action).toBe(0);
+  });
+
   it("does not go below zero", () => {
-    const out = countsAfter({ boxes: { inbox: 0, unread: 0, shared: 0, assigned: 0, drafts: 0 }, assigned: {}, accounts: {}, folders: {} }, [thread({})], "read", folders);
+    const out = countsAfter({ boxes: { inbox: 0, unread: 0, shared: 0, assigned: 0, drafts: 0, needs_action: 0 }, assigned: {}, accounts: {}, folders: {} }, [thread({})], "read", folders);
     expect(out.boxes.inbox).toBe(0);
     expect(out.accounts.a1).toBe(0);
   });

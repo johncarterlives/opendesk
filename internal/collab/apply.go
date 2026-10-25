@@ -104,6 +104,11 @@ func normalizeAction(action string, folder *folderRow) string {
 // It refuses label and unlabel on a provider without labels (errLabels). It publishes
 // nothing; the caller publishes collab.changed.
 func (s *service) applyLocal(ctx context.Context, tx pgx.Tx, a *accountRow, threadIDs []uuid.UUID, action string, folder *folderRow) error {
+	if action == ActionDone || action == ActionNeedsAction {
+		_, err := tx.Exec(ctx, `UPDATE collab_threads SET needs_action = $3, updated_at = now()
+			WHERE workspace_id = $1 AND id = ANY($2)`, a.WorkspaceID, threadIDs, action == ActionNeedsAction)
+		return err
+	}
 	if (action == ActionLabel || action == ActionUnlabel) && a.Provider == ProviderIMAP {
 		return errLabels
 	}

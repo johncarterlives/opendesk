@@ -813,6 +813,7 @@ export type CollabAccountPatch = {
   color?: string;
   signature_html?: string;
   visibility?: "private" | "shared";
+  handling_enabled?: boolean;
   shared_with?: T.MailAudience;
   imap?: Partial<T.MailImapSettings> & { password?: string; smtp_password?: string };
   /** The address new mail goes out from. */
