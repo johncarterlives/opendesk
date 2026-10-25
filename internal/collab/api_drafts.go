@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/useopendesk/opendesk/internal/audit"
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/email"
 	"github.com/useopendesk/opendesk/internal/httpx"
@@ -24,6 +25,14 @@ import (
 const draftsPerMinute = 120
 
 var errDraftsUnsupported = httpx.E(422, "drafts_unsupported", "This account cannot keep drafts.")
+
+// What an AI client may not do with drafts ("AI drafts").
+var (
+	errAIDraftMode   = httpx.E(403, "ai_draft_reply_only", "An AI client drafts replies to a conversation only (mode reply or reply_all).")
+	errAIDraftFiles  = httpx.E(403, "ai_draft_no_files", "An AI client cannot attach files to a draft.")
+	errAIDraftNotOwn = httpx.E(403, "ai_draft_not_own",
+		"This draft was not written by this AI client, or a person has saved it since. Save a new draft instead.")
+)
 
 // draftContent is what a save of an existing draft carries.
 type draftContent struct {
@@ -67,7 +76,7 @@ func (s *service) registerDraftRoutes(api huma.API) {
 	collabOp(api, huma.Operation{OperationID: "create-collab-draft", Method: http.MethodPost, Path: "/v1/collab/drafts",
 		Summary: "Save a new draft"},
 		func(ctx context.Context, in *draftCreateInput) (*messageBody, error) {
-			p, err := s.require(ctx, auth.RoleAgent)
+			p, err := s.requireDrafter(ctx, auth.RoleAgent)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -75,6 +84,15 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				return nil, httpx.RateLimited()
 			}
 			b := in.Body
+			if viaAIClient(p) {
+				// An AI client answers a conversation, with words only ("AI drafts").
+				if b.Mode != ModeReply && b.Mode != ModeReplyAll {
+					return nil, errAIDraftMode
+				}
+				if len(b.AttachmentIDs) > 0 || b.ForwardAttachments {
+					return nil, errAIDraftFiles
+				}
+			}
 			t, err := s.composeTarget(ctx, p, b.AccountID, b.Mode, b.MessageID)
 			if err != nil {
 				return nil, err
@@ -102,7 +120,7 @@ func (s *service) registerDraftRoutes(api huma.API) {
 			ID   string `path:"id"`
 			Body draftContent
 		}) (*messageBody, error) {
-			p, err := s.require(ctx, auth.RoleAgent)
+			p, err := s.requireDrafter(ctx, auth.RoleAgent)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -112,6 +130,15 @@ func (s *service) registerDraftRoutes(api huma.API) {
 			m, a, t, err := s.loadDraft(ctx, p, in.ID)
 			if err != nil {
 				return nil, err
+			}
+			if viaAIClient(p) {
+				// A client saves again only a draft it wrote and nobody has saved since.
+				if m.AIGrantID == nil || *m.AIGrantID != p.GrantID {
+					return nil, errAIDraftNotOwn
+				}
+				if len(in.Body.AttachmentIDs) > 0 {
+					return nil, errAIDraftFiles
+				}
 			}
 			id, _, err := s.saveDraft(ctx, p, target{a: a}, m, t.RemoteID, &t.ID, draftCompose(m, &in.Body, false))
 			if err != nil {
@@ -339,12 +366,16 @@ func (s *service) saveDraft(ctx context.Context, p *auth.Principal, t target, dr
 	}
 	pctx, cancel := context.WithTimeout(ctx, providerTimeout)
 	defer cancel()
+	ai, err := s.aiDrafterOf(ctx, p)
+	if err != nil {
+		return uuid.Nil, nil, httpx.Wrap(err)
+	}
 	ref, err := dp.SaveDraft(pctx, d)
 	if err != nil {
 		s.log.Info("collab draft not saved", "account_id", t.a.ID, "reason", safeError(err))
 		return uuid.Nil, nil, errProvider(err)
 	}
-	id, err := s.storeDraft(ctx, t.a, out.Raw, ref, p.UserID, threadID, draft)
+	id, err := s.storeDraft(ctx, t.a, out.Raw, ref, p.UserID, threadID, draft, ai)
 	if err != nil {
 		return uuid.Nil, nil, httpx.Wrap(err)
 	}
@@ -357,12 +388,27 @@ func storedOf(m *messageRow) *storedMsg {
 		Draft: m.Draft, RawKey: m.RawKey, Location: m.Location, FolderIDs: m.FolderIDs}
 }
 
+// aiDrafterOf is the AI client a draft the caller saves is attributed to: the client of
+// their OAuth grant, by its name now; nil for a person.
+func (s *service) aiDrafterOf(ctx context.Context, p *auth.Principal) (*aiDrafter, error) {
+	if !viaAIClient(p) {
+		return nil, nil
+	}
+	ai := &aiDrafter{GrantID: p.GrantID, P: p}
+	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT c.name FROM oauth_grants g JOIN oauth_clients c ON c.id = g.client_id
+		WHERE g.id = $1 AND g.workspace_id = $2`, p.GrantID, p.WorkspaceID).Scan(&ai.Client); err != nil {
+		return nil, err
+	}
+	return ai, nil
+}
+
 // storeDraft stores a draft the provider saved: in Drafts, written by the caller, in its
 // conversation (threadID; for a draft saved again, the one it was in). A draft saved
 // again replaces its previous version under the same id, in one transaction with the
-// collab.changed it publishes.
+// collab.changed it publishes. ai is the AI client that saved it (audit-logged), nil
+// for a person, whose save takes the draft over.
 func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref draftRef, by uuid.UUID, threadID *uuid.UUID,
-	replace *messageRow) (uuid.UUID, error) {
+	replace *messageRow, ai *aiDrafter) (uuid.UUID, error) {
 	p, err := s.newPass(ctx, s.d.DB.Pool, a)
 	if err != nil {
 		return uuid.Nil, err
@@ -374,7 +420,7 @@ func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref
 		}
 	}
 	in := &newMessage{RemoteID: ref.RemoteID, ThreadRemoteID: ref.ThreadRemoteID, Raw: raw, Date: time.Now(),
-		State: state{Draft: true, FolderIDs: folders, Location: ref.Location}, SentBy: &by, ThreadID: threadID}
+		State: state{Draft: true, FolderIDs: folders, Location: ref.Location}, SentBy: &by, ThreadID: threadID, AI: ai}
 	if replace != nil {
 		id := replace.ID
 		in.ID = &id
@@ -402,8 +448,18 @@ func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref
 			}
 		}
 		var err error
-		if id, err = p.insert(ctx, tx, in); err != nil || replace == nil || replace.RawKey == "" {
+		if id, err = p.insert(ctx, tx, in); err != nil {
 			return err
+		}
+		if ai != nil && id != uuid.Nil {
+			// The content is the client's; the entry names the conversation, never the words.
+			if err := audit.Log(ctx, tx, ai.P, a.WorkspaceID, "collab.ai_draft_saved", "collab_message", &id,
+				map[string]any{"client": ai.Client, "grant_id": ai.GrantID, "account_id": a.ID, "again": replace != nil}); err != nil {
+				return err
+			}
+		}
+		if replace == nil || replace.RawKey == "" {
+			return nil
 		}
 		// The new version's raw source has the same key (it is named by the id) and was
 		// just written over the old one: it stays.

@@ -365,6 +365,9 @@ func (s *service) messageOut(a *accountRow, m *messageRow, sentBy *domain.UserRe
 	if out.Outgoing {
 		out.Bcc = m.Bcc
 	}
+	if m.Draft && m.AIGrantID != nil {
+		out.DraftedByAI = m.AIClient
+	}
 	for _, at := range m.Attachments {
 		out.Attachments = append(out.Attachments, MailAttachment{ID: strconv.Itoa(at.Index), Filename: at.Filename, ContentType: at.ContentType,
 			Size: at.Size, Inline: at.Inline, ContentID: at.ContentID, URL: s.attachmentURL(m.ID, at.Index)})

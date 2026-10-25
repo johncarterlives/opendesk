@@ -287,9 +287,9 @@ a reply in its conversation, a new message or a forward in a conversation of its
 - A member removed from the workspace, or a deleted user, loses their accounts: private accounts
   are deleted with their mail (the job `collab.cleanup`), shared ones are kept with `owner: null`
   for admins to manage or disconnect.
-- API keys and AI clients over MCP have no access to Collab: every route needs a user session.
-  Ollie has none either: every request it makes for a user carries `ViaAssistant` (reads
-  included), and Collab refuses it.
+- API keys have no access to Collab, and AI clients over MCP none but "AI drafts" below: every
+  other route needs a user session. Ollie has none either: every request it makes for a user
+  carries `ViaAssistant` (reads included), and Collab refuses it.
 - The one exception is the owner's own consent: a member may let teammates' Ollie ask theirs
   about their **own** accounts (contracts/ai.md "Asking a teammate"). It is off until the
   workspace allows it and the member opts in, account by account (verbatim, summaries only or
@@ -297,6 +297,30 @@ a reply in its conversation, a new message or a forward in a conversation of its
   owner's Ollie under the owner's rules, never mail, ids, addresses, links or attachments. Mail
   the owner sees only through someone else's share is never used. Admins cannot read or change
   anyone's choices.
+
+### AI drafts
+
+Any AI client, whatever model runs it (local or hosted), may draft replies for a person to send
+(GH#176). opendesk enforces the boundary; it never runs or meters the client's model.
+
+- **Credential**: an OAuth grant (contracts/agent.md "OAuth") with `collab:draft`, which a client
+  gets only by asking for it by name (a request without `scope` never includes it) and only for an
+  agent or above. The client acts as the member who connected it, so it sees exactly the
+  conversations that member sees ("Who sees what"), and loses them when the member does. API keys
+  never hold `collab:draft`: a key is nobody's, and Collab is a person's mail. Disconnecting the
+  client (Settings > AI clients) ends it at once.
+- **Routes it may call**: `GET /v1/collab/threads`, `GET /v1/collab/threads/{id}`,
+  `POST /v1/collab/drafts` (mode `reply` or `reply_all`, no `attachment_ids` or
+  `forward_attachments`) and `PUT /v1/collab/drafts/{id}` for a draft it saved that nobody has saved
+  since (`403 ai_draft_not_own` otherwise; no `attachment_ids`). Every other Collab route refuses it
+  (`403`): it never sends, discards, marks read or unread, moves, labels, assigns, shares or
+  comments. Reading changes no state, so a conversation the client read stays unread for the team.
+- **Attribution**: a draft it saves is the member's (`sent_by`) with `drafted_by_ai`, the client's
+  name as it was then (the "Draft by" label). A person who saves the draft takes it over:
+  `drafted_by_ai` goes and the client can no longer save it. Sending is a person's, from the
+  composer, as with any draft. Each save by a client is audit-logged (`collab.ai_draft_saved`).
+- **MCP tools** (contracts/agent.md): `list_collab_conversations`, `get_collab_conversation` and
+  `draft_collab_reply`.
 
 ## Shapes
 
@@ -440,6 +464,7 @@ interface MailMessage {
   attachments: MailAttachment[]
   sent_by: UserRef | null      // the teammate who sent it from opendesk (for a draft, who saved it)
   draft_id: string | null      // drafts: the id the /v1/collab/drafts routes take (the message's id)
+  drafted_by_ai: string | null // drafts an AI client saved and no person has saved since: the client's name ("AI drafts")
   in_reply_to_id: string | null  // the message of the conversation it answers (its In-Reply-To), when stored
   own_address: string | null   // the account's address (its own or an alias) it was sent from, else the first in its To, Cc, then Delivered-To / X-Original-To
   outgoing: boolean            // mail the account wrote: sent from opendesk (sent_by), a draft, or filed by the provider in Sent or Drafts. Its From alone never makes mail outgoing, since a sender writes their own From. Mail that is not outgoing holds back its remote images until the reader loads them
@@ -852,7 +877,8 @@ names; `signature_html` with `from_provider` for a pull, `out_of_office` for the
 with its `identity_id` and `added`, `removed` or the changed `identity_fields`),
 `collab.account_disconnected`, `collab.history_import` (`{action: "started" | "paused" | "resumed" | "canceled",
 since, include_spam_trash}`), `collab.thread_shared` (`{thread_id, everyone, team_ids,
-user_ids}`), `collab.thread_assigned` (`{thread_id, user_ids}`). Never an address book entry,
+user_ids}`), `collab.thread_assigned` (`{thread_id, user_ids}`), `collab.ai_draft_saved` (the
+draft; `{client, grant_id, account_id, again}`, "AI drafts"). Never an address book entry,
 subject, body or credential.
 
 ## Notifications

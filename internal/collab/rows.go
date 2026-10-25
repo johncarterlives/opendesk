@@ -250,6 +250,9 @@ type messageRow struct {
 	DeliveredTo []string
 	// Filed is set when the provider files the message in the account's Sent or Drafts.
 	Filed bool
+	// AIGrantID and AIClient are set on a draft an AI client saved ("AI drafts").
+	AIGrantID *uuid.UUID
+	AIClient  *string
 }
 
 // outgoing reports mail the account wrote: sent from opendesk, a draft, or filed by the
@@ -265,13 +268,14 @@ const messageColumns = `m.id, m.workspace_id, m.account_id, m.thread_id, m.remot
 	m.unread, m.starred, m.draft, m.attachments, m.raw_key, m.location, m.sent_by,
 	ARRAY(SELECT folder_id FROM collab_message_folders mf WHERE mf.message_id = m.id), m.delivered_to,
 	EXISTS (SELECT 1 FROM collab_message_folders mf JOIN collab_folders f ON f.id = mf.folder_id
-		WHERE mf.message_id = m.id AND f.role IN ('sent', 'drafts'))`
+		WHERE mf.message_id = m.id AND f.role IN ('sent', 'drafts')), m.ai_grant_id, m.ai_client`
 
 func scanMessage(row pgx.Row) (*messageRow, error) {
 	var m messageRow
 	if err := row.Scan(&m.ID, &m.WorkspaceID, &m.AccountID, &m.ThreadID, &m.RemoteID, &m.MessageID, &m.InReplyTo, &m.Refs,
 		&m.From, &m.To, &m.Cc, &m.Bcc, &m.ReplyTo, &m.Subject, &m.Snippet, &m.BodyHTML, &m.BodyText, &m.SentAt,
-		&m.Unread, &m.Starred, &m.Draft, &m.Attachments, &m.RawKey, &m.Location, &m.SentBy, &m.FolderIDs, &m.DeliveredTo, &m.Filed); err != nil {
+		&m.Unread, &m.Starred, &m.Draft, &m.Attachments, &m.RawKey, &m.Location, &m.SentBy, &m.FolderIDs, &m.DeliveredTo, &m.Filed,
+		&m.AIGrantID, &m.AIClient); err != nil {
 		return nil, err
 	}
 	for _, list := range []*[]Address{&m.To, &m.Cc, &m.Bcc, &m.ReplyTo} {

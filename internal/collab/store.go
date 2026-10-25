@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/displayname"
 	"github.com/useopendesk/opendesk/internal/email"
@@ -330,6 +331,15 @@ type newMessage struct {
 	ThreadID       *uuid.UUID // a reply sent from opendesk stays in its conversation
 	// ID is the stored id to use (a draft saved again keeps its id); nil = a new one.
 	ID *uuid.UUID
+	// AI is the client that saved a draft through its grant ("AI drafts"); nil = a person.
+	AI *aiDrafter
+}
+
+// aiDrafter is the AI client a draft is attributed to.
+type aiDrafter struct {
+	GrantID uuid.UUID
+	Client  string
+	P       *auth.Principal // for the audit entry
 }
 
 // insert parses, sanitizes and stores a new message and returns its id. A message that
@@ -416,16 +426,21 @@ func (p *pass) insert(ctx context.Context, tx pgx.Tx, in *newMessage) (uuid.UUID
 		sentAt = time.Now()
 	}
 	from := Address{Name: cleanName(pm.FromName), Email: pm.FromAddr}
+	var aiGrant *uuid.UUID
+	var aiClient *string
+	if in.AI != nil && in.State.Draft {
+		aiGrant, aiClient = &in.AI.GrantID, &in.AI.Client
+	}
 	var inserted uuid.UUID
 	err = tx.QueryRow(ctx, `INSERT INTO collab_messages (id, workspace_id, account_id, thread_id, remote_id, message_id, in_reply_to, refs,
 		from_addr, to_addrs, cc_addrs, bcc_addrs, reply_to, subject, snippet, body_html, body_text, sent_at, unread, starred, draft,
-		attachments, raw_key, location, sent_by, delivered_to, size)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+		attachments, raw_key, location, sent_by, delivered_to, size, ai_grant_id, ai_client)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29)
 		ON CONFLICT (account_id, remote_id) DO NOTHING RETURNING id`,
 		id, wid, p.a.ID, threadID, in.RemoteID, msgID, inReplyTo, refs, from, addressList(pm, "To"), addressList(pm, "Cc"),
 		addressList(pm, "Bcc"), addressList(pm, "Reply-To"), truncateRunes(pm.Subject, 998), cleanLine(text, 200), bodyHTML, text,
 		sentAt, in.State.Unread, in.State.Starred, in.State.Draft, atts, rawKey, locationOrEmpty(in.State.Location), in.SentBy, deliveredTo(pm),
-		size).Scan(&inserted)
+		size, aiGrant, aiClient).Scan(&inserted)
 	if db.IsNotFound(err) {
 		// Stored meanwhile (a sync and a send racing): keep that row.
 		if rawKey != "" {
@@ -438,6 +453,13 @@ func (p *pass) insert(ctx context.Context, tx pgx.Tx, in *newMessage) (uuid.UUID
 		if in.SentBy != nil {
 			if _, err := tx.Exec(ctx, `UPDATE collab_messages SET sent_by = $2 WHERE id = $1 AND sent_by IS NULL`, m.ID, in.SentBy); err != nil {
 				return uuid.Nil, err
+			}
+			// A draft saved from opendesk is whoever saved it last: a client or a person.
+			if in.State.Draft {
+				if _, err := tx.Exec(ctx, `UPDATE collab_messages SET ai_grant_id = $2, ai_client = $3 WHERE id = $1 AND draft`,
+					m.ID, aiGrant, aiClient); err != nil {
+					return uuid.Nil, err
+				}
 			}
 		}
 		p.touch(threadID) // the conversation row may be new and empty

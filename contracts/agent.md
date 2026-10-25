@@ -580,6 +580,9 @@ Tools (offered only when the key has the scope):
 | `search_knowledge` | `kb:read` | KB articles and knowledge sources |
 | `create_kb_draft` | `kb:write` | a draft article |
 | `get_report` | `tickets:read` + `settings:read` | the overview report for a range |
+| `list_collab_conversations` | `collab:draft` (OAuth only) | the connecting member's Collab conversations (box, account, text), at most 50; reading changes no read state |
+| `get_collab_conversation` | `collab:draft` (OAuth only) | a conversation with its messages, as the member sees it |
+| `draft_collab_reply` | `collab:draft` (OAuth only) | saves a reply (or reply-all) draft to a message, `body` markdown, labelled "Draft by" the client; never sends (contracts/collab.md "AI drafts") |
 
 Tool annotations mark read-only and destructive tools. Output is JSON text. No `Mcp-Session-Id` is
 issued. The server checks `Origin` (browser requests must come from
@@ -614,7 +617,7 @@ token, secret or verifier.
   reads as a link becomes "MCP client"). Unused clients are deleted after 30 days.
 - **Authorize**: `response_type=code`, `client_id`, `redirect_uri`, `state` (passed through),
   `code_challenge` with `code_challenge_method=S256` (required; `plain` is refused), `scope`
-  (space-separated; unknown scopes are ignored, none means all of them) and `resource` (RFC 8707;
+  (space-separated; unknown scopes are ignored, none means all of them but `collab:draft`) and `resource` (RFC 8707;
   must be `{API_URL}/mcp` when sent). An unknown client or redirect URI is never redirected to: the
   browser goes to the app's consent page with `?error=`. Other errors redirect to the client with
   `error`, `error_description`, `state` and `iss`. A valid request is stored for 10 minutes and the
@@ -636,10 +639,12 @@ token, secret or verifier.
   narrow `scope`, never widen it. Connecting the same client to the same workspace again replaces
   the earlier grant.
 - **Scopes**: `tickets:read`, `tickets:write`, `contacts:read`, `contacts:write`, `kb:read`,
-  `kb:write`, `settings:read` (never `settings:write` or `realtime`). On every MCP request the
+  `kb:write`, `settings:read` (never `settings:write` or `realtime`), and `collab:draft` only when
+  asked for by name (agents and up; contracts/collab.md "AI drafts"). On every MCP request the
   grant is loaded: the tools offered and the API checks use the user's **current** role and the
   granted scopes together (viewers read only; agents and up also write tickets, contacts and
-  articles). Account routes and routes API keys may not call refuse a grant.
+  articles). Account routes and routes API keys may not call refuse a grant, except the Collab
+  routes `collab:draft` opens.
 - **Revocation**: the user (or an admin) disconnects the client in Settings > AI clients, the client
   calls `/oauth/revoke` with its refresh or access token, the member is removed from the
   workspace, or the user's password changes or is reset (every grant of the user ends, like their

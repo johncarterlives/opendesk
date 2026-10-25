@@ -131,7 +131,7 @@ func (s *service) registerThreadRoutes(api huma.API) {
 	collabOp(api, huma.Operation{OperationID: "list-collab-threads", Method: http.MethodGet, Path: "/v1/collab/threads",
 		Summary: "List conversations"},
 		func(ctx context.Context, in *listThreadsInput) (*struct{ Body httpx.Page[MailThread] }, error) {
-			p, err := s.require(ctx, auth.RoleViewer)
+			p, err := s.requireDrafter(ctx, auth.RoleViewer)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -252,7 +252,8 @@ func (s *service) registerThreadRoutes(api huma.API) {
 	collabOp(api, huma.Operation{OperationID: "get-collab-thread", Method: http.MethodGet, Path: "/v1/collab/threads/{id}",
 		Summary: "Get a conversation with its messages and comments"},
 		func(ctx context.Context, in *threadIDInput) (*detailBody, error) {
-			p, err := s.require(ctx, auth.RoleViewer)
+			// Reading changes no state: read and unread are actions (contracts/collab.md).
+			p, err := s.requireDrafter(ctx, auth.RoleViewer)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}

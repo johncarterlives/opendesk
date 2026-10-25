@@ -28,7 +28,8 @@ it exists, and this file is the contract the parts are built against.
 - Roles: `owner` > `admin` > `agent` > `viewer`. Viewers read only. Settings routes
   (mailboxes, members, api keys, webhooks, automations, sla, business hours, assignment, triage, widget settings, labels, label groups, custom fields, workspace images) need `admin`.
 - API key scopes: `tickets:read`, `tickets:write`, `contacts:read`, `contacts:write`,
-  `kb:read`, `kb:write`, `settings:read`, `settings:write`, `realtime`.
+  `kb:read`, `kb:write`, `settings:read`, `settings:write`, `realtime`. `collab:draft` is an
+  OAuth grant scope only, never a key's (contracts/collab.md "AI drafts").
 
 ## Resource shapes
 
