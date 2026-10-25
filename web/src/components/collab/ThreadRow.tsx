@@ -3,7 +3,7 @@
 // assignees, shared and comment marks. Hover offers archive, trash, read and star.
 
 import { motion, useReducedMotion } from "motion/react";
-import { Archive, Mail, MailOpen, MessageSquare, Paperclip, Star, Trash2, Users } from "lucide-react";
+import { Archive, CircleDot, Mail, MailOpen, MessageSquare, Paperclip, Star, Trash2, Users } from "lucide-react";
 import { forwardRef, memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
@@ -118,6 +118,11 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
 
   const marks = (
     <>
+      {t.handling === "needs_action" && (
+        <Tooltip content={tr("list.needsAction")}>
+          <CircleDot className="size-3 shrink-0 text-tone-amber" aria-label={tr("list.needsAction")} />
+        </Tooltip>
+      )}
       {t.has_attachments && (
         <Tooltip content={tr("list.attachments")}>
           <Paperclip className="size-3 shrink-0 text-fg-4" aria-label={tr("list.attachments")} />

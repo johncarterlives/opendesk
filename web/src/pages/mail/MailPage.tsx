@@ -15,7 +15,7 @@ import { accountName, isMailBox, mailListQuery, type MailSearch } from "@/lib/co
 import { cachedFolders } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
 import { addressNumbers } from "@/lib/collab/badges";
-import { useAllFolders, useCanAct, useMailAccounts, useSidebarPrefs, useThreadAction } from "@/lib/collab/hooks";
+import { useAllFolders, useCanAct, useMailAccounts, useSidebarPrefs, useThreadAction, useThreadHandling } from "@/lib/collab/hooks";
 import { type ComposeMode } from "@/lib/collab/recipients";
 import { identitiesOf, ownEmails as ownEmailsOf } from "@/lib/collab/identities";
 import { useHotkeys } from "@/lib/hotkeys";
@@ -111,7 +111,9 @@ export default function MailPage() {
       ? addressNumbers(account.id, search.to, counts).unread
       : account && box === "inbox"
         ? (counts?.accounts[account.id] ?? account.unread)
-        : !account && isMailBox(box) && box in (counts?.boxes ?? {})
+        : account && box === "needs_action"
+          ? (counts?.needs_action?.[account.id] ?? account.needs_action)
+          : !account && isMailBox(box) && box in (counts?.boxes ?? {})
           ? counts?.boxes[box as "inbox"]
           : undefined;
 
@@ -258,6 +260,23 @@ export default function MailPage() {
     [openId, threads, qc, act],
   );
 
+  // Handling state (contracts/collab.md "Handling"): only conversations whose account tracks it.
+  const handling = useThreadHandling();
+  const markHandled = () => {
+    if (!canAct) return;
+    const ts = targets().filter((x) => x.handling);
+    if (!ts.length) return;
+    const next = ts.every((x) => x.handling === "done") ? "needs_action" : "done";
+    setSelected((s) => (s.size ? new Set() : s));
+    handling.mutate(
+      { ids: ts.map((x) => x.id), handling: next },
+      {
+        onSuccess: () => toast.success(t(next === "done" ? "toast.done" : "toast.needsAction", { count: ts.length })),
+        onError: (e) => toast.error(e, t("toast.failed")),
+      },
+    );
+  };
+
   const star = () => {
     const ts = targets();
     if (ts.length) act(ts, ts.every((x) => x.starred) ? "unstar" : "star", { silent: true });
@@ -300,6 +319,7 @@ export default function MailPage() {
     "#": () => act(targets(), "trash"),
     "!": () => act(targets(), "spam"),
     s: (e) => !e.shiftKey && star(),
+    d: (e) => !e.shiftKey && markHandled(),
     u: (e) => e.shiftKey && act(targets(), "unread", { silent: true }),
     i: (e) => e.shiftKey && act(targets(), "read", { silent: true }),
     m: () => (openId && !selected.size ? threadRef.current?.move() : canAct && targetAccount && setPickMove(true)),
@@ -364,6 +384,7 @@ export default function MailPage() {
     if (box === "inbox" && !folder) return <EmptyState art="solved" title={t("list.empty.inbox")} description={t("list.empty.inboxHint")} />;
     if (box === "shared") return <EmptyState art="inbox" title={t("list.empty.shared")} description={t("list.empty.sharedHint")} />;
     if (box === "assigned") return <EmptyState art="mine" title={t("list.empty.assigned")} description={t("list.empty.assignedHint")} />;
+    if (box === "needs_action") return <EmptyState art="solved" title={t("list.empty.needsAction")} description={t("list.empty.needsActionHint")} />;
     if (box === "starred") return <EmptyState art="generic" title={t("list.empty.starred")} description={t("list.empty.starredHint")} tips={[{ label: t("shortcuts.star"), kbd: "s" }]} />;
     return <EmptyState art="generic" title={t("list.empty.generic")} description={t("list.empty.genericHint")} />;
   })();
@@ -423,7 +444,7 @@ export default function MailPage() {
             )}
           </div>
         </div>
-        {!noAccounts && accounts && box !== "shared" && box !== "assigned" && (
+        {!noAccounts && accounts && box !== "shared" && box !== "assigned" && box !== "needs_action" && (
           <FolderBar
             box={box}
             account={account}

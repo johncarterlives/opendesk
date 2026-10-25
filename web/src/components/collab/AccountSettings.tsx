@@ -21,6 +21,7 @@ import { storeAccount } from "@/lib/collab/hooks";
 import { outOfOfficeBody, outOfOfficeForm, outOfOfficeProblem, type OutOfOfficeForm } from "@/lib/collab/outOfOffice";
 import { cn } from "@/lib/cn";
 import { relLong } from "@/lib/format";
+import { qk } from "@/lib/queries";
 
 const syncIcon: Record<MailIdentitySync, ReactNode> = {
   two_way: <ArrowLeftRight />,
@@ -242,6 +243,38 @@ export function OutOfOfficeSection({ account, manage, onReconnect }: { account: 
           </Button>
         </div>
       )}
+    </Section>
+  );
+}
+
+/**
+ * Handling state (contracts/collab.md "Handling"): whether the account tracks which
+ * conversations still need a person, apart from unread. Kept in opendesk only; saved at once.
+ */
+export function HandlingSection({ account, manage }: { account: MailAccount; manage: boolean }) {
+  const { t } = useTranslation("collab");
+  const qc = useQueryClient();
+  const save = useMutation({
+    mutationFn: (handling: boolean) => api.collab.accounts.update(account.id, { handling }),
+    onSuccess: (a) => {
+      storeAccount(qc, a);
+      void qc.invalidateQueries({ queryKey: qk.mailCounts });
+      void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+      toast.success(t(a.handling ? "detail.handling.on" : "detail.handling.off"));
+    },
+    onError: (e) => toast.error(errorMessage(e)),
+  });
+  return (
+    <Section title={t("detail.handling.title")} description={t("detail.handling.hint")}>
+      <Row label={t("detail.handling.enabled")} description={t("detail.handling.enabledHint")} htmlFor="handling-on">
+        <Switch
+          id="handling-on"
+          checked={!!account.handling}
+          disabled={!manage || save.isPending}
+          onCheckedChange={(on) => save.mutate(on)}
+          aria-label={t("detail.handling.enabled")}
+        />
+      </Row>
     </Section>
   );
 }

@@ -213,6 +213,27 @@ A `move` to an Outlook category is `422 validation_error` (a category is a label
 Opening a conversation does not mark it read; the web app sends `read` when it is shown (and the
 user can turn that off in the sidebar settings, `mark_read_on_open`).
 
+### Handling
+
+Handling state says whether a person still has to act on a conversation, apart from unread. It is
+kept in opendesk only, never written to the provider, and an account turns it on
+(`PATCH /v1/collab/accounts/{id}` `{"handling": true}`; `MailAccount.handling`). Personal accounts
+can keep plain read and unread.
+
+- `MailThread.handling` is `needs_action` or `done` on an account that tracks it, else absent.
+- A message from someone other than the account (not a draft), newer than the conversation's
+  newest reply and sent once handling was turned on, makes it `needs_action`. Mail from before
+  (history, first sync) never does.
+- A reply from the account, sent from opendesk or at the provider, newer than the newest inbound
+  message, makes it `done`.
+- `POST /v1/collab/threads/handling` `{thread_ids, handling}` (1 to 100) sets it by hand; the
+  conversation's account must track handling (`422`). Audited as `collab.thread_handling`.
+- Reading, opening, starring, moving or labelling a conversation never changes it, nor does
+  handling change unread.
+- Box `needs_action` lists inbox conversations that need action; `counts.boxes.needs_action` and
+  `counts.needs_action` (by account) count them. Turning handling off clears every mark.
+- A `waiting_approval` state for drafts awaiting send approval is planned with #177, not yet here.
+
 ### Drafts
 
 Drafts are kept at the provider and stored like synced mail: `draft: true`, in the Drafts folder,
@@ -612,11 +633,12 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | POST | `/v1/collab/accounts/{id}/folders` | act | `{name: 1..100, parent_id?, kind?: "folder" \| "label", color?: tone}` → `MailFolder`, created at the provider first (`502 provider_error` with detail). Gmail makes labels either way; Microsoft makes a folder, or with `kind: "label"` an Outlook category (no `parent_id`); IMAP only folders (`422 labels_unsupported` for a label). `color` only for labels ("Labels and colours") |
 | PATCH | `/v1/collab/folders/{id}` | act | `{name?, color?: tone}`, at least one → `MailFolder`; at the provider first, then stored. `422` for a special folder; `color` only on a Gmail label or an Outlook category (`422 validation_error` otherwise); an Outlook category cannot be renamed (`422 rename_unsupported`) |
 | DELETE | `/v1/collab/folders/{id}` | act | → 204; its conversations stay in their other folders; `422` for a special folder |
-| GET | `/v1/collab/threads` | member | `?box=&account_id=&folder_id=&q=&to=&with=&limit=(1..100, 50)&cursor=` → `Page<MailThread>`, newest first. `to`: only conversations with that address on a message (From, To, Cc or where it was delivered), case-insensitive: one alias's mail. `box`: `inbox` (default), `unread`, `starred`, `sent`, `drafts`, `archive`, `trash`, `spam`, `all`, `shared`, `assigned`. Without `account_id` it spans every account the caller sees (for `shared` and `assigned`, every conversation they see). `folder_id` replaces `box`. `unread` and `all` leave out trash and spam, `starred` leaves out trash, and `shared` (conversations with shares of their own) and `assigned` leave out both. `archive` is the Archive folder, and for Gmail, which archives by removing `INBOX`, what is in none of inbox, trash, spam and drafts. `q` matches each message's subject, sender and text and the conversation's subject and participants ("Search"). `with`: only conversations with that person on a message, like `to`; without `account_id` it spans every conversation the caller sees, those shared with them on their own included ("People") |
-| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, addresses: Record<id, Record<address, number>>}`: unread conversations; `shared` and `assigned` count those still in an inbox, `drafts` every draft conversation; `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0) |
+| GET | `/v1/collab/threads` | member | `?box=&account_id=&folder_id=&q=&to=&with=&limit=(1..100, 50)&cursor=` → `Page<MailThread>`, newest first. `to`: only conversations with that address on a message (From, To, Cc or where it was delivered), case-insensitive: one alias's mail. `box`: `inbox` (default), `unread`, `starred`, `sent`, `drafts`, `archive`, `trash`, `spam`, `all`, `shared`, `assigned`, `needs_action` ("Handling"). Without `account_id` it spans every account the caller sees (for `shared` and `assigned`, every conversation they see). `folder_id` replaces `box`. `unread` and `all` leave out trash and spam, `starred` leaves out trash, and `shared` (conversations with shares of their own) and `assigned` leave out both. `archive` is the Archive folder, and for Gmail, which archives by removing `INBOX`, what is in none of inbox, trash, spam and drafts. `q` matches each message's subject, sender and text and the conversation's subject and participants ("Search"). `with`: only conversations with that person on a message, like `to`; without `account_id` it spans every conversation the caller sees, those shared with them on their own included ("People") |
+| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts, needs_action}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, needs_action: Record<account id, number>, addresses: Record<id, Record<address, number>>}`: unread conversations; `shared` and `assigned` count those still in an inbox, `drafts` every draft conversation; `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0) |
 | GET | `/v1/collab/threads/{id}` | see | `MailThreadDetail` |
 | GET | `/v1/collab/person` | member | `?email=&exclude=&limit=` → `MailPerson` ("People"); `422 validation_failed` for an address that is not one |
 | POST | `/v1/collab/threads/actions` | act | `{thread_ids: string[1..100], action, folder_id?}` → `{threads: MailThread[]}`. Threads the caller cannot act on are `404` (all or nothing) |
+| POST | `/v1/collab/threads/handling` | act | `{thread_ids: string[1..100], handling: "needs_action" \| "done"}` → `{threads: MailThread[]}`. Their accounts must track handling (`422`); unseen threads `404` ("Handling") |
 | PUT | `/v1/collab/threads/{id}/shares` | act | `{shares: Audience}` → `MailThreadDetail`. Empty unshares. Audit `collab.thread_shared` (ids only) |
 | PUT | `/v1/collab/threads/{id}/assignees` | act | `{user_ids: string[0..20]}` → `MailThreadDetail`; each must be a member (agent+); assigning lets them see it. Each new assignee gets a `collab_assigned` notification |
 | POST | `/v1/collab/threads/{id}/comments` | act | `{body_html: 1..20000, mentions?: string[]}` → `MailComment`; each mentioned member who can see it gets a `collab_mention` notification; a mention of someone who cannot see it shares the conversation with them |
@@ -852,7 +874,8 @@ names; `signature_html` with `from_provider` for a pull, `out_of_office` for the
 with its `identity_id` and `added`, `removed` or the changed `identity_fields`),
 `collab.account_disconnected`, `collab.history_import` (`{action: "started" | "paused" | "resumed" | "canceled",
 since, include_spam_trash}`), `collab.thread_shared` (`{thread_id, everyone, team_ids,
-user_ids}`), `collab.thread_assigned` (`{thread_id, user_ids}`). Never an address book entry,
+user_ids}`), `collab.thread_assigned` (`{thread_id, user_ids}`), `collab.thread_handling`
+(`{handling}`, the thread as target). Never an address book entry,
 subject, body or credential.
 
 ## Notifications

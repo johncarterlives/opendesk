@@ -522,7 +522,7 @@ func recomputeThreads(ctx context.Context, tx pgx.Tx, a *accountRow, threadIDs [
 	own := ownAddresses(a, idents)
 	rows, err := tx.Query(ctx, `SELECT m.thread_id, m.subject, m.snippet, m.from_addr, m.to_addrs, m.cc_addrs, m.sent_at, m.unread, m.starred,
 		EXISTS (SELECT 1 FROM jsonb_array_elements(m.attachments) e WHERE NOT COALESCE((e->>'inline')::boolean, false)),
-		ARRAY(SELECT folder_id FROM collab_message_folders mf WHERE mf.message_id = m.id), m.delivered_to
+		ARRAY(SELECT folder_id FROM collab_message_folders mf WHERE mf.message_id = m.id), m.delivered_to, m.draft
 		FROM collab_messages m WHERE m.account_id = $1 AND m.thread_id = ANY($2) ORDER BY m.thread_id, m.sent_at, m.id`, a.ID, threadIDs)
 	if err != nil {
 		return err
@@ -535,12 +535,13 @@ func recomputeThreads(ctx context.Context, tx pgx.Tx, a *accountRow, threadIDs [
 		unread, starred, files bool
 		folders                []uuid.UUID
 		delivered              []string
+		draft                  bool
 	}
 	byThread := map[uuid.UUID][]msg{}
 	for rows.Next() {
 		var tid uuid.UUID
 		var m msg
-		if err := rows.Scan(&tid, &m.subject, &m.snippet, &m.from, &m.to, &m.cc, &m.sentAt, &m.unread, &m.starred, &m.files, &m.folders, &m.delivered); err != nil {
+		if err := rows.Scan(&tid, &m.subject, &m.snippet, &m.from, &m.to, &m.cc, &m.sentAt, &m.unread, &m.starred, &m.files, &m.folders, &m.delivered, &m.draft); err != nil {
 			rows.Close()
 			return err
 		}
@@ -601,10 +602,16 @@ func recomputeThreads(ctx context.Context, tx pgx.Tx, a *accountRow, threadIDs [
 		if len(doc) > maxSearchText {
 			doc = strings.ToValidUTF8(doc[:maxSearchText], "")
 		}
+		fromOwn, sentAt, draft := make([]bool, len(list)), make([]time.Time, len(list)), make([]bool, len(list))
+		for i, m := range list {
+			fromOwn[i], sentAt[i], draft[i] = containsFold(own, m.from.Email), m.sentAt, m.draft
+		}
+		inbound, outbound := handlingTimes(fromOwn, sentAt, draft)
 		if _, err := tx.Exec(ctx, `UPDATE collab_threads SET subject = $2, snippet = $3, participants = $4, last_message_at = $5,
 			message_count = $6, unread = $7, starred = $8, has_attachments = $9, folder_ids = $10,
-			search = to_tsvector('simple', $11), addresses = $12, updated_at = now() WHERE id = $1`,
-			tid, subject, newest.snippet, participants, newest.sentAt, len(list), unread, starred, files, folders, doc, addresses); err != nil {
+			search = to_tsvector('simple', $11), addresses = $12, `+handlingUpdateSQL+`, updated_at = now() WHERE id = $1`,
+			tid, subject, newest.snippet, participants, newest.sentAt, len(list), unread, starred, files, folders, doc, addresses,
+			inbound, outbound); err != nil {
 			return err
 		}
 	}

@@ -29,6 +29,7 @@
     "all": "All mail",
     "shared": "Shared with me",
     "assigned": "Assigned to me",
+    "needs_action": "Needs action",
     "folder": "Folder"
   },
   "customize": {
@@ -96,6 +97,7 @@
     "comments_one": "{{count}} comment",
     "comments_other": "{{count}} comments",
     "assignedTo": "Assigned to {{names}}",
+    "needsAction": "Needs action",
     "messages": "{{count}} messages",
     "star": "Star",
     "unstar": "Remove star",
@@ -119,6 +121,8 @@
       "sharedHint": "When a teammate shares a conversation or an account with you, it shows up here.",
       "assigned": "Nothing assigned to you",
       "assignedHint": "Conversations teammates assign to you show up here.",
+      "needsAction": "Nothing needs action",
+      "needsActionHint": "New mail in accounts that track handling waits here until someone replies or marks it done, even after it is read.",
       "starred": "No starred conversations",
       "starredHint": "Star a conversation with s to keep it close."
     },
@@ -152,6 +156,8 @@
     "unstar": "Remove star",
     "read": "Mark as read",
     "unread": "Mark as unread",
+    "done": "Mark done",
+    "needsAction": "Mark as needing action",
     "share": "Share",
     "assign": "Assign",
     "more": "More actions",
@@ -193,7 +199,11 @@
     "syncing": "Syncing {{name}}",
     "sent": "Sent from {{email}}",
     "shared": "Sharing updated",
-    "assigned": "Assignees updated"
+    "assigned": "Assignees updated",
+    "done_one": "Conversation marked done",
+    "done_other": "{{count}} conversations marked done",
+    "needsAction_one": "Conversation needs action again",
+    "needsAction_other": "{{count}} conversations need action again"
   },
   "thread": {
     "label": "Conversation",
@@ -480,6 +490,14 @@
       "microsoft": "Follows your Microsoft profile until you change it here.",
       "none": "This name lives in opendesk."
     },
+    "handling": {
+      "title": "Handling",
+      "hint": "Keep track of which conversations still need someone, apart from read and unread. Kept in opendesk only.",
+      "enabled": "Track conversations that need action",
+      "enabledHint": "New mail marks a conversation as needing action. Sending a reply or marking it done clears it.",
+      "on": "Handling is on",
+      "off": "Handling is off"
+    },
     "ooo": {
       "title": "Out of office",
       "hint": "An automatic reply to mail that arrives while you're away",
@@ -543,6 +561,7 @@
     "star": "Star or unstar",
     "unread": "Mark as unread",
     "read": "Mark as read",
+    "done": "Mark done or needing action",
     "movePicker": "Move to folder",
     "labelPicker": "Apply labels",
     "reply": "Reply",

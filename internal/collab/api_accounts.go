@@ -51,6 +51,7 @@ type updateAccountInput struct {
 		SharedWith    *Audience  `json:"shared_with,omitempty"`
 		IMAP          *imapPatch `json:"imap,omitempty"`
 		DefaultFrom   *string    `json:"default_from,omitempty" maxLength:"254" doc:"The address new mail goes out from: the account's own or one of its usable addresses"`
+		Handling      *bool      `json:"handling,omitempty" doc:"Track whether conversations need action, apart from unread; new mail from then on needs action"`
 	}
 }
 
@@ -136,6 +137,14 @@ func (s *service) registerAccountRoutes(api huma.API) {
 				}
 				if sig != a.SignatureHTML {
 					a.SignatureHTML, changed = sig, append(changed, "signature_html")
+				}
+			}
+			// Handling state stays in opendesk: nothing is pushed to the provider.
+			handling := 0 // 1 turns it on, -1 off
+			if b.Handling != nil && *b.Handling != (a.HandlingSince != nil) {
+				handling, changed = -1, append(changed, "handling")
+				if *b.Handling {
+					handling = 1
 				}
 			}
 
@@ -226,6 +235,19 @@ func (s *service) registerAccountRoutes(api huma.API) {
 					visibility = $7, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
 					p.WorkspaceID, a.ID, a.Name, a.DisplayName, a.Color, a.SignatureHTML, a.Visibility); err != nil {
 					return err
+				}
+				if handling != 0 {
+					// Turned on, mail from now on needs action; turned off, what was marked is let go.
+					if _, err := tx.Exec(ctx, `UPDATE collab_accounts SET handling_since = CASE WHEN $3 THEN now() END
+						WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, a.ID, handling > 0); err != nil {
+						return err
+					}
+					if handling < 0 {
+						if _, err := tx.Exec(ctx, `UPDATE collab_threads SET needs_action = false WHERE account_id = $1 AND needs_action`,
+							a.ID); err != nil {
+							return err
+						}
+					}
 				}
 				if err := s.recordAccountPatch(ctx, tx, a.ID, pushed, changed); err != nil {
 					return err

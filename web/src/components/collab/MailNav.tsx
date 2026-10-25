@@ -14,7 +14,7 @@ import { buildRow, NavItemRow, useMailLocation, useRowLabels, type MailHere } fr
 import { useWaitingFor } from "@/components/tickets/useUrgentChats";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { MailAccount, MailBox, MailCounts, MailFolder, SidebarPrefs, SidebarSectionId } from "@/lib/api/types";
-import { accountAssignedNumbers, accountNumbers, allInboxNumbers, folderNumbers, listBoxNumbers, type RowNumbers } from "@/lib/collab/badges";
+import { accountAssignedNumbers, accountNumbers, allInboxNumbers, folderNumbers, listBoxNumbers, needsActionNumbers, type RowNumbers } from "@/lib/collab/badges";
 import { ACCOUNT_BOXES, accountName, buildFolderTree, flattenTree, folderWithRole } from "@/lib/collab/boxes";
 import { useAllFolders, useMailAccounts, useSaveSidebarPrefs } from "@/lib/collab/hooks";
 import { badgeFor, hid, livePins, pickCount, toggleExpanded, type MailBadge } from "@/lib/collab/sidebarPrefs";
@@ -159,6 +159,7 @@ function AccountGroup({
   const expanded = !rail && prefs.expanded_accounts.includes(account.id);
   const atInbox = here.box === "inbox" && here.account === account.id && !here.folder;
   const assignedHere = here.box === "assigned" && here.account === account.id;
+  const needsHere = here.box === "needs_action" && here.account === account.id;
   const trouble = account.reconnect || account.status === "error";
   if (trouble)
     menu.action = {
@@ -241,6 +242,20 @@ function AccountGroup({
           menu={{ badge: { key: "box:assigned", kind: "mail", sections: ["mail"] }, hideId: hid.box("assigned") }}
         />
       )}
+      {/* An account that tracks handling always shows what still needs a person. */}
+      {account.handling && !hidden.has(hid.box("needs_action")) && (
+        <MailRow
+          link={{ box: "needs_action", account: account.id }}
+          active={needsHere}
+          icon={boxIcon.needs_action}
+          label={t("box.needs_action")}
+          shown={mailShown(prefs, "box:needs_action", ["mail"], needsActionNumbers(counts, account.id))}
+          rail={false}
+          depth={1}
+          prefs={prefs}
+          menu={{ badge: { key: "box:needs_action", kind: "mail", sections: ["mail"] }, hideId: hid.box("needs_action") }}
+        />
+      )}
       {expanded && (
         <>
           {specialShown.map((b) => {
@@ -309,6 +324,9 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
   // which has no rows under an account).
   const assignedIn = Object.entries(counts?.assigned ?? {}).filter(([, n]) => n > 0).map(([id]) => id);
   const assignedAcross = !!counts?.boxes.assigned && (rail || assignedIn.length > 1 || assignedIn.some((id) => !shown.some((a) => a.id === id)));
+  // Needs action across accounts: on the rail, or while two shown accounts track handling.
+  const handlingAccounts = shown.filter((a) => a.handling).length;
+  const needsAcross = !hidden.has(hid.box("needs_action")) && ((rail && handlingAccounts > 0) || handlingAccounts > 1 || (here.box === "needs_action" && !here.account));
 
   return (
     <Section
@@ -367,6 +385,18 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
           rail={rail}
           prefs={prefs}
           menu={{ badge: { key: "box:assigned", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "assigned" }, hideId: hid.box("assigned") }}
+        />
+      )}
+      {needsAcross && (
+        <MailRow
+          link={{ box: "needs_action" }}
+          active={here.box === "needs_action" && (rail || !here.account)}
+          icon={boxIcon.needs_action}
+          label={t("box.needs_action")}
+          shown={mailShown(prefs, "box:needs_action", ["mail"], needsActionNumbers(counts))}
+          rail={rail}
+          prefs={prefs}
+          menu={{ badge: { key: "box:needs_action", kind: "mail", sections: ["mail"] }, hideId: hid.box("needs_action") }}
         />
       )}
       {shown.map((a) => (

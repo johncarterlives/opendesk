@@ -99,6 +99,10 @@ func (s *service) accountsOut(ctx context.Context, q db.Querier, p *auth.Princip
 	if err != nil {
 		return nil, err
 	}
+	needs, err := inboxNeedsAction(ctx, q, p.WorkspaceID, accountIDs)
+	if err != nil {
+		return nil, err
+	}
 	identities, err := loadIdentities(ctx, q, p.WorkspaceID, accountIDs)
 	if err != nil {
 		return nil, err
@@ -113,7 +117,8 @@ func (s *service) accountsOut(ctx context.Context, q db.Querier, p *auth.Princip
 			Owner: refOf(refs, a.OwnerID), Visibility: a.Visibility, SharedWith: Audience{TeamIDs: []uuid.UUID{}, UserIDs: []uuid.UUID{}},
 			SignatureHTML: a.SignatureHTML, Status: a.Status, Reconnect: a.Reconnect, LastError: a.LastError,
 			LastSyncedAt: a.LastSyncedAt, CanManage: canManageAccount(p, a), Unread: unread[a.ID], CreatedAt: a.CreatedAt,
-			History: hist[a.ID], OldestMessageAt: oldest[a.ID], FoldersLeftOut: leftOut[a.ID]}
+			History: hist[a.ID], OldestMessageAt: oldest[a.ID], FoldersLeftOut: leftOut[a.ID],
+			Handling: a.HandlingSince != nil, NeedsAction: needs[a.ID]}
 		if m.Name == "" {
 			m.Name = a.Email
 		}
@@ -153,6 +158,22 @@ const inboxSQL = `ARRAY(SELECT id FROM collab_folders WHERE workspace_id = $1 AN
 func inboxUnread(ctx context.Context, q db.Querier, wid uuid.UUID, accountIDs []uuid.UUID) (map[uuid.UUID]int, error) {
 	rows, err := q.Query(ctx, `SELECT t.account_id, count(*) FROM collab_threads t
 		WHERE t.workspace_id = $1 AND t.account_id = ANY($2) AND t.unread AND t.folder_ids && `+inboxSQL+`
+		GROUP BY t.account_id`, wid, accountIDs)
+	if err != nil {
+		return nil, err
+	}
+	return collectCounts(rows)
+}
+
+// needsActionSQL is the predicate of a conversation (alias t) that needs action: its
+// account tracks handling, it is marked so and it is in an inbox ($1 the workspace).
+const needsActionSQL = `t.needs_action AND t.folder_ids && ` + inboxSQL + ` AND EXISTS (SELECT 1 FROM collab_accounts ha
+	WHERE ha.id = t.account_id AND ha.handling_since IS NOT NULL)`
+
+// inboxNeedsAction counts each account's conversations that need action.
+func inboxNeedsAction(ctx context.Context, q db.Querier, wid uuid.UUID, accountIDs []uuid.UUID) (map[uuid.UUID]int, error) {
+	rows, err := q.Query(ctx, `SELECT t.account_id, count(*) FROM collab_threads t
+		WHERE t.workspace_id = $1 AND t.account_id = ANY($2) AND `+needsActionSQL+`
 		GROUP BY t.account_id`, wid, accountIDs)
 	if err != nil {
 		return nil, err
@@ -231,6 +252,10 @@ func threadsOut(ctx context.Context, q db.Querier, list []*threadRow) ([]MailThr
 			Assignees: assignees[t.ID], CommentCount: comments[t.ID]}
 		if m.Assignees == nil {
 			m.Assignees = []domain.UserRef{}
+		}
+		if t.Handling != "" {
+			h := t.Handling
+			m.Handling = &h
 		}
 		for _, addr := range t.Addresses {
 			if slices.Contains(aliases[t.AccountID], addr) {

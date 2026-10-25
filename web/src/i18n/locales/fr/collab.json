@@ -29,6 +29,7 @@
     "all": "Tous les messages",
     "shared": "Partagés avec moi",
     "assigned": "Attribués à moi",
+    "needs_action": "À traiter",
     "folder": "Dossier"
   },
   "customize": {
@@ -98,6 +99,7 @@
     "comments_other": "{{count}} commentaires",
     "comments_many": "{{count}} commentaires",
     "assignedTo": "Attribuée à {{names}}",
+    "needsAction": "À traiter",
     "messages": "{{count}} messages",
     "star": "Suivre",
     "unstar": "Ne plus suivre",
@@ -121,6 +123,8 @@
       "sharedHint": "Lorsqu’un collègue partage une conversation ou un compte avec vous, cela apparaît ici.",
       "assigned": "Aucune conversation attribuée",
       "assignedHint": "Les conversations que vos collègues vous attribuent apparaissent ici.",
+      "needsAction": "Rien à traiter",
+      "needsActionHint": "Les nouveaux messages des comptes qui suivent le traitement restent ici jusqu’à une réponse ou jusqu’à ce qu’ils soient marqués traités, même une fois lus.",
       "starred": "Aucune conversation suivie",
       "starredHint": "Suivez une conversation avec s pour la garder à portée de main."
     },
@@ -147,6 +151,8 @@
     "unstar": "Ne plus suivre",
     "read": "Marquer comme lu",
     "unread": "Marquer comme non lu",
+    "done": "Marquer comme traité",
+    "needsAction": "Marquer comme à traiter",
     "share": "Partager",
     "assign": "Attribuer",
     "more": "Plus d’actions",
@@ -194,7 +200,13 @@
     "syncing": "Synchronisation de {{name}}",
     "sent": "Envoyé depuis {{email}}",
     "shared": "Partage mis à jour",
-    "assigned": "Responsables mis à jour"
+    "assigned": "Responsables mis à jour",
+    "done_one": "Conversation marquée comme traitée",
+    "done_other": "{{count}} conversations marquées comme traitées",
+    "done_many": "{{count}} conversations marquées comme traitées",
+    "needsAction_one": "Conversation de nouveau à traiter",
+    "needsAction_other": "{{count}} conversations de nouveau à traiter",
+    "needsAction_many": "{{count}} conversations de nouveau à traiter"
   },
   "thread": {
     "label": "Conversation",
@@ -484,6 +496,14 @@
       "microsoft": "Suit votre profil Microsoft jusqu’à ce que vous le modifiiez ici.",
       "none": "Ce nom est propre à opendesk."
     },
+    "handling": {
+      "title": "Traitement",
+      "hint": "Suivez les conversations qui attendent encore quelqu’un, indépendamment de lu et non lu. Conservé dans opendesk uniquement.",
+      "enabled": "Suivre les conversations à traiter",
+      "enabledHint": "Un nouveau message marque la conversation à traiter. Répondre ou la marquer comme traitée l’efface.",
+      "on": "Suivi du traitement activé",
+      "off": "Suivi du traitement désactivé"
+    },
     "ooo": {
       "title": "Absence du bureau",
       "hint": "Une réponse automatique aux messages reçus pendant votre absence",
@@ -547,6 +567,7 @@
     "star": "Suivre ou ne plus suivre",
     "unread": "Marquer comme non lu",
     "read": "Marquer comme lu",
+    "done": "Marquer comme traité ou à traiter",
     "movePicker": "Déplacer vers un dossier",
     "labelPicker": "Appliquer des étiquettes",
     "reply": "Répondre",

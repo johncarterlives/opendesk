@@ -4,7 +4,7 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { api } from "../api/endpoints";
-import type { MailAccount, MailCounts, MailFolder, MailThread, MailThreadAction, SidebarPrefs } from "../api/types";
+import type { MailAccount, MailCounts, MailFolder, MailHandling, MailThread, MailThreadAction, SidebarPrefs } from "../api/types";
 import { qk, q, removeFromList, upsertInList } from "../queries";
 import { atLeast, useRole } from "../session";
 import { applyAction, countsAfter } from "./actions";
@@ -126,6 +126,33 @@ export function useThreadAction() {
     onSuccess: (r: { threads: MailThread[] }) => patchThreads(qc, r?.threads ?? []),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: qk.mailCounts });
+    },
+  });
+}
+
+/**
+ * Marks conversations done or needing action (contracts/collab.md "Handling"): shown at once,
+ * put back on a refusal; the lists and numbers reload after. Never touches unread.
+ */
+export function useThreadHandling() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { ids: string[]; handling: MailHandling }) => api.collab.threads.handling({ thread_ids: v.ids, handling: v.handling }),
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: qk.mailThreadLists });
+      const snap = snapshotThreads(qc, v.ids);
+      mapThreads(qc, new Set(v.ids), (t) => (t.handling ? { ...t, handling: v.handling } : t));
+      return { snap };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx) restore(qc, ctx.snap);
+    },
+    onSuccess: (r: { threads: MailThread[] }) => patchThreads(qc, r?.threads ?? []),
+    onSettled: (_r, _e, v) => {
+      void qc.invalidateQueries({ queryKey: qk.mailCounts });
+      void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+      void qc.invalidateQueries({ queryKey: qk.mailAccounts });
+      for (const id of v.ids) void qc.invalidateQueries({ queryKey: qk.mailThread(id) });
     },
   });
 }

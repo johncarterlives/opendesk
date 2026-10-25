@@ -17,7 +17,7 @@ import { TextInput } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import { SignatureEditor } from "@/components/templates/SignatureEditor";
 import { ACCOUNT_TONES, ProviderMark } from "@/components/collab/bits";
-import { FromNameHint, OutOfOfficeSection, SignatureSync } from "@/components/collab/AccountSettings";
+import { FromNameHint, HandlingSection, OutOfOfficeSection, SignatureSync } from "@/components/collab/AccountSettings";
 import { AddressesSection } from "@/components/collab/AddressesSection";
 import { HistorySection } from "@/components/collab/HistorySection";
 import { CollabFromNameField, KeptInOpendesk, SenderPreview, useSenderPreview } from "@/components/collab/SenderPreview";
@@ -307,6 +307,8 @@ export default function MailAccountDetail() {
       <AddressesSection account={account} manage={manage} />
 
       <OutOfOfficeSection account={account} manage={manage} onReconnect={() => void reconnect(account)} />
+
+      <HandlingSection account={account} manage={manage} />
 
       <Section title={t("detail.sharing")} description={t("detail.sharingHint")}>
         <div role="radiogroup" aria-label={t("detail.sharing")} className="flex flex-col gap-2 py-3.5">

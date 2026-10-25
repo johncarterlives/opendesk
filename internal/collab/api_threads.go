@@ -34,6 +34,9 @@ const (
 	BoxAll      = "all"
 	BoxShared   = "shared"
 	BoxAssigned = "assigned"
+	// BoxNeedsAction is the inbox conversations a person still has to act on, of the accounts
+	// that track handling (contracts/collab.md "Handling").
+	BoxNeedsAction = "needs_action"
 )
 
 // maxAssignees bounds a conversation's assignees.
@@ -73,6 +76,8 @@ func boxSQL(box, u string) string {
 		return `EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND ` + notJunk
 	case BoxAssigned:
 		return `EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = ` + u + `) AND ` + notJunk
+	case BoxNeedsAction:
+		return needsActionSQL
 	}
 	return `t.folder_ids && ` + inboxSQL
 }
@@ -83,7 +88,7 @@ func visibleAccountsSQL(u string) string {
 }
 
 type listThreadsInput struct {
-	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned" default:"inbox"`
+	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned,needs_action" default:"inbox"`
 	AccountID string `query:"account_id" doc:"Only this account's conversations"`
 	FolderID  string `query:"folder_id" doc:"Only this folder's conversations; replaces box"`
 	Q         string `query:"q" maxLength:"200" doc:"Matches each message's subject, sender and text, and the conversation's subject and participants"`
@@ -108,6 +113,8 @@ type CollabCounts struct {
 	Addresses map[uuid.UUID]map[string]int `json:"addresses"`
 	// Assigned: boxes.assigned by account, for the row under each account.
 	Assigned map[uuid.UUID]int `json:"assigned"`
+	// NeedsAction: boxes.needs_action by account; an account without any is left out.
+	NeedsAction map[uuid.UUID]int `json:"needs_action"`
 }
 
 // CollabBoxCounts are unread conversations; assigned and shared: open ones (in an inbox).
@@ -117,6 +124,8 @@ type CollabBoxCounts struct {
 	Shared   int `json:"shared"`
 	Assigned int `json:"assigned"`
 	Drafts   int `json:"drafts"`
+	// NeedsAction: inbox conversations that need action (contracts/collab.md "Handling").
+	NeedsAction int `json:"needs_action"`
 }
 
 type threadIDInput struct {
@@ -348,6 +357,35 @@ func (s *service) registerThreadRoutes(api huma.API) {
 			out, err := threadsOut(ctx, s.d.DB.Pool, fresh)
 			if err != nil {
 				return nil, httpx.Wrap(err)
+			}
+			resp := &struct {
+				Body struct {
+					Threads []MailThread `json:"threads"`
+				}
+			}{}
+			resp.Body.Threads = out
+			return resp, nil
+		})
+
+	collabOp(api, huma.Operation{OperationID: "set-collab-thread-handling", Method: http.MethodPost, Path: "/v1/collab/threads/handling",
+		Summary: "Mark conversations done or needing action"},
+		func(ctx context.Context, in *struct {
+			Body struct {
+				ThreadIDs []uuid.UUID `json:"thread_ids" minItems:"1" maxItems:"100"`
+				Handling  string      `json:"handling" enum:"needs_action,done"`
+			}
+		}) (*struct {
+			Body struct {
+				Threads []MailThread `json:"threads"`
+			}
+		}, error) {
+			p, err := s.require(ctx, auth.RoleAgent)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			out, err := s.setHandling(ctx, p, in.Body.ThreadIDs, in.Body.Handling)
+			if err != nil {
+				return nil, err
 			}
 			resp := &struct {
 				Body struct {
@@ -607,7 +645,8 @@ func (s *service) detailResponse(ctx context.Context, p *auth.Principal, id uuid
 
 // counts are the sidebar's numbers for the caller.
 func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (CollabCounts, error) {
-	out := CollabCounts{Accounts: map[uuid.UUID]int{}, Folders: map[uuid.UUID]int{}, Assigned: map[uuid.UUID]int{}, Addresses: map[uuid.UUID]map[string]int{}}
+	out := CollabCounts{Accounts: map[uuid.UUID]int{}, Folders: map[uuid.UUID]int{}, Assigned: map[uuid.UUID]int{},
+		NeedsAction: map[uuid.UUID]int{}, Addresses: map[uuid.UUID]map[string]int{}}
 	inAccounts := `t.workspace_id = $1 AND t.account_id IN ` + visibleAccountsSQL("$2")
 	err := q.QueryRow(ctx, `SELECT
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND t.unread AND t.folder_ids && `+inboxSQL+`),
@@ -616,8 +655,10 @@ func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1 AND `+threadVisibleSQL("t", "$2")+`
 			AND EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND t.folder_ids && `+inboxSQL+`),
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1
-			AND EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = $2) AND t.folder_ids && `+inboxSQL+`)`,
-		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.Shared, &out.Boxes.Assigned)
+			AND EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = $2) AND t.folder_ids && `+inboxSQL+`),
+		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+needsActionSQL+`)`,
+		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.Shared, &out.Boxes.Assigned,
+		&out.Boxes.NeedsAction)
 	if err != nil {
 		return out, err
 	}
@@ -644,6 +685,14 @@ func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (
 		return out, err
 	}
 	if out.Assigned, err = collectCounts(rows); err != nil {
+		return out, err
+	}
+	rows, err = q.Query(ctx, `SELECT t.account_id, count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+needsActionSQL+`
+		GROUP BY t.account_id`, p.WorkspaceID, p.UserID)
+	if err != nil {
+		return out, err
+	}
+	if out.NeedsAction, err = collectCounts(rows); err != nil {
 		return out, err
 	}
 	// Every address of the accounts with aliases (their own included), matched like to=.

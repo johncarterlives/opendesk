@@ -110,8 +110,12 @@ type MailAccount struct {
 	LastSyncedAt  *time.Time      `json:"last_synced_at"`
 	CanManage     bool            `json:"can_manage"`
 	Unread        int             `json:"unread"`
-	IMAP          *IMAPSettings   `json:"imap,omitempty"`
-	CreatedAt     time.Time       `json:"created_at"`
+	// Handling: whether it tracks handling state (contracts/collab.md "Handling"); NeedsAction
+	// counts its inbox conversations that need action then.
+	Handling    bool          `json:"handling"`
+	NeedsAction int           `json:"needs_action"`
+	IMAP        *IMAPSettings `json:"imap,omitempty"`
+	CreatedAt   time.Time     `json:"created_at"`
 
 	// How its own settings sync with the provider (contracts/collab.md "Account settings").
 	SignatureSync     string       `json:"signature_sync" enum:"two_way,read_only,none"`
@@ -227,6 +231,9 @@ type MailThread struct {
 	// ToAddress is the account's address other than its own the conversation was written
 	// to or sent from (an alias), newest first; null when none.
 	ToAddress *string `json:"to_address"`
+	// Handling is whether a person still has to act on it (contracts/collab.md "Handling"),
+	// apart from unread; null when its account does not track handling.
+	Handling *string `json:"handling" enum:"needs_action,done"`
 }
 
 type MailMessage struct {

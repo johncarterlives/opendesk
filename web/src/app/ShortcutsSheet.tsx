@@ -49,6 +49,7 @@ export function ShortcutsSheet() {
         { keys: "s", label: tc("shortcuts.star") },
         { keys: "shift u", label: tc("shortcuts.unread") },
         { keys: "shift i", label: tc("shortcuts.read") },
+        { keys: "d", label: tc("shortcuts.done") },
         { keys: "m", label: tc("shortcuts.movePicker") },
         { keys: "l", label: tc("shortcuts.labelPicker") },
         { keys: "r", label: tc("shortcuts.reply") },

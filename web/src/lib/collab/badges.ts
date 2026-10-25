@@ -44,6 +44,12 @@ export function listBoxNumbers(box: "shared" | "assigned", counts: MailCounts | 
   return { unread: n, total: n };
 }
 
+/** Needs action (contracts/collab.md "Handling"): across accounts, or within one. */
+export function needsActionNumbers(counts: MailCounts | undefined, accountId?: string): RowNumbers {
+  const n = counts ? (accountId ? (counts.needs_action?.[accountId] ?? 0) : (counts.boxes.needs_action ?? 0)) : undefined;
+  return { unread: n, total: n };
+}
+
 /** Assigned to me within one account. */
 export function accountAssignedNumbers(accountId: string, counts: MailCounts | undefined): RowNumbers {
   const n = counts ? (counts.assigned?.[accountId] ?? 0) : undefined;

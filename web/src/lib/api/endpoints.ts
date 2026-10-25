@@ -710,6 +710,8 @@ export const api = {
       /** All or nothing: a thread the caller cannot act on is 404. */
       action: (b: { thread_ids: string[]; action: T.MailThreadAction; folder_id?: string }) =>
         http.post<{ threads: T.MailThread[] }>("/v1/collab/threads/actions", b),
+      /** Kept in opendesk, never at the provider; 422 when an account does not track handling. */
+      handling: (b: { thread_ids: string[]; handling: T.MailHandling }) => http.post<{ threads: T.MailThread[] }>("/v1/collab/threads/handling", b),
       share: (id: string, shares: T.MailAudience) => http.put<T.MailThreadDetail>(`/v1/collab/threads/${id}/shares`, { shares }),
       assign: (id: string, user_ids: string[]) => http.put<T.MailThreadDetail>(`/v1/collab/threads/${id}/assignees`, { user_ids }),
       comment: (id: string, b: { body_html: string; mentions?: string[] }) => http.create<T.MailComment>(`/v1/collab/threads/${id}/comments`, b),
@@ -817,6 +819,8 @@ export type CollabAccountPatch = {
   imap?: Partial<T.MailImapSettings> & { password?: string; smtp_password?: string };
   /** The address new mail goes out from. */
   default_from?: string;
+  /** Track which conversations still need a person (contracts/collab.md "Handling"). */
+  handling?: boolean;
 };
 
 export type CollabIdentityBody = {

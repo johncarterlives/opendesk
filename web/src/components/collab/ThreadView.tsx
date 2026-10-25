@@ -9,7 +9,9 @@ import {
   Archive,
   ArrowLeft,
   AtSign,
+  CheckCircle2,
   ChevronDown,
+  CircleDot,
   ChevronUp,
   Folder,
   Forward,
@@ -43,7 +45,7 @@ import type { MailFolder, MailMessage, MailThreadAction, MailThreadDetail } from
 import { isApiError } from "@/lib/api/client";
 import { patchThreads } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
-import { useMailAccounts } from "@/lib/collab/hooks";
+import { useMailAccounts, useThreadHandling } from "@/lib/collab/hooks";
 import { hasReplyAll, replyTarget, type ComposeMode } from "@/lib/collab/recipients";
 import { identitySignature, ownEmails, replyIdentity } from "@/lib/collab/identities";
 import { cn } from "@/lib/cn";
@@ -191,6 +193,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   const navigate = useNavigate();
   const { data: detail, isPending, error, isFetching, isFetchedAfterMount, isStale } = useQuery(q.mailThread(threadId));
   const { data: accounts } = useMailAccounts();
+  const handling = useThreadHandling();
   const accountId = detail?.account.id;
   const { data: folders } = useQuery({ ...q.mailFolders(accountId ?? ""), enabled: !!accountId });
   const { data: teams } = useQuery(q.teams());
@@ -524,6 +527,21 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
             <HeaderButton label={th.unread ? t("action.read") : t("action.unread")} shortcut={th.unread ? "shift i" : "shift u"} onClick={() => onAction(th.unread ? "read" : "unread", { silent: true })}>
               {th.unread ? <MailOpen /> : <Mail />}
             </HeaderButton>
+            {th.handling && (
+              <HeaderButton
+                label={th.handling === "done" ? t("action.needsAction") : t("action.done")}
+                shortcut="d"
+                pressed={th.handling === "done"}
+                onClick={() =>
+                  handling.mutate(
+                    { ids: [th.id], handling: th.handling === "done" ? "needs_action" : "done" },
+                    { onError: (e) => toast.error(e, t("toast.failed")) },
+                  )
+                }
+              >
+                {th.handling === "done" ? <CheckCircle2 /> : <CircleDot />}
+              </HeaderButton>
+            )}
           </>
         )}
         <div className="ml-auto flex items-center gap-0.5">

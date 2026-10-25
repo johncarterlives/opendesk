@@ -2130,6 +2130,10 @@ export type MailAccount = {
   can_manage: boolean;
   /** Unread conversations in its inbox. */
   unread: number;
+  /** Tracks whether conversations need action, apart from unread (contracts/collab.md "Handling"). */
+  handling?: boolean;
+  /** Inbox conversations that need action, when it tracks handling. */
+  needs_action?: number;
   /** IMAP accounts, can_manage only. */
   imap?: MailImapSettings;
   created_at: string;
@@ -2294,7 +2298,11 @@ export type MailThread = {
   comment_count: number;
   /** The account's address other than its own the conversation was written to or sent from (an alias); null when none. */
   to_address?: string | null;
+  /** Whether a person still has to act on it, apart from unread; null when its account does not track handling. */
+  handling?: MailHandling | null;
 };
+
+export type MailHandling = "needs_action" | "done";
 
 export type MailAttachment = {
   /** Its index in the message, "0", "1", ... */
@@ -2460,7 +2468,7 @@ export type SidebarPrefs = {
 /** unread / total / none for mail rows; count / awaiting / urgent / overdue / none for ticket rows, and open for team rows. */
 export type SidebarBadge = "unread" | "total" | "count" | "awaiting" | "urgent" | "overdue" | "open" | "none";
 
-export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned";
+export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned" | "needs_action";
 
 export type MailThreadAction =
   | "read"
@@ -2478,13 +2486,15 @@ export type MailThreadAction =
 
 export type MailCounts = {
   /** Unread conversations; assigned and shared: open ones. */
-  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number };
+  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action?: number };
   accounts: Record<string, number>;
   folders: Record<string, number>;
   /** By account with aliases, then address (its own included): unread conversations in its inbox with it on a message; missing = 0. */
   addresses?: Record<string, Record<string, number>>;
   /** boxes.assigned by account; only accounts with some. */
   assigned: Record<string, number>;
+  /** boxes.needs_action by account; only accounts with some. */
+  needs_action?: Record<string, number>;
 };
 
 /** `collab.changed` event data. */
