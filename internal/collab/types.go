@@ -252,6 +252,9 @@ type MailMessage struct {
 	SentBy      *domain.UserRef  `json:"sent_by"`
 	// DraftID is set on drafts: the id the /v1/collab/drafts routes take.
 	DraftID *uuid.UUID `json:"draft_id"`
+	// DraftedByAI is, on a draft an AI client saved, the client's name ("Draft by <name>");
+	// null on anything a person wrote or saved last.
+	DraftedByAI *string `json:"drafted_by_ai"`
 	// InReplyToID is the message of the conversation this one answers (its In-Reply-To), when stored.
 	InReplyToID *uuid.UUID `json:"in_reply_to_id"`
 	// OwnAddress is the account's address (its own or another) the message was sent from

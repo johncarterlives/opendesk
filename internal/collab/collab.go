@@ -151,3 +151,26 @@ func (s *service) require(ctx context.Context, min auth.Role) (*auth.Principal, 
 	}
 	return p, nil
 }
+
+// requireDrafter is the gate of the few routes an AI client may also call (contracts/
+// collab.md "AI drafts"): listing and reading conversations and saving its own drafts.
+// The client acts through the OAuth grant of the member who connected it, with
+// collab:draft, so it sees exactly what that member sees; API keys and the assistant
+// stay refused. Every other Collab route keeps require, so a client never sends, changes
+// read or folder state, assigns, shares or comments.
+func (s *service) requireDrafter(ctx context.Context, min auth.Role) (*auth.Principal, error) {
+	p, err := auth.RequireWorkspace(ctx, min, auth.ScopeCollabDraft)
+	if err != nil {
+		return nil, err
+	}
+	if p.Kind != auth.KindUser || p.Assistant || p.ViaAssistant {
+		return nil, auth.ErrForbidden
+	}
+	if err := s.d.Plan.RequireCollab(ctx, s.d.DB.Pool, p.WorkspaceID); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// viaAIClient reports a request an AI client makes through a member's OAuth grant.
+func viaAIClient(p *auth.Principal) bool { return p.GrantID != uuid.Nil }
