@@ -342,12 +342,18 @@ with a claim that expires on its own, and reports back. Nobody has to assign it.
   The one that has waited longest (oldest `last_message_at`) comes first.
 - `POST /v1/collab/ai-queue/claim` (`collab:draft` key, member an agent or above; `403
   ai_queue_keys_only` for a person) `{account_id?, ttl_seconds? (60..900, 300)}` → `{claim:
-  {conversation_id, claimed_at, expires_at} | null, conversation: MailThreadDetail | null}`. One
-  holder at a time: concurrent claims take different conversations. A claim that expired, or whose
-  key was revoked, no longer holds. At most 60 claims a minute per key. Claiming changes nothing a
-  person sees.
-- **Report back**: saving a draft in the conversation (by the key, or by a person) ends any claim
-  on it. `POST /v1/collab/ai-queue/claims/{conversation id}/release` `{skip?, reason? (≤500)}` →
+  {conversation_id, claim_token, claimed_at, expires_at} | null, conversation: MailThreadDetail |
+  null}`. One holder at a time: concurrent claims take different conversations. A claim that
+  expired, or whose key was revoked, no longer holds. `claim_token` is new on every claim. At most
+  60 claims a minute per key. Claiming changes nothing a person sees.
+- **Report back**: the worker saves its reply with `POST /v1/collab/drafts` and `claim_token`. It
+  is checked before the provider is called: `409 claim_lost` when that claim has expired, passed to
+  another holder or been spent, and nothing is saved; `422 validation_failed` from a person or for
+  a draft outside a conversation. Until the draft is stored, the claim cannot pass on. The draft
+  ends the claim. A key's draft without a token (drafting outside the queue) still works and ends
+  only that key's own claim, never another holder's. A person's draft ends any claim, and the
+  holder's draft is then refused. `POST /v1/collab/ai-queue/claims/{conversation id}/release`
+  `{skip?, reason? (≤500)}` →
   `204` gives it back; `404` when the key holds no live claim on it. With `skip` the key is not
   offered it again until new mail arrives; the reason (for example "not confident") is kept with
   the skip (`collab_ai_skips`).

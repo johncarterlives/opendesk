@@ -63,6 +63,7 @@ type draftCreateInput struct {
 		AttachmentIDs      []uuid.UUID `json:"attachment_ids,omitempty" maxItems:"50" doc:"POST /v1/attachments uploads of the caller"`
 		ForwardAttachments bool        `json:"forward_attachments,omitempty" doc:"Forward: attach the original's files"`
 		FromEmail          string      `json:"from_email,omitempty" maxLength:"254" doc:"One of the account's usable addresses"`
+		ClaimToken         *uuid.UUID  `json:"claim_token,omitempty" doc:"AI queue: the claim this reply reports back on; refused once that claim has expired or passed on"`
 	}
 }
 
@@ -103,6 +104,18 @@ func (s *service) registerDraftRoutes(api huma.API) {
 			threadRemote := ""
 			if t.thread != nil && b.Mode != ModeForward {
 				threadID, threadRemote = &t.thread.ID, t.thread.RemoteID
+			}
+			if b.ClaimToken != nil {
+				// A queue worker's reply: checked against its claim before the provider is
+				// called, and the claim cannot pass on until the draft is stored ("AI queue").
+				if !viaAIClient(p) || threadID == nil {
+					return nil, errClaimTokens
+				}
+				unlock, err := s.fenceClaim(ctx, p, *threadID, *b.ClaimToken)
+				if err != nil {
+					return nil, err
+				}
+				defer unlock()
 			}
 			id, _, err := s.saveDraft(ctx, p, t, nil, threadRemote, threadID, composeIn{Mode: b.Mode, To: b.To, Cc: b.Cc, Bcc: b.Bcc,
 				Subject: b.Subject, BodyHTML: b.BodyHTML, AttachmentIDs: b.AttachmentIDs, ForwardAttachments: b.ForwardAttachments, FromEmail: b.FromEmail})
@@ -502,7 +515,7 @@ func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref
 		}
 		if id != uuid.Nil {
 			// A draft is the report back on an AI queue claim ("AI queue").
-			if err := endClaims(ctx, tx, id); err != nil {
+			if err := endClaims(ctx, tx, id, ai); err != nil {
 				return err
 			}
 		}

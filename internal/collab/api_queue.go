@@ -2,13 +2,16 @@ package collab
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/db"
@@ -32,14 +35,27 @@ const (
 	maxSkipReason   = 500
 )
 
-var errNotAIKey = httpx.E(403, "ai_queue_keys_only", "The AI queue is for API keys with the collab:draft scope.")
+var (
+	errNotAIKey    = httpx.E(403, "ai_queue_keys_only", "The AI queue is for API keys with the collab:draft scope.")
+	errClaimLost   = httpx.E(409, "claim_lost", "This claim has expired or passed to another holder. Claim again.")
+	errClaimTokens = httpx.E(422, "validation_failed", "claim_token is for an AI key's reply in the conversation it claimed.")
+)
+
+// claimAttempts is how many candidates claimNext tries when another claim wins the race.
+const claimAttempts = 3
 
 // AIClaim is a conversation the caller's key holds until ExpiresAt.
 type AIClaim struct {
 	ConversationID uuid.UUID `json:"conversation_id"`
-	ClaimedAt      time.Time `json:"claimed_at"`
-	ExpiresAt      time.Time `json:"expires_at"`
+	// Token names this claim: the draft that reports back carries it (claim_token).
+	Token     uuid.UUID `json:"claim_token"`
+	ClaimedAt time.Time `json:"claimed_at"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
+
+// claimLockKey is the advisory lock of conversation $1's claim: a fenced draft holds it
+// from its check to its stored result, and a claim of the conversation skips it meanwhile.
+const claimLockKey = `hashtextextended('collab_ai_claim:' || $1::text, 0)`
 
 type aiClaimOut struct {
 	Body struct {
@@ -50,10 +66,10 @@ type aiClaimOut struct {
 }
 
 // queueEligibleSQL is the predicate of a conversation (alias t) a key ($3) whose member is
-// $2 may be offered, in workspace $1.
+// $2 may be offered, in workspace $1. The Needs action box holds only shared accounts
+// with handling on.
 func queueEligibleSQL() string {
 	return `t.workspace_id = $1 AND t.account_id IN ` + visibleAccountsSQL("$2") + ` AND ` + boxSQL(BoxNeedsAction, "") + `
-		AND EXISTS (SELECT 1 FROM collab_accounts ha WHERE ha.id = t.account_id AND ha.visibility = 'shared' AND ha.handling_enabled)
 		AND NOT EXISTS (SELECT 1 FROM collab_messages dm WHERE dm.thread_id = t.id AND dm.draft)
 		AND NOT EXISTS (SELECT 1 FROM collab_ai_claims c JOIN api_keys ck ON ck.id = c.api_key_id
 			WHERE c.thread_id = t.id AND c.expires_at > now() AND ck.revoked_at IS NULL)
@@ -167,10 +183,24 @@ func (s *service) requireQueueKey(ctx context.Context) (*auth.Principal, error) 
 }
 
 // claimNext claims the conversation that has waited longest among those the key may be
-// offered, or returns nil. Concurrent claims skip each other's candidate rows, and the
-// claim replaces only an expired one, so a conversation has one holder at a time.
+// offered, or returns nil. Concurrent claims skip each other's candidate rows, a claim
+// replaces only an expired one (or a revoked key's), and a conversation whose fenced draft
+// is being saved is skipped, so a conversation has one holder at a time. A claim that
+// loses a race tries the next candidate, up to claimAttempts.
 func (s *service) claimNext(ctx context.Context, p *auth.Principal, account *uuid.UUID, ttl time.Duration) (*AIClaim, error) {
+	for range claimAttempts {
+		c, raced, err := s.claimOnce(ctx, p, account, ttl)
+		if err != nil || !raced {
+			return c, err
+		}
+	}
+	return nil, nil
+}
+
+// claimOnce is one attempt of claimNext; raced reports a candidate taken meanwhile.
+func (s *service) claimOnce(ctx context.Context, p *auth.Principal, account *uuid.UUID, ttl time.Duration) (*AIClaim, bool, error) {
 	var out *AIClaim
+	raced := false
 	err := s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		args := []any{p.WorkspaceID, p.UserID, p.APIKeyID}
 		where := queueEligibleSQL()
@@ -187,16 +217,27 @@ func (s *service) claimNext(ctx context.Context, p *auth.Principal, account *uui
 		if err != nil {
 			return err
 		}
+		// A fenced draft of the conversation being saved holds its claim's lock.
+		var free bool
+		if err := tx.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock(`+claimLockKey+`)`, id).Scan(&free); err != nil {
+			return err
+		}
+		if !free {
+			raced = true
+			return nil
+		}
 		var c AIClaim
-		err = tx.QueryRow(ctx, `INSERT INTO collab_ai_claims (thread_id, workspace_id, api_key_id, claimed_at, expires_at)
-			VALUES ($1, $2, $3, now(), now() + make_interval(secs => $4))
-			ON CONFLICT (thread_id) DO UPDATE SET api_key_id = EXCLUDED.api_key_id, claimed_at = EXCLUDED.claimed_at,
-				expires_at = EXCLUDED.expires_at
+		err = tx.QueryRow(ctx, `INSERT INTO collab_ai_claims (thread_id, workspace_id, api_key_id, token, claimed_at, expires_at)
+			VALUES ($1, $2, $3, $5, now(), now() + make_interval(secs => $4))
+			ON CONFLICT (thread_id) DO UPDATE SET api_key_id = EXCLUDED.api_key_id, token = EXCLUDED.token,
+				claimed_at = EXCLUDED.claimed_at, expires_at = EXCLUDED.expires_at
 			WHERE collab_ai_claims.expires_at <= now()
 				OR NOT EXISTS (SELECT 1 FROM api_keys k WHERE k.id = collab_ai_claims.api_key_id AND k.revoked_at IS NULL)
-			RETURNING thread_id, claimed_at, expires_at`, id, p.WorkspaceID, p.APIKeyID, ttl.Seconds()).Scan(&c.ConversationID, &c.ClaimedAt, &c.ExpiresAt)
+			RETURNING thread_id, token, claimed_at, expires_at`, id, p.WorkspaceID, p.APIKeyID, ttl.Seconds(), uuid.New()).
+			Scan(&c.ConversationID, &c.Token, &c.ClaimedAt, &c.ExpiresAt)
 		if db.IsNotFound(err) {
-			return nil // claimed meanwhile; the agent asks again
+			raced = true // claimed meanwhile
+			return nil
 		}
 		if err != nil {
 			return err
@@ -204,12 +245,58 @@ func (s *service) claimNext(ctx context.Context, p *auth.Principal, account *uui
 		out = &c
 		return nil
 	})
-	return out, err
+	return out, raced, err
 }
 
-// endClaims ends any claim on the conversation of a draft just saved, in tx: the key that
-// held it reported back, or a person took the conversation on.
-func endClaims(ctx context.Context, tx pgx.Tx, messageID uuid.UUID) error {
+// fenceClaim checks that token names the key's live claim on conversation threadID and
+// holds the claim's lock until unlock is called: a queue worker's draft is checked before
+// the provider is called, and nobody can take the claim over until the draft is stored
+// (which ends the claim). A worker whose claim expired or passed on is refused.
+func (s *service) fenceClaim(ctx context.Context, p *auth.Principal, threadID, token uuid.UUID) (func(), error) {
+	tx, err := s.d.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, httpx.Wrap(err)
+	}
+	unlock := func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }
+	// It waits its turn behind a claim being made, or another draft carrying this token
+	// (which, once stored, ends the claim: this one is then refused).
+	if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout', $1, true)`,
+		strconv.FormatInt(draftLockWait.Milliseconds(), 10)+"ms"); err != nil {
+		unlock()
+		return nil, httpx.Wrap(err)
+	}
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(`+claimLockKey+`)`, threadID); err != nil {
+		unlock()
+		var pg *pgconn.PgError
+		if errors.As(err, &pg) && pg.Code == "55P03" {
+			return nil, errDraftBusy
+		}
+		return nil, httpx.Wrap(err)
+	}
+	var live bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM collab_ai_claims c JOIN api_keys k ON k.id = c.api_key_id
+		WHERE c.thread_id = $1 AND c.api_key_id = $2 AND c.token = $3 AND c.workspace_id = $4
+			AND c.expires_at > now() AND k.revoked_at IS NULL)`, threadID, p.APIKeyID, token, p.WorkspaceID).Scan(&live); err != nil {
+		unlock()
+		return nil, httpx.Wrap(err)
+	}
+	if !live {
+		unlock()
+		return nil, errClaimLost
+	}
+	return unlock, nil
+}
+
+// endClaims ends claims on the conversation of a draft just saved, in tx. A person's
+// draft ends any claim: they took the conversation on, and the holder's fenced draft is
+// refused. A key's draft ends only that key's own claim: a late or manual draft by
+// another key never ends the current holder's.
+func endClaims(ctx context.Context, tx pgx.Tx, messageID uuid.UUID, ai *aiDrafter) error {
+	if ai != nil {
+		_, err := tx.Exec(ctx, `DELETE FROM collab_ai_claims WHERE api_key_id = $2
+			AND thread_id = (SELECT thread_id FROM collab_messages WHERE id = $1)`, messageID, ai.APIKeyID)
+		return err
+	}
 	_, err := tx.Exec(ctx, `DELETE FROM collab_ai_claims WHERE thread_id = (SELECT thread_id FROM collab_messages WHERE id = $1)`, messageID)
 	return err
 }

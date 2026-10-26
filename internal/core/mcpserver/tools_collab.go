@@ -60,6 +60,7 @@ func collabTools() []*tool {
 				"reply_all":    map[string]any{"type": "boolean", "description": "Reply to everyone on the message (default only its sender)."},
 				"message_id":   str("The message to answer (an id from get_collab_conversation); default the latest one."),
 				"draft_id":     str("A draft_id you saved before, to revise it."),
+				"claim_token":  str("The claim_token from claim_collab_conversation, when replying to a conversation you claimed; refused once the claim has expired or passed to another holder."),
 				"to":           arr("Recipients instead of the message's.", strN("", 3, 254), 20),
 				"cc":           arr("Copied addresses instead of the message's.", strN("", 3, 254), 20),
 			}, "conversation", "body"),
@@ -69,7 +70,7 @@ func collabTools() []*tool {
 			Name: "claim_collab_conversation", Title: "Take the next mail conversation to draft", Scopes: scopes,
 			Description: "Claim the conversation that has waited longest in Needs action on a shared account and has no draft yet, and read it " +
 				"(as get_collab_conversation). It is yours for a few minutes: no other AI key is given it. Report back by saving a draft with " +
-				"draft_collab_reply, which ends the claim, or by release_collab_conversation, with skip when you should not draft it. A claim " +
+				"draft_collab_reply, passing the claim_token, which ends the claim, or by release_collab_conversation, with skip when you should not draft it. A claim " +
 				"you abandon expires on its own. Claiming changes nothing a person sees; a person still sends every reply.",
 			Schema: obj(map[string]any{
 				"account_id": str("Only this mail account's conversations."),
@@ -383,6 +384,7 @@ func claimCollabConversation(ctx context.Context, c *caller, raw json.RawMessage
 	var r struct {
 		Claim *struct {
 			ConversationID string    `json:"conversation_id"`
+			Token          string    `json:"claim_token"`
 			ExpiresAt      time.Time `json:"expires_at"`
 		} `json:"claim"`
 		Conversation *apiMailDetail `json:"conversation"`
@@ -398,13 +400,14 @@ func claimCollabConversation(ctx context.Context, c *caller, raw json.RawMessage
 	}
 	return struct {
 		Claimed      bool            `json:"claimed"`
+		ClaimToken   string          `json:"claim_token"`
 		ExpiresAt    time.Time       `json:"expires_at"`
 		Note         string          `json:"note"`
 		Conversation conversationOut `json:"conversation"`
-	}{true, r.Claim.ExpiresAt, collabClaimNote, renderConversation(r.Conversation)}, nil
+	}{true, r.Claim.Token, r.Claim.ExpiresAt, collabClaimNote, renderConversation(r.Conversation)}, nil
 }
 
-const collabClaimNote = "yours until expires_at: draft_collab_reply ends the claim; or release_collab_conversation, with skip when you should not draft it"
+const collabClaimNote = "yours until expires_at: draft_collab_reply with this claim_token ends the claim; or release_collab_conversation, with skip when you should not draft it"
 
 func releaseCollabConversation(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
 	a, err := decode[struct {
@@ -448,11 +451,15 @@ func draftCollabReply(ctx context.Context, c *caller, raw json.RawMessage) (any,
 		ReplyAll     bool     `json:"reply_all"`
 		MessageID    string   `json:"message_id"`
 		DraftID      string   `json:"draft_id"`
+		ClaimToken   string   `json:"claim_token"`
 		To           []string `json:"to"`
 		Cc           []string `json:"cc"`
 	}](raw)
 	if err != nil {
 		return nil, err
+	}
+	if a.ClaimToken != "" && a.DraftID != "" {
+		return nil, invalid("claim_token reports back on a claim with a new draft; leave out draft_id")
 	}
 	if len(a.To) > 20 || len(a.Cc) > 20 {
 		return nil, invalid("at most 20 to and 20 cc addresses")
@@ -518,6 +525,13 @@ func draftCollabReply(ctx context.Context, c *caller, raw json.RawMessage) (any,
 		}
 		body := map[string]any{"account_id": d.Account.ID, "mode": mode, "message_id": orig.ID, "to": to, "cc": cc,
 			"subject": "", "body_html": html}
+		if a.ClaimToken != "" {
+			token, err := idRef(a.ClaimToken, "claim_token")
+			if err != nil {
+				return nil, err
+			}
+			body["claim_token"] = token
+		}
 		if err := c.do(ctx, http.MethodPost, "/v1/collab/drafts", nil, body, &saved); err != nil {
 			return nil, err
 		}
