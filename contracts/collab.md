@@ -325,8 +325,33 @@ Any AI client, whatever model runs it (local or hosted), may draft replies for a
   `drafted_by_ai` goes and the key can no longer save it. Sending is a person's, from the composer,
   as with any draft. Each save by a key is audit-logged (`collab.ai_draft_saved`, actor the member,
   `actor: "ai"` with the key).
-- **MCP tools** (contracts/agent.md): `list_collab_conversations`, `get_collab_conversation` and
-  `draft_collab_reply`, offered to a key with `collab:draft`.
+- **MCP tools** (contracts/agent.md): `list_collab_conversations`, `get_collab_conversation`,
+  `draft_collab_reply`, `claim_collab_conversation` and `release_collab_conversation`, offered to a
+  key with `collab:draft`.
+
+### AI queue
+
+A key drafts proactively by pulling work (GH#177): it asks for the next conversation, holds it
+with a claim that expires on its own, and reports back. Nobody has to assign it.
+
+- **Offered**: a conversation the key's member sees through its account, on a shared account with
+  handling on ("Handling"), in Needs action (`needs_action`, in an inbox), with no draft (a
+  person's or an AI's) and no live claim, that this key has not skipped since its last message.
+  The one that has waited longest (oldest `last_message_at`) comes first.
+- `POST /v1/collab/ai-queue/claim` (`collab:draft` key, member an agent or above; `403
+  ai_queue_keys_only` for a person) `{account_id?, ttl_seconds? (60..900, 300)}` → `{claim:
+  {conversation_id, claimed_at, expires_at} | null, conversation: MailThreadDetail | null}`. One
+  holder at a time: concurrent claims take different conversations. A claim that expired, or whose
+  key was revoked, no longer holds. At most 60 claims a minute per key. Claiming changes nothing a
+  person sees.
+- **Report back**: saving a draft in the conversation (by the key, or by a person) ends any claim
+  on it. `POST /v1/collab/ai-queue/claims/{conversation id}/release` `{skip?, reason? (≤500)}` →
+  `204` gives it back; `404` when the key holds no live claim on it. With `skip` the key is not
+  offered it again until new mail arrives; the reason (for example "not confident") is kept with
+  the skip (`collab_ai_skips`).
+- **Approval**: an AI draft does not clear Needs action (only a sent reply does), so the
+  conversation waits in Needs action, its draft labelled "AI draft by <name>", until a person sends
+  or discards it.
 
 ## Shapes
 

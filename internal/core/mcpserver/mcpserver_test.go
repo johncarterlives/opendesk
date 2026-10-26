@@ -259,7 +259,7 @@ func TestToolsFollowScopes(t *testing.T) {
 	}
 	want := []string{"search_tickets", "get_ticket", "reply_to_ticket", "draft_reply", "add_note", "update_ticket", "create_ticket",
 		"search_contacts", "get_contact", "search_knowledge", "create_kb_draft", "get_report",
-		"list_collab_conversations", "get_collab_conversation", "draft_collab_reply"}
+		"list_collab_conversations", "get_collab_conversation", "draft_collab_reply", "claim_collab_conversation", "release_collab_conversation"}
 	var names []string
 	for _, tl := range res.Tools {
 		names = append(names, tl.Name)

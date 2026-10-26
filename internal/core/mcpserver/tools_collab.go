@@ -65,6 +65,29 @@ func collabTools() []*tool {
 			}, "conversation", "body"),
 			Run: draftCollabReply,
 		},
+		{
+			Name: "claim_collab_conversation", Title: "Take the next mail conversation to draft", Scopes: scopes,
+			Description: "Claim the conversation that has waited longest in Needs action on a shared account and has no draft yet, and read it " +
+				"(as get_collab_conversation). It is yours for a few minutes: no other AI key is given it. Report back by saving a draft with " +
+				"draft_collab_reply, which ends the claim, or by release_collab_conversation, with skip when you should not draft it. A claim " +
+				"you abandon expires on its own. Claiming changes nothing a person sees; a person still sends every reply.",
+			Schema: obj(map[string]any{
+				"account_id": str("Only this mail account's conversations."),
+				"minutes":    integer("How long to hold the claim.", 1, 15, 5),
+			}),
+			Run: claimCollabConversation,
+		},
+		{
+			Name: "release_collab_conversation", Title: "Hand a claimed mail conversation back", Scopes: scopes, Idempotent: true,
+			Description: "Give back a conversation you claimed without drafting it. With skip, it is not offered to you again until new mail " +
+				"arrives in it; give a short reason (for example not confident, needs pricing) so the team can see why.",
+			Schema: obj(map[string]any{
+				"conversation": str("The conversation id."),
+				"skip":         map[string]any{"type": "boolean", "description": "Do not offer it to you again until new mail arrives."},
+				"reason":       strN("Why, briefly.", 1, 500),
+			}, "conversation"),
+			Run: releaseCollabConversation,
+		},
 	}
 }
 
@@ -277,6 +300,12 @@ func getCollabConversation(ctx context.Context, c *caller, raw json.RawMessage) 
 	if err != nil {
 		return nil, err
 	}
+	return renderConversation(d), nil
+}
+
+// renderConversation is a conversation as the tools return it: the newest messages as
+// plain text within the text budget, and the team's comments.
+func renderConversation(d *apiMailDetail) conversationOut {
 	out := conversationOut{Conversation: compactConversation(d.Thread), Account: d.Account.Email, Messages: []outMail{}}
 	for _, id := range d.Account.Identities {
 		if id.CanSend {
@@ -326,7 +355,78 @@ func getCollabConversation(ctx context.Context, c *caller, raw json.RawMessage) 
 		}
 		out.Comments = append(out.Comments, oc)
 	}
-	return out, nil
+	return out
+}
+
+func claimCollabConversation(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
+	a, err := decode[struct {
+		AccountID string `json:"account_id"`
+		Minutes   int    `json:"minutes"`
+	}](raw)
+	if err != nil {
+		return nil, err
+	}
+	body := map[string]any{}
+	if a.AccountID != "" {
+		id, err := idRef(a.AccountID, "account_id")
+		if err != nil {
+			return nil, err
+		}
+		body["account_id"] = id
+	}
+	if a.Minutes != 0 {
+		if a.Minutes < 1 || a.Minutes > 15 {
+			return nil, invalid("minutes must be 1 to 15")
+		}
+		body["ttl_seconds"] = a.Minutes * 60
+	}
+	var r struct {
+		Claim *struct {
+			ConversationID string    `json:"conversation_id"`
+			ExpiresAt      time.Time `json:"expires_at"`
+		} `json:"claim"`
+		Conversation *apiMailDetail `json:"conversation"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/v1/collab/ai-queue/claim", nil, body, &r); err != nil {
+		return nil, err
+	}
+	if r.Claim == nil || r.Conversation == nil {
+		return struct {
+			Claimed bool   `json:"claimed"`
+			Note    string `json:"note"`
+		}{false, "nothing is waiting for a draft; ask again later"}, nil
+	}
+	return struct {
+		Claimed      bool            `json:"claimed"`
+		ExpiresAt    time.Time       `json:"expires_at"`
+		Note         string          `json:"note"`
+		Conversation conversationOut `json:"conversation"`
+	}{true, r.Claim.ExpiresAt, collabClaimNote, renderConversation(r.Conversation)}, nil
+}
+
+const collabClaimNote = "yours until expires_at: draft_collab_reply ends the claim; or release_collab_conversation, with skip when you should not draft it"
+
+func releaseCollabConversation(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
+	a, err := decode[struct {
+		Conversation string `json:"conversation"`
+		Skip         bool   `json:"skip"`
+		Reason       string `json:"reason"`
+	}](raw)
+	if err != nil {
+		return nil, err
+	}
+	id, err := idRef(a.Conversation, "conversation")
+	if err != nil {
+		return nil, err
+	}
+	body := map[string]any{"skip": a.Skip, "reason": strings.TrimSpace(a.Reason)}
+	if err := c.do(ctx, http.MethodPost, "/v1/collab/ai-queue/claims/"+id+"/release", nil, body, nil); err != nil {
+		return nil, err
+	}
+	return struct {
+		Released bool `json:"released"`
+		Skipped  bool `json:"skipped"`
+	}{true, a.Skip}, nil
 }
 
 type collabDraftResult struct {

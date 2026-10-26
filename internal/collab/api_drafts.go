@@ -451,6 +451,12 @@ func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref
 		if id, err = p.insert(ctx, tx, in); err != nil {
 			return err
 		}
+		if id != uuid.Nil {
+			// A draft is the report back on an AI queue claim ("AI queue").
+			if err := endClaims(ctx, tx, id); err != nil {
+				return err
+			}
+		}
 		if ai != nil && id != uuid.Nil {
 			// The content is the client's; the entry names the conversation, never the words.
 			// The actor is ai, through the key, on behalf of the member who created it.
