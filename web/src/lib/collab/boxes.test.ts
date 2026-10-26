@@ -42,7 +42,7 @@ describe("list query", () => {
 });
 
 describe("actions", () => {
-  const t = { id: "t", account_id: "a1", subject: "", snippet: "", participants: [], last_message_at: "", message_count: 1, unread: true, starred: false, has_attachments: false, folder_ids: ["i"], shared: false, assignees: [], comment_count: 0 };
+  const t = { id: "t", account_id: "a1", subject: "", snippet: "", participants: [], last_message_at: "", message_count: 1, unread: true, starred: false, has_attachments: false, needs_action: false, folder_ids: ["i"], shared: false, assignees: [], comment_count: 0 };
   it("applies state changes", () => {
     expect(applyAction(t, "read").unread).toBe(false);
     expect(applyAction(t, "star").starred).toBe(true);

@@ -31,7 +31,7 @@ function data(p: Partial<WorkspaceData> = {}): WorkspaceData {
     myTeams: new Set(["t1"]),
     views: [{ id: "v1", name: "Hot", shared: true, filters: {}, position: 0 } as View],
     accounts: [{ id: "a1", name: "Work", email: "[EMAIL]", color: "blue", unread: 2 } as MailAccount],
-    mailCounts: { boxes: { inbox: 6, unread: 6, shared: 1, assigned: 0, drafts: 0 }, assigned: {}, accounts: { a1: 5 }, folders: {} },
+    mailCounts: { boxes: { inbox: 6, unread: 6, shared: 1, assigned: 0, drafts: 0, needs_action: 0 }, assigned: {}, accounts: { a1: 5 }, folders: {} },
     folders: {},
     ...p,
   };

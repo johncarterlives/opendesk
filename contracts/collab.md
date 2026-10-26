@@ -188,13 +188,16 @@ searching, the mail page says how far back the accounts in view go ("Searching m
 Messages group into conversations (`MailThread`): Gmail threads, Microsoft `conversationId`, and
 for IMAP the first message its `References` / `In-Reply-To` name that the account already has, else
 a new conversation. A conversation's state is its messages': unread when any is unread, starred when
-any is starred, in a folder when any message is.
+any is starred, in a folder when any message is. A shared account can also track `needs_action`
+locally. New incoming mail in its inbox sets it, a reply clears it, and drafts do not change it. It
+never changes the provider's message state.
 
 ### Actions
 
 `POST /v1/collab/threads/actions` applies to whole conversations, at once in opendesk (published
-right away) and at the provider by the job `collab.apply` (`jobs.CollabApplyArgs`), retried with
-backoff. If the provider refuses for good, the next sync brings back the provider's state.
+right away) and, except for the local handling actions, at the provider by the job `collab.apply`
+(`jobs.CollabApplyArgs`), retried with backoff. If the provider refuses for good, the next sync
+brings back the provider's state.
 
 | action | Gmail | Microsoft | IMAP |
 | --- | --- | --- | --- |
@@ -206,6 +209,7 @@ backoff. If the provider refuses for good, the next sync brings back the provide
 | `spam` / `not_spam` | add `SPAM` / remove `SPAM` and add `INBOX` | move to Junk Email / Inbox | move to Junk (`\Junk`) / INBOX |
 | `move` (`folder_id`) | add the label, remove `INBOX` when the target is a label | move | move |
 | `label` / `unlabel` (`folder_id`, a label) | add / remove the label | add / remove the category (the message's `categories` PATCHed) | `422 labels_unsupported` |
+| `done` / `needs_action` | local handling state | local handling state | local handling state |
 
 A `move` to an Outlook category is `422 validation_error` (a category is a label: add it with
 `label`). Moving a Microsoft or IMAP conversation keeps its categories.
@@ -339,6 +343,7 @@ interface MailAccount {
   color: string                // a tone key: gray, red, orange, amber, green, teal, blue, indigo, violet, pink
   owner: UserRef | null        // who connected it; null after they left (shared accounts only)
   visibility: "private" | "shared"
+  handling_enabled: boolean   // shared accounts only; tracks work separately from read state
   shared_with: Audience        // empty when private
   signature_html: string       // sanitized; added to new mail and replies by the composer
   status: "syncing" | "active" | "error" | "paused"   // paused: Collab is off for the workspace
@@ -437,6 +442,7 @@ interface MailThread {
   unread: boolean
   starred: boolean
   has_attachments: boolean
+  needs_action: boolean       // local handling state for a shared account
   folder_ids: string[]
   shared: boolean              // shared on its own beyond its account's audience
   assignees: UserRef[]
@@ -619,7 +625,7 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | POST | `/v1/collab/accounts/oauth/{provider}/start` | agent+ | `{visibility, shared_with? (at most 40 teams and people: it travels in the signed state; add more afterwards), name?, email? (login hint), account_id? (reconnect, manage)}` → `{url}`; sets the flow cookie (send with credentials). `422 provider_not_configured` |
 | GET | `/v1/collab/accounts/oauth/{provider}/callback` | provider | redirects to `APP_URL/settings/mail-accounts?connected=<id>` or `?error=<code>`: `oauth_state`, `access_denied`, `provider_error`, `account_conflict` (the address is already connected in this workspace by someone else), `collab_required`, `forbidden`, `internal` |
 | POST | `/v1/collab/accounts/imap` | agent+ | `{email, name?, display_name?, imap_host, imap_port, imap_tls, imap_username?, password, smtp_host, smtp_port, smtp_tls, smtp_username?, smtp_password?, visibility, shared_with?}` → `MailAccount`. Both servers are tried first: `422 connection_failed` with `detail`. `409 account_conflict`. `422 imap_unavailable` with `COLLAB_IMAP` off |
-| PATCH | `/v1/collab/accounts/{id}` | manage | `{name?, display_name?, color?, signature_html?, visibility?, shared_with?, imap? {…same fields, password?, smtp_password?}, default_from?}` → `MailAccount`; `default_from` must be one of its addresses that can send (`422 validation_failed`) and is kept in opendesk (Gmail's own change of its default still comes in, "Addresses"); new IMAP settings are tried first. A changed `signature_html` or `display_name` that syncs `two_way` is made at Gmail first (sanitized): a refusal is `502 provider_error` and nothing of the change is saved. `read_only` and `none` save in opendesk only. A changed `display_name` stops a Microsoft account following its profile name. A `display_name` or `signature_html` with variables ("Who sends") is checked (`422 validation_failed`) and saved in opendesk only, never at Gmail |
+| PATCH | `/v1/collab/accounts/{id}` | manage | `{name?, display_name?, color?, signature_html?, visibility?, handling_enabled?, shared_with?, imap? {…same fields, password?, smtp_password?}, default_from?}` → `MailAccount`; `handling_enabled` is available on shared accounts only and clears when an account becomes private. `default_from` must be one of its addresses that can send (`422 validation_failed`) and is kept in opendesk (Gmail's own change of its default still comes in, "Addresses"); new IMAP settings are tried first. A changed `signature_html` or `display_name` that syncs `two_way` is made at Gmail first (sanitized): a refusal is `502 provider_error` and nothing of the change is saved. `read_only` and `none` save in opendesk only. A changed `display_name` stops a Microsoft account following its profile name. A `display_name` or `signature_html` with variables ("Who sends") is checked (`422 validation_failed`) and saved in opendesk only, never at Gmail |
 | POST | `/v1/collab/accounts/{id}/identities` | manage | Add an address ("Addresses"): `{email, display_name?, signature_html?, reply_to?}` → `MailAccount`. Microsoft and IMAP only (`422 identities_from_provider` for Gmail); `409 identity_conflict` for the account's own or an existing address; at most 50 |
 | PATCH | `/v1/collab/accounts/{id}/identities/{identity_id}` | manage | `{display_name?, signature_html?, reply_to? (hand-added only)}` → `MailAccount`. Saved in opendesk; a Gmail address's From name and signature are replaced by Gmail's when they next change there (`pull`) |
 | POST | `/v1/collab/accounts/{id}/identities/preview` | manage | `{email?, display_name, signature_html?}` → `{from_name, from, signature_html, from_name_problem, problems: TemplateProblem[]}`: what is typed, filled for the caller and checked, nothing saved ("Who sends"). `email` is the address (default the account's own); an empty `display_name` uses the account's |
@@ -639,11 +645,11 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | POST | `/v1/collab/accounts/{id}/folders` | act | `{name: 1..100, parent_id?, kind?: "folder" \| "label", color?: tone}` → `MailFolder`, created at the provider first (`502 provider_error` with detail). Gmail makes labels either way; Microsoft makes a folder, or with `kind: "label"` an Outlook category (no `parent_id`); IMAP only folders (`422 labels_unsupported` for a label). `color` only for labels ("Labels and colours") |
 | PATCH | `/v1/collab/folders/{id}` | act | `{name?, color?: tone}`, at least one → `MailFolder`; at the provider first, then stored. `422` for a special folder; `color` only on a Gmail label or an Outlook category (`422 validation_error` otherwise); an Outlook category cannot be renamed (`422 rename_unsupported`) |
 | DELETE | `/v1/collab/folders/{id}` | act | → 204; its conversations stay in their other folders; `422` for a special folder |
-| GET | `/v1/collab/threads` | member | `?box=&account_id=&folder_id=&q=&to=&with=&limit=(1..100, 50)&cursor=` → `Page<MailThread>`, newest first. `to`: only conversations with that address on a message (From, To, Cc or where it was delivered), case-insensitive: one alias's mail. `box`: `inbox` (default), `unread`, `starred`, `sent`, `drafts`, `archive`, `trash`, `spam`, `all`, `shared`, `assigned`. Without `account_id` it spans every account the caller sees (for `shared` and `assigned`, every conversation they see). `folder_id` replaces `box`. `unread` and `all` leave out trash and spam, `starred` leaves out trash, and `shared` (conversations with shares of their own) and `assigned` leave out both. `archive` is the Archive folder, and for Gmail, which archives by removing `INBOX`, what is in none of inbox, trash, spam and drafts. `q` matches each message's subject, sender and text and the conversation's subject and participants ("Search"). `with`: only conversations with that person on a message, like `to`; without `account_id` it spans every conversation the caller sees, those shared with them on their own included ("People") |
-| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, addresses: Record<id, Record<address, number>>}`: unread conversations; `shared` and `assigned` count those still in an inbox, `drafts` every draft conversation; `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0) |
+| GET | `/v1/collab/threads` | member | `?box=&account_id=&folder_id=&q=&to=&with=&limit=(1..100, 50)&cursor=` → `Page<MailThread>`, newest first. `to`: only conversations with that address on a message (From, To, Cc or where it was delivered), case-insensitive: one alias's mail. `box`: `inbox` (default), `unread`, `starred`, `sent`, `drafts`, `archive`, `trash`, `spam`, `all`, `shared`, `assigned`, `needs_action`. Without `account_id` it spans every account the caller sees (for `shared`, `assigned`, and `needs_action`, every conversation they see). `folder_id` replaces `box`. `unread` and `all` leave out trash and spam, `starred` leaves out trash, and `shared`, `assigned`, and `needs_action` count conversations still in an inbox. `archive` is the Archive folder, and for Gmail, which archives by removing `INBOX`, what is in none of inbox, trash, spam and drafts. `q` matches each message's subject, sender and text and the conversation's subject and participants ("Search"). `with`: only conversations with that person on a message, like `to`; without `account_id` it spans every conversation the caller sees, those shared with them on their own included ("People") |
+| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts, needs_action}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, addresses: Record<id, Record<address, number>>}`: unread conversations; `shared`, `assigned`, and `needs_action` count those still in an inbox, `drafts` every draft conversation; `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0) |
 | GET | `/v1/collab/threads/{id}` | see | `MailThreadDetail` |
 | GET | `/v1/collab/person` | member | `?email=&exclude=&limit=` → `MailPerson` ("People"); `422 validation_failed` for an address that is not one |
-| POST | `/v1/collab/threads/actions` | act | `{thread_ids: string[1..100], action, folder_id?}` → `{threads: MailThread[]}`. Threads the caller cannot act on are `404` (all or nothing) |
+| POST | `/v1/collab/threads/actions` | act | `{thread_ids: string[1..100], action, folder_id?}` → `{threads: MailThread[]}`. `done` and `needs_action` are available only for a shared account with handling enabled and do not create a provider job. Threads the caller cannot act on are `404` (all or nothing) |
 | PUT | `/v1/collab/threads/{id}/shares` | act | `{shares: Audience}` → `MailThreadDetail`. Empty unshares. Audit `collab.thread_shared` (ids only) |
 | PUT | `/v1/collab/threads/{id}/assignees` | act | `{user_ids: string[0..20]}` → `MailThreadDetail`; each must be a member (agent+); assigning lets them see it. Each new assignee gets a `collab_assigned` notification |
 | POST | `/v1/collab/threads/{id}/comments` | act | `{body_html: 1..20000, mentions?: string[]}` → `MailComment`; each mentioned member who can see it gets a `collab_mention` notification; a mention of someone who cannot see it shares the conversation with them |

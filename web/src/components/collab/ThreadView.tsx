@@ -11,6 +11,7 @@ import {
   AtSign,
   ChevronDown,
   ChevronUp,
+  Check,
   Folder,
   Forward,
   Inbox,
@@ -526,6 +527,11 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
             <HeaderButton label={th.unread ? t("action.read") : t("action.unread")} shortcut={th.unread ? "shift i" : "shift u"} onClick={() => onAction(th.unread ? "read" : "unread", { silent: true })}>
               {th.unread ? <MailOpen /> : <Mail />}
             </HeaderButton>
+            {account?.handling_enabled && (
+              <HeaderButton label={th.needs_action ? t("action.done") : t("action.needsAction")} pressed={!th.needs_action} onClick={() => onAction(th.needs_action ? "done" : "needs_action", { silent: true })}>
+                <Check />
+              </HeaderButton>
+            )}
           </>
         )}
         <div className="ml-auto flex items-center gap-0.5">

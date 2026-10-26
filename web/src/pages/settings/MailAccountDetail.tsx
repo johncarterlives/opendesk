@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { EmptyState } from "@/components/ui/empty";
 import { TextInput } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { SignatureEditor } from "@/components/templates/SignatureEditor";
 import { ACCOUNT_TONES, ProviderMark } from "@/components/collab/bits";
@@ -35,7 +36,7 @@ import { useSession } from "@/lib/session";
 import type { Tone } from "@/lib/tones";
 import { AccountStatus, useReconnect } from "./MailAccounts";
 
-type Form = { name: string; display_name: string; color: string; signature_html: string; visibility: "private" | "shared"; shared_with: MailAudience };
+type Form = { name: string; display_name: string; color: string; signature_html: string; visibility: "private" | "shared"; handling_enabled: boolean; shared_with: MailAudience };
 
 const formOf = (a: MailAccount): Form => ({
   name: a.name,
@@ -43,6 +44,7 @@ const formOf = (a: MailAccount): Form => ({
   color: a.color,
   signature_html: a.signature_html,
   visibility: a.visibility,
+  handling_enabled: a.handling_enabled,
   shared_with: a.shared_with ?? { everyone: false, team_ids: [], user_ids: [] },
 });
 
@@ -113,6 +115,7 @@ export default function MailAccountDetail() {
     if (form.color !== base.color) p.color = form.color;
     if (sigEdited && form.signature_html !== base.signature_html) p.signature_html = form.signature_html;
     if (form.visibility !== base.visibility) p.visibility = form.visibility;
+    if (form.handling_enabled !== base.handling_enabled) p.handling_enabled = form.handling_enabled;
     const aud = form.visibility === "shared" ? (form.shared_with.everyone ? { everyone: true, team_ids: [], user_ids: [] } : form.shared_with) : { everyone: false, team_ids: [], user_ids: [] };
     if (form.visibility === "shared" && (p.visibility || !sameAudience(aud, base.shared_with))) p.shared_with = aud;
     if (account.provider === "imap" && imap && imapBase) {
@@ -324,6 +327,14 @@ export default function MailAccountDetail() {
           {!audienceOk && <p className="text-[11.5px] text-danger-fg">{t("audience.needSomeone")}</p>}
         </div>
       </Section>
+
+      {form.visibility === "shared" && (
+        <Section title={t("detail.handling.title")} description={t("detail.handling.hint")}>
+          <Row label={t("detail.handling.enabled")} description={t("detail.handling.enabledHint")} htmlFor="handling-enabled">
+            <Switch id="handling-enabled" checked={form.handling_enabled} disabled={!manage} onCheckedChange={(handling_enabled) => set({ handling_enabled })} />
+          </Row>
+        </Section>
+      )}
 
       {account.provider === "imap" && manage && imap && (
         <Section title={t("detail.server")} description={t("detail.serverHint")}>

@@ -471,6 +471,23 @@ func (p *pass) insert(ctx context.Context, tx pgx.Tx, in *newMessage) (uuid.UUID
 	if err := setMessageFolders(ctx, tx, id, nonNil(in.State.FolderIDs)); err != nil {
 		return uuid.Nil, err
 	}
+	if p.a.Visibility == VisibilityShared && p.a.HandlingEnabled && !in.State.Draft {
+		needsAction, updateHandling := false, false
+		if in.SentBy != nil {
+			updateHandling = true
+		} else if sent := p.roleFolder(RoleSent); sent != nil && slices.Contains(in.State.FolderIDs, sent.ID) {
+			updateHandling = true
+		} else if inbox := p.roleFolder(RoleInbox); inbox != nil && slices.Contains(in.State.FolderIDs, inbox.ID) {
+			needsAction, updateHandling = true, true
+		}
+		if updateHandling {
+			if _, err := tx.Exec(ctx, `UPDATE collab_threads SET needs_action = $2, updated_at = now()
+				WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM collab_messages WHERE thread_id = $1 AND (sent_at, id) > ($3, $4))`,
+				threadID, needsAction, sentAt, id); err != nil {
+				return uuid.Nil, err
+			}
+		}
+	}
 	if !in.State.Draft {
 		// An answer to a ticket reply sent from the account goes to the ticket too ("Answering tickets").
 		if err := p.answeredTicket(ctx, tx, id, threadID, from.Email, append(append([]string{}, refs...), inReplyTo)); err != nil {

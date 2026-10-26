@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/email"
@@ -534,6 +535,84 @@ func TestAPIActions(t *testing.T) {
 	}
 	if n := w.count(`SELECT count(*) FROM events WHERE workspace_id = $1 AND type = 'collab.changed' AND $2 = ANY(user_ids)`, w.wid, w.agent.UserID); n < 1 {
 		t.Fatal("no collab.changed")
+	}
+}
+
+func TestAPIHandlingState(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	tid, _ := w.seedThread(a, "Needs a reply", w.folder(a, RoleInbox))
+	srv := w.api(w.agent)
+
+	var account MailAccount
+	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"handling_enabled": true}, &account); st != 200 || !account.HandlingEnabled {
+		t.Fatalf("enable handling: %d %+v", st, account)
+	}
+	var out struct {
+		Threads []MailThread `json:"threads"`
+	}
+	if st := doJSON(t, "POST", srv.URL+"/v1/collab/threads/actions", map[string]any{"thread_ids": []uuid.UUID{tid}, "action": "needs_action"}, &out); st != 200 || len(out.Threads) != 1 || !out.Threads[0].NeedsAction {
+		t.Fatalf("mark needs action: %d %+v", st, out)
+	}
+	var counts CollabCounts
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/counts", nil, &counts); st != 200 || counts.Boxes.NeedsAction != 1 {
+		t.Fatalf("needs action count: %d %+v", st, counts)
+	}
+	var page httpx.Page[MailThread]
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/threads?box=needs_action", nil, &page); st != 200 || len(page.Data) != 1 || page.Data[0].ID != tid {
+		t.Fatalf("needs action list: %d %+v", st, page)
+	}
+	if st := doJSON(t, "POST", srv.URL+"/v1/collab/threads/actions", map[string]any{"thread_ids": []uuid.UUID{tid}, "action": "done"}, &out); st != 200 || out.Threads[0].NeedsAction {
+		t.Fatalf("mark done: %d %+v", st, out)
+	}
+}
+
+func TestHandlingStateFollowsNewMail(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	mustExec(t, w.d, `UPDATE collab_accounts SET handling_enabled = true WHERE id = $1`, a.ID)
+	a, _ = loadAccount(w.ctx, w.d.DB.Pool, w.wid, a.ID)
+	inbox, drafts, sent := w.folder(a, RoleInbox), w.folder(a, RoleDrafts), w.folder(a, RoleSent)
+	at := time.Date(2026, 10, 25, 9, 0, 0, 0, time.UTC)
+	p, err := w.s.newPass(w.ctx, w.d.DB.Pool, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.batch(w.ctx, func(tx pgx.Tx) error {
+		_, err := p.insert(w.ctx, tx, &newMessage{RemoteID: "in", ThreadRemoteID: "thread", Raw: testMail{from: "frank@example.com", to: a.Email, subject: "Question", msgID: "in@example.com", body: "Please help", date: at}.raw(), State: state{Unread: true, FolderIDs: []uuid.UUID{inbox.ID}}})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var needsAction bool
+	if err := w.d.DB.Pool.QueryRow(w.ctx, `SELECT needs_action FROM collab_threads WHERE account_id = $1`, a.ID).Scan(&needsAction); err != nil || !needsAction {
+		t.Fatalf("inbound handling state: %v %t", err, needsAction)
+	}
+	p, err = w.s.newPass(w.ctx, w.d.DB.Pool, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.batch(w.ctx, func(tx pgx.Tx) error {
+		_, err := p.insert(w.ctx, tx, &newMessage{RemoteID: "draft", ThreadRemoteID: "thread", Raw: testMail{from: a.Email, to: "frank@example.com", subject: "Re: Question", msgID: "draft@example.com", body: "Working on it", date: at.Add(time.Minute)}.raw(), State: state{Draft: true, FolderIDs: []uuid.UUID{drafts.ID}}})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.d.DB.Pool.QueryRow(w.ctx, `SELECT needs_action FROM collab_threads WHERE account_id = $1`, a.ID).Scan(&needsAction); err != nil || !needsAction {
+		t.Fatalf("draft handling state: %v %t", err, needsAction)
+	}
+	p, err = w.s.newPass(w.ctx, w.d.DB.Pool, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.batch(w.ctx, func(tx pgx.Tx) error {
+		_, err := p.insert(w.ctx, tx, &newMessage{RemoteID: "out", ThreadRemoteID: "thread", Raw: testMail{from: a.Email, to: "frank@example.com", subject: "Re: Question", msgID: "out@example.com", body: "On it", date: at.Add(2 * time.Minute)}.raw(), State: state{FolderIDs: []uuid.UUID{sent.ID}}})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.d.DB.Pool.QueryRow(w.ctx, `SELECT needs_action FROM collab_threads WHERE account_id = $1`, a.ID).Scan(&needsAction); err != nil || needsAction {
+		t.Fatalf("outbound handling state: %v %t", err, needsAction)
 	}
 }
 
