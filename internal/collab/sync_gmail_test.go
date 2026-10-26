@@ -80,6 +80,17 @@ type fakeGmail struct {
 	settings fakeGmailSettings
 	// drafts are the drafts API and label colours (drafts_test.go).
 	drafts fakeGmailDrafts
+	// beforeDraftUpload, when set, runs as a draft upload arrives, before the fake takes
+	// its lock: a test pauses a save there (ai_drafts_test.go).
+	beforeDraftUpload func()
+	hookMu            sync.Mutex // guards beforeDraftUpload
+}
+
+// onDraftUpload sets (or, with nil, clears) beforeDraftUpload.
+func (g *fakeGmail) onDraftUpload(f func()) {
+	g.hookMu.Lock()
+	defer g.hookMu.Unlock()
+	g.beforeDraftUpload = f
 }
 
 type gmailFakeMsg struct {
@@ -123,6 +134,12 @@ func (g *fakeGmail) record(kind string, id string) {
 }
 
 func (g *fakeGmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	g.hookMu.Lock()
+	hook := g.beforeDraftUpload
+	g.hookMu.Unlock()
+	if hook != nil && strings.Contains(r.URL.Path, "/upload/gmail/v1/users/me/drafts") {
+		hook()
+	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if r.Header.Get("Authorization") == "" {

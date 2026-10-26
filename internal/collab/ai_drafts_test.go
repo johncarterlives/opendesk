@@ -1,7 +1,9 @@
 package collab
 
 import (
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -159,6 +161,129 @@ func TestAIClientDrafts(t *testing.T) {
 	if st := doJSON(t, "POST", human.URL+"/v1/collab/drafts/"+d.ID.String()+"/send", nil, &sent); st != 200 ||
 		sent.SentBy == nil || sent.SentBy.ID != w.agent.UserID || sent.DraftedByAI != nil {
 		t.Fatalf("person sends: %d %+v", st, sent)
+	}
+}
+
+// A person and an AI key saving one draft at the same moment: the changes run one at a
+// time, and the key's save is checked against the version it would replace, so it never
+// overwrites a person's save that reached the provider first (PR #180 review).
+func TestAIClientDraftTakeoverRace(t *testing.T) {
+	w := newWorld(t)
+	g := newFakeGmail(t)
+	w.useGmail(g)
+	a := w.account(w.agent, ProviderGoogle, VisibilityPrivate, Audience{})
+	g.add("m1", "t1", []string{"INBOX", "UNREAD"}, testMail{from: "frank@example.com", to: a.Email, subject: "Quote?", msgID: "h1@example.com", body: "Price?"})
+	if err := w.s.syncAccount(w.ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	m1 := w.messageByRemote(a, "m1")
+	bot := w.key(w.agent, "Local drafter", auth.ScopeCollabDraft)
+	ai, human := w.api(bot), w.api(w.agent)
+	newAIDraft := func() MailMessage {
+		var d MailMessage
+		if st := doJSON(t, "POST", ai.URL+"/v1/collab/drafts", map[string]any{"account_id": a.ID, "mode": "reply", "message_id": m1.ID,
+			"to": []string{"frank@example.com"}, "subject": "", "body_html": "<p>AI first</p>"}, &d); st != 200 || d.DraftedByAI == nil {
+			t.Fatalf("AI draft: %d %+v", st, d)
+		}
+		return d
+	}
+	save := func(srv string, id uuid.UUID, body string) (int, MailMessage) {
+		var out MailMessage
+		st := doJSON(t, "PUT", srv+"/v1/collab/drafts/"+id.String(), map[string]any{"to": []string{"frank@example.com"},
+			"subject": "Re: Quote?", "body_html": body}, &out)
+		return st, out
+	}
+	// pauseNextUpload holds the next draft upload at the provider until release is called.
+	pauseNextUpload := func() (entered chan struct{}, release func()) {
+		entered, gate := make(chan struct{}), make(chan struct{})
+		var once sync.Once
+		g.onDraftUpload(func() {
+			first := false
+			once.Do(func() { first = true })
+			if first {
+				close(entered)
+				<-gate
+			}
+		})
+		return entered, func() { close(gate) }
+	}
+	// waitForLockWaiter returns once a request waits on a draft's lock.
+	waitForLockWaiter := func() {
+		deadline := time.Now().Add(10 * time.Second)
+		for w.count(`SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`) == 0 {
+			if time.Now().After(deadline) {
+				t.Fatal("no request waited on the draft's lock")
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	type result struct {
+		st  int
+		out MailMessage
+	}
+
+	// The person's save is at the provider when the key saves: the key waits, then is
+	// refused, and the person's version stays theirs.
+	d := newAIDraft()
+	entered, release := pauseNextUpload()
+	humanDone := make(chan result, 1)
+	go func() {
+		st, out := save(human.URL, d.ID, "<p>Checked by a person</p>")
+		humanDone <- result{st, out}
+	}()
+	<-entered
+	aiDone := make(chan result, 1)
+	go func() {
+		st, out := save(ai.URL, d.ID, "<p>Stale AI save</p>")
+		aiDone <- result{st, out}
+	}()
+	waitForLockWaiter()
+	g.mu.Lock()
+	uploads := len(g.drafts.saves)
+	g.mu.Unlock()
+	release()
+	if h := <-humanDone; h.st != 200 || h.out.DraftedByAI != nil {
+		t.Fatalf("person's save: %d %+v", h.st, h.out)
+	}
+	if r := <-aiDone; r.st != 403 {
+		t.Fatalf("stale AI save after a person's: %d", r.st)
+	}
+	g.mu.Lock()
+	extra := len(g.drafts.saves) - uploads
+	g.mu.Unlock()
+	if extra != 1 {
+		t.Fatalf("%d uploads after the pause; the refused AI save reached the provider", extra)
+	}
+	if n := w.count(`SELECT count(*) FROM collab_messages WHERE id = $1 AND draft AND ai_api_key_id IS NULL
+		AND body_html LIKE '%Checked by a person%'`, d.ID); n != 1 {
+		t.Fatal("the person's version was overwritten")
+	}
+
+	// The key's save is at the provider when the person saves: the person waits and then
+	// takes the draft over, with their words.
+	g.onDraftUpload(nil)
+	d2 := newAIDraft()
+	entered, release = pauseNextUpload()
+	go func() {
+		st, out := save(ai.URL, d2.ID, "<p>AI second</p>")
+		aiDone <- result{st, out}
+	}()
+	<-entered
+	go func() {
+		st, out := save(human.URL, d2.ID, "<p>Person last</p>")
+		humanDone <- result{st, out}
+	}()
+	waitForLockWaiter()
+	release()
+	if r := <-aiDone; r.st != 200 {
+		t.Fatalf("AI save before the person's: %d", r.st)
+	}
+	if h := <-humanDone; h.st != 200 || h.out.DraftedByAI != nil {
+		t.Fatalf("person's later save: %d %+v", h.st, h.out)
+	}
+	if n := w.count(`SELECT count(*) FROM collab_messages WHERE id = $1 AND draft AND ai_api_key_id IS NULL
+		AND body_html LIKE '%Person last%'`, d2.ID); n != 1 {
+		t.Fatal("the person's later save did not take the draft over")
 	}
 }
 

@@ -2,6 +2,7 @@ package collab
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/useopendesk/opendesk/internal/audit"
 	"github.com/useopendesk/opendesk/internal/auth"
@@ -127,12 +129,14 @@ func (s *service) registerDraftRoutes(api huma.API) {
 			if !s.d.Limiter.Allow("collab-draft:"+p.UserID.String(), draftsPerMinute, time.Minute) {
 				return nil, httpx.RateLimited()
 			}
-			m, a, t, err := s.loadDraft(ctx, p, in.ID)
+			m, a, t, unlock, err := s.lockDraft(ctx, p, in.ID)
 			if err != nil {
 				return nil, err
 			}
+			defer unlock()
 			if viaAIClient(p) {
-				// A key saves again only a draft it wrote and nobody has saved since.
+				// A key saves again only a draft it wrote and nobody has saved since: checked
+				// under the draft's lock, so a person's save cannot land in between.
 				if m.AIAPIKeyID == nil || *m.AIAPIKeyID != p.APIKeyID {
 					return nil, errAIDraftNotOwn
 				}
@@ -158,10 +162,11 @@ func (s *service) registerDraftRoutes(api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			m, a, t, err := s.loadDraft(ctx, p, in.ID)
+			m, a, t, unlock, err := s.lockDraft(ctx, p, in.ID)
 			if err != nil {
 				return nil, err
 			}
+			defer unlock()
 			prov, dp, err := s.drafter(ctx, a)
 			if err != nil {
 				return nil, err
@@ -195,10 +200,11 @@ func (s *service) registerDraftRoutes(api huma.API) {
 			if !s.d.Limiter.Allow("collab-send:"+p.UserID.String(), sendPerMinute, time.Minute) {
 				return nil, httpx.RateLimited()
 			}
-			m, a, t, err := s.loadDraft(ctx, p, in.ID)
+			m, a, t, unlock, err := s.lockDraft(ctx, p, in.ID)
 			if err != nil {
 				return nil, err
 			}
+			defer unlock()
 			var raw []byte
 			var recipients []string
 			from := a.Email
@@ -328,6 +334,49 @@ func (s *service) loadDraft(ctx context.Context, p *auth.Principal, rawID string
 		return nil, nil, nil, notFound(err, "Draft")
 	}
 	return m, a, t, nil
+}
+
+// draftLockWait bounds how long a change to a draft waits for another one in progress
+// (a send saves and sends: two provider calls).
+const draftLockWait = 2*providerTimeout + 10*time.Second
+
+var errDraftBusy = httpx.E(409, "draft_busy", "This draft is being changed by someone else. Try again in a moment.")
+
+// lockDraft is loadDraft for a change: saves, sends and discards of one draft run one at
+// a time, on every server, from the check of who owns it to its stored result. The draft
+// is loaded under the lock, so a request checks the version it changes at the provider:
+// an AI client whose draft a person saved meanwhile is refused before the provider is
+// called ("AI drafts"). Call unlock when done, whatever happened.
+func (s *service) lockDraft(ctx context.Context, p *auth.Principal, rawID string) (*messageRow, *accountRow, *threadRow, func(), error) {
+	id, err := parseID(rawID, "Draft")
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+	tx, err := s.d.DB.Pool.Begin(ctx)
+	if err != nil {
+		return nil, nil, nil, nil, httpx.Wrap(err)
+	}
+	// The lock is the transaction's: rolling back (or a lost connection) releases it.
+	unlock := func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }
+	if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout', $1, true)`,
+		strconv.FormatInt(draftLockWait.Milliseconds(), 10)+"ms"); err != nil {
+		unlock()
+		return nil, nil, nil, nil, httpx.Wrap(err)
+	}
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('collab_draft:' || $1::text, 0))`, id); err != nil {
+		unlock()
+		var pg *pgconn.PgError
+		if errors.As(err, &pg) && pg.Code == "55P03" {
+			return nil, nil, nil, nil, errDraftBusy
+		}
+		return nil, nil, nil, nil, httpx.Wrap(err)
+	}
+	m, a, t, err := s.loadDraft(ctx, p, rawID)
+	if err != nil {
+		unlock()
+		return nil, nil, nil, nil, err
+	}
+	return m, a, t, unlock, nil
 }
 
 // drafter opens the account's provider as one that keeps drafts. Close the Provider.
