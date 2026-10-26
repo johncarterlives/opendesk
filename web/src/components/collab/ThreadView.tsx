@@ -121,7 +121,9 @@ function DraftRow({ m, onOpen }: { m: MailMessage; onOpen: () => void }) {
       onClick={onOpen}
       className="group flex w-full items-center gap-3 rounded-lg border border-dashed border-line-strong bg-surface px-3.5 py-2.5 text-left outline-none transition-colors hover:bg-sunken focus-visible:shadow-[0_0_0_2px_var(--focus)]"
     >
-      <span className="inline-flex h-[18px] shrink-0 items-center rounded-sm bg-tone-red-soft px-1.5 text-[10.5px] font-medium text-tone-red">{t("composer.draft")}</span>
+      <span className="inline-flex h-[18px] shrink-0 items-center rounded-sm bg-tone-red-soft px-1.5 text-[10.5px] font-medium text-tone-red">
+        {m.drafted_by_ai ? t("thread.aiDraftBy", { name: m.drafted_by_ai }) : t("composer.draft")}
+      </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[12.5px] text-fg-2" data-ph-mask>
           {to ? t("thread.draftTo", { who: to }) : t("thread.draftNoRecipients")}

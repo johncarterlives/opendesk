@@ -36,15 +36,15 @@ const (
 	ScopeSettingsRead  = "settings:read"
 	ScopeSettingsWrite = "settings:write"
 	ScopeRealtime      = "realtime"
-	// ScopeCollabDraft lets an AI client a member connected over OAuth read the Collab
-	// conversations that member sees and save drafts there, never send them or change
-	// any mail's state (contracts/collab.md "AI drafts"). API keys never hold it: Collab
-	// is a person's mail, and a key is nobody's.
+	// ScopeCollabDraft lets an API key read the Collab conversations of the member who
+	// created it and save reply drafts there, never send them or change any mail's state
+	// (contracts/collab.md "AI drafts"). The key acts as that member while they are an
+	// agent or above in the workspace, and sees exactly what they see.
 	ScopeCollabDraft = "collab:draft"
 )
 
 var AllScopes = []string{ScopeTicketsRead, ScopeTicketsWrite, ScopeContactsRead, ScopeContactsWrite,
-	ScopeKBRead, ScopeKBWrite, ScopeSettingsRead, ScopeSettingsWrite, ScopeRealtime}
+	ScopeKBRead, ScopeKBWrite, ScopeSettingsRead, ScopeSettingsWrite, ScopeRealtime, ScopeCollabDraft}
 
 type Kind string
 

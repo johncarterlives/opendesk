@@ -26,12 +26,12 @@ const draftsPerMinute = 120
 
 var errDraftsUnsupported = httpx.E(422, "drafts_unsupported", "This account cannot keep drafts.")
 
-// What an AI client may not do with drafts ("AI drafts").
+// What an AI credential may not do with drafts ("AI drafts").
 var (
-	errAIDraftMode   = httpx.E(403, "ai_draft_reply_only", "An AI client drafts replies to a conversation only (mode reply or reply_all).")
-	errAIDraftFiles  = httpx.E(403, "ai_draft_no_files", "An AI client cannot attach files to a draft.")
+	errAIDraftMode   = httpx.E(403, "ai_draft_reply_only", "An AI credential drafts replies to a conversation only (mode reply or reply_all).")
+	errAIDraftFiles  = httpx.E(403, "ai_draft_no_files", "An AI credential cannot attach files to a draft.")
 	errAIDraftNotOwn = httpx.E(403, "ai_draft_not_own",
-		"This draft was not written by this AI client, or a person has saved it since. Save a new draft instead.")
+		"This draft was not written by this API key, or a person has saved it since. Save a new draft instead.")
 )
 
 // draftContent is what a save of an existing draft carries.
@@ -132,8 +132,8 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				return nil, err
 			}
 			if viaAIClient(p) {
-				// A client saves again only a draft it wrote and nobody has saved since.
-				if m.AIGrantID == nil || *m.AIGrantID != p.GrantID {
+				// A key saves again only a draft it wrote and nobody has saved since.
+				if m.AIAPIKeyID == nil || *m.AIAPIKeyID != p.APIKeyID {
 					return nil, errAIDraftNotOwn
 				}
 				if len(in.Body.AttachmentIDs) > 0 {
@@ -388,15 +388,15 @@ func storedOf(m *messageRow) *storedMsg {
 		Draft: m.Draft, RawKey: m.RawKey, Location: m.Location, FolderIDs: m.FolderIDs}
 }
 
-// aiDrafterOf is the AI client a draft the caller saves is attributed to: the client of
-// their OAuth grant, by its name now; nil for a person.
+// aiDrafterOf is the AI credential a draft the caller saves is attributed to: their API
+// key, by its name now; nil for a person.
 func (s *service) aiDrafterOf(ctx context.Context, p *auth.Principal) (*aiDrafter, error) {
 	if !viaAIClient(p) {
 		return nil, nil
 	}
-	ai := &aiDrafter{GrantID: p.GrantID, P: p}
-	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT c.name FROM oauth_grants g JOIN oauth_clients c ON c.id = g.client_id
-		WHERE g.id = $1 AND g.workspace_id = $2`, p.GrantID, p.WorkspaceID).Scan(&ai.Client); err != nil {
+	ai := &aiDrafter{APIKeyID: p.APIKeyID, P: p}
+	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT name FROM api_keys WHERE id = $1 AND workspace_id = $2`,
+		p.APIKeyID, p.WorkspaceID).Scan(&ai.Client); err != nil {
 		return nil, err
 	}
 	return ai, nil
@@ -453,8 +453,10 @@ func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref
 		}
 		if ai != nil && id != uuid.Nil {
 			// The content is the client's; the entry names the conversation, never the words.
+			// The actor is ai, through the key, on behalf of the member who created it.
 			if err := audit.Log(ctx, tx, ai.P, a.WorkspaceID, "collab.ai_draft_saved", "collab_message", &id,
-				map[string]any{"client": ai.Client, "grant_id": ai.GrantID, "account_id": a.ID, "again": replace != nil}); err != nil {
+				map[string]any{"actor": "ai", "client": ai.Client, "api_key_id": ai.APIKeyID, "account_id": a.ID,
+					"again": replace != nil}); err != nil {
 				return err
 			}
 		}

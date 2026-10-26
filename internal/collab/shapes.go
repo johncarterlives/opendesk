@@ -365,7 +365,7 @@ func (s *service) messageOut(a *accountRow, m *messageRow, sentBy *domain.UserRe
 	if out.Outgoing {
 		out.Bcc = m.Bcc
 	}
-	if m.Draft && m.AIGrantID != nil {
+	if m.Draft && m.AIClient != nil {
 		out.DraftedByAI = m.AIClient
 	}
 	for _, at := range m.Attachments {

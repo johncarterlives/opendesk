@@ -347,7 +347,7 @@ func TestOAuthFullFlow(t *testing.T) {
 	// The server description lists every tool.
 	var srv AIClientServer
 	e.Do("GET", "/v1/ai-clients/server", e.WS.Viewer.As(e.WS), nil).Want(t, 200).JSON(t, &srv)
-	if srv.URL != "http://api.test/mcp" || len(srv.Tools) != len(catalog()) || len(srv.Scopes) != 8 {
+	if srv.URL != "http://api.test/mcp" || len(srv.Tools) != len(catalog()) || len(srv.Scopes) != 7 {
 		t.Fatalf("server: %+v", srv)
 	}
 }
@@ -629,23 +629,13 @@ func TestOAuthScopesFollowRoleAndGrant(t *testing.T) {
 	}
 }
 
-// collab:draft reaches a member's mail: a client gets it only by asking for it by name,
-// and only for an agent or above (contracts/collab.md "AI drafts").
-func TestOAuthCollabDraftOptIn(t *testing.T) {
+// collab:draft is an API key scope for now (contracts/collab.md "AI drafts"): an OAuth
+// client that asks for it is not granted it and gets no Collab tools.
+func TestOAuthNoCollabDraft(t *testing.T) {
 	e := newEnv(t)
-	collab := []string{"draft_collab_reply", "get_collab_conversation", "list_collab_conversations"}
-
-	_, dt := e.connectAs(e.WS.Agent, "")
-	if got := toolNames(t, e.session(dt.AccessToken)); slices.Contains(got, "list_collab_conversations") || strings.Contains(dt.Scope, "collab") {
-		t.Fatalf("default grant: %q %v", dt.Scope, got)
-	}
-	_, ct := e.connectAs(e.WS.Agent, "collab:draft")
-	if got := toolNames(t, e.session(ct.AccessToken)); !slices.Equal(got, collab) || ct.Scope != "collab:draft" {
-		t.Fatalf("collab:draft grant: %q %v", ct.Scope, got)
-	}
-	_, vt := e.connectAs(e.WS.Viewer, "collab:draft tickets:read")
-	if got := toolNames(t, e.session(vt.AccessToken)); slices.Contains(got, "draft_collab_reply") || vt.Scope != "tickets:read" {
-		t.Fatalf("viewer: %q %v", vt.Scope, got)
+	_, ct := e.connectAs(e.WS.Agent, "collab:draft tickets:read")
+	if got := toolNames(t, e.session(ct.AccessToken)); slices.Contains(got, "list_collab_conversations") || strings.Contains(ct.Scope, "collab") {
+		t.Fatalf("collab:draft over OAuth: %q %v", ct.Scope, got)
 	}
 }
 

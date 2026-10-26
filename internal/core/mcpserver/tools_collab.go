@@ -14,10 +14,10 @@ import (
 	"github.com/useopendesk/opendesk/internal/email"
 )
 
-// Collab tools (contracts/collab.md "AI drafts"): an AI client the member connected with
-// collab:draft reads the conversations that member sees and saves reply drafts for a
+// Collab tools (contracts/collab.md "AI drafts"): an API key with collab:draft reads the
+// conversations of the member who created it and saves reply drafts for a
 // person to review and send. Nothing here sends, marks read or unread, moves, assigns
-// or comments; the API refuses those routes to a grant whatever a tool asks.
+// or comments; the API refuses those routes to a key whatever a tool asks.
 
 const (
 	maxListConversations = 50
@@ -29,7 +29,7 @@ func collabTools() []*tool {
 	return []*tool{
 		{
 			Name: "list_collab_conversations", Title: "List mail conversations", Scopes: scopes, ReadOnly: true, Idempotent: true,
-			Description: "List the Collab email conversations the member who connected you sees, newest activity first: " + collabBoxes + ". " +
+			Description: "List the Collab email conversations the member who created your API key sees, newest activity first: " + collabBoxes + ". " +
 				"Reading changes nothing: a conversation stays unread for the team. Returns up to 50 (default 20) and next_cursor when there are more.",
 			Schema: obj(map[string]any{
 				"box":        enum("Which conversations (default inbox).", "inbox", "unread", "assigned", "shared", "starred", "all"),
@@ -43,7 +43,7 @@ func collabTools() []*tool {
 		{
 			Name: "get_collab_conversation", Title: "Read a mail conversation", Scopes: scopes, ReadOnly: true, Idempotent: true,
 			Description: "Read one Collab conversation: its account and send-from addresses, its messages as plain text in order (drafts marked, " +
-				"with drafted_by_ai on drafts an AI client saved) and the team's internal comments. Reading does not mark it read. " +
+				"with drafted_by_ai on drafts an AI key saved) and the team's internal comments. Reading does not mark it read. " +
 				"Long conversations keep the latest 50 messages.",
 			Schema: obj(map[string]any{"conversation": str("The conversation id.")}, "conversation"),
 			Run:    getCollabConversation,

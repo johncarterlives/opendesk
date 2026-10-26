@@ -258,14 +258,15 @@ func TestToolsFollowScopes(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []string{"search_tickets", "get_ticket", "reply_to_ticket", "draft_reply", "add_note", "update_ticket", "create_ticket",
-		"search_contacts", "get_contact", "search_knowledge", "create_kb_draft", "get_report"}
+		"search_contacts", "get_contact", "search_knowledge", "create_kb_draft", "get_report",
+		"list_collab_conversations", "get_collab_conversation", "draft_collab_reply"}
 	var names []string
 	for _, tl := range res.Tools {
 		names = append(names, tl.Name)
 		if tl.Description == "" || tl.InputSchema == nil || tl.Annotations == nil {
 			t.Fatalf("%s lacks a description, schema or annotations", tl.Name)
 		}
-		read := strings.HasPrefix(tl.Name, "search_") || strings.HasPrefix(tl.Name, "get_")
+		read := strings.HasPrefix(tl.Name, "search_") || strings.HasPrefix(tl.Name, "get_") || strings.HasPrefix(tl.Name, "list_")
 		if tl.Annotations.ReadOnlyHint != read {
 			t.Fatalf("%s readOnlyHint = %v", tl.Name, tl.Annotations.ReadOnlyHint)
 		}

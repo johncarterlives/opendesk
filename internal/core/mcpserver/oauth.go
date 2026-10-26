@@ -404,7 +404,7 @@ func (o *oauth) authorize(w http.ResponseWriter, r *http.Request) {
 	}
 	scopes := oauthgrant.Parse(strings.Fields(q.Get("scope")))
 	if len(scopes) == 0 {
-		scopes = slices.Clone(oauthgrant.Default)
+		scopes = slices.Clone(oauthgrant.Scopes)
 	}
 	id := ids.New()
 	if _, err := o.d.DB.Pool.Exec(r.Context(), `INSERT INTO oauth_authorizations (id, client_id, redirect_uri, redirect_given, scopes, resource, state, code_challenge, expires_at)

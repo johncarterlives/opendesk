@@ -232,6 +232,7 @@
     "draft": "Brouillon",
     "draftTo": "À {{who}}",
     "draftNoRecipients": "Aucun destinataire pour le moment",
+    "aiDraftBy": "Brouillon IA par {{name}}",
     "toAlias": "À {{email}}",
     "toAliasHint": "Écrit à cette adresse. Afficher ses messages",
     "onTicket": "Sur le ticket #{{number}}",

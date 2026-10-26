@@ -14,18 +14,13 @@ import (
 	"github.com/useopendesk/opendesk/internal/auth"
 )
 
-// Scopes an AI client may ask for: the API key scopes the MCP tools use, and
-// collab:draft. Settings writes and realtime are never granted over OAuth.
+// Scopes an AI client may ask for: the API key scopes the MCP tools use. Settings
+// writes and realtime are never granted over OAuth.
 var Scopes = []string{auth.ScopeTicketsRead, auth.ScopeTicketsWrite, auth.ScopeContactsRead, auth.ScopeContactsWrite,
-	auth.ScopeKBRead, auth.ScopeKBWrite, auth.ScopeSettingsRead, auth.ScopeCollabDraft}
-
-// Default is what a client that asks for no scope gets: every scope but collab:draft,
-// which reaches a member's mail and so is granted only when asked for by name.
-var Default = []string{auth.ScopeTicketsRead, auth.ScopeTicketsWrite, auth.ScopeContactsRead, auth.ScopeContactsWrite,
 	auth.ScopeKBRead, auth.ScopeKBWrite, auth.ScopeSettingsRead}
 
 // ForRole is the part of Scopes a member with role can use: viewers read, agents and
-// up also write tickets, contacts and articles and draft Collab replies.
+// up also write tickets, contacts and articles.
 func ForRole(r auth.Role) []string {
 	switch {
 	case r.AtLeast(auth.RoleAgent):

@@ -230,6 +230,7 @@
     "draft": "Draft",
     "draftTo": "To {{who}}",
     "draftNoRecipients": "No recipients yet",
+    "aiDraftBy": "AI draft by {{name}}",
     "toAlias": "To {{email}}",
     "toAliasHint": "Written to this address. Show its mail",
     "onTicket": "On ticket #{{number}}",
