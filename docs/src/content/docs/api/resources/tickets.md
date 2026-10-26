@@ -65,10 +65,16 @@ curl "https://api.opendesk.sh/v1/tickets?status=open,pending&assignee=none&sort=
 | `priority` | comma-separated priorities |
 | `severity` | comma-separated `sev1` to `sev4`, and `none` for tickets without one |
 | `assignee` | `me`, `none` or a user id |
-| `team_id`, `mailbox_id`, `contact_id`, `view_id` | ids |
-| `tag` | a label name |
+| `team_id` | comma-separated team ids, `mine` (your teams) and `none`: tickets of any of them |
+| `team_not` | the same values: tickets of none of them |
+| `mailbox_id`, `contact_id`, `view_id` | ids |
+| `mailbox_not` | comma-separated mailbox ids: tickets whose reply address is none of them |
+| `tag` | comma-separated label names: tickets carrying any of them |
+| `tag_not` | comma-separated label names: tickets carrying none of them |
+| `untagged` | `true` for tickets carrying no label |
 | `field.<key>`, `field.<key>[<op>]` | a [custom field filter](/api/resources/labels-fields/#filter-and-sort) |
 | `channel` | `email`, `chat`, `api`, `portal` |
+| `channel_not` | comma-separated channels: tickets on none of them |
 | `q` | text search |
 | `spam` | `true` or `false` |
 | `sort` | `last_message_at`, `created_at`, `priority`, `severity` (sev1 first, none last), `due`, `field.<key>` |

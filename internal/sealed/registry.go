@@ -19,6 +19,7 @@ var Columns = []Column{
 	{"widgets", "id", "secret_enc"},                          // widget identity secrets
 	{"mailboxes", "id", "credentials_enc"},                   // SMTP/IMAP passwords and OAuth tokens
 	{"webhooks", "id", "secret_enc"},                         // webhook signing secrets
+	{"webhooks", "id", "headers_enc"},                        // webhook request headers
 	{"invitations", "id", "token_enc"},                       // invitation link tokens
 	{"push_devices", "id", "token_sealed"},                   // APNs device or relay tokens
 	{"web_push_subscriptions", "id", "sealed"},               // Web Push endpoints and keys

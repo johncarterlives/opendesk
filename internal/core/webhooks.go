@@ -20,6 +20,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
+	"golang.org/x/net/http/httpguts"
 
 	"github.com/useopendesk/opendesk/internal/audit"
 	"github.com/useopendesk/opendesk/internal/auth"
@@ -40,7 +41,9 @@ const (
 	// webhookVerifyEvent carries the challenge that proves a URL's owner wants its events.
 	webhookVerifyEvent = "webhook.verification"
 	// webhookVerifyTTL is how long a challenge's code can be entered by hand.
-	webhookVerifyTTL = 24 * time.Hour
+	webhookVerifyTTL  = 24 * time.Hour
+	webhookMaxHeaders = 10
+	webhookHeaderMax  = 1000
 )
 
 type CoreWebhook struct {
@@ -48,6 +51,7 @@ type CoreWebhook struct {
 	URL         string    `json:"url"`
 	Description string    `json:"description"`
 	Events      []string  `json:"events"`
+	HeaderNames []string  `json:"header_names" doc:"Configured custom header names. Their values are never returned."`
 	Enabled     bool      `json:"enabled"`
 	// Verified: the URL answered the ownership challenge; until then it receives no events.
 	Verified bool `json:"verified" doc:"The URL answered its verification challenge (by echoing it, or the code was entered); until then no events are sent"`
@@ -75,22 +79,86 @@ type CoreWebhookDelivery struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-var webhookSelect = `SELECT id, url, description, events, enabled, verified_at IS NOT NULL, created_at, ` +
+var webhookSelect = `SELECT id, url, description, events, header_names, enabled, verified_at IS NOT NULL, created_at, ` +
 	grantedTeamsSQL("webhooks.private_team_ids", "webhooks.workspace_id") + `, ` +
 	teamGrantsSQL("webhooks.private_team_ids", "webhooks.workspace_id", grantWebhook, "webhooks.id") + ` FROM webhooks`
 
 func scanWebhook(r pgx.Row) (CoreWebhook, error) {
 	var w CoreWebhook
 	var grants []byte
-	if err := r.Scan(&w.ID, &w.URL, &w.Description, &w.Events, &w.Enabled, &w.Verified, &w.CreatedAt, &w.PrivateTeamIDs, &grants); err != nil {
+	if err := r.Scan(&w.ID, &w.URL, &w.Description, &w.Events, &w.HeaderNames, &w.Enabled, &w.Verified, &w.CreatedAt, &w.PrivateTeamIDs, &grants); err != nil {
 		return w, err
 	}
 	if w.PrivateTeamIDs == nil {
 		w.PrivateTeamIDs = []uuid.UUID{}
 	}
+	if w.HeaderNames == nil {
+		w.HeaderNames = []string{}
+	}
 	var err error
 	w.PrivateTeams, err = scanGrants(grants)
 	return w, err
+}
+
+var webhookReservedHeaders = []string{
+	"connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "proxy-connection", "te",
+	"trailer", "trailers", "transfer-encoding", "upgrade", "host", "cookie", "content-length",
+	"content-type", "user-agent", "od-signature", "od-event-id", "od-event-type",
+}
+
+// webhookHeaders validates and canonicalizes user-supplied delivery headers. The built-in
+// delivery headers remain under opendesk's control, so receivers can always verify an event.
+func webhookHeaders(in map[string]string) (map[string]string, []string, error) {
+	if len(in) > webhookMaxHeaders {
+		return nil, nil, httpx.Validation("Use at most 10 custom headers.")
+	}
+	out := make(map[string]string, len(in))
+	for name, value := range in {
+		canonical := http.CanonicalHeaderKey(name)
+		lower := strings.ToLower(canonical)
+		if len(name) > 100 || !httpguts.ValidHeaderFieldName(name) || slices.Contains(webhookReservedHeaders, lower) {
+			return nil, nil, httpx.Validation("Use a valid custom header name. Delivery and hop-by-hop headers are not allowed.")
+		}
+		if len(value) > webhookHeaderMax || value != strings.TrimSpace(value) || !httpguts.ValidHeaderFieldValue(value) {
+			return nil, nil, httpx.Validation("A custom header value contains characters that are not allowed in a header.")
+		}
+		if _, exists := out[canonical]; exists {
+			return nil, nil, httpx.Validation("Custom header names must be unique.")
+		}
+		out[canonical] = value
+	}
+	names := make([]string, 0, len(out))
+	for name := range out {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	return out, names, nil
+}
+
+func (s *svc) sealWebhookHeaders(headers map[string]string) ([]byte, error) {
+	if len(headers) == 0 {
+		return nil, nil
+	}
+	b, err := json.Marshal(headers)
+	if err != nil {
+		return nil, err
+	}
+	return s.d.Box.Seal(b)
+}
+
+func (s *svc) openWebhookHeaders(sealed []byte) (map[string]string, error) {
+	if len(sealed) == 0 {
+		return map[string]string{}, nil
+	}
+	b, err := s.d.Box.Open(sealed)
+	if err != nil {
+		return nil, err
+	}
+	var headers map[string]string
+	if err := json.Unmarshal(b, &headers); err != nil {
+		return nil, err
+	}
+	return headers, nil
 }
 
 func loadWebhook(ctx context.Context, q db.Querier, wid, id uuid.UUID) (CoreWebhook, error) {
@@ -215,10 +283,11 @@ func (s *svc) registerWebhooks(api huma.API) {
 		Summary: "Create a webhook", Tags: tags, DefaultStatus: http.StatusCreated},
 		func(ctx context.Context, in *struct {
 			Body struct {
-				URL         string   `json:"url" maxLength:"2000"`
-				Description string   `json:"description,omitempty" maxLength:"500"`
-				Events      []string `json:"events,omitempty" maxItems:"100"`
-				Enabled     *bool    `json:"enabled,omitempty"`
+				URL         string            `json:"url" maxLength:"2000"`
+				Description string            `json:"description,omitempty" maxLength:"500"`
+				Events      []string          `json:"events,omitempty" maxItems:"100"`
+				Headers     map[string]string `json:"headers,omitempty" doc:"Custom request headers, stored encrypted and shown only as names after saving."`
+				Enabled     *bool             `json:"enabled,omitempty"`
 				// PrivateTeamIDs: private teams whose events it receives; only their members add them.
 				PrivateTeamIDs []string `json:"private_team_ids,omitempty" maxItems:"200"`
 			}
@@ -241,6 +310,14 @@ func (s *svc) registerWebhooks(api huma.API) {
 			if err != nil {
 				return nil, err
 			}
+			headers, headerNames, err := webhookHeaders(in.Body.Headers)
+			if err != nil {
+				return nil, err
+			}
+			sealedHeaders, err := s.sealWebhookHeaders(headers)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
 			enabled := in.Body.Enabled == nil || *in.Body.Enabled
 			secret := "whsec_" + crypto.RandomToken(32)
 			sealed, err := s.d.Box.Seal([]byte(secret))
@@ -261,8 +338,8 @@ func (s *svc) registerWebhooks(api huma.API) {
 					return err
 				}
 				id := ids.New()
-				if _, err := tx.Exec(ctx, `INSERT INTO webhooks (id, workspace_id, url, description, secret_enc, events, enabled, created_by, private_team_ids)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`, id, p.WorkspaceID, u, cleanDescription(in.Body.Description), sealed, evs, enabled,
+				if _, err := tx.Exec(ctx, `INSERT INTO webhooks (id, workspace_id, url, description, secret_enc, headers_enc, header_names, events, enabled, created_by, private_team_ids)
+					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`, id, p.WorkspaceID, u, cleanDescription(in.Body.Description), sealed, sealedHeaders, headerNames, evs, enabled,
 					p.ActorUserID(), teams); err != nil {
 					return err
 				}
@@ -276,7 +353,7 @@ func (s *svc) registerWebhooks(api huma.API) {
 					return err
 				}
 				return audit.Log(ctx, tx, p, p.WorkspaceID, "webhook.created", "webhook", &id,
-					map[string]any{"url": u, "events": evs, "private_team_ids": uuidStrings(teams)})
+					map[string]any{"url": u, "events": evs, "header_names": headerNames, "private_team_ids": uuidStrings(teams)})
 			})
 			if err != nil {
 				return nil, httpx.Wrap(err)
@@ -301,10 +378,11 @@ func (s *svc) registerWebhooks(api huma.API) {
 		func(ctx context.Context, in *struct {
 			ID   string `path:"id"`
 			Body struct {
-				URL         *string   `json:"url,omitempty" maxLength:"2000"`
-				Description *string   `json:"description,omitempty" maxLength:"500"`
-				Events      *[]string `json:"events,omitempty" maxItems:"100"`
-				Enabled     *bool     `json:"enabled,omitempty"`
+				URL         *string            `json:"url,omitempty" maxLength:"2000"`
+				Description *string            `json:"description,omitempty" maxLength:"500"`
+				Events      *[]string          `json:"events,omitempty" maxItems:"100"`
+				Headers     *map[string]string `json:"headers,omitempty" doc:"Replace custom request headers. Their stored values are never returned."`
+				Enabled     *bool              `json:"enabled,omitempty"`
 				// PrivateTeamIDs replaces the list. Only a team's members add it; admins may remove any.
 				PrivateTeamIDs *[]string `json:"private_team_ids,omitempty" maxItems:"200"`
 			}
@@ -333,6 +411,19 @@ func (s *svc) registerWebhooks(api huma.API) {
 				if evs, err = validEvents(*in.Body.Events); err != nil {
 					return nil, err
 				}
+			}
+			var sealedHeaders []byte
+			var headerNames []string
+			if in.Body.Headers != nil {
+				headers, names, err := webhookHeaders(*in.Body.Headers)
+				if err != nil {
+					return nil, err
+				}
+				sealedHeaders, err = s.sealWebhookHeaders(headers)
+				if err != nil {
+					return nil, httpx.Wrap(err)
+				}
+				headerNames = names
 			}
 			var w CoreWebhook
 			moved := false
@@ -370,7 +461,8 @@ func (s *svc) registerWebhooks(api huma.API) {
 				}
 				if _, err := tx.Exec(ctx, `UPDATE webhooks SET url = COALESCE($3, url), description = COALESCE($4, description),
 					events = COALESCE($5, events), enabled = COALESCE($6, enabled), private_team_ids = COALESCE($7, private_team_ids),
-					updated_at = now() WHERE id = $1 AND workspace_id = $2`, id, p.WorkspaceID, u, desc, evs, in.Body.Enabled, teams); err != nil {
+					headers_enc = CASE WHEN $8 THEN $9 ELSE headers_enc END, header_names = CASE WHEN $8 THEN $10 ELSE header_names END,
+					updated_at = now() WHERE id = $1 AND workspace_id = $2`, id, p.WorkspaceID, u, desc, evs, in.Body.Enabled, teams, in.Body.Headers != nil, sealedHeaders, headerNames); err != nil {
 					return err
 				}
 				// A new address proves it wants these events again.
@@ -392,7 +484,7 @@ func (s *svc) registerWebhooks(api huma.API) {
 					return err
 				}
 				return audit.Log(ctx, tx, p, p.WorkspaceID, "webhook.updated", "webhook", &id,
-					map[string]any{"url": w.URL, "events": w.Events, "enabled": w.Enabled, "private_team_ids": uuidStrings(w.PrivateTeamIDs)})
+					map[string]any{"url": w.URL, "events": w.Events, "header_names": w.HeaderNames, "enabled": w.Enabled, "private_team_ids": uuidStrings(w.PrivateTeamIDs)})
 			})
 			if err != nil {
 				return nil, httpx.Wrap(err)
@@ -581,10 +673,10 @@ func (s *svc) webhookVerifyRoute(api huma.API, tags []string) {
 // address received. A verified webhook is returned as it is.
 func (s *svc) challengeWebhook(ctx context.Context, wid, id uuid.UUID) (CoreWebhook, error) {
 	var url string
-	var sealed []byte
+	var sealed, sealedHeaders []byte
 	var verified bool
-	err := s.d.DB.Pool.QueryRow(ctx, `SELECT url, secret_enc, verified_at IS NOT NULL FROM webhooks WHERE workspace_id = $1 AND id = $2`,
-		wid, id).Scan(&url, &sealed, &verified)
+	err := s.d.DB.Pool.QueryRow(ctx, `SELECT url, secret_enc, headers_enc, verified_at IS NOT NULL FROM webhooks WHERE workspace_id = $1 AND id = $2`,
+		wid, id).Scan(&url, &sealed, &sealedHeaders, &verified)
 	if db.IsNotFound(err) {
 		return CoreWebhook{}, httpx.NotFound("Webhook")
 	}
@@ -601,12 +693,16 @@ func (s *svc) challengeWebhook(ctx context.Context, wid, id uuid.UUID) (CoreWebh
 		if err != nil {
 			return CoreWebhook{}, err
 		}
+		headers, err := s.openWebhookHeaders(sealedHeaders)
+		if err != nil {
+			return CoreWebhook{}, err
+		}
 		data, _ := json.Marshal(map[string]any{"webhook_id": id, "challenge": code,
 			"message": "opendesk is checking that this address wants this workspace's webhooks. Answer 2xx with the challenge as the body, or enter it in opendesk."})
 		eventID := ids.New()
 		body, _ := json.Marshal(webhookPayload{ID: eventID, WorkspaceID: wid, Type: webhookVerifyEvent,
 			Visibility: events.VisibilityAgents, Data: data, OccurredAt: time.Now().UTC()})
-		status, resp, _, sendErr := s.sendWebhook(ctx, url, secret, eventID, webhookVerifyEvent, body)
+		status, resp, _, sendErr := s.sendWebhook(ctx, url, secret, headers, eventID, webhookVerifyEvent, body)
 		if sendErr == nil && status >= 200 && status < 300 && echoesChallenge(resp, code) {
 			if _, err := s.d.DB.Pool.Exec(ctx, `UPDATE webhooks SET verified_at = now(), verify_code_hash = NULL WHERE workspace_id = $1 AND id = $2`,
 				wid, id); err != nil {
@@ -781,15 +877,15 @@ func (w *deliverWorker) Work(ctx context.Context, job *river.Job[jobs.WebhookDel
 	var url, status, eventType string
 	var eventID uuid.UUID
 	var enabled, verified, granted bool
-	var sealed, body []byte
+	var sealed, sealedHeaders, body []byte
 	// granted: the event is outside a private team, the webhook is still granted its team, or
 	// the team is no longer private. A grant withdrawn after the event stops its retries too.
 	err := s.d.DB.Pool.QueryRow(ctx, `SELECT d.workspace_id, d.webhook_id, d.status, d.event_id, d.event_type, d.payload,
-		h.url, h.enabled, h.verified_at IS NOT NULL, h.secret_enc,
+		h.url, h.enabled, h.verified_at IS NOT NULL, h.secret_enc, h.headers_enc,
 		d.team_id IS NULL OR d.team_id = ANY(h.private_team_ids)
 			OR NOT EXISTS (SELECT 1 FROM teams t WHERE t.workspace_id = d.workspace_id AND t.id = d.team_id AND t.private)
 		FROM webhook_deliveries d JOIN webhooks h ON h.id = d.webhook_id AND h.workspace_id = d.workspace_id
-		WHERE d.id = $1`, job.Args.DeliveryID).Scan(&wid, &hookID, &status, &eventID, &eventType, &body, &url, &enabled, &verified, &sealed, &granted)
+		WHERE d.id = $1`, job.Args.DeliveryID).Scan(&wid, &hookID, &status, &eventID, &eventType, &body, &url, &enabled, &verified, &sealed, &sealedHeaders, &granted)
 	if db.IsNotFound(err) {
 		return nil // webhook or workspace deleted
 	}
@@ -823,7 +919,11 @@ func (w *deliverWorker) Work(ctx context.Context, job *river.Job[jobs.WebhookDel
 	if err != nil {
 		return river.JobCancel(errors.New("webhook secret unreadable"))
 	}
-	code, respBody, dur, sendErr := s.sendWebhook(ctx, url, secret, eventID, eventType, body)
+	headers, err := s.openWebhookHeaders(sealedHeaders)
+	if err != nil {
+		return river.JobCancel(errors.New("webhook headers unreadable"))
+	}
+	code, respBody, dur, sendErr := s.sendWebhook(ctx, url, secret, headers, eventID, eventType, body)
 	final := job.Attempt >= job.MaxAttempts
 	newStatus := "pending"
 	switch {
@@ -865,12 +965,15 @@ func (w *deliverWorker) Work(ctx context.Context, job *river.Job[jobs.WebhookDel
 
 // sendWebhook POSTs a signed body and returns the status, a truncated response body
 // and how long it took.
-func (s *svc) sendWebhook(ctx context.Context, url string, secret []byte, eventID uuid.UUID, eventType string, body []byte) (int, string, time.Duration, error) {
+func (s *svc) sendWebhook(ctx context.Context, url string, secret []byte, headers map[string]string, eventID uuid.UUID, eventType string, body []byte) (int, string, time.Duration, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return 0, "", 0, err
+	}
+	for name, value := range headers {
+		req.Header.Set(name, value)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "opendesk-webhooks/"+version.Version)

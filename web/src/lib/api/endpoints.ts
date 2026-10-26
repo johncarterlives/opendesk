@@ -12,15 +12,25 @@ export type TicketListQuery = ListQuery & {
   /** "none": tickets without a severity. */
   severity?: (T.Severity | "none")[];
   assignee?: string;
-  /** A team id, "mine" or "none". */
+  /** Team ids, "mine" and "none", comma separated: tickets of any of them. */
   team_id?: string;
+  /** The same values as team_id: tickets of none of them. */
+  team_not?: string;
   mailbox_id?: string;
+  /** Mailbox ids, comma separated: tickets whose reply address is none of them. */
+  mailbox_not?: string;
   /** The address a ticket was first written to: a mailbox's address or an alias. */
   received_at?: string;
   brand_id?: string;
   widget_id?: string;
+  /** Label names, comma separated: tickets carrying any of them. */
   tag?: string;
+  /** Label names, comma separated: tickets carrying none of them. */
+  tag_not?: string;
+  /** Tickets carrying no label. */
+  untagged?: boolean;
   channel?: T.Channel;
+  channel_not?: T.Channel[];
   contact_id?: string;
   view_id?: string;
   q?: string;
@@ -353,8 +363,8 @@ export const api = {
     deny: (id: string) => http.post<T.OAuthDecision>(`/v1/oauth/requests/${id}/deny`, undefined, { workspace: false }),
   },
   webhooks: {
-    ...crud<T.Webhook, { url: string; description: string; events: string[]; enabled: boolean; private_team_ids?: string[] }>("/v1/webhooks"),
-    create: (b: { url: string; description: string; events: string[]; enabled: boolean; private_team_ids?: string[] }) =>
+    ...crud<T.Webhook, { url: string; description: string; events: string[]; headers?: Record<string, string>; enabled: boolean; private_team_ids?: string[] }>("/v1/webhooks"),
+    create: (b: { url: string; description: string; events: string[]; headers?: Record<string, string>; enabled: boolean; private_team_ids?: string[] }) =>
       http.create<T.Webhook & { secret: string }>("/v1/webhooks", b),
     deliveries: (id: string, q?: ListQuery) =>
       http.get<T.Page<T.WebhookDelivery>>(`/v1/webhooks/${id}/deliveries`, { query: q }),

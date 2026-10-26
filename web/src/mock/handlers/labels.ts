@@ -89,10 +89,24 @@ function groupOut(ws: WsData, g: TagGroup): TagGroup {
   return g;
 }
 
+/** Renames from to to in a comma-separated label list, keeping each name once. */
+function renameInList(list: string | undefined, from: string, to: string): string | undefined {
+  if (!list) return list;
+  const names = list.split(",").map((x) => x.trim()).filter(Boolean);
+  if (!names.some((n) => n.toLowerCase() === from.toLowerCase())) return list;
+  const out: string[] = [];
+  for (const n of names.map((x) => (x.toLowerCase() === from.toLowerCase() ? to : x))) if (!out.some((x) => x.toLowerCase() === n.toLowerCase())) out.push(n);
+  return out.join(",");
+}
+
 /** Views and automations name labels; keep them pointing at the label after a rename or merge. */
 function rewriteLabelRefs(ws: WsData, from: string, to: string) {
   const same = (x: string | undefined) => !!x && x.toLowerCase() === from.toLowerCase();
-  for (const v of ws.views) if (same(v.filters.tag)) v.filters = { ...v.filters, tag: to };
+  for (const v of ws.views) {
+    const tag = renameInList(v.filters.tag, from, to);
+    const tagNot = renameInList(v.filters.tag_not, from, to);
+    if (tag !== v.filters.tag || tagNot !== v.filters.tag_not) v.filters = { ...v.filters, tag, tag_not: tagNot };
+  }
   for (const a of ws.automations) {
     for (const c of a.conditions) if (c.field === "tag" && same(c.value)) c.value = to;
     for (const x of a.actions) if ((x.type === "add_tag" || x.type === "remove_tag") && same(x.value)) x.value = to;

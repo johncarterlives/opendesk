@@ -24,21 +24,28 @@ var SeverityFilterValues = append(append([]string{}, domain.Severities...), "non
 
 // TicketFilters is a saved view's filter set (contracts/api.md TicketFilters).
 // Assignee is "me", "none" or a user id; TeamID "mine" (the caller's teams), "none" or a
-// team id.
+// team id. Label names never contain a comma, so Tag and TagNot are comma-separated lists
+// like TeamID. Each *Not field leaves out the tickets its positive twin would match.
 type TicketFilters struct {
 	Status    []string `json:"status,omitempty" enum:"open,pending,on_hold,solved,closed"`
 	Priority  []string `json:"priority,omitempty" enum:"low,normal,high,urgent"`
 	Severity  []string `json:"severity,omitempty" enum:"sev1,sev2,sev3,sev4,none" doc:"none: tickets without a severity"`
 	Assignee  string   `json:"assignee,omitempty"`
 	TeamID    string   `json:"team_id,omitempty" doc:"A team id, mine (the caller's teams) or none"`
+	TeamNot   string   `json:"team_not,omitempty" doc:"Comma-separated team ids, mine and none: tickets of none of them"`
 	MailboxID string   `json:"mailbox_id,omitempty"`
+	// MailboxNot leaves out tickets whose reply address is one of these mailboxes.
+	MailboxNot string `json:"mailbox_not,omitempty" doc:"Comma-separated mailbox ids: tickets whose reply address is none of them"`
 	// ReceivedAt is the address a ticket was first written to: a mailbox's address or an alias.
-	ReceivedAt string `json:"received_at,omitempty" maxLength:"254" doc:"Tickets first written to this address (a mailbox's address or one of its aliases)"`
-	BrandID    string `json:"brand_id,omitempty"`
-	WidgetID   string `json:"widget_id,omitempty"`
-	Tag        string `json:"tag,omitempty"`
-	Channel    string `json:"channel,omitempty" enum:"email,chat,api,portal"`
-	Q          string `json:"q,omitempty" maxLength:"200"`
+	ReceivedAt string   `json:"received_at,omitempty" maxLength:"254" doc:"Tickets first written to this address (a mailbox's address or one of its aliases)"`
+	BrandID    string   `json:"brand_id,omitempty"`
+	WidgetID   string   `json:"widget_id,omitempty"`
+	Tag        string   `json:"tag,omitempty" doc:"Comma-separated label names: tickets carrying any of them"`
+	TagNot     string   `json:"tag_not,omitempty" doc:"Comma-separated label names: tickets carrying none of them"`
+	Untagged   bool     `json:"untagged,omitempty" doc:"Tickets carrying no label"`
+	Channel    string   `json:"channel,omitempty" enum:"email,chat,api,portal"`
+	ChannelNot []string `json:"channel_not,omitempty" enum:"email,chat,api,portal" doc:"Tickets on none of these channels"`
+	Q          string   `json:"q,omitempty" maxLength:"200"`
 	// Fields are custom field filters, ANDed.
 	Fields []FieldFilter `json:"fields,omitempty" maxItems:"20"`
 }
@@ -73,31 +80,16 @@ func (f *TicketFilters) Normalize(ctx context.Context, q db.Querier, wid uuid.UU
 		}
 		f.Assignee = id.String()
 	}
-	// team_id is a comma-separated list of team ids, mine and none.
-	var teams []string
-	for _, raw := range strings.Split(f.TeamID, ",") {
-		v := strings.TrimSpace(raw)
-		switch {
-		case v == "":
-			continue
-		case v != TeamMine && v != TeamNone:
-			id, err := ParseRef(v, "team_id")
-			if err != nil {
-				return err
-			}
-			if err := CheckRef(ctx, q, wid, "team", id); err != nil {
-				return err
-			}
-			v = id.String()
-		}
-		if !slices.Contains(teams, v) {
-			teams = append(teams, v)
-		}
+	// team_id and team_not are comma-separated lists of team ids, mine and none.
+	if f.TeamID, err = normTeams(ctx, q, wid, f.TeamID, "team_id"); err != nil {
+		return err
 	}
-	if len(teams) > 50 {
-		return httpx.Validation("team_id takes at most 50 values")
+	if f.TeamNot, err = normTeams(ctx, q, wid, f.TeamNot, "team_not"); err != nil {
+		return err
 	}
-	f.TeamID = strings.Join(teams, ",")
+	if f.MailboxNot, err = normRefs(ctx, q, wid, f.MailboxNot, "mailbox", "mailbox_not"); err != nil {
+		return err
+	}
 	for _, ref := range []struct {
 		v    *string
 		kind string
@@ -119,13 +111,22 @@ func (f *TicketFilters) Normalize(ctx context.Context, q db.Querier, wid uuid.UU
 	if len(f.ReceivedAt) > 254 {
 		return httpx.Validation("received_at must be 254 characters or less")
 	}
-	f.Tag = strings.TrimSpace(f.Tag)
-	if len([]rune(f.Tag)) > 50 {
-		return httpx.Validation("label must be 50 characters or less")
+	for _, l := range []struct {
+		v     *string
+		field string
+	}{{&f.Tag, "tag"}, {&f.TagNot, "tag_not"}} {
+		names, err := SplitLabels(*l.v, l.field)
+		if err != nil {
+			return err
+		}
+		*l.v = strings.Join(names, ",")
 	}
 	f.Channel = strings.TrimSpace(f.Channel)
 	if f.Channel != "" && !slices.Contains(domain.Channels, f.Channel) {
 		return httpx.Validation("channel must be one of " + strings.Join(domain.Channels, ", "))
+	}
+	if f.ChannelNot, err = enumList(f.ChannelNot, domain.Channels, "channel_not"); err != nil {
+		return err
 	}
 	f.Q = strings.TrimSpace(f.Q)
 	if len([]rune(f.Q)) > 200 {
@@ -143,6 +144,100 @@ func (f *TicketFilters) Normalize(ctx context.Context, q db.Querier, wid uuid.UU
 		f.Fields = nil
 	}
 	return nil
+}
+
+// normTeams validates a comma-separated list of team ids, mine and none, dropping repeats.
+func normTeams(ctx context.Context, q db.Querier, wid uuid.UUID, raw, field string) (string, error) {
+	var teams []string
+	for _, part := range strings.Split(raw, ",") {
+		v := strings.TrimSpace(part)
+		switch {
+		case v == "":
+			continue
+		case v != TeamMine && v != TeamNone:
+			id, err := ParseRef(v, field)
+			if err != nil {
+				return "", err
+			}
+			if err := CheckRef(ctx, q, wid, "team", id); err != nil {
+				return "", err
+			}
+			v = id.String()
+		}
+		if !slices.Contains(teams, v) {
+			teams = append(teams, v)
+		}
+	}
+	if len(teams) > 50 {
+		return "", httpx.Validation(field + " takes at most 50 values")
+	}
+	return strings.Join(teams, ","), nil
+}
+
+// normRefs validates a comma-separated list of ids of the workspace's rows of kind,
+// dropping repeats.
+func normRefs(ctx context.Context, q db.Querier, wid uuid.UUID, raw, kind, field string) (string, error) {
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		v := strings.TrimSpace(part)
+		if v == "" {
+			continue
+		}
+		id, err := ParseRef(v, field)
+		if err != nil {
+			return "", err
+		}
+		if err := CheckRef(ctx, q, wid, kind, id); err != nil {
+			return "", err
+		}
+		if !slices.Contains(out, id.String()) {
+			out = append(out, id.String())
+		}
+	}
+	if len(out) > 50 {
+		return "", httpx.Validation(field + " takes at most 50 values")
+	}
+	return strings.Join(out, ","), nil
+}
+
+// SplitLabels splits a comma-separated list of label names (a label name never contains a
+// comma), trimming each and dropping blanks and repeats in any case.
+func SplitLabels(raw, field string) ([]string, error) {
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		v := strings.TrimSpace(part)
+		if v == "" || slices.ContainsFunc(out, func(x string) bool { return strings.EqualFold(x, v) }) {
+			continue
+		}
+		if len([]rune(v)) > 50 {
+			return nil, httpx.Validation("label must be 50 characters or less")
+		}
+		out = append(out, v)
+	}
+	if len(out) > 50 {
+		return nil, httpx.Validation(field + " takes at most 50 labels")
+	}
+	return out, nil
+}
+
+// RenameLabel replaces from with to (case-insensitive) in a comma-separated list of label
+// names, keeping each name once. It reports whether the list named from.
+func RenameLabel(list, from, to string) (string, bool) {
+	names, _ := SplitLabels(list, "")
+	hit := false
+	var out []string
+	for _, n := range names {
+		if strings.EqualFold(n, from) {
+			n, hit = to, true
+		}
+		if !slices.ContainsFunc(out, func(x string) bool { return strings.EqualFold(x, n) }) {
+			out = append(out, n)
+		}
+	}
+	if !hit {
+		return list, false
+	}
+	return strings.Join(out, ","), true
 }
 
 func enumList(in, allowed []string, field string) ([]string, error) {

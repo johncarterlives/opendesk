@@ -251,15 +251,34 @@ func TestWebhookSignature(t *testing.T) {
 		hdr  http.Header
 	}
 	ch := make(chan got, 4)
-	recv := httptest.NewServer(echoChallenges(func(w http.ResponseWriter, r *http.Request) {
+	verification := make(chan http.Header, 1)
+	recv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
+		var ev struct {
+			Type string `json:"type"`
+			Data struct {
+				Challenge string `json:"challenge"`
+			} `json:"data"`
+		}
+		if json.Unmarshal(b, &ev) == nil && ev.Type == webhookVerifyEvent {
+			verification <- r.Header.Clone()
+			_, _ = w.Write([]byte(ev.Data.Challenge))
+			return
+		}
 		ch <- got{b, r.Header.Clone()}
 		_, _ = w.Write([]byte(strings.Repeat("x", 5000)))
 	}))
 	defer recv.Close()
-	r := u.do("POST", "/v1/webhooks", map[string]any{"url": recv.URL + "/hook", "events": []string{"team.created"}})
+	r := u.do("POST", "/v1/webhooks", map[string]any{"url": recv.URL + "/hook", "events": []string{"team.created"}, "headers": map[string]string{"Authorization": "Bearer receiver-token"}})
 	if r.Status != 201 || !strings.HasPrefix(r.str("secret"), "whsec_") || r.Body["verified"] != true {
 		t.Fatalf("create webhook: %d %s", r.Status, r.Raw)
+	}
+	names, ok := r.Body["header_names"].([]any)
+	if strings.Contains(string(r.Raw), "receiver-token") || !ok || len(names) != 1 || names[0] != "Authorization" {
+		t.Fatalf("webhook headers leaked or missing: %s", r.Raw)
+	}
+	if got := (<-verification).Get("Authorization"); got != "Bearer receiver-token" {
+		t.Fatalf("verification header: %q", got)
 	}
 	secret := r.str("secret")
 	if r := u.do("POST", "/v1/teams", map[string]any{"name": "Support"}); r.Status != 201 {
@@ -285,6 +304,9 @@ func TestWebhookSignature(t *testing.T) {
 		t.Fatal(err)
 	}
 	g := <-ch
+	if g.hdr.Get("Authorization") != "Bearer receiver-token" {
+		t.Fatalf("custom header: %q", g.hdr.Get("Authorization"))
+	}
 	parts := strings.Split(g.hdr.Get("OD-Signature"), ",")
 	if len(parts) != 2 || !strings.HasPrefix(parts[0], "t=") {
 		t.Fatalf("signature header: %q", g.hdr.Get("OD-Signature"))
@@ -305,6 +327,22 @@ func TestWebhookSignature(t *testing.T) {
 	_ = e.d.DB.Pool.QueryRow(ctx, `SELECT status, response_body FROM webhook_deliveries WHERE id = $1`, did).Scan(&status, &body)
 	if status != "succeeded" || len(body) != webhookResponseKeep {
 		t.Fatalf("delivery recorded %s with %d bytes", status, len(body))
+	}
+}
+
+func TestWebhookHeaders(t *testing.T) {
+	headers, names, err := webhookHeaders(map[string]string{"authorization": "Bearer token", "X-Account-ID": "acme"})
+	if err != nil || headers["Authorization"] != "Bearer token" || strings.Join(names, ",") != "Authorization,X-Account-Id" {
+		t.Fatalf("valid headers: %#v %#v %v", headers, names, err)
+	}
+	for name, value := range map[string]string{
+		"OD-Signature": "replacement",
+		"Bad Header":   "value",
+		"X-Test":       "line\nbreak",
+	} {
+		if _, _, err := webhookHeaders(map[string]string{name: value}); err == nil {
+			t.Errorf("accepted %q", name)
+		}
 	}
 }
 

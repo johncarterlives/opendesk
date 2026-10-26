@@ -912,7 +912,7 @@ function listThreads(ws: WsData, ctx: Ctx) {
         case "assigned":
           return t.assignees.some((x) => x.id === me);
         case "needs_action":
-          return t.needs_action && inRole(s, t, "inbox");
+          return t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox");
         default:
           return false;
       }
@@ -1002,7 +1002,7 @@ function counts(ws: WsData) {
       shared: all.filter((t) => t.shared && inRole(s, t, "inbox")).length,
       assigned: assignedOpen.length,
       drafts: mine.filter((t) => inRole(s, t, "drafts")).length,
-      needs_action: all.filter((t) => t.needs_action && inRole(s, t, "inbox")).length,
+      needs_action: mine.filter((t) => t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
     },
     accounts,
     folders,

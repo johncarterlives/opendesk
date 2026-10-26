@@ -43,12 +43,17 @@ type listIn struct {
 	Severity   string `query:"severity" doc:"Comma separated severities (sev1..sev4), none for tickets without one"`
 	Assignee   string `query:"assignee" doc:"me, none or a user id"`
 	TeamID     string `query:"team_id" doc:"Comma-separated team ids, mine (the caller's teams) and none: tickets of any of them"`
+	TeamNot    string `query:"team_not" doc:"Comma-separated team ids, mine and none: tickets of none of them"`
 	MailboxID  string `query:"mailbox_id"`
+	MailboxNot string `query:"mailbox_not" doc:"Comma-separated mailbox ids: tickets whose reply address is none of them"`
 	ReceivedAt string `query:"received_at" maxLength:"254" doc:"Tickets first written to this address (a mailbox's address or one of its aliases)"`
 	BrandID    string `query:"brand_id"`
 	WidgetID   string `query:"widget_id"`
-	Tag        string `query:"tag" doc:"Label name"`
+	Tag        string `query:"tag" doc:"Comma-separated label names: tickets carrying any of them"`
+	TagNot     string `query:"tag_not" doc:"Comma-separated label names: tickets carrying none of them"`
+	Untagged   bool   `query:"untagged" doc:"Tickets carrying no label"`
 	Channel    string `query:"channel" enum:"email,chat,api,portal,"`
+	ChannelNot string `query:"channel_not" doc:"Comma-separated channels: tickets on none of them"`
 	ContactID  string `query:"contact_id"`
 	ViewID     string `query:"view_id" doc:"Apply a saved view's filters; explicit filters override it"`
 	Q          string `query:"q" maxLength:"200" doc:"Full text over subjects and messages, or #number"`
@@ -243,7 +248,8 @@ func registerTickets(d *deps.Deps, api huma.API) {
 				return nil, in.fieldsErr
 			}
 			req := hd.TicketFilters{Status: hd.SplitCSV(in.Status), Priority: hd.SplitCSV(in.Priority), Severity: hd.SplitCSV(in.Severity), Assignee: in.Assignee,
-				TeamID: in.TeamID, MailboxID: in.MailboxID, ReceivedAt: in.ReceivedAt, BrandID: in.BrandID, WidgetID: in.WidgetID, Tag: in.Tag, Channel: in.Channel, Q: in.Q, Fields: in.fields}
+				TeamID: in.TeamID, TeamNot: in.TeamNot, MailboxID: in.MailboxID, MailboxNot: in.MailboxNot, ReceivedAt: in.ReceivedAt, BrandID: in.BrandID,
+				WidgetID: in.WidgetID, Tag: in.Tag, TagNot: in.TagNot, Untagged: in.Untagged, Channel: in.Channel, ChannelNot: hd.SplitCSV(in.ChannelNot), Q: in.Q, Fields: in.fields}
 			f := req
 			if in.ViewID != "" {
 				view, err := loadView(ctx, d.DB.Pool, p, in.ViewID)
@@ -259,6 +265,9 @@ func registerTickets(d *deps.Deps, api huma.API) {
 				return nil, err
 			}
 			if f.Severity, err = validEnum(f.Severity, hd.SeverityFilterValues, "severity"); err != nil {
+				return nil, err
+			}
+			if f.ChannelNot, err = validEnum(f.ChannelNot, domain.Channels, "channel_not"); err != nil {
 				return nil, err
 			}
 			lq, err := forCaller(ctx, d.DB.Pool, p, listQuery{TicketFilters: f, ContactID: in.ContactID, Spam: in.Spam})

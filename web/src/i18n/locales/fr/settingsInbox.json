@@ -132,6 +132,28 @@
     "aMailbox": "une boîte mail",
     "writtenTo": "Envoyé à {{address}}",
     "matching": "Correspondant à « {{q}} »",
+    "ops": {
+      "is": "est",
+      "not": "n’est pas"
+    },
+    "labelOps": {
+      "is": "est l’une de",
+      "not": "n’est aucune de",
+      "empty": "est vide"
+    },
+    "choose": {
+      "tag": "Choisir des étiquettes",
+      "team": "Choisir des équipes",
+      "mailbox": "Choisir des boîtes mail",
+      "channel": "Choisir des canaux"
+    },
+    "myTeams": "mes équipes",
+    "noTeam": "aucune équipe",
+    "notTeamNamed": "Pas l’équipe {{name}}",
+    "notInMailbox": "Pas dans {{name}}",
+    "withoutLabels": "Sans {{labels}}",
+    "noLabel": "Aucune étiquette",
+    "notChannel": "Pas {{channel}}",
     "emptyTips": {
       "sidebar": "Les vues partagées figurent dans la barre latérale de tous",
       "personal": "Les vues personnelles restent dans votre barre latérale uniquement"

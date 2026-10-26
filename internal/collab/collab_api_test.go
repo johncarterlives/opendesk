@@ -562,6 +562,18 @@ func TestAPIHandlingState(t *testing.T) {
 	if st := doJSON(t, "GET", srv.URL+"/v1/collab/threads?box=needs_action", nil, &page); st != 200 || len(page.Data) != 1 || page.Data[0].ID != tid {
 		t.Fatalf("needs action list: %d %+v", st, page)
 	}
+	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"handling_enabled": false}, nil); st != 200 {
+		t.Fatalf("disable handling: %d", st)
+	}
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/counts", nil, &counts); st != 200 || counts.Boxes.NeedsAction != 0 {
+		t.Fatalf("disabled handling count: %d %+v", st, counts)
+	}
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/threads?box=needs_action", nil, &page); st != 200 || len(page.Data) != 0 {
+		t.Fatalf("disabled handling list: %d %+v", st, page)
+	}
+	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"handling_enabled": true}, nil); st != 200 {
+		t.Fatalf("reenable handling: %d", st)
+	}
 	if st := doJSON(t, "POST", srv.URL+"/v1/collab/threads/actions", map[string]any{"thread_ids": []uuid.UUID{tid}, "action": "done"}, &out); st != 200 || out.Threads[0].NeedsAction {
 		t.Fatalf("mark done: %d %+v", st, out)
 	}

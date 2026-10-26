@@ -75,7 +75,7 @@ func boxSQL(box, u string) string {
 	case BoxAssigned:
 		return `EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = ` + u + `) AND ` + notJunk
 	case BoxNeedsAction:
-		return `t.needs_action AND t.folder_ids && ` + inboxSQL
+		return `t.needs_action AND EXISTS (SELECT 1 FROM collab_accounts ha WHERE ha.id = t.account_id AND ha.visibility = 'shared' AND ha.handling_enabled) AND t.folder_ids && ` + inboxSQL
 	}
 	return `t.folder_ids && ` + inboxSQL
 }

@@ -19,6 +19,7 @@ import type {
   TicketStatus,
   UserRef,
 } from "@/lib/api/types";
+import { labelsMatch } from "@/lib/labelFilter";
 import { contactRef, db, userRef, type WsData } from "./db";
 import { publish } from "./gateway";
 import { canSeeTicket, defaultBrand, teamRole } from "./teams";
@@ -152,13 +153,16 @@ export function matches(ws: WsData, t: Ticket, raw: ListFilters, meId: string): 
   if (f.assignee === "none" && t.assignee) return false;
   if (f.assignee && f.assignee !== "me" && f.assignee !== "none" && t.assignee?.id !== f.assignee) return false;
   if (f.team_id && !teamMatches(ws, f.team_id, t, meId)) return false;
+  if (f.team_not && teamMatches(ws, f.team_not, t, meId)) return false;
   if (f.mailbox_id && t.mailbox_id !== f.mailbox_id) return false;
+  if (f.mailbox_not && t.mailbox_id && f.mailbox_not.split(",").includes(t.mailbox_id)) return false;
   if (f.received_at && t.received_at.toLowerCase() !== f.received_at.toLowerCase()) return false;
   if (f.brand_id && t.brand_id !== f.brand_id) return false;
   if (f.widget_id && t.widget_id !== f.widget_id) return false;
   if (f.channel && t.channel !== f.channel) return false;
+  if (f.channel_not?.includes(t.channel)) return false;
   if (f.contact_id && t.contact?.id !== f.contact_id) return false;
-  if (f.tag && !t.tags.some((x) => x.name.toLowerCase() === f.tag!.toLowerCase())) return false;
+  if (!labelsMatch(f, t.tags)) return false;
   if (!matchFields(ws, "ticket", t.fields, [...(f.fields ?? []), ...(f.fieldFilters ?? [])])) return false;
   if (f.q) {
     const q = f.q.toLowerCase().trim().replace(/^#/, "");

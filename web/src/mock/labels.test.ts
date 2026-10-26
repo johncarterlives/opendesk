@@ -68,6 +68,28 @@ describe("mock labels and custom fields", () => {
     expect((await call("GET", `/v1/tags/${sso.id}`)).status).toBe(404);
   });
 
+  it("lists tickets with any of several labels, none of them, or no label", async () => {
+    type Row = { tags: Named[] };
+    const names = (t: Row) => t.tags.map((x) => x.name.toLowerCase());
+    const anyOf = (await call("GET", "/v1/tickets?tag=bug,question&limit=100")).body.data as Row[];
+    expect(anyOf.length).toBeGreaterThan(0);
+    for (const t of anyOf) expect(names(t).some((n) => n === "bug" || n === "question")).toBe(true);
+    const noneOf = (await call("GET", "/v1/tickets?tag_not=Bug&limit=100")).body.data as Row[];
+    for (const t of noneOf) expect(names(t)).not.toContain("bug");
+    const untagged = (await call("GET", "/v1/tickets?untagged=true&limit=100")).body.data as Row[];
+    for (const t of untagged) expect(t.tags).toEqual([]);
+  });
+
+  it("renames a merged label inside views' label lists", async () => {
+    const tags = (await call("GET", "/v1/tags")).body.data;
+    const question = tags.find((t: Named) => t.name === "Question");
+    const bug = tags.find((t: Named) => t.name === "Bug");
+    const v = (await call("POST", "/v1/views", { name: "Triage", shared: true, filters: { tag: "question,Bug", tag_not: "Question" } })).body;
+    expect((await call("POST", `/v1/tags/${question.id}/merge`, { into: bug.id })).status).toBe(200);
+    const after = (await call("GET", "/v1/views")).body.data.find((x: { id: string }) => x.id === v.id);
+    expect(after.filters).toMatchObject({ tag: "Bug", tag_not: "Bug" });
+  });
+
   it("labels contacts and validates field values", async () => {
     const c = (await call("GET", "/v1/contacts?limit=1")).body.data[0];
     const r = await call("PATCH", `/v1/contacts/${c.id}`, { add_tags: ["Churn risk", "Healthy"], fields: { nps: 7 } });

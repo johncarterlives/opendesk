@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/useopendesk/opendesk/internal/supportchannels/channel"
 )
@@ -180,6 +181,21 @@ func TestEditsInArchivedThreadsAreSkipped(t *testing.T) {
 	}
 	if err := a.ClearActions(context.Background(), server.Client(), credentials, channel.Inbound{SourceMessageID: "M2"}); err != nil {
 		t.Fatalf("clear: %v", err)
+	}
+}
+
+func TestPostReturnsProviderRateLimitDelay(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", "1")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"retry_after":2.5}`))
+	}))
+	defer server.Close()
+
+	err := (Adapter{BaseURL: server.URL}).Post(context.Background(), server.Client(), map[string]string{"bot_token": "token", "channel_id": "C1"}, "T1", "hello")
+	var limited *channel.RateLimited
+	if !errors.As(err, &limited) || limited.RetryAfter != 2500*time.Millisecond {
+		t.Fatalf("post error = %v, want provider rate limit of 2.5s", err)
 	}
 }
 

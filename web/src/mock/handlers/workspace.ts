@@ -269,7 +269,16 @@ export function registerWorkspace() {
     if (!events.length) throw invalid("Choose at least one event");
     // The mock's addresses echo the verification challenge, except Zapier's catch hooks,
     // which (like the real ones) cannot choose their answer: their code is entered instead.
-    const hook: Webhook = { id: uuid(), url, description: s(ctx, "description") ?? "", events, enabled: ctx.body.enabled !== false, verified: !echoless(url), created_at: nowIso() };
+    const hook: Webhook = {
+      id: uuid(),
+      url,
+      description: s(ctx, "description") ?? "",
+      events,
+      header_names: Object.keys((ctx.body.headers as Record<string, string> | undefined) ?? {}).sort(),
+      enabled: ctx.body.enabled !== false,
+      verified: !echoless(url),
+      created_at: nowIso(),
+    };
     setGrants(ctx.ws, hook, privateTeams(ctx, []));
     ctx.ws.webhooks.unshift(hook);
     ctx.ws.deliveries[hook.id] = [];
@@ -281,6 +290,7 @@ export function registerWorkspace() {
     const hook = findHook(ctx);
     if (s(ctx, "url")) checkUrl(s(ctx, "url")!);
     assign(hook, ctx.body, ["url", "description", "events", "enabled"]);
+    if ("headers" in ctx.body) hook.header_names = Object.keys((ctx.body.headers as Record<string, string>) ?? {}).sort();
     if ("private_team_ids" in ctx.body) setGrants(ctx.ws, hook, privateTeams(ctx, hook.private_team_ids ?? []));
     publish(ctx.ws, "webhook.updated", { webhook: hook });
     audit(ctx.ws, "webhook.updated", "webhook", hook.id);

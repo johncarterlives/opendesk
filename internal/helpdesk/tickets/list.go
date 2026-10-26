@@ -122,40 +122,19 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 		b.add("t.assignee_id = " + b.arg(id))
 	}
 	if strings.TrimSpace(f.TeamID) != "" {
-		// A comma-separated list of team ids, mine (the caller's teams) and none: any of them.
-		var ors []string
-		var teams []uuid.UUID
-		parts := strings.Split(f.TeamID, ",")
-		if len(parts) > 50 {
-			return httpx.Validation("team_id takes at most 50 values")
+		clause, err := teamClause(b, me, f.TeamID, "team_id")
+		if err != nil {
+			return err
 		}
-		for _, raw := range parts {
-			switch v := strings.TrimSpace(raw); v {
-			case "":
-			case hd.TeamNone:
-				ors = append(ors, "t.team_id IS NULL")
-			case hd.TeamMine:
-				if me != nil {
-					ors = append(ors, "t.team_id IN (SELECT mt.team_id FROM team_members mt WHERE mt.user_id = "+b.arg(*me)+")")
-				}
-			default:
-				id, err := hd.ParseRef(v, "team_id")
-				if err != nil {
-					return err
-				}
-				if !slices.Contains(teams, id) {
-					teams = append(teams, id)
-				}
-			}
+		b.add(clause)
+	}
+	if strings.TrimSpace(f.TeamNot) != "" {
+		clause, err := teamClause(b, me, f.TeamNot, "team_not")
+		if err != nil {
+			return err
 		}
-		if len(teams) > 0 {
-			ors = append(ors, "t.team_id = ANY("+b.arg(teams)+"::uuid[])")
-		}
-		if len(ors) == 0 {
-			b.add("false")
-		} else {
-			b.add("(" + strings.Join(ors, " OR ") + ")")
-		}
+		// A ticket without a team is in none of the listed teams.
+		b.add("NOT COALESCE(" + clause + ", false)")
 	}
 	for _, ref := range []struct{ v, col string }{{f.MailboxID, "t.mailbox_id"}, {f.ContactID, "t.contact_id"},
 		{f.BrandID, "t.brand_id"}, {f.WidgetID, "t.widget_id"}} {
@@ -168,15 +147,45 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 		}
 		b.add(ref.col + " = " + b.arg(id))
 	}
+	if strings.TrimSpace(f.MailboxNot) != "" {
+		var boxes []uuid.UUID
+		for _, raw := range hd.SplitCSV(f.MailboxNot) {
+			id, err := hd.ParseRef(raw, "mailbox_not")
+			if err != nil {
+				return err
+			}
+			boxes = append(boxes, id)
+		}
+		if len(boxes) > 50 {
+			return httpx.Validation("mailbox_not takes at most 50 values")
+		}
+		b.add("(t.mailbox_id IS NULL OR NOT t.mailbox_id = ANY(" + b.arg(boxes) + "::uuid[]))")
+	}
 	if a := strings.ToLower(strings.TrimSpace(f.ReceivedAt)); a != "" {
 		b.add("t.received_at = " + b.arg(a))
 	}
-	if f.Tag != "" {
-		b.add(`EXISTS (SELECT 1 FROM ticket_tags ftt JOIN tags fg ON fg.id = ftt.tag_id
-			WHERE ftt.ticket_id = t.id AND fg.workspace_id = t.workspace_id AND lower(fg.name) = lower(` + b.arg(f.Tag) + `))`)
+	for _, l := range []struct {
+		raw, field, op string
+	}{{f.Tag, "tag", "EXISTS"}, {f.TagNot, "tag_not", "NOT EXISTS"}} {
+		names, err := hd.SplitLabels(l.raw, l.field)
+		if err != nil {
+			return err
+		}
+		if len(names) > 0 {
+			b.add(l.op + ` (SELECT 1 FROM ticket_tags ftt JOIN tags fg ON fg.id = ftt.tag_id
+				WHERE ftt.ticket_id = t.id AND fg.workspace_id = t.workspace_id
+				AND lower(fg.name) IN (SELECT lower(n) FROM unnest(` + b.arg(names) + `::text[]) n))`)
+		}
+	}
+	if f.Untagged {
+		b.add(`NOT EXISTS (SELECT 1 FROM ticket_tags ftt JOIN tags fg ON fg.id = ftt.tag_id
+			WHERE ftt.ticket_id = t.id AND fg.workspace_id = t.workspace_id)`)
 	}
 	if f.Channel != "" {
 		b.add("t.channel = " + b.arg(f.Channel))
+	}
+	if len(f.ChannelNot) > 0 {
+		b.add("NOT t.channel = ANY(" + b.arg(f.ChannelNot) + "::text[])")
 	}
 	for _, ff := range f.Fields {
 		def, ok := f.Defs[ff.Key]
@@ -201,6 +210,44 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 		b.add("(" + strings.Join(parts, " OR ") + ")")
 	}
 	return nil
+}
+
+// teamClause is the predicate for tickets of any of a comma-separated list of team ids,
+// mine (the caller's teams) and none. It is NULL for a ticket without a team unless none
+// is listed.
+func teamClause(b *sqlBuilder, me *uuid.UUID, raw, field string) (string, error) {
+	var ors []string
+	var teams []uuid.UUID
+	parts := strings.Split(raw, ",")
+	if len(parts) > 50 {
+		return "", httpx.Validation(field + " takes at most 50 values")
+	}
+	for _, part := range parts {
+		switch v := strings.TrimSpace(part); v {
+		case "":
+		case hd.TeamNone:
+			ors = append(ors, "t.team_id IS NULL")
+		case hd.TeamMine:
+			if me != nil {
+				ors = append(ors, "t.team_id IN (SELECT mt.team_id FROM team_members mt WHERE mt.user_id = "+b.arg(*me)+")")
+			}
+		default:
+			id, err := hd.ParseRef(v, field)
+			if err != nil {
+				return "", err
+			}
+			if !slices.Contains(teams, id) {
+				teams = append(teams, id)
+			}
+		}
+	}
+	if len(teams) > 0 {
+		ors = append(ors, "t.team_id = ANY("+b.arg(teams)+"::uuid[])")
+	}
+	if len(ors) == 0 {
+		return "false", nil
+	}
+	return "(" + strings.Join(ors, " OR ") + ")", nil
 }
 
 var wordRe = regexp.MustCompile(`[\p{L}\p{N}]+`)
@@ -438,13 +485,18 @@ func mergeFilters(view, req hd.TicketFilters) hd.TicketFilters {
 	if len(req.Severity) > 0 {
 		out.Severity = req.Severity
 	}
-	for _, f := range []struct{ dst, src *string }{{&out.Assignee, &req.Assignee}, {&out.TeamID, &req.TeamID},
-		{&out.MailboxID, &req.MailboxID}, {&out.Tag, &req.Tag}, {&out.Channel, &req.Channel}, {&out.Q, &req.Q},
-		{&out.BrandID, &req.BrandID}, {&out.WidgetID, &req.WidgetID}, {&out.ReceivedAt, &req.ReceivedAt}} {
+	if len(req.ChannelNot) > 0 {
+		out.ChannelNot = req.ChannelNot
+	}
+	for _, f := range []struct{ dst, src *string }{{&out.Assignee, &req.Assignee}, {&out.TeamID, &req.TeamID}, {&out.TeamNot, &req.TeamNot},
+		{&out.MailboxID, &req.MailboxID}, {&out.MailboxNot, &req.MailboxNot}, {&out.Tag, &req.Tag}, {&out.TagNot, &req.TagNot},
+		{&out.Channel, &req.Channel}, {&out.Q, &req.Q}, {&out.BrandID, &req.BrandID}, {&out.WidgetID, &req.WidgetID},
+		{&out.ReceivedAt, &req.ReceivedAt}} {
 		if *f.src != "" {
 			*f.dst = *f.src
 		}
 	}
+	out.Untagged = view.Untagged || req.Untagged
 	// Field filters add up: the view's and the request's all apply.
 	out.Fields = append(slices.Clone(view.Fields), req.Fields...)
 	return out

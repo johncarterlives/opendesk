@@ -542,15 +542,26 @@ export type TicketFilters = {
   /** "none" matches tickets without a severity. */
   severity?: (Severity | "none")[];
   assignee?: "me" | "none" | string;
-  /** A team id, "mine" (the caller's teams) or "none". */
+  /** Team ids, "mine" (the caller's teams) and "none", comma separated: tickets of any of them. */
   team_id?: string;
+  /** The same values as team_id: tickets of none of them. */
+  team_not?: string;
   mailbox_id?: string;
+  /** Mailbox ids, comma separated: tickets whose reply address is none of them. */
+  mailbox_not?: string;
   /** The address a ticket was first written to: a mailbox's address or an alias. */
   received_at?: string;
   brand_id?: string;
   widget_id?: string;
+  /** Label names, comma separated (a name never contains a comma): tickets carrying any of them. */
   tag?: string;
+  /** Label names, comma separated: tickets carrying none of them. */
+  tag_not?: string;
+  /** Tickets carrying no label. */
+  untagged?: boolean;
   channel?: Channel;
+  /** Tickets on none of these channels. */
+  channel_not?: Channel[];
   q?: string;
   /** Custom field filters, ANDed (max 20). */
   fields?: FieldFilter[];
@@ -907,6 +918,8 @@ export type Webhook = {
   url: string;
   description: string;
   events: string[];
+  /** Configured custom request header names. Header values are never returned. */
+  header_names: string[];
   enabled: boolean;
   /** The address answered its verification challenge; until then it receives no events. */
   verified: boolean;

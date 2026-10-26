@@ -130,6 +130,28 @@
     "aMailbox": "a mailbox",
     "writtenTo": "Written to {{address}}",
     "matching": "Matching “{{q}}”",
+    "ops": {
+      "is": "is",
+      "not": "is not"
+    },
+    "labelOps": {
+      "is": "is any of",
+      "not": "is none of",
+      "empty": "is empty"
+    },
+    "choose": {
+      "tag": "Choose labels",
+      "team": "Choose teams",
+      "mailbox": "Choose mailboxes",
+      "channel": "Choose channels"
+    },
+    "myTeams": "my teams",
+    "noTeam": "no team",
+    "notTeamNamed": "Not team {{name}}",
+    "notInMailbox": "Not in {{name}}",
+    "withoutLabels": "Without {{labels}}",
+    "noLabel": "No label",
+    "notChannel": "Not {{channel}}",
     "emptyTips": {
       "sidebar": "Shared views sit in everyone's sidebar",
       "personal": "Personal views stay in your sidebar only"
