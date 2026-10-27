@@ -46,17 +46,9 @@ import { TicketProperties, type PropPicker } from "./TicketProperties";
 import { MergeDialog } from "./MergeDialog";
 import { TicketTeamChips, useTeamsCtx } from "../teams";
 import { SnoozeMenu } from "./SnoozeMenu";
+import { readPanel, savePanel } from "./panel";
 
-const PANEL_KEY = "od-ticket-panel";
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-
-function readPanel() {
-  try {
-    return localStorage.getItem(PANEL_KEY) !== "0";
-  } catch {
-    return true;
-  }
-}
 
 function SubjectEditor({ value, onSave, disabled }: { value: string; onSave: (v: string) => void; disabled?: boolean }) {
   const { t } = useTranslation("inbox");
@@ -201,11 +193,7 @@ export default function TicketDetail({
 
   const togglePanel = () => {
     setPanel((p) => {
-      try {
-        localStorage.setItem(PANEL_KEY, p ? "0" : "1");
-      } catch {
-        /* storage unavailable */
-      }
+      savePanel(!p);
       return !p;
     });
   };

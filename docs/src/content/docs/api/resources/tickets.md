@@ -9,6 +9,7 @@ Scopes: `tickets:read` to read, `tickets:write` to change.
 | --- | --- | --- |
 | `GET` | `/v1/tickets` | List tickets |
 | `GET` | `/v1/tickets/counts` | Counts for the sidebar |
+| `GET` | `/v1/tickets/summary` | Counts for a whole list, every page of it |
 | `POST` | `/v1/tickets` | Create a ticket |
 | `GET` | `/v1/tickets/{id}` | Get a ticket |
 | `PATCH` | `/v1/tickets/{id}` | Update a ticket |
@@ -93,6 +94,20 @@ curl https://api.opendesk.sh/v1/tickets/counts -H "Authorization: Bearer od_live
 ```json
 { "unassigned": 4, "mine": 7, "open": 23, "pending": 9, "on_hold": 2, "solved": 310, "spam": 1, "views": { "<view_id>": 5 } }
 ```
+
+## Summarize a list
+
+`GET /v1/tickets/summary` takes the filters of `GET /v1/tickets` and counts every ticket of that list, not one page.
+
+```sh
+curl "https://api.opendesk.sh/v1/tickets/summary?view_id=<view_id>" -H "Authorization: Bearer od_live_..."
+```
+
+```json
+{ "complete": true, "total": 115, "awaiting": 36, "urgent": 2, "overdue": 9, "due_soon": 4 }
+```
+
+`awaiting` counts open and pending tickets where the customer wrote last, `overdue` those past the due time that applies or with an SLA breach recorded, and `due_soon` those due within the hour. A list of more than 10 000 tickets, or a full-text search (`q`), is not counted: `complete` is then `false` and every count 0.
 
 ## Create a ticket
 

@@ -24,6 +24,7 @@ func TestRegisterAll(t *testing.T) {
 	want := map[string][]string{
 		"/v1/tickets":                      {"get", "post"},
 		"/v1/tickets/counts":               {"get"},
+		"/v1/tickets/summary":              {"get"},
 		"/v1/tickets/{id}":                 {"get", "patch", "delete"},
 		"/v1/tickets/bulk":                 {"post"},
 		"/v1/tickets/{id}/merge":           {"post"},

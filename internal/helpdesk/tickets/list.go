@@ -787,3 +787,59 @@ func ticketCounts(ctx context.Context, q db.Querier, p *auth.Principal) (TicketC
 	}
 	return c, nil
 }
+
+// summaryCap is the most tickets GET /v1/tickets/summary counts: past it the list is a
+// workspace's history (Solved, a view of every status) and counting it would read it all.
+var summaryCap = 10000
+
+// TicketListSummary describes a whole ticket list, every page of it (GET /v1/tickets/summary).
+type TicketListSummary struct {
+	Complete bool `json:"complete" doc:"false when the list was not counted: more tickets match than the summary counts, or it is a full-text search (q). The counts are then 0"`
+	Total    int  `json:"total" doc:"Tickets in the list"`
+	Awaiting int  `json:"awaiting" doc:"Open or pending, and the customer wrote last"`
+	Urgent   int  `json:"urgent" doc:"Urgent priority"`
+	Overdue  int  `json:"overdue" doc:"Not solved or closed, past its due time or with an SLA breach recorded"`
+	DueSoon  int  `json:"due_soon" doc:"Not solved, closed or overdue, and its due time is within the hour"`
+}
+
+// summaryCols are the columns statCols and summaryDueSoon read.
+const summaryCols = `t.status, t.priority, t.last_message_at, t.last_customer_message_at, t.first_responded_at,
+	t.first_response_due_at, t.resolution_due_at, t.sla_first_response_breached_at, t.sla_resolution_breached_at`
+
+// summaryDueSoon is the due time that applies (as in statCols) falling within the next hour,
+// with no breach recorded: never an overdue ticket.
+const summaryDueSoon = `t.status NOT IN ('solved','closed')
+	AND t.sla_first_response_breached_at IS NULL AND t.sla_resolution_breached_at IS NULL
+	AND CASE WHEN t.first_responded_at IS NULL THEN t.first_response_due_at ELSE t.resolution_due_at END >= now()
+	AND CASE WHEN t.first_responded_at IS NULL THEN t.first_response_due_at ELSE t.resolution_due_at END < now() + interval '1 hour'`
+
+// ticketListSummary counts the tickets listTickets pages through for f, with the same filters
+// and visibility. The tickets are read through the list's own WHERE, without its ORDER BY, and
+// at most summaryCap+1 of them: one more means the list is too long to count, and the summary
+// is left incomplete. A full-text search is never counted: its matches are read message by message.
+func ticketListSummary(ctx context.Context, q db.Querier, wid uuid.UUID, me *uuid.UUID, f listQuery) (TicketListSummary, error) {
+	var s TicketListSummary
+	var err error
+	if f, err = prepareListQuery(ctx, q, wid, f, ""); err != nil {
+		return s, err
+	}
+	b := &sqlBuilder{}
+	if err := applyFilters(b, wid, me, f); err != nil {
+		return s, err
+	}
+	if strings.TrimSpace(f.Q) != "" {
+		return s, nil
+	}
+	var st TicketStats
+	dest := append(append([]any{&s.Total}, st.dest()...), &s.DueSoon)
+	err = q.QueryRow(ctx, `SELECT count(*), `+statCols("t.", "true")+`, count(*) FILTER (WHERE `+summaryDueSoon+`)
+		FROM (SELECT `+summaryCols+` FROM tickets t`+b.sql()+` LIMIT `+strconv.Itoa(summaryCap+1)+`) t`, b.args...).Scan(dest...)
+	if err != nil {
+		return s, err
+	}
+	if s.Total > summaryCap {
+		return TicketListSummary{}, nil
+	}
+	s.Complete, s.Awaiting, s.Urgent, s.Overdue = true, st.Awaiting, st.Urgent, st.Overdue
+	return s, nil
+}

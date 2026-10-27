@@ -273,6 +273,13 @@
       "assigned": "Attributions et mentions",
       "assignedHint": "Un élément vous est attribué, quelqu’un vous mentionne ou un SLA n’est pas respecté sur votre ticket."
     },
+    "assignee": {
+      "label": "Responsable dans la liste des tickets",
+      "hint": "Les collègues présents sur un ticket s’affichent toujours en vert, avec ce qu’ils font.",
+      "photo": "Photo",
+      "name": "Prénom",
+      "none": "Rien"
+    },
     "theme": {
       "label": "Thème",
       "light": "Clair",

@@ -78,7 +78,8 @@
     "changelog": "Changelog",
     "changelogEntry": "Update",
     "newUpdate": "New update",
-    "myTeams": "My teams"
+    "myTeams": "My teams",
+    "newTicket": "New ticket"
   },
   "folders": {
     "unassigned": "Unassigned",
@@ -153,6 +154,7 @@
     "goTo": "Go to",
     "actions": "Actions",
     "newTicket": "New ticket",
+    "newTicketPage": "New ticket on a full page",
     "switchLight": "Switch to light theme",
     "switchDark": "Switch to dark theme",
     "shortcuts": "Keyboard shortcuts",

@@ -7,7 +7,7 @@ mail from the address, with each change made at the provider too. An account is 
 (only the person who connected it sees it) or **shared** (with the whole workspace, or with teams
 and people). Any single conversation can be shared on its own, assigned and discussed in
 comments, so a teammate can help with one email without seeing the rest of the account. Each
-member arranges their own sidebar.
+member arranges their own sidebar, with or without Collab (`SidebarPrefs`).
 
 Collab is the `collab` plan's (contracts/billing.md "Collab"). It is not a ticket feature: a
 mail account is not a helpdesk mailbox (contracts/api.md "Mailboxes"), its mail never becomes
@@ -25,8 +25,8 @@ reading the inbox directly with its OAuth clients, or generic IMAP ("Providers a
 | billing off (self-hosted) | on for every workspace while the instance has `COLLAB` on (default on) |
 | billing on (opendesk Cloud) | on while the workspace is on the `collab` plan (a paid subscription), or has complimentary Collab access from an instance admin that has not ended (contracts/admin.md "Collab access") |
 
-Without it every `/v1/collab/*` route except `GET /v1/collab` answers `402 collab_required`
-("Collab is not on this workspace's plan."). Accounts connected while it was on are kept as they
+Without it every `/v1/collab/*` route except `GET /v1/collab` and the sidebar
+(`/v1/collab/sidebar`) answers `402 collab_required` ("Collab is not on this workspace's plan."). Accounts connected while it was on are kept as they
 are and stop syncing; nothing is deleted. Turning it back on resumes them.
 
 ## Providers and scopes
@@ -688,10 +688,16 @@ interface SidebarPrefs {
 These arrange a workspace's own sidebar. A Space (contracts/spaces.md) picked in the switcher shows
 its own rows instead; a whole section in a Space follows these preferences.
 
-**All inboxes in Favorites.** When a member first sees two accounts, `GET /v1/collab/sidebar` pins
-All inboxes (`{kind: "box", id: "inbox"}`) to the top of Favorites, unless `unified_inbox` is off,
-`box:inbox` is hidden or it is pinned already, and records `"box:inbox"` in `auto_pins` either way:
-unpinned later, it stays unpinned.
+Every member has them, with or without Collab. Without Collab they arrange the ticket side: the
+order of Favorites, Inbox, Teams, Views and Workspace, hidden rows and sections, favorites of inbox
+folders, teams and views, and their numbers. The Mail section, mail rows and favorites, `unified_inbox`,
+`mark_read_on_open`, `mail_tabs` and `auto_pins` are Collab's: kept as saved, used once it is on.
+
+**All inboxes in Favorites.** When a member of a workspace with Collab first sees two accounts,
+`GET /v1/collab/sidebar` pins All inboxes (`{kind: "box", id: "inbox"}`) to the top of Favorites,
+unless `unified_inbox` is off, `box:inbox` is hidden or it is pinned already, and records `"box:inbox"`
+in `auto_pins` either way: unpinned later, it stays unpinned. Without Collab it neither counts
+accounts nor pins or records anything.
 
 `badges` keys are a row (`box:inbox` for All inboxes, `box:shared`, `box:assigned`, `account:<id>`,
 `folder:<id>`, `ticket_folder:<id>`, `view:<id>`, `team:<id>`) or a section's default (`section:mail`,
@@ -776,7 +782,7 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 
 | method | path | who | notes |
 | --- | --- | --- | --- |
-| GET | `/v1/collab` | member | `CollabStatus`; the only route without Collab |
+| GET | `/v1/collab` | member | `CollabStatus`; with or without Collab |
 | GET | `/v1/collab/accounts` | member | `MailAccount[]` the caller sees, theirs first. `?manage=true`: an admin also gets the shared accounts of people who left (`owner: null`), to manage or disconnect |
 | POST | `/v1/collab/accounts/oauth/{provider}/start` | agent+ | `{visibility, shared_with? (at most 40 teams and people: it travels in the signed state; add more afterwards), name?, email? (login hint), account_id? (reconnect, manage), history?: {since: string \| null} (older mail to import once connected, as `PUT …/history`; left out, none; kept when the account already has an import)}` → `{url}`; sets the flow cookie (send with credentials). `422 provider_not_configured` |
 | GET | `/v1/collab/accounts/oauth/{provider}/callback` | provider | redirects to `APP_URL/settings/mail-accounts?connected=<id>` or `?error=<code>`: `oauth_state`, `access_denied`, `provider_error`, `account_conflict` (the address is already connected in this workspace by someone else), `collab_required`, `forbidden`, `internal` |
@@ -830,8 +836,8 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | POST | `/v1/collab/drafts/{id}/send` | act on its conversation | Send it; the body (as for `PUT`) is optional: when given the draft is saved with it first, else it goes as saved (composed again from what was saved when its From name names the sender, so it goes out with the sender's name). Needs a recipient. → `MailMessage`, the sent message, stored like `POST /v1/collab/messages` does (in the draft's conversation and in Sent) with the draft removed. `502 send_failed`; counts toward the 60 sends a minute |
 | GET | `/v1/collab/messages/{id}/details` | see | `MessageDetails` ("Message details"), read from the message's source (stored, else the provider: `502 provider_error`) |
 | GET | `/v1/collab/attachments/{message_id}/{index}` | signed (`exp`, `sig`) | the file, `Content-Disposition: attachment` unless an image; `?inline=1` for images. `404` when the signature is wrong or expired |
-| GET | `/v1/collab/sidebar` | member | `SidebarPrefs` (defaults when never saved); pins All inboxes once at a second account ("All inboxes in Favorites") |
-| PUT | `/v1/collab/sidebar` | member | `SidebarPrefs` → `SidebarPrefs`; at most 16 KB; unknown ids are kept (an id of something gone is ignored by the app). `badges`: at most 300, keys of at most 100 characters with the prefixes above, values `unread`, `total`, `count`, `awaiting`, `urgent`, `overdue`, `open` or `none`; `mail_tabs`: at most 30, each a box above or `folder:<uuid>`, once. Leaving out `badges`, `mail_tabs` or `auto_pins` keeps the saved value; `422` otherwise |
+| GET | `/v1/collab/sidebar` | member | `SidebarPrefs` (defaults when never saved); with or without Collab; with Collab, pins All inboxes once at a second account ("All inboxes in Favorites") |
+| PUT | `/v1/collab/sidebar` | member | `SidebarPrefs` → `SidebarPrefs`; with or without Collab; at most 16 KB; unknown ids are kept (an id of something gone is ignored by the app). `badges`: at most 300, keys of at most 100 characters with the prefixes above, values `unread`, `total`, `count`, `awaiting`, `urgent`, `overdue`, `open` or `none`; `mail_tabs`: at most 30, each a box above or `folder:<uuid>`, once. Leaving out `badges`, `mail_tabs` or `auto_pins` keeps the saved value; `422` otherwise |
 
 Errors: `402 collab_required`, `404 not_found`, `422 labels_unsupported`, `422 connection_failed`,
 `409 account_conflict`, `502 provider_error`, `502 send_failed`, `422 provider_not_configured`,

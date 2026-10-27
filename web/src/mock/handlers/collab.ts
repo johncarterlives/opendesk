@@ -2032,11 +2032,11 @@ export function registerCollab() {
     return m;
   });
 
+  // Every member's, with or without Collab (contracts/collab.md SidebarPrefs).
   get("/v1/collab/sidebar", (ctx) => {
-    requireCollab(ctx.ws);
     const p = state(ctx.ws).prefs[db.meId] ?? defaultSidebarPrefs();
-    // Like the API: All inboxes is pinned once, when the member first sees two accounts.
-    if (p.auto_pins.includes("box:inbox") || visibleAccounts(ctx.ws).length < 2) return p;
+    // Like the API: with Collab, All inboxes is pinned once, when the member first sees two accounts.
+    if (p.auto_pins.includes("box:inbox") || !status(ctx.ws).enabled || visibleAccounts(ctx.ws).length < 2) return p;
     const pinned = p.pinned.some((x) => x.kind === "box" && x.id === "inbox");
     const pin = p.unified_inbox && !p.hidden.includes("box:inbox") && !pinned && p.pinned.length < 30;
     const next = { ...p, pinned: pin ? [{ kind: "box" as const, id: "inbox" }, ...p.pinned] : p.pinned, auto_pins: [...p.auto_pins, "box:inbox"] };
@@ -2045,7 +2045,6 @@ export function registerCollab() {
   });
 
   put("/v1/collab/sidebar", (ctx) => {
-    requireCollab(ctx.ws);
     if (JSON.stringify(ctx.body).length > 16 * 1024) throw invalid("Sidebar preferences are limited to 16 KB");
     const body = ctx.body as Partial<SidebarPrefs>;
     const saved = state(ctx.ws).prefs[db.meId] ?? defaultSidebarPrefs();

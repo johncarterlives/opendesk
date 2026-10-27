@@ -78,6 +78,7 @@
     "changelogEntry": "Update",
     "newUpdate": "Neues Update",
     "myTeams": "Meine Teams",
+    "newTicket": "Neues Ticket",
     "mailCategories": "Posteingangskategorien"
   },
   "folders": {
@@ -153,6 +154,7 @@
     "goTo": "Gehe zu",
     "actions": "Aktionen",
     "newTicket": "Neues Ticket",
+    "newTicketPage": "Neues Ticket als ganze Seite",
     "switchLight": "Zu hellem Design wechseln",
     "switchDark": "Zu dunklem Design wechseln",
     "shortcuts": "Tastenkürzel",

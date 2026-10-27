@@ -78,7 +78,8 @@
     "changelog": "Journal des modifications",
     "changelogEntry": "Mise à jour",
     "newUpdate": "Nouvelle mise à jour",
-    "myTeams": "Mes équipes"
+    "myTeams": "Mes équipes",
+    "newTicket": "Nouveau ticket"
   },
   "folders": {
     "unassigned": "Non attribués",
@@ -153,6 +154,7 @@
     "goTo": "Aller à",
     "actions": "Actions",
     "newTicket": "Nouveau ticket",
+    "newTicketPage": "Nouveau ticket en pleine page",
     "switchLight": "Passer au thème clair",
     "switchDark": "Passer au thème sombre",
     "shortcuts": "Raccourcis clavier",

@@ -12,6 +12,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TextInput } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -20,6 +21,7 @@ import { playAlert, setAlertSound, setSoundPref, useAlertSound, useSoundPrefs, t
 import { api } from "@/lib/api/endpoints";
 import type { MemberProfile, User } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
+import { setAssigneeDisplay, useAssigneeDisplay, type AssigneeDisplay } from "@/lib/listDisplay";
 import { useMyAvatar } from "@/lib/pictures";
 import { q } from "@/lib/queries";
 import { updateUser, useRole, useSession } from "@/lib/session";
@@ -173,6 +175,7 @@ export default function Profile() {
         <div className="border-b border-line-soft py-3">
           <ThemeCards />
         </div>
+        <AssigneeSetting />
         <ConversationLayout />
       </Section>
 
@@ -211,6 +214,28 @@ function Sounds() {
         </Row>
       ))}
     </div>
+  );
+}
+
+/** How the ticket list shows the assignee. Stored per browser, like the theme. */
+function AssigneeSetting() {
+  const { t } = useTranslation("settings");
+  const mode = useAssigneeDisplay();
+  return (
+    <Row label={t("profile.assignee.label")} description={t("profile.assignee.hint")} htmlFor="list-assignee">
+      <Select<AssigneeDisplay>
+        id="list-assignee"
+        aria-label={t("profile.assignee.label")}
+        value={mode}
+        onChange={setAssigneeDisplay}
+        className="w-48"
+        options={[
+          { value: "photo", label: t("profile.assignee.photo") },
+          { value: "name", label: t("profile.assignee.name") },
+          { value: "none", label: t("profile.assignee.none") },
+        ]}
+      />
+    </Row>
   );
 }
 

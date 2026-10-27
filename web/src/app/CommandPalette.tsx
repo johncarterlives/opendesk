@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Command } from "cmdk";
 import { Dialog as D } from "radix-ui";
 import {
@@ -40,7 +40,7 @@ import { api } from "@/lib/api/endpoints";
 import { toast } from "@/components/ui/toast";
 import { useTheme } from "@/lib/theme";
 import { desktop } from "@/lib/desktop";
-import { shell, usePageCommands, useShell } from "./shellStore";
+import { NEW_TICKET_PATH, shell, usePageCommands, useShell } from "./shellStore";
 import { useAccountActions, useSwitcherEntries } from "./useAccounts";
 import { useTranslation } from "react-i18next";
 import { AiIcon } from "@/components/ai/bits";
@@ -78,6 +78,8 @@ export function CommandPalette() {
   const [query, setQuery] = useState("");
   const deferred = useDeferredValue(query.trim());
   const navigate = useNavigate();
+  // On the new ticket page, New ticket is what is already open.
+  const onNewTicket = useRouterState({ select: (s) => s.location.pathname === NEW_TICKET_PATH });
   const { data: views } = useQuery(q.views());
   const teams = useTeamsCtx();
   const visibleTeams = sortTeams(teams.teams.filter(teams.canSeeTeam), teams.myTeams);
@@ -412,9 +414,16 @@ export function CommandPalette() {
               </Command.Group>
 
               <Command.Group heading={tNav("command.actions")} className={groupCls}>
-                <Item value="new ticket compose create" keywords={[tNav("command.newTicket")]} icon={<SquarePen />} hint={<Kbd>c</Kbd>} onSelect={() => go(() => shell.newTicket())}>
-                  {tNav("command.newTicket")}
-                </Item>
+                {!onNewTicket && (
+                  <Item value="new ticket compose create" keywords={[tNav("command.newTicket")]} icon={<SquarePen />} hint={<Kbd>c</Kbd>} onSelect={() => go(() => shell.newTicket())}>
+                    {tNav("command.newTicket")}
+                  </Item>
+                )}
+                {!onNewTicket && atLeast(role, "agent") && (
+                  <Item value="new ticket full page compose create" keywords={[tNav("command.newTicketPage")]} icon={<SquarePen />} onSelect={() => go(() => void navigate({ to: NEW_TICKET_PATH }))}>
+                    {tNav("command.newTicketPage")}
+                  </Item>
+                )}
                 {atLeast(role, "agent") && (
                   <Item value="new wiki page doc create write" keywords={[tNav("command.newWikiPage")]} icon={<FilePlus2 />} onSelect={() => go(() => void newWikiPage())}>
                     {tNav("command.newWikiPage")}

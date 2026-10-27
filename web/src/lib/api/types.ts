@@ -692,12 +692,19 @@ export type ActionType =
   | "send_reply"
   | "add_note"
   | "mark_spam"
+  /** Soft-deletes the ticket; later steps and automations skip it. */
+  | "delete_ticket"
+  /** ticket_created only. value: the window in days, "1".."30"; same_subject (default true). */
+  | "merge_into_open_ticket"
   | "ai_triage"
   /** value: a mailbox id of the ticket's brand (contracts/api.md). */
   | "set_reply_address"
   | "set_field";
-/** set_field: `field` is the ticket field key, `value` its string form ("12.5", "true", "2026-10-11", "a,b"; "" clears). */
-export type Action = { type: ActionType; value: string; field?: string };
+/**
+ * set_field: `field` is the ticket field key, `value` its string form ("12.5", "true", "2026-10-11", "a,b"; "" clears).
+ * merge_into_open_ticket: `same_subject` merges only into a ticket with the same subject (contracts/api.md).
+ */
+export type Action = { type: ActionType; value: string; field?: string; same_subject?: boolean };
 export type Automation = {
   id: string;
   name: string;
@@ -1244,6 +1251,12 @@ export type TicketCounts = {
 
 /** A sidebar row's tickets awaiting a reply (the customer wrote last), urgent, and overdue. */
 export type TicketStats = { awaiting: number; urgent: number; overdue: number };
+
+/**
+ * A whole ticket list, every page of it (GET /v1/tickets/summary). `complete` is false, with
+ * every count 0, when the server did not count it: too many tickets match, or it is a search.
+ */
+export type TicketListSummary = TicketStats & { complete: boolean; total: number; due_soon: number };
 
 /** `wiki_pages` is left out by servers without the wiki and for callers without `wiki:read`. */
 export type SearchResults = { tickets: Ticket[]; contacts: Contact[]; articles: KbArticle[]; wiki_pages?: WikiSearchHit[] };

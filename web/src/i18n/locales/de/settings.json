@@ -273,6 +273,13 @@
       "assigned": "Zuweisungen und Erwähnungen",
       "assignedHint": "Dir wird etwas zugewiesen, jemand erwähnt dich, oder bei deinem Ticket wird ein SLA überschritten."
     },
+    "assignee": {
+      "label": "Zuständige Person in der Ticketliste",
+      "hint": "Teammitglieder, die gerade an einem Ticket sind, erscheinen immer grün, mit dem, was sie tun.",
+      "photo": "Foto",
+      "name": "Vorname",
+      "none": "Nichts"
+    },
     "theme": {
       "label": "Design",
       "light": "Hell",

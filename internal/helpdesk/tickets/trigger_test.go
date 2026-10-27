@@ -216,6 +216,44 @@ func TestAutomationLoopGuard(t *testing.T) {
 	}
 }
 
+func TestAutomationDeletesTicket(t *testing.T) {
+	e, ws := newEnv(t)
+	// Form notifications are deleted, not just closed; the automations after it skip the ticket.
+	del := addAutomation(t, e, ws, jobs.TriggerTicketCreated, 0,
+		[]map[string]string{{"field": "subject", "op": "contains", "value": "New message from"}},
+		[]map[string]string{{"type": "send_reply", "value": "<p>Thanks</p>"}, {"type": "delete_ticket", "value": ""}})
+	tag := addAutomation(t, e, ws, jobs.TriggerTicketCreated, 1,
+		[]map[string]string{{"field": "body", "op": "not_contains", "value": "zzz"}},
+		[]map[string]string{{"type": "add_tag", "value": "seen"}})
+	updated := addAutomation(t, e, ws, jobs.TriggerTicketUpdated, 2,
+		[]map[string]string{{"field": "subject", "op": "contains", "value": "New message from"}},
+		[]map[string]string{{"type": "set_priority", "value": "high"}})
+
+	form := createTicket(t, e, ws, map[string]any{"subject": "New message from Jane", "body_html": "<p>Name: Jane</p>"})
+	kept := createTicket(t, e, ws, map[string]any{"subject": "Where is my parcel?", "body_html": "<p>Hello</p>"})
+	runTriggers(t, e, ws.ID)
+
+	e.Do("GET", "/v1/tickets/"+form.ID.String(), ws.Agent.As(ws), nil).Want(t, 404)
+	var deleted bool
+	e.Scalar(`SELECT deleted_at IS NOT NULL FROM tickets WHERE id = $1`, &deleted, form.ID)
+	if !deleted {
+		t.Fatal("form ticket not deleted")
+	}
+	var replies int
+	e.Scalar(`SELECT count(*) FROM messages WHERE ticket_id = $1 AND author_type = 'system'`, &replies, form.ID)
+	if replies != 0 {
+		t.Fatalf("%d automation messages on a deleted ticket", replies)
+	}
+	if got := getTicket(t, e, ws, kept.ID); len(got.Tags) != 1 || got.Tags[0].Name != "seen" {
+		t.Fatalf("other ticket tags %+v", got.Tags)
+	}
+	var runs []int64
+	e.Scalar(`SELECT array_agg(run_count ORDER BY position) FROM automations WHERE id = ANY($1)`, &runs, []uuid.UUID{del, tag, updated})
+	if !slices.Equal(runs, []int64{1, 1, 0}) {
+		t.Fatalf("run counts %v: nothing runs on a deleted ticket", runs)
+	}
+}
+
 func TestRoundRobinAndReplies(t *testing.T) {
 	e, ws := newEnv(t)
 	e.SetSettings(ws, map[string]any{"auto_assign": "round_robin"})

@@ -50,8 +50,9 @@ export function useAllFolders(accounts: MailAccount[] | undefined, enabled = tru
   });
 }
 
-export function useSidebarPrefs(enabled: boolean): SidebarPrefs {
-  const { data } = useQuery({ ...q.mailSidebar(), enabled });
+/** The member's sidebar prefs (every member has them, with or without Collab), the defaults until they load. */
+export function useSidebarPrefs(): SidebarPrefs {
+  const { data } = useQuery(q.mailSidebar());
   return useMemo(() => normalizePrefs(data), [data]);
 }
 

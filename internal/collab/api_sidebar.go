@@ -3,6 +3,7 @@ package collab
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"slices"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/httpx"
+	"github.com/useopendesk/opendesk/internal/plan"
 )
 
 // maxSidebarBytes bounds the stored sidebar preferences.
@@ -156,7 +158,8 @@ func (s *service) registerSidebarRoutes(api huma.API) {
 	collabOp(api, huma.Operation{OperationID: "get-collab-sidebar", Method: http.MethodGet, Path: "/v1/collab/sidebar",
 		Summary: "Get my sidebar"},
 		func(ctx context.Context, _ *struct{}) (*sidebarBody, error) {
-			p, err := s.require(ctx, auth.RoleViewer)
+			// Every member arranges their sidebar, with or without Collab.
+			p, err := s.member(ctx, auth.RoleViewer)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -174,7 +177,8 @@ func (s *service) registerSidebarRoutes(api huma.API) {
 	collabOp(api, huma.Operation{OperationID: "put-collab-sidebar", Method: http.MethodPut, Path: "/v1/collab/sidebar",
 		Summary: "Save my sidebar"},
 		func(ctx context.Context, in *sidebarBody) (*sidebarBody, error) {
-			p, err := s.require(ctx, auth.RoleViewer)
+			// Every member arranges their sidebar, with or without Collab.
+			p, err := s.member(ctx, auth.RoleViewer)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -237,10 +241,17 @@ const autoPinAllInboxes = "box:inbox"
 
 // pinAllInboxes pins All inboxes to the top of Favorites once, when the member first sees
 // two accounts, unless they turned it off, hid it or pinned it already. It is remembered in
-// AutoPins either way, so All inboxes unpinned afterwards stays unpinned.
+// AutoPins either way, so All inboxes unpinned afterwards stays unpinned. Mail is Collab's:
+// without Collab it reads no accounts and records nothing, so the pin waits for Collab.
 func (s *service) pinAllInboxes(ctx context.Context, wid, uid uuid.UUID, prefs SidebarPrefs) (SidebarPrefs, error) {
 	if slices.Contains(prefs.AutoPins, autoPinAllInboxes) {
 		return prefs, nil
+	}
+	if err := s.d.Plan.RequireCollab(ctx, s.d.DB.Pool, wid); err != nil {
+		if errors.Is(err, plan.ErrCollab) {
+			return prefs, nil
+		}
+		return prefs, err
 	}
 	var n int
 	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM collab_accounts a WHERE a.workspace_id = $1 AND `+accountVisibleSQL("a", "$2"),

@@ -7,7 +7,7 @@ import { HttpError, del, forbidden, get, invalid, notFound, paginate, patch, pos
 import { searchWiki } from "./wiki";
 import { canCreateLabels, checkRequiredOnSolve, mergeFields } from "../labels";
 import { canSeeTicket, defaultBrand, teamRole } from "../teams";
-import { addActivity, addMessage, applyPatch, buildMessage, canSendFrom, counts, fieldFiltersFromQuery, findTicket, matches, newTicket, notify, publishTicketUpdated, sortTickets, type ListFilters } from "../tickets";
+import { addActivity, addMessage, applyPatch, buildMessage, canSendFrom, counts, fieldFiltersFromQuery, findTicket, matches, newTicket, notify, publishTicketUpdated, resolveFilters, sortTickets, ticketSummary, type ListFilters } from "../tickets";
 import { DAY, isRecord, nowIso, uuid } from "../util";
 import { clearDraft } from "./drafts";
 import { renderSentReply } from "./templates";
@@ -256,6 +256,10 @@ export function registerTickets() {
     return paginate(ctx, sortTickets(list, ctx.query.get("sort") ?? "last_message_at", ctx.query.get("order"), ctx.ws));
   });
   get("/v1/tickets/counts", (ctx) => counts(ctx.ws, db.meId));
+  get("/v1/tickets/summary", (ctx) => {
+    const f = filtersFrom(ctx);
+    return ticketSummary(ctx.ws.tickets.filter((t) => matches(ctx.ws, t, f, db.meId)), resolveFilters(ctx.ws, f));
+  });
 
   post("/v1/tickets", (ctx) => {
     const subject = required(ctx, "subject").slice(0, 250);
@@ -309,7 +313,10 @@ export function registerTickets() {
     const body = s(ctx, "body_html");
     if (body) {
       const kind = s(ctx, "kind") === "note" ? "note" : "reply";
-      const msg = addMessage(ws, t, { kind, direction: "outbound", html: body, user: userRef(db.meId), delivery: "pending" }, { status: p.status, actor: userRef(db.meId) });
+      // Copies go with an emailed reply only, like the API's.
+      const copies = kind === "reply" && channel === "email" ? { cc: strArr(ctx.body.cc), bcc: strArr(ctx.body.bcc) } : {};
+      const attachments = attachmentsFor(strArr(ctx.body.attachment_ids));
+      const msg = addMessage(ws, t, { kind, direction: "outbound", html: body, user: userRef(db.meId), ...copies, attachments, delivery: "pending" }, { status: p.status, actor: userRef(db.meId) });
       if (msg.delivery_status === "pending") simulateDelivery(ws, t, msg.id);
     } else if (p.status && p.status !== t.status) {
       applyPatch(ws, t, { status: p.status }, userRef(db.meId));

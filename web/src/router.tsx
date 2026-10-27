@@ -16,7 +16,7 @@ import { RootLayout } from "./app/RootLayout";
 import { AppLayout } from "./app/AppLayout";
 import { AuthLayout } from "./app/AuthLayout";
 import { NotFound, RouteError, RoutePending } from "./app/RouteStates";
-import { bootSession, openLinkedWorkspace } from "./lib/session";
+import { atLeast, bootSession, currentMembership, openLinkedWorkspace } from "./lib/session";
 import { stripWorkspaceParam, workspaceParam } from "./lib/workspaceParam";
 import { queryClient } from "./lib/queryClient";
 import { q } from "./lib/queries";
@@ -359,6 +359,26 @@ function prefetchTicket(qc: QueryClient, id: string) {
   void qc.prefetchQuery(q.savedReplies());
   void qc.prefetchQuery(q.slaPolicies());
 }
+
+// A new ticket on a full page (the dialog's "Open full page"), with the ticket page's details column.
+const newTicketRoute = createRoute({
+  getParentRoute: () => appLayout,
+  path: "/tickets/new",
+  // Viewers read only: there is nothing to write here.
+  beforeLoad: () => {
+    if (!atLeast(currentMembership()?.role ?? "viewer", "agent"))
+      throw redirect({ to: "/inbox/$folder/{-$ticketId}", params: { folder: "unassigned", ticketId: undefined }, replace: true });
+  },
+  loader: ({ context }) => {
+    const qc = context.queryClient;
+    prefetchInboxShared(qc);
+    void qc.prefetchQuery(q.savedReplies());
+    void qc.prefetchQuery(q.customFields());
+    void qc.prefetchQuery(q.templateVariables());
+  },
+  component: page(() => import("./pages/inbox/NewTicketPage")),
+  staticData: { title: "newTicket" },
+});
 
 const contactsRoute = createRoute({
   getParentRoute: () => appLayout,
@@ -923,6 +943,7 @@ const routeTree = rootRoute.addChildren([
     everywhereRoute,
     viewRoute,
     teamRoute,
+    newTicketRoute,
     mailIndexRoute,
     mailRoute,
     contactsRoute,

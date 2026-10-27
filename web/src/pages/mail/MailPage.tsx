@@ -88,7 +88,7 @@ export default function MailPage() {
   const openId = params.threadId;
   const { data: accounts } = useMailAccounts();
   const { data: counts } = useQuery(q.mailCounts());
-  const prefs = useSidebarPrefs(true);
+  const prefs = useSidebarPrefs();
   const folderMap = useAllFolders(accounts);
   const action = useThreadAction();
 

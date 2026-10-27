@@ -18,11 +18,11 @@ import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ResizeHandle } from "@/components/ui/resize-handle";
 import { toast } from "@/components/ui/toast";
-import { TicketRow, awaitingReply, type QuickAction } from "@/components/tickets/TicketRow";
+import { TicketRow, type QuickAction } from "@/components/tickets/TicketRow";
 import { BulkBar } from "@/components/tickets/BulkBar";
 import { ListToolbar, type InboxLayout } from "@/components/tickets/ListToolbar";
 import { TicketPreview } from "@/components/tickets/TicketPreview";
-import { SummaryStrip } from "@/components/tickets/SummaryStrip";
+import { SummaryStrip, loadedCounts, stripCounts } from "@/components/tickets/SummaryStrip";
 import { WaitingBanner, chatWait, useAgentOn } from "@/components/tickets/waiting";
 import { useUpdateTicket } from "@/components/tickets/useTicketActions";
 import { intent } from "@/components/tickets/motion";
@@ -422,24 +422,12 @@ export default function InboxPage() {
   const selecting = selected.size > 0 || allMatching;
   const idx = tickets.findIndex((t) => t.id === openId || String(t.number) === openId);
   const focusedTicket = tickets[focusIdx];
-  const summary = useMemo(() => {
-    const now = Date.now();
-    let awaiting = 0,
-      urgent = 0,
-      overdue = 0,
-      dueSoon = 0;
-    for (const t of tickets) {
-      if (awaitingReply(t)) awaiting++;
-      if (t.priority === "urgent") urgent++;
-      const due = t.status === "solved" || t.status === "closed" ? null : t.sla ? (!t.first_responded_at ? t.sla.first_response_due_at : t.sla.resolution_due_at) : null;
-      if (due) {
-        const left = Date.parse(due) - now;
-        if (t.sla?.breached || left < 0) overdue++;
-        else if (left < 3_600_000) dueSoon++;
-      }
-    }
-    return { awaiting, urgent, overdue, dueSoon };
-  }, [tickets]);
+  // The strip counts the whole list (GET /v1/tickets/summary), whatever its order. A search
+  // is not counted by the server, so it is not asked.
+  const summaryQuery = useMemo(() => ({ ...query, sort: undefined, order: undefined }), [query]);
+  const { data: listSummary } = useQuery({ ...q.ticketSummary(summaryQuery), enabled: !query.q });
+  const loaded = useMemo(() => loadedCounts(tickets), [tickets]);
+  const summary = stripCounts(listSummary, loaded, !!list.hasNextPage);
 
   return (
     <div ref={pageRef} className="relative flex h-full min-h-0">
@@ -476,7 +464,7 @@ export default function InboxPage() {
           onLayout={setLayout}
         />
         {tickets.length > 0 && <WaitingBanner tickets={tickets} onOpen={open} />}
-        {!openId && tickets.length > 0 && <SummaryStrip {...summary} total={tickets.length} search={search} onSearch={setSearch} />}
+        {!openId && tickets.length > 0 && <SummaryStrip {...summary} search={search} onSearch={setSearch} />}
         <div ref={listRef} role="listbox" aria-label={tr("list.label")} aria-multiselectable className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {list.isPending ? (
             <SkeletonRows rows={compact ? 7 : 12} />

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -337,6 +338,25 @@ func registerTickets(d *deps.Deps, api huma.API) {
 				return nil, httpx.Wrap(err)
 			}
 			return &struct{ Body TicketCounts }{c}, nil
+		})
+
+	huma.Register(api, huma.Operation{OperationID: "ticket-list-summary", Method: http.MethodGet, Path: "/v1/tickets/summary",
+		Summary: "Summarize a ticket list", Tags: tags,
+		Description: "Counts every ticket GET /v1/tickets lists for the same filters, all pages together: the total, awaiting a reply, urgent, overdue and due within the hour, as the caller sees them. sort, order, limit and cursor are ignored. complete is false, with every count 0, when more than 10000 tickets match or q is set."},
+		func(ctx context.Context, in *listIn) (*struct{ Body TicketListSummary }, error) {
+			p, err := auth.RequireWorkspace(ctx, auth.RoleViewer, auth.ScopeTicketsRead)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			lq, err := ticketListQuery(ctx, d.DB.Pool, p, *in)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			s, err := ticketListSummary(ctx, d.DB.Pool, p.WorkspaceID, p.ActorUserID(), lq)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			return &struct{ Body TicketListSummary }{s}, nil
 		})
 
 	huma.Register(api, huma.Operation{OperationID: "create-ticket", Method: http.MethodPost, Path: "/v1/tickets",
@@ -978,11 +998,14 @@ func mergeTickets(ctx context.Context, tx pgx.Tx, d *deps.Deps, wid, src, dst uu
 			into = map[string]any{"into": nil, "into_number": nil}
 		}
 	}
+	from := map[string]any{"from": src.String(), "from_number": srcState.Number}
+	// An automation's merge names it on both timelines, as its other changes do.
+	maps.Copy(into, actor.Meta)
+	maps.Copy(from, actor.Meta)
 	if _, err := domain.LogActivity(ctx, tx, wid, src, actor.Type, actor.UserID, "merged", into); err != nil {
 		return err
 	}
-	if _, err := domain.LogActivity(ctx, tx, wid, dst, actor.Type, actor.UserID, "merged",
-		map[string]any{"from": src.String(), "from_number": srcState.Number}); err != nil {
+	if _, err := domain.LogActivity(ctx, tx, wid, dst, actor.Type, actor.UserID, "merged", from); err != nil {
 		return err
 	}
 	if err := domain.PublishTicketUpdated(ctx, tx, wid, src, []string{"merged_into", "message_count"}); err != nil {

@@ -66,6 +66,24 @@ describe("mock Collab", () => {
     expect(kept.mail_tabs).toEqual(["inbox", "spam"]);
   });
 
+  it("keeps the sidebar prefs without Collab too", async () => {
+    const ws = db.workspaces[0]!;
+    const before = ws.collabOff;
+    ws.collabOff = "disabled";
+    try {
+      expect((await call("GET", "/v1/collab/accounts")).status).toBe(402);
+      const saved = await call("PUT", "/v1/collab/sidebar", { order: ["views", "inbox"], hidden: ["section:teams"], pinned: [{ kind: "view", id: "v1" }], expanded_accounts: [], mark_read_on_open: true, unified_inbox: true, auto_pins: [] });
+      expect(saved.status).toBe(200);
+      const read = (await call("GET", "/v1/collab/sidebar")).body;
+      expect(read.order).toEqual(["views", "inbox"]);
+      // Mail is Collab's: All inboxes is neither pinned nor recorded, so it still can be once Collab is on.
+      expect(read.pinned).toEqual([{ kind: "view", id: "v1" }]);
+      expect(read.auto_pins).toEqual([]);
+    } finally {
+      ws.collabOff = before;
+    }
+  });
+
   it("pins All inboxes once someone sees two accounts, and leaves it unpinned after", async () => {
     const base = { order: ["mail"], hidden: [], pinned: [], expanded_accounts: [], mark_read_on_open: true, unified_inbox: true };
     await call("PUT", "/v1/collab/sidebar", { ...base, auto_pins: [] });

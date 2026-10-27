@@ -273,6 +273,13 @@
       "assigned": "Assigned and mentions",
       "assignedHint": "Something is assigned to you, someone mentions you, or an SLA is breached on your ticket."
     },
+    "assignee": {
+      "label": "Assignee in the ticket list",
+      "hint": "Teammates on a ticket right now always show in green, with what they are doing.",
+      "photo": "Photo",
+      "name": "First name",
+      "none": "Nothing"
+    },
     "theme": {
       "label": "Theme",
       "light": "Light",

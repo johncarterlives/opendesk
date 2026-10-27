@@ -4,7 +4,7 @@
 
 import { infiniteQueryOptions, queryOptions, type QueryClient } from "@tanstack/react-query";
 import { scopeWorkspace } from "./api/client";
-import { api, rows, type ChangelogListQuery, type CollabThreadQuery, type TicketListQuery } from "./api/endpoints";
+import { api, rows, type ChangelogListQuery, type CollabThreadQuery, type TicketListQuery, type TicketSummaryQuery } from "./api/endpoints";
 import type { Page, ReportsQuery, ReportsRange, SpacesResponse } from "./api/types";
 import { normalizeSpace, normalizeSpaces } from "./spaces/model";
 
@@ -68,6 +68,8 @@ export const qk = {
     return w(["tickets", "list"] as const);
   },
   tickets: (q: TicketListQuery) => w(["tickets", "list", q] as const),
+  /** Under counts: whatever refreshes the sidebar's numbers refreshes a list's summary too. */
+  ticketSummary: (q: TicketSummaryQuery) => w(["tickets", "counts", "summary", q] as const),
   ticket: (id: string) => w(["tickets", "detail", id] as const),
   messages: (id: string) => w(["tickets", "messages", id] as const),
   activities: (id: string) => w(["tickets", "activities", id] as const),
@@ -348,6 +350,7 @@ export const q = {
   workspace: () => queryOptions({ queryKey: qk.workspace, queryFn: api.workspaces.current }),
   sessions: () => list(qk.sessions, api.me.sessions),
   counts: () => queryOptions({ queryKey: qk.counts, queryFn: api.tickets.counts, staleTime: 30_000 }),
+  ticketSummary: (query: TicketSummaryQuery) => queryOptions({ queryKey: qk.ticketSummary(query), queryFn: () => api.tickets.summary(query), staleTime: 15_000 }),
   tickets: (query: TicketListQuery) =>
     infiniteQueryOptions({
       queryKey: qk.tickets(query),

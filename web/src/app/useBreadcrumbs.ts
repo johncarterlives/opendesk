@@ -42,6 +42,9 @@ export function useBreadcrumbs(): Crumb[] {
     crumbs.push({ label: t("titles.teams") });
     const name = params.teamId === "mine" ? t("titles.myTeams") : (teams?.find((x) => x.id === params.teamId)?.name ?? t("titles.team"));
     crumbs.push({ label: name, to: "/teams/$teamId/{-$ticketId}", params: { teamId: params.teamId, ticketId: undefined } });
+  } else if (path === "/tickets/new") {
+    crumbs.push({ label: t("titles.inbox"), to: "/inbox/$folder/{-$ticketId}", params: { folder: "unassigned", ticketId: undefined } });
+    crumbs.push({ label: t("titles.newTicket") });
   } else if (path.startsWith("/mail/")) {
     crumbs.push({ label: t("titles.mail"), to: "/mail/$box/{-$threadId}", params: { box: "inbox", threadId: undefined } });
   } else if (path.startsWith("/contacts")) {

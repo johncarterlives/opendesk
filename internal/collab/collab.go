@@ -1,7 +1,8 @@
 // Package collab is the Collab area (contracts/collab.md): members' own mail accounts
 // (Google, Microsoft, IMAP), private or shared, synced both ways and read and handled in
 // opendesk like a mailbox, with conversations shared, assigned and discussed on their own.
-// It is the collab plan's: every route but GET /v1/collab needs plan.Entitlements.Collab.
+// It is the collab plan's: every route but GET /v1/collab and the member's sidebar
+// (/v1/collab/sidebar) needs plan.Entitlements.Collab.
 package collab
 
 import (
@@ -148,18 +149,29 @@ func Periodic(d *deps.Deps) []*river.PeriodicJob {
 // Background runs nothing: Collab works through jobs.
 func Background(context.Context, *deps.Deps) {}
 
-// require is the gate of every Collab route but GET /v1/collab: a signed-in member (never
-// an API key, an AI client or the assistant) of a workspace that has Collab.
+// require is the gate of every Collab route but GET /v1/collab and the sidebar: a member
+// (see member) of a workspace that has Collab.
 func (s *service) require(ctx context.Context, min auth.Role) (*auth.Principal, error) {
+	p, err := s.member(ctx, min)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.d.Plan.RequireCollab(ctx, s.d.DB.Pool, p.WorkspaceID); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// member is a signed-in member of the workspace: never an API key, an AI client or the
+// assistant. Alone it gates the routes every member has with or without Collab: whether
+// Collab is on, and the member's own sidebar.
+func (s *service) member(ctx context.Context, min auth.Role) (*auth.Principal, error) {
 	p, err := auth.RequireWorkspace(ctx, min, "")
 	if err != nil {
 		return nil, err
 	}
 	if p.Kind != auth.KindUser || p.Assistant || p.ViaAssistant || p.GrantID != uuid.Nil {
 		return nil, auth.ErrForbidden
-	}
-	if err := s.d.Plan.RequireCollab(ctx, s.d.DB.Pool, p.WorkspaceID); err != nil {
-		return nil, err
 	}
 	return p, nil
 }

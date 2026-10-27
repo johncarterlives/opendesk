@@ -1,7 +1,7 @@
 // The sidebar row's own menu: which number it shows (with what each would show), pin it to
 // Favorites, hide it, and an account's settings. It opens on right-click, long-press or the Menu key, and from the row's
 // ⋯ button, which takes the number's place on hover and keyboard focus (not in the rail).
-// Only with Collab on, where the sidebar prefs exist; otherwise the row is left as it is.
+// Every member has it, with or without Collab; `enabled` false leaves the row as it is.
 // Saved at once with PUT /v1/collab/sidebar.
 
 import { Ellipsis, EyeOff, Pin, PinOff, Settings, SlidersHorizontal } from "lucide-react";

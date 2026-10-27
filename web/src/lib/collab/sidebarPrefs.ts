@@ -76,9 +76,15 @@ export function sectionOrder(p: SidebarPrefs): SidebarSectionId[] {
   return out;
 }
 
-/** The visible sections in order. */
-export function visibleSections(p: SidebarPrefs): SidebarSectionId[] {
-  return sectionOrder(p).filter((id) => !isHidden(p, `section:${id}`));
+/** The sections a member arranges: every one with Collab; without it, all but Mail (contracts/collab.md SidebarPrefs). */
+export function sectionsOffered(collab: boolean): readonly SidebarSectionId[] {
+  return collab ? SECTION_IDS : SECTION_IDS.filter((id) => id !== "mail");
+}
+
+/** The visible sections in order (without Collab, never Mail). */
+export function visibleSections(p: SidebarPrefs, collab = true): SidebarSectionId[] {
+  const offered = sectionsOffered(collab);
+  return sectionOrder(p).filter((id) => offered.includes(id) && !isHidden(p, `section:${id}`));
 }
 
 export function isHidden(p: SidebarPrefs, id: string): boolean {
@@ -91,11 +97,16 @@ export function setHidden(p: SidebarPrefs, id: string, hidden: boolean): Sidebar
   return { ...p, hidden: hidden ? [...p.hidden, id] : p.hidden.filter((x) => x !== id) };
 }
 
-/** Moves a section one place up (-1) or down (1) among all sections; unknown saved ids stay at the end. */
-export function moveSection(p: SidebarPrefs, id: SidebarSectionId, dir: -1 | 1): SidebarPrefs {
+/**
+ * Moves a section one place up (-1) or down (1) among the sections offered (without Collab,
+ * past Mail, which keeps its place); unknown saved ids stay at the end.
+ */
+export function moveSection(p: SidebarPrefs, id: SidebarSectionId, dir: -1 | 1, collab = true): SidebarPrefs {
   const order = sectionOrder(p);
+  const offered = sectionsOffered(collab);
   const i = order.indexOf(id);
-  const j = i + dir;
+  let j = i + dir;
+  while (j >= 0 && j < order.length && !offered.includes(order[j])) j += dir;
   if (i < 0 || j < 0 || j >= order.length) return p;
   [order[i], order[j]] = [order[j], order[i]];
   const unknown = p.order.filter((x) => !isSection(x));
