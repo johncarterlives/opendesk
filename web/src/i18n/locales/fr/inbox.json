@@ -237,6 +237,8 @@
     "total_one": "{{count}} ticket",
     "total_other": "{{count}} tickets",
     "total_many": "{{count}} tickets",
+    "firstShown": "Les {{count}} premiers affichés",
+    "firstShownHint": "Ces chiffres ne comptent que les tickets déjà chargés. Faites défiler pour en charger plus.",
     "awaiting": "en attente de réponse",
     "urgent": "urgents",
     "overdue": "en retard",

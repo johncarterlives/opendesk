@@ -816,6 +816,9 @@ function ActionRow({ a, invalid, onChange, onRemove }: { a: Action; invalid: boo
     case "mark_spam":
       control = <span className="text-[12px] text-fg-3">{ts("edit.markSpamHint")}</span>;
       break;
+    case "delete_ticket":
+      control = <span className="text-[12px] text-fg-3">{ts("edit.deleteTicketHint")}</span>;
+      break;
     case "set_field":
       control = <SetFieldControl a={a} invalid={invalid} onChange={onChange} />;
       break;

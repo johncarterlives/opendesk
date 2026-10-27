@@ -25,7 +25,7 @@ type Automation = {
                 value: string /* up to 500 characters; any / none: phrases, one per line */;
                 question?: string /* ai_decide only: 3..300 characters of plain text */ }[];
   actions: { type: "set_status" | "set_priority" | "set_severity" | "assign_user" | "assign_team" | "add_tag" | "remove_tag"
-                 | "send_reply" | "add_note" | "mark_spam" | "ai_triage" | "set_field";
+                 | "send_reply" | "add_note" | "mark_spam" | "delete_ticket" | "ai_triage" | "set_field";
                  value: string;
                  field?: string /* set_field: the ticket field key */ }[];
   enabled: boolean;

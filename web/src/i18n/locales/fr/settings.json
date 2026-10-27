@@ -256,6 +256,10 @@
     "resend": "Renvoyer l’e-mail de vérification",
     "appearance": "Apparence",
     "appearanceHint": "S’applique à ce navigateur.",
+    "conversation": {
+      "label": "Disposition en conversation",
+      "hint": "Les messages du client à gauche, les réponses et notes de votre équipe à droite, comme dans un chat. Pleine largeur sur un écran étroit."
+    },
     "sounds": {
       "title": "Sons",
       "hint": "S’applique à ce navigateur. Le chat en direct utilise un son plus marqué ; les autres sons sont discrets.",

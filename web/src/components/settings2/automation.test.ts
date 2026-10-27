@@ -13,6 +13,7 @@ describe("automation AI helpers", () => {
     expect(opsFor("sentiment")).toEqual(["equals", "not_equals"]);
     expect(actionNeedsValue("ai_triage")).toBe(false);
     expect(actionNeedsValue("set_field")).toBe(false);
+    expect(actionNeedsValue("delete_ticket")).toBe(false);
     expect(sentimentLabel("frustrated")).toBe("Frustrated");
     expect(sentimentLabel("custom")).toBe("custom");
   });
@@ -29,6 +30,7 @@ describe("automation labels", () => {
     expect(Object.keys(fieldLabel)).toContain("sentiment");
     expect(Object.keys(actionLabel).at(-1)).toBe("ai_triage");
     expect(actionLabel.set_field).toBe("Set field");
+    expect(actionLabel.delete_ticket).toBe("Delete ticket");
     expect(opLabel.any).toBe("contains any of");
     expect(opLabel.none).toBe("contains none of");
   });

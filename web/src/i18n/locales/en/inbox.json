@@ -230,6 +230,8 @@
     "label": "Summary",
     "total_one": "{{count}} ticket",
     "total_other": "{{count}} tickets",
+    "firstShown": "First {{count}} shown",
+    "firstShownHint": "These numbers count only the tickets loaded so far. Scroll down to load more.",
     "awaiting": "awaiting reply",
     "urgent": "urgent",
     "overdue": "overdue",

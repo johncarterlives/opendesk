@@ -90,7 +90,7 @@ export function validPhrases(value: string): boolean {
   return list.length > 0 && list.length <= MAX_PHRASES && list.every((p) => [...p].length <= MAX_PHRASE) && [...list.join("\n")].length <= MAX_PHRASE_LIST;
 }
 
-const plainActions = ["set_status", "set_priority", "set_severity", "assign_user", "assign_team", "set_reply_address", "add_tag", "remove_tag", "set_field", "send_reply", "add_note", "mark_spam"] as const;
+const plainActions = ["set_status", "set_priority", "set_severity", "assign_user", "assign_team", "set_reply_address", "add_tag", "remove_tag", "set_field", "send_reply", "add_note", "mark_spam", "delete_ticket"] as const;
 export const actionLabel: Record<ActionType, string> = Object.defineProperty(labels(plainActions, "actionTypes"), "ai_triage", {
   get: () => i18n.t("ai:automation.ai_triage"),
   enumerable: true,
@@ -98,7 +98,7 @@ export const actionLabel: Record<ActionType, string> = Object.defineProperty(lab
 
 /** Whether the action's `value` must be filled. set_field may write "" to clear, so it needs only its field. */
 export function actionNeedsValue(t: ActionType) {
-  return t !== "mark_spam" && t !== "ai_triage" && t !== "set_field";
+  return t !== "mark_spam" && t !== "delete_ticket" && t !== "ai_triage" && t !== "set_field";
 }
 
 /** Picker items for a builder list: AI entries only when AI is on, but an entry already in use always shows. */

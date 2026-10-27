@@ -32,6 +32,10 @@ export type TicketListQuery = ListQuery & {
   channel?: T.Channel;
   channel_not?: T.Channel[];
   contact_id?: string;
+  /** Contact ids, comma separated: tickets whose contact is none of them. */
+  contact_not?: string;
+  /** Company ids, comma separated: tickets whose contact belongs to none of them. */
+  company_not?: string;
   view_id?: string;
   q?: string;
   spam?: boolean | "any";
@@ -67,6 +71,8 @@ export type ChangelogEntryBody = {
 };
 
 export type TicketBulkQuery = Omit<TicketListQuery, "limit" | "cursor" | "sort" | "order">;
+/** A list's filters, as GET /v1/tickets/summary counts them. */
+export type TicketSummaryQuery = TicketBulkQuery;
 
 /** Flattens custom field filters into `field.<key>[<op>]` query parameters. */
 export function fieldQuery(fields?: T.FieldFilter[]): Record<string, string> {
@@ -482,6 +488,8 @@ export const api = {
   tickets: {
     list: (q: TicketListQuery) => http.get<T.Page<T.Ticket>>("/v1/tickets", { query: listQuery(q) }),
     counts: () => http.get<T.TicketCounts>("/v1/tickets/counts"),
+    /** Counts the whole list for these filters, all pages together. */
+    summary: (q: TicketSummaryQuery) => http.get<T.TicketListSummary>("/v1/tickets/summary", { query: listQuery(q) }),
     create: (b: CreateTicketBody) => creatingTicket(http.create<T.Ticket>("/v1/tickets", b)),
     get: (id: string) => http.get<T.Ticket>(`/v1/tickets/${encodeURIComponent(id)}`),
     update: (id: string, patch: T.TicketPatch) => http.patch<T.Ticket>(`/v1/tickets/${id}`, patch),

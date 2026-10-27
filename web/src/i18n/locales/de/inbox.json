@@ -230,6 +230,8 @@
     "label": "Übersicht",
     "total_one": "{{count}} Ticket",
     "total_other": "{{count}} Tickets",
+    "firstShown": "Die ersten {{count}} angezeigt",
+    "firstShownHint": "Diese Zahlen zählen nur die bisher geladenen Tickets. Scroll nach unten, um mehr zu laden.",
     "awaiting": "warten auf Antwort",
     "urgent": "dringend",
     "overdue": "überfällig",

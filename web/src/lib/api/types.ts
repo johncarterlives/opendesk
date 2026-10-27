@@ -549,6 +549,10 @@ export type TicketFilters = {
   mailbox_id?: string;
   /** Mailbox ids, comma separated: tickets whose reply address is none of them. */
   mailbox_not?: string;
+  /** Contact ids, comma separated: tickets whose contact is none of them. */
+  contact_not?: string;
+  /** Company ids, comma separated: tickets whose contact belongs to none of them. */
+  company_not?: string;
   /** The address a ticket was first written to: a mailbox's address or an alias. */
   received_at?: string;
   brand_id?: string;
@@ -688,6 +692,8 @@ export type ActionType =
   | "send_reply"
   | "add_note"
   | "mark_spam"
+  /** Soft-deletes the ticket; later steps and automations skip it. */
+  | "delete_ticket"
   | "ai_triage"
   /** value: a mailbox id of the ticket's brand (contracts/api.md). */
   | "set_reply_address"
@@ -1240,6 +1246,12 @@ export type TicketCounts = {
 
 /** A sidebar row's tickets awaiting a reply (the customer wrote last), urgent, and overdue. */
 export type TicketStats = { awaiting: number; urgent: number; overdue: number };
+
+/**
+ * A whole ticket list, every page of it (GET /v1/tickets/summary). `complete` is false, with
+ * every count 0, when the server did not count it: too many tickets match, or it is a search.
+ */
+export type TicketListSummary = TicketStats & { complete: boolean; total: number; due_soon: number };
 
 /** `wiki_pages` is left out by servers without the wiki and for callers without `wiki:read`. */
 export type SearchResults = { tickets: Ticket[]; contacts: Contact[]; articles: KbArticle[]; wiki_pages?: WikiSearchHit[] };
