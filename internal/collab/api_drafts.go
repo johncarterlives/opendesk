@@ -349,9 +349,8 @@ func (s *service) loadDraft(ctx context.Context, p *auth.Principal, rawID string
 	return m, a, t, nil
 }
 
-// draftLockWait bounds how long a change to a draft waits for another one in progress
-// (a send saves and sends: two provider calls).
-const draftLockWait = 2*providerTimeout + 10*time.Second
+// draftLockWait leaves time to return a busy response within the HTTP request deadline.
+const draftLockWait = 20 * time.Second
 
 var errDraftBusy = httpx.E(409, "draft_busy", "This draft is being changed by someone else. Try again in a moment.")
 
