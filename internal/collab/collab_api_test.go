@@ -788,6 +788,50 @@ func TestAPISidebar(t *testing.T) {
 	}
 }
 
+// TestAPISidebarPinsAllInboxes: All inboxes is pinned to Favorites once, when a member
+// first sees two accounts, and stays unpinned when they unpin it.
+func TestAPISidebarPinsAllInboxes(t *testing.T) {
+	w := newWorld(t)
+	srv := w.api(w.agent)
+	allInboxes := SidebarPin{Kind: "box", ID: "inbox"}
+	get := func() SidebarPrefs {
+		var prefs SidebarPrefs
+		if st := doJSON(t, "GET", srv.URL+"/v1/collab/sidebar", nil, &prefs); st != 200 {
+			t.Fatalf("get: %d", st)
+		}
+		return prefs
+	}
+	w.account(w.agent, ProviderGoogle, VisibilityPrivate, Audience{})
+	if p := get(); len(p.Pinned) != 0 || len(p.AutoPins) != 0 {
+		t.Fatalf("one account: %+v", p)
+	}
+	// A second one, shared with everyone by someone else.
+	w.account(w.agent2, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	team := SidebarPin{Kind: "team", ID: uuid.NewString()}
+	in := get()
+	if !slices.Equal(in.Pinned, []SidebarPin{allInboxes}) {
+		t.Fatalf("two accounts: %+v", in)
+	}
+	// Unpinned, it stays so, also for a client that leaves auto_pins out.
+	in.Pinned, in.AutoPins = []SidebarPin{team}, nil
+	if st := doJSON(t, "PUT", srv.URL+"/v1/collab/sidebar", in, nil); st != 200 {
+		t.Fatalf("put: %d", st)
+	}
+	if p := get(); !slices.Equal(p.Pinned, []SidebarPin{team}) || !slices.Equal(p.AutoPins, []string{autoPinAllInboxes}) {
+		t.Fatalf("unpinned: %+v", p)
+	}
+	// Someone who hid All inboxes does not get it pinned.
+	var prefs SidebarPrefs
+	b := w.api(w.agent2)
+	if st := doJSON(t, "PUT", b.URL+"/v1/collab/sidebar", SidebarPrefs{Hidden: []string{"box:inbox"}, UnifiedInbox: true}, nil); st != 200 {
+		t.Fatal("put hidden")
+	}
+	w.account(w.agent2, ProviderGoogle, VisibilityPrivate, Audience{})
+	if st := doJSON(t, "GET", b.URL+"/v1/collab/sidebar", nil, &prefs); st != 200 || len(prefs.Pinned) != 0 || len(prefs.AutoPins) != 1 {
+		t.Fatalf("hidden: %d %+v", st, prefs)
+	}
+}
+
 func TestAPISidebarBadgesAndTabs(t *testing.T) {
 	w := newWorld(t)
 	srv := w.api(w.agent)

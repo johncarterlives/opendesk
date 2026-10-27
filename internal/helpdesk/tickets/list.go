@@ -216,12 +216,16 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 			parts = append(parts, "t.number = "+b.arg(n))
 		}
 		tsq := "websearch_to_tsquery('simple', " + b.arg(q) + ")"
+		// The customer's name, email and phone (contacts.search) match too.
+		contact := `EXISTS (SELECT 1 FROM contacts fc WHERE fc.workspace_id = t.workspace_id AND fc.id = t.contact_id AND (fc.search @@ ` + tsq
 		parts = append(parts, "t.search @@ "+tsq, "t.fields_search @@ "+tsq,
 			`EXISTS (SELECT 1 FROM messages fm WHERE fm.workspace_id = t.workspace_id AND fm.ticket_id = t.id AND fm.deleted_at IS NULL AND fm.search @@ `+tsq+`)`)
 		if pq := prefixQuery(q); pq != "" {
 			ptsq := "to_tsquery('simple', " + b.arg(pq) + ")"
 			parts = append(parts, "t.search @@ "+ptsq, "t.fields_search @@ "+ptsq)
+			contact += " OR fc.search @@ " + ptsq
 		}
+		parts = append(parts, contact+"))")
 		b.add("(" + strings.Join(parts, " OR ") + ")")
 	}
 	return nil

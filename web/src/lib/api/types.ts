@@ -2324,6 +2324,9 @@ export type MailCategoryRule = { id: string; sender: string; category: string; c
 export type MailHistoryStatus = "running" | "paused" | "limited" | "done" | "canceled" | "error";
 
 /** A history import: older mail brought into opendesk (contracts/collab.md "History"). */
+/** The older mail a new account imports once connected: from since on, or all of it (null). */
+export type ConnectHistory = { since: string | null };
+
 export type MailHistory = {
   status: MailHistoryStatus;
   /** Mail received from then on; null = all mail. */
@@ -2629,6 +2632,8 @@ export type SidebarPrefs = {
   badges: Record<string, SidebarBadge>;
   /** The mail page's folder bar, in order: box names and "folder:<id>". */
   mail_tabs: string[];
+  /** Pins the sidebar added once by itself ("box:inbox": All inboxes, at a second account), so one unpinned stays so. */
+  auto_pins: string[];
 };
 
 /** unread / total / none for mail rows; count / awaiting / urgent / overdue / none for ticket rows, and open for team rows. */

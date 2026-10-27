@@ -701,3 +701,17 @@
     color: var(--fg-4);
   }
 }
+
+/*
+ * On touch screens every field people type in is at least 16px, the size below which
+ * iOS Safari zooms the page in on focus. Unlayered, so it outranks the utilities that
+ * set the denser desktop sizes; pointers that aren't coarse keep those sizes.
+ */
+@media (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"]),
+  textarea,
+  select,
+  [contenteditable]:not([contenteditable="false"]) {
+    font-size: max(16px, 1em);
+  }
+}

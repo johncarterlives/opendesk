@@ -370,4 +370,7 @@ type SidebarPrefs struct {
 	Badges map[string]string `json:"badges" required:"false" doc:"Left out: the saved value stays"`
 	// MailTabs is the mail page's folder bar, in order: box names and "folder:<id>".
 	MailTabs []string `json:"mail_tabs" required:"false" maxItems:"30" doc:"Left out: the saved value stays"`
+	// AutoPins are the pins the sidebar added once by itself ("box:inbox": All inboxes, when
+	// the member first sees two accounts), so one unpinned is not added again.
+	AutoPins []string `json:"auto_pins" required:"false" maxItems:"20" doc:"Left out: the saved value stays"`
 }

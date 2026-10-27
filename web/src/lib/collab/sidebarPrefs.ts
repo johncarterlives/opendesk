@@ -23,6 +23,7 @@ export function defaultSidebarPrefs(): SidebarPrefs {
     unified_inbox: true,
     badges: {},
     mail_tabs: [...DEFAULT_MAIL_TABS],
+    auto_pins: [],
   };
 }
 
@@ -49,6 +50,7 @@ export function normalizePrefs(p: Partial<SidebarPrefs> | null | undefined): Sid
     unified_inbox: typeof p.unified_inbox === "boolean" ? p.unified_inbox : d.unified_inbox,
     badges: readBadges(p.badges) ?? d.badges,
     mail_tabs: Array.isArray(p.mail_tabs) ? p.mail_tabs.filter((x): x is string => typeof x === "string") : d.mail_tabs,
+    auto_pins: Array.isArray(p.auto_pins) ? p.auto_pins.filter((x): x is string => typeof x === "string") : d.auto_pins,
   };
 }
 
