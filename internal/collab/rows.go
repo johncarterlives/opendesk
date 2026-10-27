@@ -52,36 +52,41 @@ func (c credentials) smtpPassword() string {
 
 // accountRow is a stored account, including what the API never returns.
 type accountRow struct {
-	ID             uuid.UUID
-	WorkspaceID    uuid.UUID
-	OwnerID        *uuid.UUID
-	Provider       string
-	Email          string
-	Name           string
-	DisplayName    string
-	Color          string
-	Visibility     string
-	SignatureHTML  string
-	Config         accountConfig
-	CredentialsEnc []byte
-	SyncState      json.RawMessage
-	Status         string
-	Reconnect      bool
-	LastError      string
-	LastSyncedAt   *time.Time
-	SyncFailures   int
-	NextSyncAt     *time.Time
-	CreatedAt      time.Time
+	ID              uuid.UUID
+	WorkspaceID     uuid.UUID
+	OwnerID         *uuid.UUID
+	Provider        string
+	Email           string
+	Name            string
+	DisplayName     string
+	Color           string
+	Visibility      string
+	HandlingEnabled bool
+	SignatureHTML   string
+	Config          accountConfig
+	CredentialsEnc  []byte
+	SyncState       json.RawMessage
+	Status          string
+	Reconnect       bool
+	LastError       string
+	LastSyncedAt    *time.Time
+	SyncFailures    int
+	NextSyncAt      *time.Time
+	CreatedAt       time.Time
+	// CategoryKeys and CategorySig are what its inbox was last sorted with ("Categories").
+	CategoryKeys []string
+	CategorySig  string
 }
 
-const accountColumns = `id, workspace_id, owner_id, provider, email, name, display_name, color, visibility, signature_html,
-	config, credentials_enc, sync_state, status, reconnect, last_error, last_synced_at, sync_failures, next_sync_at, created_at`
+const accountColumns = `id, workspace_id, owner_id, provider, email, name, display_name, color, visibility, handling_enabled, signature_html,
+	config, credentials_enc, sync_state, status, reconnect, last_error, last_synced_at, sync_failures, next_sync_at, created_at,
+	category_keys, category_sig`
 
 func scanAccount(row pgx.Row) (*accountRow, error) {
 	var a accountRow
 	err := row.Scan(&a.ID, &a.WorkspaceID, &a.OwnerID, &a.Provider, &a.Email, &a.Name, &a.DisplayName, &a.Color, &a.Visibility,
-		&a.SignatureHTML, &a.Config, &a.CredentialsEnc, &a.SyncState, &a.Status, &a.Reconnect, &a.LastError, &a.LastSyncedAt,
-		&a.SyncFailures, &a.NextSyncAt, &a.CreatedAt)
+		&a.HandlingEnabled, &a.SignatureHTML, &a.Config, &a.CredentialsEnc, &a.SyncState, &a.Status, &a.Reconnect, &a.LastError, &a.LastSyncedAt,
+		&a.SyncFailures, &a.NextSyncAt, &a.CreatedAt, &a.CategoryKeys, &a.CategorySig)
 	if err != nil {
 		return nil, err
 	}
@@ -180,18 +185,21 @@ type threadRow struct {
 	Unread         bool
 	Starred        bool
 	HasAttachments bool
+	NeedsAction    bool
 	FolderIDs      []uuid.UUID
 	// Addresses are every address on its messages, lower case, newest first.
 	Addresses []string
+	// Category is its category key as stored ("Categories"); nil when not sorted.
+	Category *string
 }
 
 const threadColumns = `id, workspace_id, account_id, remote_id, subject, snippet, participants, last_message_at, message_count,
-	unread, starred, has_attachments, folder_ids, addresses`
+	unread, starred, has_attachments, needs_action, folder_ids, addresses, category`
 
 func scanThread(row pgx.Row) (*threadRow, error) {
 	var t threadRow
 	if err := row.Scan(&t.ID, &t.WorkspaceID, &t.AccountID, &t.RemoteID, &t.Subject, &t.Snippet, &t.Participants, &t.LastMessageAt,
-		&t.MessageCount, &t.Unread, &t.Starred, &t.HasAttachments, &t.FolderIDs, &t.Addresses); err != nil {
+		&t.MessageCount, &t.Unread, &t.Starred, &t.HasAttachments, &t.NeedsAction, &t.FolderIDs, &t.Addresses, &t.Category); err != nil {
 		return nil, err
 	}
 	if t.Participants == nil {

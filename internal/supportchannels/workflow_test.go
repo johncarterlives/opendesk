@@ -1,10 +1,12 @@
 package supportchannels
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -14,9 +16,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+	"github.com/riverqueue/river/rivertype"
 
 	"github.com/useopendesk/opendesk/internal/ai"
 	"github.com/useopendesk/opendesk/internal/domain"
+	"github.com/useopendesk/opendesk/internal/events"
+	"github.com/useopendesk/opendesk/internal/helpdesk/hd"
 	"github.com/useopendesk/opendesk/internal/helpdesk/hdtest"
 	"github.com/useopendesk/opendesk/internal/ids"
 	"github.com/useopendesk/opendesk/internal/jobs"
@@ -31,6 +37,18 @@ type fakeAdapter struct {
 	interactive []channel.Message
 	cleared     []string
 	responses   []string
+	postErr     error
+	files       map[string][]byte
+	downloads   int
+}
+
+func (f *fakeAdapter) DownloadAttachment(_ context.Context, _ *http.Client, _ map[string]string, file channel.Attachment) (io.ReadCloser, error) {
+	f.downloads++
+	data, ok := f.files[file.ID]
+	if !ok {
+		return nil, errors.New("missing fake file")
+	}
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func (*fakeAdapter) Describe() channel.Descriptor {
@@ -48,7 +66,7 @@ func (*fakeAdapter) CreateThread(context.Context, *http.Client, map[string]strin
 }
 func (f *fakeAdapter) Post(_ context.Context, _ *http.Client, _ map[string]string, _, text string) error {
 	f.posts = append(f.posts, text)
-	return nil
+	return f.postErr
 }
 func (*fakeAdapter) Update(context.Context, *http.Client, map[string]string, string, channel.Ticket) error {
 	return nil
@@ -133,6 +151,146 @@ func (w *workflow) status(t *testing.T) (string, string) {
 	w.e.Scalar(`SELECT status FROM tickets WHERE id=$1`, &status, w.ticket.ID)
 	w.e.Scalar(`SELECT priority FROM tickets WHERE id=$1`, &priority, w.ticket.ID)
 	return status, priority
+}
+
+func TestDeliveryMovesToDeadLetterAndManualRetryCompletesIt(t *testing.T) {
+	w := newWorkflow(t)
+	var seq int64
+	w.e.Scalar(`SELECT COALESCE(MAX(seq),0)+1 FROM events WHERE workspace_id=$1`, &seq, w.ws.ID)
+	w.e.Exec(`INSERT INTO events(workspace_id,seq,id,type,visibility,topics,data) VALUES($1,$2,$3,'message.created','agents','{}',
+		jsonb_build_object('ticket_id',$4::text,'message',jsonb_build_object('kind','reply','direction','inbound','body_text','Printer is down')))`,
+		w.ws.ID, seq, ids.New(), w.ticket.ID)
+	w.e.Exec(`INSERT INTO support_channel_dispatches(workspace_id,event_seq) VALUES($1,$2)`, w.ws.ID, seq)
+	args := jobs.SupportChannelDispatchArgs{WorkspaceID: w.ws.ID, EventSeq: seq}
+	worker := &dispatchWorker{s: w.s}
+	w.fake.postErr = errors.New("provider response included a private token")
+	for attempt := 1; attempt <= 2; attempt++ {
+		job := &river.Job[jobs.SupportChannelDispatchArgs]{JobRow: &rivertype.JobRow{Attempt: attempt, MaxAttempts: 2}, Args: args}
+		if err := worker.Work(w.e.Ctx, job); err == nil {
+			t.Fatal("failed provider post was marked successful")
+		}
+	}
+	var status, lastError string
+	var attempts int
+	w.e.Scalar(`SELECT status FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &status, w.ws.ID, seq)
+	w.e.Scalar(`SELECT attempts FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &attempts, w.ws.ID, seq)
+	w.e.Scalar(`SELECT last_error FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &lastError, w.ws.ID, seq)
+	if status != "failed" || attempts != 2 || lastError != deliveryError {
+		t.Fatalf("failed delivery = %s, %d attempts, error %q", status, attempts, lastError)
+	}
+
+	w.e.Exec(`UPDATE support_channel_dispatches SET status='queued' WHERE workspace_id=$1 AND event_seq=$2`, w.ws.ID, seq)
+	w.fake.postErr = nil
+	job := &river.Job[jobs.SupportChannelDispatchArgs]{JobRow: &rivertype.JobRow{Attempt: 1, MaxAttempts: 2}, Args: args}
+	if err := worker.Work(w.e.Ctx, job); err != nil {
+		t.Fatal(err)
+	}
+	var deliveredAt *time.Time
+	w.e.Scalar(`SELECT status FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &status, w.ws.ID, seq)
+	w.e.Scalar(`SELECT attempts FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &attempts, w.ws.ID, seq)
+	w.e.Scalar(`SELECT last_error FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &lastError, w.ws.ID, seq)
+	w.e.Scalar(`SELECT delivered_at FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &deliveredAt, w.ws.ID, seq)
+	if status != "delivered" || attempts != 3 || lastError != "" || deliveredAt == nil {
+		t.Fatalf("retried delivery = %s, %d attempts, error %q, delivered at %v", status, attempts, lastError, deliveredAt)
+	}
+}
+
+func TestRateLimitedDeliveryRemainsRetryableAtLastAttempt(t *testing.T) {
+	w := newWorkflow(t)
+	var seq int64
+	w.e.Scalar(`SELECT COALESCE(MAX(seq),0)+1 FROM events WHERE workspace_id=$1`, &seq, w.ws.ID)
+	w.e.Exec(`INSERT INTO events(workspace_id,seq,id,type,visibility,topics,data) VALUES($1,$2,$3,'message.created','agents','{}',jsonb_build_object('ticket_id',$4::text,'message',jsonb_build_object('kind','reply','direction','inbound','body_text','Help')))`, w.ws.ID, seq, ids.New(), w.ticket.ID)
+	w.fake.postErr = &channel.RateLimited{RetryAfter: time.Minute}
+	job := &river.Job[jobs.SupportChannelDispatchArgs]{JobRow: &rivertype.JobRow{Attempt: 2, MaxAttempts: 2}, Args: jobs.SupportChannelDispatchArgs{WorkspaceID: w.ws.ID, EventSeq: seq}}
+	err := (&dispatchWorker{s: w.s}).Work(w.e.Ctx, job)
+	var snooze *rivertype.JobSnoozeError
+	if !errors.As(err, &snooze) || snooze.Duration != time.Minute {
+		t.Fatalf("want rate limit snooze, got %v", err)
+	}
+	var status string
+	w.e.Scalar(`SELECT status FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, &status, w.ws.ID, seq)
+	if status != "retrying" {
+		t.Fatalf("rate limited status = %s", status)
+	}
+}
+
+func TestRetryDeliveryQueuesAndAuditsOnlyFailedDispatch(t *testing.T) {
+	e := hdtest.New(t, Register)
+	ws := e.NewWorkspace()
+	var seq int64
+	e.Scalar(`SELECT COALESCE(MAX(seq),0)+1 FROM events WHERE workspace_id=$1`, &seq, ws.ID)
+	e.Exec(`INSERT INTO events(workspace_id,seq,id,type,visibility,topics,data) VALUES($1,$2,$3,'ticket.updated','agents','{}','{}')`, ws.ID, seq, ids.New())
+	e.Exec(`UPDATE workspaces SET event_seq=$2 WHERE id=$1`, ws.ID, seq)
+	e.Exec(`INSERT INTO support_channel_dispatches(workspace_id,event_seq,status,attempts,last_error)
+		VALUES($1,$2,'failed',8,$3)`, ws.ID, seq, deliveryError)
+
+	path := fmt.Sprintf("/v1/support-channels/deliveries/%d/retry", seq)
+	res := e.Do(http.MethodPost, path, ws.Admin.As(ws), nil).Want(t, http.StatusAccepted)
+	var queued struct {
+		EventSeq int64  `json:"event_seq"`
+		Status   string `json:"status"`
+	}
+	res.JSON(t, &queued)
+	if queued.EventSeq != seq || queued.Status != "queued" {
+		t.Fatalf("retry response = %+v", queued)
+	}
+	var jobCount int
+	e.Scalar(`SELECT count(*) FROM river_job WHERE kind='support_channels.dispatch' AND args->>'workspace_id'=$1 AND args->>'event_seq'=$2`, &jobCount, ws.ID.String(), fmt.Sprint(seq))
+	if jobCount != 1 {
+		t.Fatalf("retry queued %d dispatch jobs", jobCount)
+	}
+	e.Scalar(`SELECT count(*) FROM audit_logs WHERE workspace_id=$1 AND action='support_channel.delivery_retried'`, &jobCount, ws.ID)
+	if jobCount != 1 {
+		t.Fatalf("retry wrote %d audit entries", jobCount)
+	}
+	e.Do(http.MethodPost, path, ws.Admin.As(ws), nil).Want(t, http.StatusConflict)
+	e.Do(http.MethodPost, path, ws.Agent.As(ws), nil).Want(t, http.StatusForbidden)
+
+	list := e.Do(http.MethodGet, "/v1/support-channels/deliveries?limit=10", ws.Admin.As(ws), nil).Want(t, http.StatusOK)
+	var page struct {
+		Data []delivery `json:"data"`
+	}
+	list.JSON(t, &page)
+	if len(page.Data) != 1 || page.Data[0].EventSeq != seq || page.Data[0].Status != "queued" || page.Data[0].Attempts != 8 {
+		t.Fatalf("delivery view = %+v", page.Data)
+	}
+}
+
+func TestDeliveryActivityRespectsPrivateTeams(t *testing.T) {
+	e := hdtest.New(t, Register)
+	ws := e.NewWorkspace()
+	team := ids.New()
+	e.Exec(`INSERT INTO teams(id,workspace_id,name,private) VALUES($1,$2,'Private',true)`, team, ws.ID)
+	var ticket domain.Ticket
+	var seq int64
+	if err := e.D.DB.Tx(e.Ctx, func(tx pgx.Tx) error {
+		var err error
+		ticket, err = domain.CreateTicket(e.Ctx, tx, domain.NewTicket{WorkspaceID: ws.ID, Subject: "Private", Channel: domain.ChannelAPI, TeamID: &team})
+		if err != nil {
+			return err
+		}
+		ev, err := events.Publish(e.Ctx, tx, events.Event{WorkspaceID: ws.ID, Type: "ticket.updated", TicketID: &ticket.ID, Data: map[string]any{"ticket_id": ticket.ID}})
+		seq = ev.Seq
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	e.Exec(`INSERT INTO support_channel_dispatches(workspace_id,event_seq,status) VALUES($1,$2,'failed')`, ws.ID, seq)
+	var page struct {
+		Data []delivery `json:"data"`
+	}
+	e.Do("GET", "/v1/support-channels/deliveries", ws.Admin.As(ws), nil).Want(t, 200).JSON(t, &page)
+	if len(page.Data) != 0 {
+		t.Fatalf("hidden deliveries: %+v", page.Data)
+	}
+	path := fmt.Sprintf("/v1/support-channels/deliveries/%d/retry", seq)
+	e.Do("POST", path, ws.Admin.As(ws), nil).Want(t, 404)
+	e.Exec(`UPDATE tickets SET assignee_id=$2 WHERE id=$1`, ticket.ID, ws.Admin.ID)
+	e.Do("GET", "/v1/support-channels/deliveries", ws.Admin.As(ws), nil).Want(t, 200).JSON(t, &page)
+	if len(page.Data) != 1 || page.Data[0].TicketNumber == nil || *page.Data[0].TicketNumber != ticket.Number {
+		t.Fatalf("assigned delivery: %+v", page.Data)
+	}
+	e.Do("POST", path, ws.Admin.As(ws), nil).Want(t, 202)
 }
 
 func TestCardCloseAsksAndOnlyItsOwnConfirmApplies(t *testing.T) {
@@ -231,6 +389,153 @@ func TestTypedReplyIsNotPreviewed(t *testing.T) {
 	w.e.Scalar(`SELECT EXISTS(SELECT 1 FROM support_channel_conversations WHERE connection_id=$1 AND pending_action IS NOT NULL)`, &pending, w.c.ID)
 	if pending {
 		t.Fatal("a typed reply waits for confirmation")
+	}
+}
+
+func TestProviderFilesUseTicketAttachmentChecks(t *testing.T) {
+	w := newWorkflow(t)
+	w.fake.files = map[string][]byte{"F1": []byte("safe attachment")}
+	w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", Text: "Screenshot", ExternalMessageID: "provider-1",
+		Files: []channel.Attachment{{ID: "F1", Name: "screen.txt", SizeBytes: int64(len("safe attachment"))}}})
+	messages, err := domain.ListMessages(w.e.Ctx, w.e.D.DB.Pool, w.ws.ID, w.ticket.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := messages[len(messages)-1]
+	if last.Kind != "note" || len(last.Attachments) != 1 || last.Attachments[0].Filename != "screen.txt" {
+		t.Fatalf("message = %+v", last)
+	}
+	var linked bool
+	w.e.Scalar(`SELECT EXISTS(SELECT 1 FROM support_channel_messages WHERE destination_id=(SELECT destination_id FROM support_channel_threads WHERE ticket_id=$1) AND message_id=$2 AND kind='source' AND external_message_id='provider-1')`, &linked, w.ticket.ID, last.ID)
+	if !linked {
+		t.Fatal("provider source message was not linked")
+	}
+}
+
+func TestProviderFilesAreRefusedAndFailedImportsAreRemoved(t *testing.T) {
+	t.Run("executable", func(t *testing.T) {
+		w := newWorkflow(t)
+		body := []byte("#!/bin/sh\necho no")
+		w.fake.files = map[string][]byte{"F1": body}
+		w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", ExternalMessageID: "provider-executable",
+			Files: []channel.Attachment{{ID: "F1", Name: "run.sh", SizeBytes: int64(len(body))}}})
+		var attachments int
+		w.e.Scalar(`SELECT count(*) FROM attachments WHERE workspace_id=$1`, &attachments, w.ws.ID)
+		if attachments != 0 || len(w.fake.posts) != 1 || !strings.Contains(w.fake.posts[0], "Executable") {
+			t.Fatalf("attachments=%d posts=%q", attachments, w.fake.posts)
+		}
+	})
+
+	t.Run("oversized", func(t *testing.T) {
+		w := newWorkflow(t)
+		w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", ExternalMessageID: "provider-large",
+			Files: []channel.Attachment{{ID: "F1", Name: "large.dat", SizeBytes: hd.MaxAttachmentBytes + 1}}})
+		if w.fake.downloads != 0 || len(w.fake.posts) != 1 || !strings.Contains(w.fake.posts[0], "25 MB") {
+			t.Fatalf("downloads=%d posts=%q", w.fake.downloads, w.fake.posts)
+		}
+	})
+
+	t.Run("post failure", func(t *testing.T) {
+		w := newWorkflow(t)
+		body := []byte("safe attachment")
+		w.fake.files = map[string][]byte{"F1": body}
+		// This email ticket has no contact, so its reply fails after the import.
+		w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "reply", Text: "Attached", ExternalMessageID: "provider-failed",
+			Files: []channel.Attachment{{ID: "F1", Name: "safe.txt", SizeBytes: int64(len(body))}}})
+		var attachments int
+		w.e.Scalar(`SELECT count(*) FROM attachments WHERE workspace_id=$1`, &attachments, w.ws.ID)
+		if attachments != 0 || w.fake.downloads != 1 {
+			t.Fatalf("attachments=%d downloads=%d responses=%q", attachments, w.fake.downloads, w.fake.responses)
+		}
+	})
+	t.Run("actual total exceeds limit", func(t *testing.T) {
+		w := newWorkflow(t)
+		w.fake.files = map[string][]byte{"F1": bytes.Repeat([]byte("a"), 13<<20), "F2": bytes.Repeat([]byte("b"), 13<<20)}
+		w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", Text: "Files", ExternalMessageID: "provider-total",
+			Files: []channel.Attachment{{ID: "F1", Name: "one.txt", SizeBytes: 1}, {ID: "F2", Name: "two.txt", SizeBytes: 1}}})
+		var attachments int
+		w.e.Scalar(`SELECT count(*) FROM attachments WHERE workspace_id=$1`, &attachments, w.ws.ID)
+		if attachments != 0 || w.fake.downloads != 2 {
+			t.Fatalf("attachments=%d downloads=%d", attachments, w.fake.downloads)
+		}
+	})
+}
+
+func TestProviderMessageRetryDoesNotDownloadAgain(t *testing.T) {
+	w := newWorkflow(t)
+	body := []byte("safe attachment")
+	w.fake.files = map[string][]byte{"F1": body}
+	in := channel.Inbound{ExternalUserID: "U1", Command: "note", Text: "Screenshot", ExternalMessageID: "provider-retry",
+		Files: []channel.Attachment{{ID: "F1", Name: "screen.txt", SizeBytes: int64(len(body))}}}
+	w.run(t, in)
+	w.run(t, in)
+	if w.fake.downloads != 1 {
+		t.Fatalf("downloads=%d, want one", w.fake.downloads)
+	}
+	var messages int
+	w.e.Scalar(`SELECT count(*) FROM messages WHERE ticket_id=$1 AND kind='note'`, &messages, w.ticket.ID)
+	if messages != 1 {
+		t.Fatalf("notes=%d, want one", messages)
+	}
+}
+
+func TestProviderCanEditAndDeleteItsOwnNoteButNotRewriteAReply(t *testing.T) {
+	w := newWorkflow(t)
+	w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", Text: "first", ExternalMessageID: "note-1"})
+	w.fake.posts, w.fake.responses = nil, nil
+	w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", Text: "first", ExternalMessageID: "note-1", Mutation: "edit"})
+	var edits int
+	w.e.Scalar(`SELECT count(*) FROM activities WHERE ticket_id=$1 AND type='note_edited'`, &edits, w.ticket.ID)
+	if edits != 0 || len(w.fake.posts) != 0 || len(w.fake.responses) != 0 {
+		t.Fatalf("unchanged edit: activities=%d posts=%q responses=%q", edits, w.fake.posts, w.fake.responses)
+	}
+	w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", Text: "corrected", ExternalMessageID: "note-1", Mutation: "edit"})
+	w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "note", Text: "corrected", ExternalMessageID: "note-1", Mutation: "edit"})
+	var body string
+	w.e.Scalar(`SELECT body_text FROM messages WHERE ticket_id=$1 AND kind='note' ORDER BY created_at DESC LIMIT 1`, &body, w.ticket.ID)
+	if body != "corrected" {
+		t.Fatalf("edited note = %q", body)
+	}
+	w.e.Scalar(`SELECT count(*) FROM activities WHERE ticket_id=$1 AND type='note_edited'`, &edits, w.ticket.ID)
+	if edits != 1 {
+		t.Fatalf("note edit activities=%d, want one", edits)
+	}
+	w.run(t, channel.Inbound{ExternalUserID: "U1", ExternalMessageID: "note-1", Mutation: "delete"})
+	var deleted bool
+	w.e.Scalar(`SELECT deleted_at IS NOT NULL FROM messages WHERE ticket_id=$1 AND kind='note' ORDER BY created_at DESC LIMIT 1`, &deleted, w.ticket.ID)
+	if !deleted {
+		t.Fatal("provider note deletion was not applied")
+	}
+
+	var reply domain.Message
+	if err := w.e.D.DB.Tx(w.e.Ctx, func(tx pgx.Tx) error {
+		var err error
+		reply, err = domain.AddMessage(w.e.Ctx, tx, w.e.D.Jobs, domain.NewMessage{WorkspaceID: w.ws.ID, TicketID: w.ticket.ID, Kind: "reply", Direction: "outbound", AuthorType: "user", AuthorUserID: &w.ws.Agent.ID, BodyHTML: "<p>sent</p>", BodyText: "sent"})
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(w.e.Ctx, `INSERT INTO support_channel_messages(destination_id,message_id,kind,external_message_id,external_user_id,source_text)
+			SELECT destination_id,$2,'source','reply-1','U1','sent' FROM support_channel_threads WHERE ticket_id=$1`, w.ticket.ID, reply.ID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	w.fake.posts, w.fake.responses = nil, nil
+	w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "reply", Text: "sent", ExternalMessageID: "reply-1", Mutation: "edit"})
+	if len(w.fake.posts) != 0 || len(w.fake.responses) != 0 {
+		t.Fatalf("unchanged reply edit was answered: posts=%q responses=%q", w.fake.posts, w.fake.responses)
+	}
+	w.run(t, channel.Inbound{ExternalUserID: "U1", Command: "reply", Text: "changed", ExternalMessageID: "reply-1", Mutation: "edit"})
+	w.e.Scalar(`SELECT body_text FROM messages WHERE ticket_id=$1 AND kind='reply' AND direction='outbound' ORDER BY created_at DESC LIMIT 1`, &body, w.ticket.ID)
+	if body != "sent" {
+		t.Fatalf("provider rewrote customer reply to %q", body)
+	}
+
+	w.fake.posts, w.fake.responses = nil, nil
+	w.run(t, channel.Inbound{ExternalUserID: "U2", Command: "reply", Text: "changed", ExternalMessageID: "reply-1", Mutation: "edit"})
+	w.run(t, channel.Inbound{ExternalUserID: "unlinked", Command: "reply", Text: "changed", ExternalMessageID: "reply-1", Mutation: "edit"})
+	if len(w.fake.posts) != 0 || len(w.fake.responses) != 0 {
+		t.Fatalf("other senders' mutations were answered: posts=%q responses=%q", w.fake.posts, w.fake.responses)
 	}
 }
 

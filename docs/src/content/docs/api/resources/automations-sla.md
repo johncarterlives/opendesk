@@ -21,8 +21,8 @@ type Automation = {
   trigger: "ticket_created" | "customer_replied" | "agent_replied" | "ticket_updated";
   conditions: { field: "subject" | "body" | "from_email" | "channel" | "mailbox_id" | "priority" | "severity" | "status" | "tag"
                      | "sentiment" | "ai_decide" | `field.${string}` | `contact.field.${string}`;
-                op: "contains" | "not_contains" | "equals" | "not_equals" | FieldOp;
-                value: string;
+                op: "contains" | "not_contains" | "equals" | "not_equals" | "any" | "none" | FieldOp;
+                value: string /* up to 500 characters; any / none: phrases, one per line */;
                 question?: string /* ai_decide only: 3..300 characters of plain text */ }[];
   actions: { type: "set_status" | "set_priority" | "set_severity" | "assign_user" | "assign_team" | "add_tag" | "remove_tag"
                  | "send_reply" | "add_note" | "mark_spam" | "ai_triage" | "set_field";
@@ -32,6 +32,8 @@ type Automation = {
   position: number;
   run_count: number;
 };
+// any / none on subject, body, from_email, received_at and tag: the text contains any, or none, of the
+// phrases in value, one per line (1..100 phrases of up to 500 characters, 5000 in all; case-insensitive).
 // severity: equals / not_equals with sev1..sev4 or "none". set_severity: sev1..sev4, or "" to clear.
 // ai_decide: gt / lt with value a probability 0.01..0.99; at most 3 per automation; all of one
 // trigger run are asked in one call (charged once to the AI balance). It does not hold when no decision engine answers.

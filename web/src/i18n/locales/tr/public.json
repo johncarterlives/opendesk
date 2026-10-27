@@ -26,7 +26,22 @@
     "results_one": "{{count}} sonuç",
     "results_other": "{{count}} sonuç",
     "theme_light": "Açık temaya geç",
-    "theme_dark": "Koyu temaya geç"
+    "theme_dark": "Koyu temaya geç",
+    "changelog": "Değişiklik günlüğü",
+    "changelog_subtitle": "Yeni özellikler, iyileştirmeler ve düzeltmeler.",
+    "latest_updates": "Son güncellemeler",
+    "all_updates": "Tüm güncellemeler",
+    "all_categories": "Tümü",
+    "categories": "Kategoriler",
+    "changelog_empty_title": "Henüz güncelleme yok",
+    "changelog_empty_body": "Güncellemeler yayımlandığında burada görünecek.",
+    "category_empty_title": "“{{category}}” kategorisinde güncelleme yok",
+    "entry_not_found_title": "Güncelleme bulunamadı",
+    "entry_not_found_body": "Silinmiş veya yayından kaldırılmış olabilir.",
+    "newer": "Daha yeni güncellemeler",
+    "older": "Daha eski güncellemeler",
+    "feed": "RSS beslemesi",
+    "permalink": "Bu güncellemenin bağlantısı"
   },
   "csat": {
     "page_title": "Görüşmenizi değerlendirin",

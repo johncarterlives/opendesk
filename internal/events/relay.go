@@ -15,7 +15,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/jobs"
 )
 
-// Relay moves committed events from the outbox to NATS and queues webhook dispatch.
+// Relay moves committed events from the outbox to NATS and queues webhook and channel dispatch.
 // Several relays can run at once; rows are claimed with SKIP LOCKED.
 type Relay struct {
 	Pool *pgxpool.Pool // direct (unpooled) connection: LISTEN needs a session
@@ -111,6 +111,9 @@ func (r *Relay) flush(ctx context.Context) (int, error) {
 				InsertOpts: &river.InsertOpts{Queue: jobs.QueueWebhooks},
 			})
 			if supportChannelEvent(e.Type) && mirrored[e.WorkspaceID] {
+				if _, err := tx.Exec(ctx, `INSERT INTO support_channel_dispatches(workspace_id,event_seq) VALUES($1,$2) ON CONFLICT DO NOTHING`, e.WorkspaceID, e.Seq); err != nil {
+					return err
+				}
 				params = append(params, river.InsertManyParams{Args: jobs.SupportChannelDispatchArgs{
 					WorkspaceID: e.WorkspaceID, EventSeq: e.Seq,
 				}})
@@ -163,7 +166,7 @@ func supportChannelWorkspaces(ctx context.Context, tx pgx.Tx, batch []Envelope) 
 
 func supportChannelEvent(typ string) bool {
 	switch typ {
-	case "ticket.created", "ticket.updated", "message.created":
+	case "ticket.created", "ticket.updated", "message.created", "message.updated":
 		return true
 	default:
 		return false

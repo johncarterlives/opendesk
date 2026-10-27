@@ -30,7 +30,22 @@
     "results_many": "{{count}} wyników",
     "results_other": "{{count}} wyniku",
     "theme_light": "Przełącz na jasny motyw",
-    "theme_dark": "Przełącz na ciemny motyw"
+    "theme_dark": "Przełącz na ciemny motyw",
+    "changelog": "Dziennik zmian",
+    "changelog_subtitle": "Nowe funkcje, ulepszenia i poprawki.",
+    "latest_updates": "Najnowsze aktualizacje",
+    "all_updates": "Wszystkie aktualizacje",
+    "all_categories": "Wszystkie",
+    "categories": "Kategorie",
+    "changelog_empty_title": "Nie ma jeszcze aktualizacji",
+    "changelog_empty_body": "Aktualizacje pojawią się tutaj po opublikowaniu.",
+    "category_empty_title": "Brak aktualizacji w kategorii „{{category}}”",
+    "entry_not_found_title": "Nie znaleziono aktualizacji",
+    "entry_not_found_body": "Mogła zostać usunięta lub wycofana z publikacji.",
+    "newer": "Nowsze aktualizacje",
+    "older": "Starsze aktualizacje",
+    "feed": "Kanał RSS",
+    "permalink": "Link do tej aktualizacji"
   },
   "csat": {
     "page_title": "Oceń rozmowę",

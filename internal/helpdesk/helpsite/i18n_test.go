@@ -17,7 +17,8 @@ func TestEveryKeyThePagesUseIsInEnglish(t *testing.T) {
 	}
 	for _, k := range []string{"help.not_found_title", "help.not_found_body", "help.article_not_found_title", "help.article_not_found_body",
 		"help.topic_not_found_title", "help.topic_not_found_body", "help.search_placeholder", "help.search", "help.default_title",
-		"help.hero_subtitle", "help.updated", "help.no_results_title", "help.no_results_body", "help.search_min"} {
+		"help.hero_subtitle", "help.updated", "help.no_results_title", "help.no_results_body", "help.search_min",
+		"help.changelog", "help.changelog_subtitle", "help.entry_not_found_title", "help.entry_not_found_body"} {
 		keys[k] = true
 	}
 	for k := range keys {

@@ -6,6 +6,7 @@ import type {
   AISettings,
   Billing,
   ApiKey,
+  ChangelogEntry,
   AuditLog,
   Automation,
   Company,
@@ -112,6 +113,8 @@ export type WsData = {
   mailboxes: Mailbox[];
   collections: KbCollection[];
   articles: KbArticle[];
+  /** Changelog entries (contracts/api.md "Changelog"). */
+  changelog: ChangelogEntry[];
   apiKeys: ApiKey[];
   webhooks: Webhook[];
   deliveries: Record<string, WebhookDelivery[]>;

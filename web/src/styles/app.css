@@ -19,7 +19,8 @@
 
 /*
  * opendesk theme. Monochrome: paper, mist, ash, smoke, graphite, charcoal,
- * coal, ink. Status hues exist only for small semantic dots and badges.
+ * coal, ink. Status hues exist only for small semantic dots and badges, and
+ * as the soft tints that tell the team's replies and internal notes apart.
  * Every colour is a variable so the light and dark themes swap in one place.
  */
 :root {
@@ -53,8 +54,12 @@
   --inverse: #0a0a0a;
   --inverse-hover: #262626;
   --inverse-fg: #ffffff;
-  --note: #fafafa;
-  --note-line: #d4d4d4;
+  /* Timeline frames: the team's replies carry a blue tint, internal notes an amber one,
+     so who wrote a message reads before its words; the customer's stay on the surface. */
+  --reply: color-mix(in oklab, var(--tone-blue-solid) 5%, var(--surface));
+  --reply-line: color-mix(in oklab, var(--tone-blue-solid) 30%, var(--surface));
+  --note: color-mix(in oklab, var(--tone-amber-solid) 10%, var(--surface));
+  --note-line: color-mix(in oklab, var(--tone-amber-solid) 60%, var(--surface));
   --focus: rgb(10 10 10 / 0.14);
   --focus-line: #a3a3a3;
   --ok: #16a34a;
@@ -151,8 +156,10 @@
   --inverse: #f7f7f7;
   --inverse-hover: #e4e4e4;
   --inverse-fg: #0a0a0a;
-  --note: #1f2023;
-  --note-line: #45464b;
+  --reply: color-mix(in oklab, var(--tone-blue-solid) 9%, var(--surface));
+  --reply-line: color-mix(in oklab, var(--tone-blue-solid) 35%, var(--surface));
+  --note: color-mix(in oklab, var(--tone-amber-solid) 11%, var(--surface));
+  --note-line: color-mix(in oklab, var(--tone-amber-solid) 50%, var(--surface));
   --focus: rgb(255 255 255 / 0.16);
   --focus-line: #6b6b6b;
   --ok: #22c55e;
@@ -279,6 +286,8 @@
   --color-inverse: var(--inverse);
   --color-inverse-hover: var(--inverse-hover);
   --color-inverse-fg: var(--inverse-fg);
+  --color-reply: var(--reply);
+  --color-reply-line: var(--reply-line);
   --color-note: var(--note);
   --color-note-line: var(--note-line);
   --color-ok: var(--ok);

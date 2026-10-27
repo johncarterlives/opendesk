@@ -4,7 +4,7 @@
 import type { CollabThreadQuery } from "../api/endpoints";
 import type { MailAccount, MailBox, MailFolder, MailFolderRole } from "../api/types";
 
-export const MAIL_BOXES: readonly MailBox[] = ["inbox", "unread", "starred", "sent", "drafts", "archive", "trash", "spam", "all", "shared", "assigned"];
+export const MAIL_BOXES: readonly MailBox[] = ["inbox", "unread", "starred", "sent", "drafts", "archive", "trash", "spam", "all", "shared", "assigned", "needs_action"];
 
 /** The route's box: a box, or "folder" when the `folder` search names one. */
 export type MailRouteBox = MailBox | "folder";
@@ -38,11 +38,12 @@ export function boxForRole(role: MailFolderRole | null): AccountBox | null {
 }
 
 /** `to`: only conversations with this one of the person's addresses on them (an alias). */
-export type MailSearch = { account?: string; folder?: string; q?: string; to?: string; with?: string };
+/** `category`: one tab of the inbox (contracts/collab.md "Categories"). */
+export type MailSearch = { account?: string; folder?: string; q?: string; to?: string; with?: string; category?: string };
 
 export function parseMailSearch(raw: Record<string, unknown>): MailSearch {
   const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
-  return { account: str(raw.account), folder: str(raw.folder), q: str(raw.q), to: str(raw.to), with: str(raw.with) };
+  return { account: str(raw.account), folder: str(raw.folder), q: str(raw.q), to: str(raw.to), with: str(raw.with), category: str(raw.category) };
 }
 
 /** The thread list query for a route: a folder replaces the box. */
@@ -56,6 +57,8 @@ export function mailListQuery(box: string, s: MailSearch): CollabThreadQuery {
   if (s.q) q.q = s.q;
   if (s.to) q.to = s.to;
   if (s.with) q.with = s.with;
+  // A tab splits the inbox alone; a search spans every tab.
+  if (s.category && q.box === "inbox" && !s.q) q.category = s.category;
   return q;
 }
 
@@ -134,7 +137,7 @@ export function isTabBox(v: unknown): v is TabBox {
 
 /** Whether an account has a box: the provider lists the folder; Inbox, Starred, Unread and All mail always; Archive on Gmail. */
 export function hasBox(account: Pick<MailAccount, "provider">, folders: MailFolder[] | undefined, box: MailBox): boolean {
-  if (box === "inbox" || box === "starred" || box === "unread" || box === "all" || box === "shared" || box === "assigned") return true;
+  if (box === "inbox" || box === "starred" || box === "unread" || box === "all" || box === "shared" || box === "assigned" || box === "needs_action") return true;
   if (box === "archive" && account.provider === "google") return true;
   return !folders || !!folderWithRole(folders, box);
 }

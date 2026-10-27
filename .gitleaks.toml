@@ -17,6 +17,7 @@ regexes = [
   '''sk-or-v1-0123456789abcdefWXYZ''',
   '''sk-or-bad-12345678''',
   '''sk-test-(abcd1234|12345678)''',
+  '''ts-(bad-key|nofunds)-1234''',
   # A wrong mailbox password in the connection check tests (internal/email/connect_test.go).
   '''Wrong-Passw0rd''',
   # The Web Push content encoding named in a comment (internal/push/webpush_test.go).

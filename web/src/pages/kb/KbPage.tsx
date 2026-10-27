@@ -30,6 +30,7 @@ import { useTranslation } from "react-i18next";
 import { AiIcon, AiTooltip } from "@/components/ai/bits";
 import { requestKbDraft } from "@/components/ai/kbDraftIntent";
 import { articleBrandId, KbBrandPick } from "@/components/kb/brand";
+import { KbSwitch } from "@/components/kb/KbSwitch";
 import { useBrands } from "@/components/settings2/teams";
 import { defaultHelpUrl, helpCenterHref } from "@/lib/helpCenter";
 import { BrandChip } from "@/components/tickets/teams";
@@ -127,7 +128,9 @@ export default function KbPage() {
             {newArticle}
           </>
         }
-      />
+      >
+        <KbSwitch />
+      </PageHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {all.data && everything.length > 0 && (
@@ -384,6 +387,7 @@ function CollectionTile({
   const { t } = useTranslation("kb");
   return (
     <Link
+      from="/kb"
       to="/kb"
       search={(s) => ({ ...s, collection })}
       aria-current={active ? "true" : undefined}

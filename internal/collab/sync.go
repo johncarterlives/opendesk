@@ -158,6 +158,8 @@ func (s *service) runSync(ctx context.Context, a *accountRow) error {
 	}
 	// The account's own settings, when due; they never fail the sync.
 	s.syncSettings(ctx, prov)
+	// Its categories, when they changed or mail waits to be sorted; never fail the sync either.
+	s.checkCategories(ctx, a)
 	if err := p.batch(ctx, func(pgx.Tx) error { return nil }); err != nil { // anything left to publish
 		return err
 	}

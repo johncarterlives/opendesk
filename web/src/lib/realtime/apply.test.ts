@@ -1,9 +1,10 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
+import { inWorkspace } from "../api/client";
 import type { Member, Message, SupportChannelConnection, SupportChannelDestination, Thread, User, Workspace } from "../api/types";
 import { qk } from "../queries";
 import { useSession } from "../session";
-import { env } from "../test/fixtures";
+import { env, ticket } from "../test/fixtures";
 import { applyEnvelope } from "./apply";
 
 const member = (over: Partial<Member["user"]> = {}, role: Member["role"] = "agent"): Member => ({
@@ -92,6 +93,68 @@ describe("Collab events", () => {
     const spy = vi.spyOn(qc, "invalidateQueries");
     applyEnvelope(qc, env(13, { type: "collab.accounts", data: { account_id: "a1" } }), { me: "u1", viaUser: true });
     expect(spy.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey))).toContain(JSON.stringify(qk.mailAccounts));
+  });
+});
+
+describe("sidebar counts", () => {
+  // Each test has a workspace of its own: the coalescing timers are per workspace.
+  const updated = (wid: string, seq: number) => env(seq, { workspace_id: wid, data: { ticket: ticket({ id: `t${seq}` }) } });
+
+  it("refetches the counts every two seconds at most through a burst, and after its last event", async () => {
+    vi.useFakeTimers();
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, "invalidateQueries");
+    const keys = inWorkspace("w-burst", () => [qk.counts, qk.of("tickets", "everywhere"), qk.overview]);
+    const refetches = () => spy.mock.calls.filter((c) => JSON.stringify(c[0]?.queryKey) === JSON.stringify(keys[0])).length;
+    const burst = async (from: number) => {
+      for (let seq = from; seq < from + 10; seq++) {
+        applyEnvelope(qc, updated("w-burst", seq), { me: "u1" });
+        await vi.advanceTimersByTimeAsync(150);
+      }
+    };
+    await burst(0); // 1.5 s of events
+    expect(refetches()).toBe(0);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(refetches()).toBe(1);
+    for (const queryKey of keys) expect(spy).toHaveBeenCalledWith({ queryKey }, { cancelRefetch: false });
+    await burst(10);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(refetches()).toBe(2);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(refetches()).toBe(2);
+    vi.useRealTimers();
+  });
+
+  it("lets a counts read in flight finish, then reads again", async () => {
+    vi.useFakeTimers();
+    const qc = new QueryClient();
+    const answers: ((n: number) => void)[] = [];
+    const signals: AbortSignal[] = [];
+    const observer = new QueryObserver(qc, {
+      queryKey: inWorkspace("w-slow", () => qk.counts),
+      queryFn: ({ signal }) => {
+        signals.push(signal);
+        return new Promise<number>((resolve) => answers.push(resolve));
+      },
+    });
+    const stop = observer.subscribe(() => {});
+    await vi.advanceTimersByTimeAsync(0);
+    expect(answers).toHaveLength(1);
+
+    applyEnvelope(qc, updated("w-slow", 30), { me: "u1" });
+    await vi.advanceTimersByTimeAsync(2000);
+    // Still running: neither abandoned nor joined by a second read.
+    expect(answers).toHaveLength(1);
+    expect(signals[0].aborted).toBe(false);
+
+    answers[0](1);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(answers).toHaveLength(2);
+    answers[1](2);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(observer.getCurrentResult().data).toBe(2);
+    stop();
+    vi.useRealTimers();
   });
 });
 

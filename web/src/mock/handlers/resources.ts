@@ -588,10 +588,20 @@ function positive(v: unknown, name: string): number {
   return Math.round(v);
 }
 
+const PHRASE_FIELDS = ["subject", "body", "from_email", "received_at", "tag"];
+
 function conditions(v: unknown): Condition[] {
   if (!Array.isArray(v)) return [];
   return v.filter(isRecord).map((c) => {
     if (typeof c.field !== "string" || typeof c.op !== "string" || typeof c.value !== "string") throw invalid("Each condition needs a field, operator and value");
+    if ((c.op === "any" || c.op === "none") && !c.field.includes("field.")) {
+      // A phrase list, one per line, as the API keeps it (contracts/api.md).
+      if (!PHRASE_FIELDS.includes(c.field)) throw invalid(`any and none conditions take ${PHRASE_FIELDS.join(", ")}`);
+      const list = c.value.split("\n").map((p) => p.trim()).filter(Boolean);
+      if (!list.length) throw invalid("any and none conditions need at least one phrase, one per line");
+      if (list.length > 100) throw invalid("any and none conditions take at most 100 phrases");
+      return { field: c.field, op: c.op, value: list.join("\n") } as Condition;
+    }
     return { field: c.field, op: c.op, value: c.value } as Condition;
   });
 }

@@ -121,7 +121,7 @@ type TicketCounts = TicketCounts & {
 | DELETE | `/v1/teams/{id}` | admin → 204. A private team that still has tickets (any status) needs `move_to` (`422 move_required`, the detail gives the count), and then all its tickets move, solved and closed too: its tickets never fall back to no team. An API key deletes a private team only when the team is in its `private_team_ids`. `?move_to=<team id>` (`422` if not a team of the workspace) moves its open, pending and on hold tickets, addresses, widgets (and widget topics) and routing rules there; without it they are left without a team and its routing rules are deleted. Moved tickets get `team_changed {from, to, via: "agent"}`, `ticket.updated` (and `ticket.hidden` when `move_to` is private), and are assigned again in the new team; an assignee not on a private `move_to` is unassigned. The first 500 tickets get these one by one; the rest move in one statement with the activity only. Solved and closed tickets keep no team. Its assignment rule and round robin position go with it; automations whose `assign_team` names it are kept and skip that action. Publishes `team.deleted {team_id, move_to}`; audit `team.deleted {name, move_to, tickets_moved}` |
 | POST | `/v1/teams/{id}/join` | admin or owner (users only) joining as `observer` → `Team`. Joining again changes nothing. Audit `team.joined`, and a notification `team_joined {team_id, team: {id, name, private}, user: {id, name}, by}` to the team's leads |
 | POST | `/v1/teams/{id}/leave` | → 204, also when not a member. The last lead of a team with other members cannot leave (`409 last_lead`). Audit `team.left` |
-| CRUD | `/v1/brands`, `/v1/brands/{id}` | read: members; write: admin. Create `{name, slug?, color?, locale?, help_center?: {enabled?, title?}}` (PATCH the same and `position`). `slug` is unique across all brands (`409 slug_taken`), derived from the name when absent; reserved words answer `422 slug_reserved`. DELETE refuses the default brand (`409 default_brand`) and a brand with addresses (`409 brand_in_use`); its widgets, collections and articles (its own and those in its collections) go with it, and its tickets move to the default brand. Audit `brand.created`/`updated`/`deleted`/`default_changed`/`image_updated`/`image_removed` |
+| CRUD | `/v1/brands`, `/v1/brands/{id}` | read: members; write: admin. Create `{name, slug?, color?, locale?, help_center?: {enabled?, title?}}` (PATCH the same and `position`). `slug` is unique across all brands (`409 slug_taken`), derived from the name when absent; reserved words answer `422 slug_reserved`. DELETE refuses the default brand (`409 default_brand`) and a brand with addresses (`409 brand_in_use`); its widgets, collections, articles (its own and those in its collections) and changelog entries go with it, and its tickets move to the default brand. Audit `brand.created`/`updated`/`deleted`/`default_changed`/`image_updated`/`image_removed` |
 | PUT/DELETE | `/v1/brands/{id}/images/{slot}` | admin. `logo`, `help_center_logo`, `help_center_favicon` |
 | POST | `/v1/brands/{id}/default` | admin → makes this the default brand |
 | PUT | `/v1/brands/{id}/help-domain` | admin `{hostname}` → `Brand`: sets the help center's custom domain ("Help center addresses") and checks it right away. The same hostname again changes nothing; another hostname replaces the domain, which starts over. `422 hostname_invalid` (not a hostname, an IP address, a registrable domain such as `acme.com` rather than a subdomain, or a host of this instance or under `HELP_DOMAIN`), `409 domain_taken` (verified by another brand). Audit `brand.help_domain_set {hostname, previous}` |
@@ -460,7 +460,8 @@ zone holds that no domain does. Every status change publishes `brand.updated`.
 | `/` | title, search, topics (collections) and popular articles |
 | `/c/<collection slug>` · `/a/<article slug>` | a topic, an article (with the rest of its topic) |
 | `/search?q=` | up to 20 published articles |
-| `/sitemap.xml` · `/robots.txt` | every published article and topic of the brand |
+| `/changelog` · `/changelog/<entry slug>` · `/changelog/feed.xml` | the brand's and shared published changelog entries, newest first, 10 a page (`?page=`, `?category=`); one entry; an Atom feed of the latest 30. The header links the changelog, and the home page shows the latest three, once there is one |
+| `/sitemap.xml` · `/robots.txt` | every published article, topic and changelog entry of the brand |
 | `/_help/*` | the stylesheet, script and fonts |
 | `POST /_help/views` | `{article_id}` from the page's script: counts an article view |
 
@@ -468,7 +469,7 @@ zone holds that no domain does. Every status change publishes `brand.updated`.
   workspace's, else English; pages link their other languages with `hreflang`. Articles are shown as
   written.
 - Pages carry a canonical URL on the help center's `url`, Open Graph and JSON-LD (`WebSite` with a
-  search action, `BreadcrumbList`, `Article`), and `Cache-Control: public, max-age=60`.
+  search action, `BreadcrumbList`, `Article`, `BlogPosting` for a changelog entry), and `Cache-Control: public, max-age=60`.
 - `<slug>.<HELP_DOMAIN>` and `/help/<slug>/*` on the instance's own hosts answer `301` to the help center's `url` when that
   is elsewhere (`/help/<slug>/c/x` → `/c/x`). A brand whose help center is off, or an unknown host or
   path, is a `404` page.

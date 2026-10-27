@@ -5,6 +5,7 @@
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import type { TicketListQuery } from "./api/endpoints";
 import type { Page, Priority, Severity, Team, Ticket, TicketFilters, View } from "./api/types";
+import { labelsMatch } from "./labelFilter";
 import { keyBody, qk } from "./queries";
 
 export type TicketPages = InfiniteData<Page<Ticket>, string | null>;
@@ -67,13 +68,19 @@ export function ticketMatches(query: TicketListQuery, t: Ticket, me: string, vie
     if (m === null) return null;
     if (!m) return false;
   }
+  if (f.team_not) {
+    const m = teamFilterMatches(f.team_not, t.team_id, myTeams);
+    if (m === null) return null;
+    if (m) return false;
+  }
   if (f.mailbox_id && t.mailbox_id !== f.mailbox_id) return false;
+  if (f.mailbox_not && t.mailbox_id && f.mailbox_not.split(",").includes(t.mailbox_id)) return false;
   if (f.received_at && (t.received_at ?? "").toLowerCase() !== f.received_at.toLowerCase()) return false;
   if (f.brand_id && t.brand_id !== f.brand_id) return false;
   if (f.widget_id && t.widget_id !== f.widget_id) return false;
   if (f.channel && t.channel !== f.channel) return false;
-  if (f.tag && !t.tags.some((x) => x.name.toLowerCase() === f.tag!.toLowerCase())) return false;
-  return true;
+  if (f.channel_not?.includes(t.channel)) return false;
+  return labelsMatch(f, t.tags);
 }
 
 function dueOf(t: Ticket): number {

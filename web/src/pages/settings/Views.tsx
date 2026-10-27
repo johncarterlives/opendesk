@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowUpRight, AtSign, Globe, Inbox, Layers, Lock, MoreHorizontal, Pencil, Plus, Search, Trash2, UserRound, Users, UsersRound, X } from "lucide-react";
+import { ArrowUpRight, AtSign, Globe, Inbox, Layers, Lock, MoreHorizontal, Pencil, Plus, Search, Tag, Trash2, UserRound, Users, UsersRound, X } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsPage, Section, ListRow } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/dialog";
 import { Field, TextInput } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsEmpty } from "@/components/settings2/SettingsEmpty";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
@@ -21,6 +22,7 @@ import { SortableList } from "@/components/settings2/Sortable";
 import { TeamChip, TeamPick, useTeams } from "@/components/settings2/teams";
 import { Segmented } from "@/components/ui/tabs";
 import { viewAudience, viewAudienceHint, viewDeleteBody } from "@/components/settings2/viewAudience";
+import { cleanFilters, clearField, fieldOps, filterOp, hasFilter, joinList, splitList, withOp, type FilterOp, type OpField } from "@/components/settings2/viewFilters";
 import {
   MultiPick,
   SinglePick,
@@ -30,7 +32,7 @@ import {
   statusItems,
   useMailboxItems,
   useMemberItems,
-  TagPick,
+  useTagItems,
   useTeamItems,
 } from "@/components/settings2/pickers";
 import { ChannelIcon, PriorityIcon, SeverityChip, StatusIcon, channelLabel, priorityLabel, severityLabel, statusLabel } from "@/components/tickets/bits";
@@ -96,26 +98,39 @@ function FilterChips({ f }: { f: TicketFilters }) {
       </span>,
     );
   }
+  const teamNames = (list: string) =>
+    or(
+      splitList(list).map((id) =>
+        id === "mine" ? t("views.myTeams") : id === "none" ? t("views.noTeam") : (teams?.find((x) => x.id === id)?.name ?? t("views.unknown")),
+      ),
+    );
+  const mailboxNames = (list: string) => or(splitList(list).map((id) => mailboxes?.find((x) => x.id === id)?.email ?? t("views.aMailbox")));
   if (f.team_id)
     out.push(
       <span key="t" className={chip}>
         <Users />
-        <span className="truncate">
-          {t("views.teamNamed", {
-            name: teams?.find((x) => x.id === f.team_id)?.name ?? t("views.unknown"),
-          })}
-        </span>
+        <span className="truncate">{t("views.teamNamed", { name: teamNames(f.team_id) })}</span>
+      </span>,
+    );
+  if (f.team_not)
+    out.push(
+      <span key="tn" className={chip}>
+        <Users />
+        <span className="truncate">{t("views.notTeamNamed", { name: teamNames(f.team_not) })}</span>
       </span>,
     );
   if (f.mailbox_id)
     out.push(
       <span key="m" className={chip}>
         <Inbox />
-        <span className="truncate">
-          {t("views.inMailbox", {
-            name: mailboxes?.find((x) => x.id === f.mailbox_id)?.email ?? t("views.aMailbox"),
-          })}
-        </span>
+        <span className="truncate">{t("views.inMailbox", { name: mailboxNames(f.mailbox_id) })}</span>
+      </span>,
+    );
+  if (f.mailbox_not)
+    out.push(
+      <span key="mn" className={chip}>
+        <Inbox />
+        <span className="truncate">{t("views.notInMailbox", { name: mailboxNames(f.mailbox_not) })}</span>
       </span>,
     );
   if (f.received_at)
@@ -125,12 +140,36 @@ function FilterChips({ f }: { f: TicketFilters }) {
         <span className="truncate">{t("views.writtenTo", { address: f.received_at })}</span>
       </span>,
     );
-  if (f.tag) out.push(<TagChip key="g" name={f.tag} color={tags?.find((x) => x.name === f.tag)?.color} className="h-5" />);
+  const tagColor = (name: string) => tags?.find((x) => x.name.toLowerCase() === name.toLowerCase())?.color;
+  for (const name of splitList(f.tag)) out.push(<TagChip key={`g:${name}`} name={name} color={tagColor(name)} className="h-5" />);
+  if (f.tag_not)
+    out.push(
+      <span key="gn" className={chip}>
+        <Tag />
+        <span className="truncate">{t("views.withoutLabels", { labels: splitList(f.tag_not).join(", ") })}</span>
+      </span>,
+    );
+  if (f.untagged)
+    out.push(
+      <span key="gu" className={chip}>
+        <Tag />
+        {t("views.noLabel")}
+      </span>,
+    );
   if (f.channel)
     out.push(
       <span key="c" className={chip}>
         <ChannelIcon channel={f.channel} />
         {channelLabel(f.channel)}
+      </span>,
+    );
+  if (f.channel_not?.length)
+    out.push(
+      <span key="cn" className={chip}>
+        {f.channel_not.map((c) => (
+          <ChannelIcon key={c} channel={c} />
+        ))}
+        <span className="truncate">{t("views.notChannel", { channel: or(f.channel_not.map((c) => channelLabel(c))) })}</span>
       </span>,
     );
   if (f.q)
@@ -322,10 +361,18 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
   const { teams: allTeams } = useTeams();
   const { t: tt } = useTranslation("settingsTeams");
   const [f, setF] = useState<TicketFilters>(view?.filters ?? { status: ["open"] });
+  // The operator each row shows; it stays put while the row has no value yet.
+  const [ops, setOps] = useState<Record<OpField, FilterOp>>(() => {
+    const init = view?.filters ?? {};
+    return { tag: filterOp(init, "tag"), team: filterOp(init, "team"), mailbox: filterOp(init, "mailbox"), channel: filterOp(init, "channel") };
+  });
   const [error, setError] = useState<string | null>(null);
   const members = useMemberItems();
   const teams = useTeamItems();
   const mailboxes = useMailboxItems();
+  const tagItems = useTagItems();
+  // Stored names match labels in any case; show them as the label is spelled.
+  const tagValues = (list: string | undefined) => splitList(list).map((n) => tagItems.find((i) => i.value.toLowerCase() === n.toLowerCase())?.value ?? n);
   // Every address tickets can be written to: each mailbox's own and its aliases.
   const mailboxRows = useQuery(q.mailboxes()).data;
   const addresses = useMemo(
@@ -353,7 +400,7 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
 
   const save = useMutation({
     mutationFn: () => {
-      const filters = clean(f);
+      const filters = cleanFilters(f);
       return view
         ? api.views.update(view.id, { name: name.trim(), shared: teamId ? false : shared, team_id: teamId, filters })
         : api.views.create({
@@ -374,6 +421,15 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
   });
 
   const set = <K extends keyof TicketFilters>(k: K, v: TicketFilters[K] | undefined) => setF((cur) => ({ ...cur, [k]: v }));
+  const setOp = (field: OpField, op: FilterOp) => {
+    setOps((cur) => ({ ...cur, [field]: op }));
+    setF((cur) => withOp(cur, field, op));
+  };
+  const clearRow = (field: OpField) => () => {
+    setOps((cur) => ({ ...cur, [field]: "is" }));
+    setF((cur) => clearField(cur, field));
+  };
+  const opPick = (field: OpField) => <OpSelect field={field} value={ops[field]} onChange={(op) => setOp(field, op)} />;
 
   const assigneeItems = [
     { value: "me", label: t("views.assigneeViewer"), icon: <UserRound /> },
@@ -486,20 +542,45 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
               <FilterRow label={t("views.filters.assignee")} onClear={f.assignee ? () => set("assignee", undefined) : undefined}>
                 <SinglePick items={assigneeItems} value={f.assignee} onChange={(v) => set("assignee", v)} placeholder={t("views.any.assignee")} width={280} />
               </FilterRow>
-              <FilterRow label={t("views.filters.team")} onClear={f.team_id ? () => set("team_id", undefined) : undefined}>
-                <SinglePick items={teams} value={f.team_id} onChange={(v) => set("team_id", v)} placeholder={t("views.any.team")} />
+              <FilterRow label={t("views.filters.team")} onClear={hasFilter(f, "team") ? clearRow("team") : undefined}>
+                {opPick("team")}
+                {ops.team === "not" ? (
+                  <MultiPick items={teams} values={splitList(f.team_not)} onChange={(v) => set("team_not", joinList(v))} placeholder={t("views.choose.team")} />
+                ) : (
+                  <MultiPick items={teams} values={splitList(f.team_id)} onChange={(v) => set("team_id", joinList(v))} placeholder={t("views.any.team")} />
+                )}
               </FilterRow>
-              <FilterRow label={t("views.filters.mailbox")} onClear={f.mailbox_id ? () => set("mailbox_id", undefined) : undefined}>
-                <SinglePick items={mailboxes} value={f.mailbox_id} onChange={(v) => set("mailbox_id", v)} placeholder={t("views.any.mailbox")} width={300} />
+              <FilterRow label={t("views.filters.mailbox")} onClear={hasFilter(f, "mailbox") ? clearRow("mailbox") : undefined}>
+                {opPick("mailbox")}
+                {ops.mailbox === "not" ? (
+                  <MultiPick items={mailboxes} values={splitList(f.mailbox_not)} onChange={(v) => set("mailbox_not", joinList(v))} placeholder={t("views.choose.mailbox")} />
+                ) : (
+                  <SinglePick items={mailboxes} value={f.mailbox_id} onChange={(v) => set("mailbox_id", v)} placeholder={t("views.any.mailbox")} width={300} />
+                )}
               </FilterRow>
               <FilterRow label={t("views.filters.writtenTo")} onClear={f.received_at ? () => set("received_at", undefined) : undefined}>
                 <SinglePick items={addresses} value={f.received_at} onChange={(v) => set("received_at", v)} placeholder={t("views.any.writtenTo")} width={300} />
               </FilterRow>
-              <FilterRow label={t("views.filters.tag")} onClear={f.tag ? () => set("tag", undefined) : undefined}>
-                <TagPick value={f.tag} onChange={(v) => set("tag", v)} placeholder={t("views.any.tag")} />
+              <FilterRow label={t("views.filters.tag")} onClear={hasFilter(f, "tag") ? clearRow("tag") : undefined}>
+                {opPick("tag")}
+                {ops.tag === "not" ? (
+                  <MultiPick items={tagItems} values={tagValues(f.tag_not)} onChange={(v) => set("tag_not", joinList(v))} placeholder={t("views.choose.tag")} />
+                ) : ops.tag === "is" ? (
+                  <MultiPick items={tagItems} values={tagValues(f.tag)} onChange={(v) => set("tag", joinList(v))} placeholder={t("views.any.tag")} />
+                ) : null}
               </FilterRow>
-              <FilterRow label={t("views.filters.channel")} onClear={f.channel ? () => set("channel", undefined) : undefined}>
-                <SinglePick items={channelItems()} value={f.channel} onChange={(v) => set("channel", v as Channel)} placeholder={t("views.any.channel")} />
+              <FilterRow label={t("views.filters.channel")} onClear={hasFilter(f, "channel") ? clearRow("channel") : undefined}>
+                {opPick("channel")}
+                {ops.channel === "not" ? (
+                  <MultiPick
+                    items={channelItems()}
+                    values={f.channel_not ?? []}
+                    onChange={(v) => set("channel_not", v.length ? (v as Channel[]) : undefined)}
+                    placeholder={t("views.choose.channel")}
+                  />
+                ) : (
+                  <SinglePick items={channelItems()} value={f.channel} onChange={(v) => set("channel", v as Channel)} placeholder={t("views.any.channel")} />
+                )}
               </FilterRow>
               <FilterRow label={t("views.filters.keyword")} onClear={f.q ? () => set("q", undefined) : undefined}>
                 <TextInput
@@ -542,7 +623,7 @@ function FilterRow({ label, children, onClear }: { label: string; children: Reac
   return (
     <div className={cn("flex min-h-11 items-center gap-3 border-b border-line-soft px-3 transition-colors last:border-0", onClear && "bg-sunken/60")}>
       <span className={cn("w-[72px] shrink-0 text-[12.5px]", onClear ? "font-medium text-fg-2" : "text-fg-3")}>{label}</span>
-      <div className="flex min-w-0 flex-1 items-center">{children}</div>
+      <div className="flex min-w-0 flex-1 items-center gap-2">{children}</div>
       <button
         type="button"
         aria-label={t("views.clear", { field: label.toLowerCase() })}
@@ -556,17 +637,21 @@ function FilterRow({ label, children, onClear }: { label: string; children: Reac
   );
 }
 
-function clean(f: TicketFilters): TicketFilters {
-  const out: TicketFilters = {};
-  if (f.status?.length) out.status = f.status;
-  if (f.priority?.length) out.priority = f.priority;
-  if (f.severity?.length) out.severity = f.severity;
-  if (f.assignee) out.assignee = f.assignee;
-  if (f.team_id) out.team_id = f.team_id;
-  if (f.mailbox_id) out.mailbox_id = f.mailbox_id;
-  if (f.received_at) out.received_at = f.received_at;
-  if (f.tag) out.tag = f.tag;
-  if (f.channel) out.channel = f.channel;
-  if (f.q?.trim()) out.q = f.q.trim();
-  return out;
+/** A row's operator: is / is not, and for labels any of / none of / empty. */
+function OpSelect({ field, value, onChange }: { field: OpField; value: FilterOp; onChange: (op: FilterOp) => void }) {
+  const { t } = useTranslation("settingsInbox");
+  const label: Record<FilterOp, string> =
+    field === "tag"
+      ? { is: t("views.labelOps.is"), not: t("views.labelOps.not"), empty: t("views.labelOps.empty") }
+      : { is: t("views.ops.is"), not: t("views.ops.not"), empty: t("views.labelOps.empty") };
+  return (
+    <Select<FilterOp>
+      size="sm"
+      value={value}
+      onChange={onChange}
+      options={fieldOps[field].map((o) => ({ value: o, label: label[o] }))}
+      className="w-[104px] shrink-0"
+      aria-label={t("edit.operator")}
+    />
+  );
 }

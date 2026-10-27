@@ -299,6 +299,13 @@ func (s *Server) serveSite(w http.ResponseWriter, r *http.Request, hc kb.HelpCen
 		err = s.collection(ctx, p, hc, sub[3:])
 	case strings.HasPrefix(sub, "/a/") && !strings.Contains(sub[3:], "/"):
 		err = s.article(ctx, p, hc, sub[3:])
+	case sub == "/changelog":
+		err = s.changelog(ctx, p, hc, r.URL.Query())
+	case sub == "/changelog/feed.xml":
+		s.feed(w, r, hc, p)
+		return
+	case strings.HasPrefix(sub, "/changelog/") && !strings.Contains(sub[11:], "/"):
+		err = s.entry(ctx, p, hc, sub[11:])
 	case sub == "/sitemap.xml":
 		s.sitemap(w, r, hc, base)
 		return
@@ -420,7 +427,7 @@ func (s *Server) newPage(r *http.Request, hc kb.HelpCenter, base, sub string) *p
 		p.langQ = "?lang=" + url.QueryEscape(explicit)
 	}
 	p.OGLocale = strings.ReplaceAll(lang, "-", "_")
-	p.Site = siteInfo{Title: hc.Title, Tone: "t-" + toneFor(hc.Title), Initial: initial(hc.Title)}
+	p.Site = siteInfo{Title: hc.Title, Tone: "t-" + toneFor(hc.Title), Initial: initial(hc.Title), Changelog: hc.Changelog}
 	if u := hc.Logo.URL(); u != "" {
 		p.Site.Logo, p.Site.Image = u, u
 	}
@@ -482,6 +489,11 @@ func (s *Server) home(ctx context.Context, p *page, hc kb.HelpCenter) error {
 	}
 	p.Kind = "home"
 	p.Home = &homeData{Collections: cols, Featured: featured}
+	if hc.Changelog {
+		if p.Home.Latest, _, err = kb.Changelog(ctx, s.d.DB.Pool, hc, "", 0, latestLimit); err != nil {
+			return err
+		}
+	}
 	s.languages(p)
 	p.finish(p.Site.Title, p.T.T("help.hero_subtitle"), map[string]any{
 		"@context": "https://schema.org", "@type": "WebSite", "name": p.Site.Title, "url": p.base + "/", "inLanguage": p.Lang,
@@ -598,9 +610,12 @@ func (s *Server) notFoundPage(p *page, sub string) {
 		title, body = p.T.T("help.article_not_found_title"), p.T.T("help.article_not_found_body")
 	case strings.HasPrefix(sub, "/c/"):
 		title, body = p.T.T("help.topic_not_found_title"), p.T.T("help.topic_not_found_body")
+	case strings.HasPrefix(sub, "/changelog/"):
+		title, body = p.T.T("help.entry_not_found_title"), p.T.T("help.entry_not_found_body")
 	}
 	p.NotFound = &notFoundData{Title: title, Body: body}
 	p.Home, p.Collection, p.Article, p.More = nil, nil, nil, nil
+	p.Changelog, p.Entry, p.MoreEntries = nil, nil, nil
 	p.finish(title, "", nil)
 }
 
@@ -646,7 +661,7 @@ type sitemapURL struct {
 	LastMod string `xml:"lastmod,omitempty"`
 }
 
-// sitemap lists the help center's home, topics and articles.
+// sitemap lists the help center's home, topics, articles and changelog.
 func (s *Server) sitemap(w http.ResponseWriter, r *http.Request, hc kb.HelpCenter, base string) {
 	entries, err := kb.Sitemap(r.Context(), s.d.DB.Pool, hc)
 	if err != nil {
@@ -655,11 +670,17 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request, hc kb.HelpCente
 		return
 	}
 	urls := []sitemapURL{{Loc: base + "/"}}
-	var newest time.Time
+	var newest, changelog time.Time
 	for _, e := range entries {
 		seg := "/a/"
-		if e.Kind == "collection" {
+		switch e.Kind {
+		case "collection":
 			seg = "/c/"
+		case "changelog":
+			seg = "/changelog/"
+			if e.UpdatedAt.After(changelog) {
+				changelog = e.UpdatedAt
+			}
 		}
 		urls = append(urls, sitemapURL{Loc: base + seg + url.PathEscape(e.Slug), LastMod: e.UpdatedAt.UTC().Format("2006-01-02")})
 		if e.UpdatedAt.After(newest) {
@@ -668,6 +689,9 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request, hc kb.HelpCente
 	}
 	if !newest.IsZero() {
 		urls[0].LastMod = newest.UTC().Format("2006-01-02")
+	}
+	if !changelog.IsZero() {
+		urls = append(urls, sitemapURL{Loc: base + "/changelog", LastMod: changelog.UTC().Format("2006-01-02")})
 	}
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=600")

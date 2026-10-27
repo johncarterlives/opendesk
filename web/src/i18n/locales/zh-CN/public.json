@@ -24,7 +24,22 @@
     "no_results_body": "请尝试减少关键词或换用其他词语。",
     "results_other": "{{count}} 条结果",
     "theme_light": "切换到浅色主题",
-    "theme_dark": "切换到深色主题"
+    "theme_dark": "切换到深色主题",
+    "changelog": "更新日志",
+    "changelog_subtitle": "新功能、改进和修复。",
+    "latest_updates": "最新更新",
+    "all_updates": "全部更新",
+    "all_categories": "全部",
+    "categories": "分类",
+    "changelog_empty_title": "暂无更新",
+    "changelog_empty_body": "更新发布后会显示在这里。",
+    "category_empty_title": "“{{category}}”下暂无更新",
+    "entry_not_found_title": "找不到该更新",
+    "entry_not_found_body": "它可能已被删除或取消发布。",
+    "newer": "较新的更新",
+    "older": "较早的更新",
+    "feed": "RSS 订阅",
+    "permalink": "此更新的链接"
   },
   "csat": {
     "page_title": "评价本次服务",

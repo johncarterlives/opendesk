@@ -34,7 +34,22 @@
     "results_many": "{{count}} نتيجة",
     "results_other": "{{count}} نتيجة",
     "theme_light": "التبديل إلى المظهر الفاتح",
-    "theme_dark": "التبديل إلى المظهر الداكن"
+    "theme_dark": "التبديل إلى المظهر الداكن",
+    "changelog": "سجل التغييرات",
+    "changelog_subtitle": "ميزات جديدة وتحسينات وإصلاحات.",
+    "latest_updates": "أحدث التحديثات",
+    "all_updates": "كل التحديثات",
+    "all_categories": "الكل",
+    "categories": "الفئات",
+    "changelog_empty_title": "لا توجد تحديثات بعد",
+    "changelog_empty_body": "ستظهر التحديثات هنا بعد نشرها.",
+    "category_empty_title": "لا توجد تحديثات في «{{category}}»",
+    "entry_not_found_title": "لم يتم العثور على التحديث",
+    "entry_not_found_body": "ربما تمت إزالته أو إلغاء نشره.",
+    "newer": "تحديثات أحدث",
+    "older": "تحديثات أقدم",
+    "feed": "موجز RSS",
+    "permalink": "رابط هذا التحديث"
   },
   "csat": {
     "page_title": "قيّم محادثتك",

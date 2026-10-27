@@ -37,12 +37,15 @@ describe("list query", () => {
     expect(mailListQuery("folder", { folder: "f1", account: "a1", q: "x" })).toEqual({ folder_id: "f1", q: "x" });
     expect(mailListQuery("starred", { account: "a1" })).toEqual({ box: "starred", account_id: "a1" });
     expect(mailListQuery("nope", {})).toEqual({ box: "inbox" });
+    expect(mailListQuery("inbox", { category: "updates" })).toEqual({ box: "inbox", category: "updates" });
+    expect(mailListQuery("inbox", { category: "updates", q: "x" })).toEqual({ box: "inbox", q: "x" });
+    expect(mailListQuery("starred", { category: "updates" })).toEqual({ box: "starred" });
     expect(mailListQuery("all", { with: "dana@client.test" })).toEqual({ box: "all", with: "dana@client.test" });
   });
 });
 
 describe("actions", () => {
-  const t = { id: "t", account_id: "a1", subject: "", snippet: "", participants: [], last_message_at: "", message_count: 1, unread: true, starred: false, has_attachments: false, folder_ids: ["i"], shared: false, assignees: [], comment_count: 0 };
+  const t = { id: "t", account_id: "a1", subject: "", snippet: "", participants: [], last_message_at: "", message_count: 1, unread: true, starred: false, has_attachments: false, needs_action: false, folder_ids: ["i"], shared: false, assignees: [], comment_count: 0 };
   it("applies state changes", () => {
     expect(applyAction(t, "read").unread).toBe(false);
     expect(applyAction(t, "star").starred).toBe(true);

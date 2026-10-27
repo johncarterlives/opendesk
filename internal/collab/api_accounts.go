@@ -43,14 +43,15 @@ type imapPatch struct {
 type updateAccountInput struct {
 	ID   string `path:"id"`
 	Body struct {
-		Name          *string    `json:"name,omitempty" maxLength:"254" doc:"How the sidebar names it; \"\" resets to the address"`
-		DisplayName   *string    `json:"display_name,omitempty" maxLength:"200" doc:"The From name of its mail; may name the sender: {agent}, {agent_first}, {mailbox}, {workspace}"`
-		Color         *string    `json:"color,omitempty" enum:"gray,red,orange,amber,green,teal,blue,indigo,violet,pink"`
-		SignatureHTML *string    `json:"signature_html,omitempty"`
-		Visibility    *string    `json:"visibility,omitempty" enum:"private,shared"`
-		SharedWith    *Audience  `json:"shared_with,omitempty"`
-		IMAP          *imapPatch `json:"imap,omitempty"`
-		DefaultFrom   *string    `json:"default_from,omitempty" maxLength:"254" doc:"The address new mail goes out from: the account's own or one of its usable addresses"`
+		Name            *string    `json:"name,omitempty" maxLength:"254" doc:"How the sidebar names it; \"\" resets to the address"`
+		DisplayName     *string    `json:"display_name,omitempty" maxLength:"200" doc:"The From name of its mail; may name the sender: {agent}, {agent_first}, {mailbox}, {workspace}"`
+		Color           *string    `json:"color,omitempty" enum:"gray,red,orange,amber,green,teal,blue,indigo,violet,pink"`
+		SignatureHTML   *string    `json:"signature_html,omitempty"`
+		Visibility      *string    `json:"visibility,omitempty" enum:"private,shared"`
+		HandlingEnabled *bool      `json:"handling_enabled,omitempty" doc:"Track work separately from unread for this shared account"`
+		SharedWith      *Audience  `json:"shared_with,omitempty"`
+		IMAP            *imapPatch `json:"imap,omitempty"`
+		DefaultFrom     *string    `json:"default_from,omitempty" maxLength:"254" doc:"The address new mail goes out from: the account's own or one of its usable addresses"`
 	}
 }
 
@@ -173,6 +174,16 @@ func (s *service) registerAccountRoutes(api huma.API) {
 				changed = append(changed, "shared_with")
 				a.Visibility = visibility
 			}
+			if b.HandlingEnabled != nil {
+				if visibility != VisibilityShared {
+					return nil, httpx.Validation("Handling state is available on shared accounts.")
+				}
+				if *b.HandlingEnabled != a.HandlingEnabled {
+					a.HandlingEnabled, changed = *b.HandlingEnabled, append(changed, "handling_enabled")
+				}
+			} else if visibility == VisibilityPrivate && a.HandlingEnabled {
+				a.HandlingEnabled, changed = false, append(changed, "handling_enabled")
+			}
 
 			// IMAP servers: tried before anything is saved.
 			var sealed []byte
@@ -223,8 +234,8 @@ func (s *service) registerAccountRoutes(api huma.API) {
 					return err
 				}
 				if _, err := tx.Exec(ctx, `UPDATE collab_accounts SET name = $3, display_name = $4, color = $5, signature_html = $6,
-					visibility = $7, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
-					p.WorkspaceID, a.ID, a.Name, a.DisplayName, a.Color, a.SignatureHTML, a.Visibility); err != nil {
+					visibility = $7, handling_enabled = $8, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
+					p.WorkspaceID, a.ID, a.Name, a.DisplayName, a.Color, a.SignatureHTML, a.Visibility, a.HandlingEnabled); err != nil {
 					return err
 				}
 				if err := s.recordAccountPatch(ctx, tx, a.ID, pushed, changed); err != nil {
@@ -323,8 +334,14 @@ func (s *service) registerAccountRoutes(api huma.API) {
 			if err != nil {
 				return nil, err
 			}
-			if _, err := visibleAccount(ctx, s.d.DB.Pool, p, id); err != nil {
+			a, err := visibleAccount(ctx, s.d.DB.Pool, p, id)
+			if err != nil {
 				return nil, notFound(err, "Account")
+			}
+			// Asked for by hand, the sync reads the settings and addresses too, so one just
+			// added at the provider comes in now.
+			if err := settingsNow(ctx, s.d.DB.Pool, a); err != nil {
+				return nil, httpx.Wrap(err)
 			}
 			if err := s.queueSync(ctx, s.d.DB.Pool, id); err != nil {
 				return nil, httpx.Wrap(err)

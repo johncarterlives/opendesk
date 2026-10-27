@@ -11,6 +11,7 @@ import {
   AtSign,
   ChevronDown,
   ChevronUp,
+  Check,
   Folder,
   Forward,
   Inbox,
@@ -43,6 +44,7 @@ import type { MailFolder, MailMessage, MailThreadAction, MailThreadDetail } from
 import { isApiError } from "@/lib/api/client";
 import { patchThreads } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
+import { accountCategories, PRIMARY } from "@/lib/collab/categories";
 import { useMailAccounts } from "@/lib/collab/hooks";
 import { hasReplyAll, replyTarget, type ComposeMode } from "@/lib/collab/recipients";
 import { identitySignature, ownEmails, replyIdentity } from "@/lib/collab/identities";
@@ -75,7 +77,7 @@ export type ThreadViewProps = {
   onNext?: () => void;
   position?: { index: number; total: number };
   /** Applies an action from the page, so its toast and Undo know the list. */
-  onAction: (action: MailThreadAction, opts?: { folderId?: string; label?: string; silent?: boolean }) => void;
+  onAction: (action: MailThreadAction, opts?: { folderId?: string; category?: string; label?: string; silent?: boolean }) => void;
   markReadOnOpen: boolean;
   /** Open the composer in this mode once loaded. */
   intent?: ComposeMode | null;
@@ -405,7 +407,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
     },
   });
 
-  const move = (m: MoveTarget) => onAction(m.action, { folderId: m.folderId, label: m.label });
+  const move = (m: MoveTarget) => onAction(m.action, { folderId: m.folderId, category: m.category, label: m.label });
 
 
   if (isPending) return <ThreadSkeleton />;
@@ -491,6 +493,8 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
             <MovePicker
               accountId={detail.account.id}
               folders={moveFolders}
+              categories={accountCategories(account)}
+              current={th.category ?? PRIMARY}
               open={moveOpen}
               onOpenChange={setMoveOpen}
               onMove={move}
@@ -526,6 +530,11 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
             <HeaderButton label={th.unread ? t("action.read") : t("action.unread")} shortcut={th.unread ? "shift i" : "shift u"} onClick={() => onAction(th.unread ? "read" : "unread", { silent: true })}>
               {th.unread ? <MailOpen /> : <Mail />}
             </HeaderButton>
+            {account?.handling_enabled && (
+              <HeaderButton label={th.needs_action ? t("action.done") : t("action.needsAction")} pressed={!th.needs_action} onClick={() => onAction(th.needs_action ? "done" : "needs_action", { silent: true })}>
+                <Check />
+              </HeaderButton>
+            )}
           </>
         )}
         <div className="ml-auto flex items-center gap-0.5">

@@ -476,7 +476,7 @@ func (h *handler) imageResult(ctx context.Context, wid, id uuid.UUID, err error)
 	return &brandOut{b}, nil
 }
 
-// delete removes a brand with its widgets, collections and articles. The default brand
+// delete removes a brand with its widgets, collections, articles and changelog entries. The default brand
 // and a brand with addresses stay. Its tickets move to the default brand.
 func (h *handler) delete(ctx context.Context, tx pgx.Tx, p *auth.Principal, id uuid.UUID) error {
 	wid := p.WorkspaceID
@@ -537,6 +537,19 @@ func (h *handler) delete(ctx context.Context, tx pgx.Tx, p *auth.Principal, id u
 			return err
 		}
 	}
+	rows, err = tx.Query(ctx, `DELETE FROM changelog_entries WHERE workspace_id = $1 AND brand_id = $2 RETURNING id`, wid, id)
+	if err != nil {
+		return err
+	}
+	entries, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if _, err := events.Publish(ctx, tx, events.Event{WorkspaceID: wid, Type: "changelog_entry.deleted", Data: map[string]any{"changelog_entry_id": e}}); err != nil {
+			return err
+		}
+	}
 	rows, err = tx.Query(ctx, `DELETE FROM widgets WHERE workspace_id = $1 AND brand_id = $2 RETURNING id`, wid, id)
 	if err != nil {
 		return err
@@ -564,7 +577,7 @@ func (h *handler) delete(ctx context.Context, tx pgx.Tx, p *auth.Principal, id u
 		return err
 	}
 	if err := audit.Log(ctx, tx, p, wid, "brand.deleted", "brand", &id, map[string]any{"name": name, "widgets": len(widgets),
-		"collections": len(collections), "articles": len(articles)}); err != nil {
+		"collections": len(collections), "articles": len(articles), "changelog_entries": len(entries)}); err != nil {
 		return err
 	}
 	_, err = events.Publish(ctx, tx, events.Event{WorkspaceID: wid, Type: "brand.deleted", Data: map[string]any{"brand_id": id}})

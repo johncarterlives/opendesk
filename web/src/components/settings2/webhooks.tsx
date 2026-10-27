@@ -1,11 +1,11 @@
-import { i18n } from "@/i18n";
+import { i18n, inSentence } from "@/i18n";
 import type { ParseKeys } from "i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Field, TextInput } from "@/components/ui/input";
+import { Field, Textarea, TextInput } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { CopyField } from "@/components/ui/copy-button";
@@ -26,6 +26,8 @@ export const eventGroups: { label: ParseKeys<"ui">; events: string[] }[] = [
   { label: "webhookGroups.mailboxes", events: ["mailbox.created", "mailbox.updated", "mailbox.deleted"] },
   { label: "webhookGroups.members", events: ["member.added", "member.updated", "member.removed"] },
   { label: "webhookGroups.knowledgeBase", events: ["kb_article.created", "kb_article.updated", "kb_article.deleted", "kb_collection.created", "kb_collection.updated", "kb_collection.deleted"] },
+  { label: "webhookGroups.changelog", events: ["changelog_entry.created", "changelog_entry.updated", "changelog_entry.deleted"] },
+  { label: "webhookGroups.wiki", events: ["wiki_page.created", "wiki_page.updated", "wiki_page.moved", "wiki_page.deleted"] },
   { label: "webhookGroups.savedReplies", events: ["saved_reply.created", "saved_reply.updated", "saved_reply.deleted"] },
   { label: "webhookGroups.views", events: ["view.created", "view.updated", "view.deleted"] },
   { label: "webhookGroups.automations", events: ["automation.created", "automation.updated", "automation.deleted"] },
@@ -60,6 +62,18 @@ function validUrl(v: string): string | null {
   }
 }
 
+function parseHeaders(raw: string): Record<string, string> | null {
+  const headers: Record<string, string> = {};
+  for (const line of raw.split("\n").filter(Boolean)) {
+    const i = line.indexOf(":");
+    const name = line.slice(0, i).trim();
+    const value = line.slice(i + 1).trim();
+    if (i < 1 || !name || !value || headers[name]) return null;
+    headers[name] = value;
+  }
+  return headers;
+}
+
 export function WebhookDialog({ hook, onClose, onCreated }: { hook: Webhook | null; onClose: () => void; onCreated?: (w: Webhook & { secret: string }) => void }) {
   const { t: ui } = useTranslation("ui");
   const { t } = useTranslation("settingsDev");
@@ -69,14 +83,24 @@ export function WebhookDialog({ hook, onClose, onCreated }: { hook: Webhook | nu
   const [events, setEvents] = useState<string[]>(hook ? expandEvents(hook.events) : ["ticket.created", "ticket.updated", "message.created"]);
   const [enabled, setEnabled] = useState(hook?.enabled ?? true);
   const [privateTeams, setPrivateTeams] = useState<string[]>(hook?.private_team_ids ?? []);
+  const [headers, setHeaders] = useState("");
+  const [replaceHeaders, setReplaceHeaders] = useState(!hook);
   const [error, setError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [headersError, setHeadersError] = useState<string | null>(null);
   const all = allEvents.every((e) => events.includes(e));
 
   const save = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (customHeaders?: Record<string, string>) => {
       const changedTeams = JSON.stringify(privateTeams) !== JSON.stringify(hook?.private_team_ids ?? []);
-      const body = { url: url.trim(), description: description.trim(), events: all ? ["*"] : events, enabled, ...(changedTeams ? { private_team_ids: privateTeams } : {}) };
+      const body = {
+        url: url.trim(),
+        description: description.trim(),
+        events: all ? ["*"] : events,
+        enabled,
+        ...(customHeaders !== undefined ? { headers: customHeaders } : {}),
+        ...(changedTeams ? { private_team_ids: privateTeams } : {}),
+      };
       if (hook) return { w: await api.webhooks.update(hook.id, body), secret: null };
       const created = await api.webhooks.create(body);
       return { w: created as Webhook, secret: created.secret };
@@ -92,11 +116,14 @@ export function WebhookDialog({ hook, onClose, onCreated }: { hook: Webhook | nu
 
   const submit = () => {
     setError(null);
+    setHeadersError(null);
     const ue = validUrl(url);
     setUrlError(ue);
     if (ue) return;
     if (!events.length) return setError(t("webhookForm.eventRequired"));
-    save.mutate();
+    const customHeaders = replaceHeaders ? parseHeaders(headers) : undefined;
+    if (customHeaders === null) return setHeadersError(t("webhookForm.headersInvalid"));
+    save.mutate(customHeaders);
   };
 
   const toggleGroup = (g: string[], on: boolean) =>
@@ -147,6 +174,31 @@ export function WebhookDialog({ hook, onClose, onCreated }: { hook: Webhook | nu
         <Field label={t("webhookForm.descriptionLabel")} optional>
           {(p) => <TextInput {...p} value={description} maxLength={200} placeholder={t("webhookForm.descriptionPlaceholder")} onChange={(e) => setDescription(e.target.value)} />}
         </Field>
+        {hook?.header_names.length ? <p className="text-[12px] text-fg-3">{t("webhookForm.headersConfigured", { headers: hook.header_names.join(", ") })}</p> : null}
+        {hook ? (
+          <label className="flex items-center gap-2 text-[12.5px] text-fg-2">
+            <Checkbox checked={replaceHeaders} onCheckedChange={setReplaceHeaders} />
+            {t("webhookForm.replaceHeaders")}
+          </label>
+        ) : null}
+        {replaceHeaders ? (
+          <Field label={t("webhookForm.headers")} optional error={headersError} hint={t("webhookForm.headersHint")}>
+            {(p) => (
+              <Textarea
+                {...p}
+                rows={3}
+                spellCheck={false}
+                className="mono text-[12px]"
+                value={headers}
+                placeholder="Authorization: Bearer …\nX-Account-ID: acme"
+                onChange={(e) => {
+                  setHeaders(e.target.value);
+                  setHeadersError(null);
+                }}
+              />
+            )}
+          </Field>
+        ) : null}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-[12.5px] font-medium">
@@ -166,7 +218,7 @@ export function WebhookDialog({ hook, onClose, onCreated }: { hook: Webhook | nu
                     <Checkbox
                       checked={on === g.events.length ? true : on ? "indeterminate" : false}
                       onCheckedChange={(v) => toggleGroup(g.events, v)}
-                      aria-label={ui("allGroupEvents", { group: ui(g.label).toLowerCase() })}
+                      aria-label={ui("allGroupEvents", { group: inSentence(ui(g.label)) })}
                     />
                     {ui(g.label)}
                   </label>

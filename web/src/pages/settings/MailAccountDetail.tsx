@@ -1,6 +1,6 @@
 // One mail account: its name, From name and colour, the signature its mail carries, the
 // addresses it sends from (AddressesSection), its automatic reply (each synced with the provider where it can be: AccountSettings), who it
-// is shared with, its server settings (IMAP), its sync and the import of older mail (HistorySection), and disconnecting it.
+// is shared with, its inbox categories (CategoriesSection), its server settings (IMAP), its sync and the import of older mail (HistorySection), and disconnecting it.
 // Only whoever connected it (and workspace admins, for a shared one) can change it.
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,11 +14,13 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { EmptyState } from "@/components/ui/empty";
 import { TextInput } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { SignatureEditor } from "@/components/templates/SignatureEditor";
 import { ACCOUNT_TONES, ProviderMark } from "@/components/collab/bits";
 import { FromNameHint, OutOfOfficeSection, SignatureSync } from "@/components/collab/AccountSettings";
 import { AddressesSection } from "@/components/collab/AddressesSection";
+import { CategoriesSection } from "@/components/collab/CategoriesSection";
 import { HistorySection } from "@/components/collab/HistorySection";
 import { CollabFromNameField, KeptInOpendesk, SenderPreview, useSenderPreview } from "@/components/collab/SenderPreview";
 import { ImapFields, imapValid, type ImapForm } from "@/components/collab/ConnectAccount";
@@ -35,7 +37,7 @@ import { useSession } from "@/lib/session";
 import type { Tone } from "@/lib/tones";
 import { AccountStatus, useReconnect } from "./MailAccounts";
 
-type Form = { name: string; display_name: string; color: string; signature_html: string; visibility: "private" | "shared"; shared_with: MailAudience };
+type Form = { name: string; display_name: string; color: string; signature_html: string; visibility: "private" | "shared"; handling_enabled: boolean; shared_with: MailAudience };
 
 const formOf = (a: MailAccount): Form => ({
   name: a.name,
@@ -43,6 +45,7 @@ const formOf = (a: MailAccount): Form => ({
   color: a.color,
   signature_html: a.signature_html,
   visibility: a.visibility,
+  handling_enabled: a.handling_enabled,
   shared_with: a.shared_with ?? { everyone: false, team_ids: [], user_ids: [] },
 });
 
@@ -113,6 +116,7 @@ export default function MailAccountDetail() {
     if (form.color !== base.color) p.color = form.color;
     if (sigEdited && form.signature_html !== base.signature_html) p.signature_html = form.signature_html;
     if (form.visibility !== base.visibility) p.visibility = form.visibility;
+    if (form.handling_enabled !== base.handling_enabled) p.handling_enabled = form.handling_enabled;
     const aud = form.visibility === "shared" ? (form.shared_with.everyone ? { everyone: true, team_ids: [], user_ids: [] } : form.shared_with) : { everyone: false, team_ids: [], user_ids: [] };
     if (form.visibility === "shared" && (p.visibility || !sameAudience(aud, base.shared_with))) p.shared_with = aud;
     if (account.provider === "imap" && imap && imapBase) {
@@ -308,6 +312,8 @@ export default function MailAccountDetail() {
 
       <OutOfOfficeSection account={account} manage={manage} onReconnect={() => void reconnect(account)} />
 
+      {manage && <CategoriesSection account={account} />}
+
       <Section title={t("detail.sharing")} description={t("detail.sharingHint")}>
         <div role="radiogroup" aria-label={t("detail.sharing")} className="flex flex-col gap-2 py-3.5">
           <ChoiceCard checked={form.visibility === "private"} disabled={!manage || (account.owner?.id !== me && form.visibility !== "private")} onSelect={() => set({ visibility: "private" })} icon={<Lock />} title={t("audience.private")} hint={t("audience.privateHint")} />
@@ -324,6 +330,14 @@ export default function MailAccountDetail() {
           {!audienceOk && <p className="text-[11.5px] text-danger-fg">{t("audience.needSomeone")}</p>}
         </div>
       </Section>
+
+      {form.visibility === "shared" && (
+        <Section title={t("detail.handling.title")} description={t("detail.handling.hint")}>
+          <Row label={t("detail.handling.enabled")} description={t("detail.handling.enabledHint")} htmlFor="handling-enabled">
+            <Switch id="handling-enabled" checked={form.handling_enabled} disabled={!manage} onCheckedChange={(handling_enabled) => set({ handling_enabled })} />
+          </Row>
+        </Section>
+      )}
 
       {account.provider === "imap" && manage && imap && (
         <Section title={t("detail.server")} description={t("detail.serverHint")}>

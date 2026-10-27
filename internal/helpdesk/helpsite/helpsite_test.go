@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-chi/chi/v5"
@@ -308,5 +309,85 @@ func TestStructuredDataIsValidJSON(t *testing.T) {
 	}
 	if strings.Contains(r.body, "<script>alert(1)") {
 		t.Fatal("a title broke out of the page")
+	}
+}
+
+func TestChangelogPages(t *testing.T) {
+	s := newSite(t, func(s *site) { s.D.Cfg.ServeWeb = true })
+	root := "/help/" + s.slug
+	base := "http://app.test" + root
+
+	// Without a public entry the header has no link and the home page no updates.
+	s.Exec(`INSERT INTO changelog_entries (workspace_id, title, slug, status, published_at) VALUES ($1, 'Not yet', 'not-yet', 'published', now() + interval '1 day')`, s.ws.ID)
+	s.Exec(`INSERT INTO changelog_entries (workspace_id, title, slug, status) VALUES ($1, 'Draft update', 'draft-update', 'draft')`, s.ws.ID)
+	if home := s.get(t, "app.test", root); strings.Contains(home.body, `class="hc-nav"`) || strings.Contains(home.body, "Latest updates") {
+		t.Fatalf("home before any entry\n%s", home.body)
+	}
+	if r := s.get(t, "app.test", root+"/changelog/not-yet"); r.status != 404 || !strings.Contains(r.body, "Update not found") {
+		t.Fatalf("scheduled entry: %d", r.status)
+	}
+
+	for i := 1; i <= 12; i++ {
+		cats := "{}"
+		if i%3 == 0 {
+			cats = "{Fixed}"
+		}
+		s.Exec(`INSERT INTO changelog_entries (workspace_id, title, slug, body_html, categories, status, published_at)
+			VALUES ($1, $2, $3, $4, $5, 'published', $6)`, s.ws.ID, hdtest.Fmt("Update %02d", i), hdtest.Fmt("update-%02d", i),
+			`<p>Body <strong>bold</strong></p><img src="https://cdn.example.com/shot.png"><script>alert(1)</script>`, cats,
+			time.Date(2026, 2, i, 9, 0, 0, 0, time.UTC))
+	}
+	home := s.get(t, "app.test", root)
+	if !strings.Contains(home.body, `class="hc-nav" href="`+base+`/changelog"`) || !strings.Contains(home.body, "Latest updates") ||
+		!strings.Contains(home.body, "Update 12") || strings.Contains(home.body, "Update 09") ||
+		!strings.Contains(home.body, `type="application/atom+xml"`) {
+		t.Fatalf("home\n%s", home.body)
+	}
+
+	cl := s.get(t, "app.test", root+"/changelog")
+	if cl.status != 200 || !strings.Contains(cl.body, "Update 12") || !strings.Contains(cl.body, "Update 03") || strings.Contains(cl.body, "Update 02") ||
+		strings.Contains(cl.body, "Draft update") || strings.Contains(cl.body, "Not yet") || strings.Contains(cl.body, "alert(1)") ||
+		!strings.Contains(cl.body, `href="`+base+`/changelog?page=2" rel="next"`) || !strings.Contains(cl.body, `href="`+base+`/changelog?category=Fixed"`) {
+		t.Fatalf("changelog\n%s", cl.body)
+	}
+	if p2 := s.get(t, "app.test", root+"/changelog?page=2"); !strings.Contains(p2.body, "Update 01") || !strings.Contains(p2.body, `rel="prev"`) ||
+		!strings.Contains(p2.body, `<link rel="canonical" href="`+base+`/changelog?page=2">`) {
+		t.Fatalf("page 2\n%s", p2.body)
+	}
+	if r := s.get(t, "app.test", root+"/changelog?page=9"); r.status != 404 {
+		t.Fatalf("past the last page: %d", r.status)
+	}
+	fixed := s.get(t, "app.test", root+"/changelog?category=fixed")
+	if !strings.Contains(fixed.body, "Update 12") || strings.Contains(fixed.body, "Update 11") || !strings.Contains(fixed.body, `content="noindex"`) {
+		t.Fatalf("category\n%s", fixed.body)
+	}
+	if none := s.get(t, "app.test", root+"/changelog?category=nope"); !strings.Contains(html.UnescapeString(none.body), "No updates in “nope”") {
+		t.Fatalf("empty category\n%s", none.body)
+	}
+
+	one := s.get(t, "app.test", root+"/changelog/update-05")
+	if one.status != 200 || !strings.Contains(one.body, "<strong>bold</strong>") || !strings.Contains(one.body, `"@type":"BlogPosting"`) ||
+		!strings.Contains(one.body, `<meta property="og:image" content="https://cdn.example.com/shot.png">`) ||
+		!strings.Contains(one.body, "summary_large_image") || !strings.Contains(one.body, "Update 12") {
+		t.Fatalf("entry\n%s", one.body)
+	}
+
+	feed := s.get(t, "app.test", root+"/changelog/feed.xml")
+	if feed.status != 200 || !strings.HasPrefix(feed.header.Get("Content-Type"), "application/atom+xml") ||
+		!strings.Contains(feed.body, "<id>"+base+"/changelog/update-12</id>") || !strings.Contains(feed.body, `<category term="Fixed">`) ||
+		!strings.Contains(feed.body, "&lt;strong&gt;bold&lt;/strong&gt;") || strings.Contains(feed.body, "Draft update") {
+		t.Fatalf("feed\n%s", feed.body)
+	}
+
+	sm := s.get(t, "app.test", root+"/sitemap.xml")
+	if !strings.Contains(sm.body, "<loc>"+base+"/changelog</loc>") || !strings.Contains(sm.body, "<loc>"+base+"/changelog/update-07</loc>") ||
+		strings.Contains(sm.body, "not-yet") {
+		t.Fatalf("sitemap\n%s", sm.body)
+	}
+
+	m := regexp.MustCompile(`(?s)<script type="application/ld\+json">(.*?)</script>`).FindStringSubmatch(one.body)
+	var v map[string]any
+	if m == nil || json.Unmarshal([]byte(m[1]), &v) != nil {
+		t.Fatal("entry structured data")
 	}
 }

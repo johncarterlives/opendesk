@@ -130,6 +130,28 @@
     "aMailbox": "a mailbox",
     "writtenTo": "Written to {{address}}",
     "matching": "Matching “{{q}}”",
+    "ops": {
+      "is": "is",
+      "not": "is not"
+    },
+    "labelOps": {
+      "is": "is any of",
+      "not": "is none of",
+      "empty": "is empty"
+    },
+    "choose": {
+      "tag": "Choose labels",
+      "team": "Choose teams",
+      "mailbox": "Choose mailboxes",
+      "channel": "Choose channels"
+    },
+    "myTeams": "my teams",
+    "noTeam": "no team",
+    "notTeamNamed": "Not team {{name}}",
+    "notInMailbox": "Not in {{name}}",
+    "withoutLabels": "Without {{labels}}",
+    "noLabel": "No label",
+    "notChannel": "Not {{channel}}",
     "emptyTips": {
       "sidebar": "Shared views sit in everyone's sidebar",
       "personal": "Personal views stay in your sidebar only"
@@ -263,6 +285,10 @@
     "operator": "Operator",
     "action": "Action",
     "valueLabel": "{{field}} value",
+    "phrasesLabel": "{{field}} phrases",
+    "phrasesPlaceholder": "One phrase per line",
+    "phrasesCount_one": "{{count}} phrase, up to {{max}}",
+    "phrasesCount_other": "{{count}} phrases, up to {{max}}",
     "chooseStatus": "Choose a status",
     "choosePriority": "Choose a priority",
     "chooseChannel": "Choose a channel",
@@ -279,7 +305,8 @@
       "name": "Name the automation.",
       "action": "Add at least one action.",
       "condition": "Every condition needs a value, or remove it.",
-      "actionValue": "Every action needs a value."
+      "actionValue": "Every action needs a value.",
+      "phrases": "A phrase list takes 1 to 100 phrases, one per line, of up to 500 characters each."
     },
     "chooseSeverity": "Choose a severity",
     "noSeverity": "No severity",
@@ -320,7 +347,9 @@
     "not_equals": "is not",
     "eq": "is",
     "gt": "is above",
-    "lt": "is below"
+    "lt": "is below",
+    "any": "contains any of",
+    "none": "contains none of"
   },
   "actionTypes": {
     "set_status": "Set status to",

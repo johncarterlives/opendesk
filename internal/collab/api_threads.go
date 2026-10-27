@@ -23,17 +23,18 @@ import (
 
 // Boxes of the thread list (contracts/collab.md "GET /v1/collab/threads").
 const (
-	BoxInbox    = "inbox"
-	BoxUnread   = "unread"
-	BoxStarred  = "starred"
-	BoxSent     = "sent"
-	BoxDrafts   = "drafts"
-	BoxArchive  = "archive"
-	BoxTrash    = "trash"
-	BoxSpam     = "spam"
-	BoxAll      = "all"
-	BoxShared   = "shared"
-	BoxAssigned = "assigned"
+	BoxInbox       = "inbox"
+	BoxUnread      = "unread"
+	BoxStarred     = "starred"
+	BoxSent        = "sent"
+	BoxDrafts      = "drafts"
+	BoxArchive     = "archive"
+	BoxTrash       = "trash"
+	BoxSpam        = "spam"
+	BoxAll         = "all"
+	BoxShared      = "shared"
+	BoxAssigned    = "assigned"
+	BoxNeedsAction = "needs_action"
 )
 
 // maxAssignees bounds a conversation's assignees.
@@ -73,8 +74,19 @@ func boxSQL(box, u string) string {
 		return `EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND ` + notJunk
 	case BoxAssigned:
 		return `EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = ` + u + `) AND ` + notJunk
+	case BoxNeedsAction:
+		return `t.needs_action AND EXISTS (SELECT 1 FROM collab_accounts ha WHERE ha.id = t.account_id AND ha.visibility = 'shared' AND ha.handling_enabled) AND t.folder_ids && ` + inboxSQL
 	}
 	return `t.folder_ids && ` + inboxSQL
+}
+
+// categorySQL is the predicate of one inbox tab on collab_threads alias t; k is the key's
+// SQL parameter. Primary holds what is not in another of its account's categories.
+func categorySQL(k string, primary bool) string {
+	if primary {
+		return `NOT EXISTS (SELECT 1 FROM collab_accounts ca WHERE ca.id = t.account_id AND t.category <> 'primary' AND t.category = ANY(ca.category_keys))`
+	}
+	return `t.category = ` + k + ` AND EXISTS (SELECT 1 FROM collab_accounts ca WHERE ca.id = t.account_id AND ` + k + ` = ANY(ca.category_keys))`
 }
 
 // visibleAccountsSQL is the accounts the caller (SQL parameter u) sees in the workspace ($1).
@@ -83,12 +95,13 @@ func visibleAccountsSQL(u string) string {
 }
 
 type listThreadsInput struct {
-	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned" default:"inbox"`
+	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned,needs_action" default:"inbox"`
 	AccountID string `query:"account_id" doc:"Only this account's conversations"`
 	FolderID  string `query:"folder_id" doc:"Only this folder's conversations; replaces box"`
 	Q         string `query:"q" maxLength:"200" doc:"Matches each message's subject, sender and text, and the conversation's subject and participants"`
 	To        string `query:"to" maxLength:"254" doc:"Only conversations with this address on them (one of the person's addresses)"`
 	With      string `query:"with" maxLength:"254" doc:"Only conversations with this person on them; without account_id, every conversation the caller sees"`
+	Category  string `query:"category" maxLength:"40" doc:"One tab of the inbox (box=inbox): a category key; primary also lists mail not sorted and accounts not split"`
 	httpx.ListParams
 }
 
@@ -108,15 +121,19 @@ type CollabCounts struct {
 	Addresses map[uuid.UUID]map[string]int `json:"addresses"`
 	// Assigned: boxes.assigned by account, for the row under each account.
 	Assigned map[uuid.UUID]int `json:"assigned"`
+	// Categories counts, for each account whose inbox is split, the unread conversations of
+	// its inbox by category key (contracts/collab.md "Categories").
+	Categories map[uuid.UUID]map[string]int `json:"categories"`
 }
 
 // CollabBoxCounts are unread conversations; assigned and shared: open ones (in an inbox).
 type CollabBoxCounts struct {
-	Inbox    int `json:"inbox"`
-	Unread   int `json:"unread"`
-	Shared   int `json:"shared"`
-	Assigned int `json:"assigned"`
-	Drafts   int `json:"drafts"`
+	Inbox       int `json:"inbox"`
+	Unread      int `json:"unread"`
+	Shared      int `json:"shared"`
+	Assigned    int `json:"assigned"`
+	Drafts      int `json:"drafts"`
+	NeedsAction int `json:"needs_action"`
 }
 
 type threadIDInput struct {
@@ -208,6 +225,16 @@ func (s *service) registerThreadRoutes(api huma.API) {
 				where = append(where, `(t.search @@ `+tq+` OR t.subject ILIKE `+arg("%"+escapeLike(q)+"%")+`
 					OR t.id IN (SELECT m.thread_id FROM collab_messages m WHERE m.workspace_id = $1 AND m.search @@ `+tq+`))`)
 			}
+			if c := strings.ToLower(strings.TrimSpace(in.Category)); c != "" {
+				if box != BoxInbox || in.FolderID != "" || !categoryKeyRe.MatchString(c) {
+					return nil, httpx.Validation("A category is a tab of the inbox.")
+				}
+				if c == categoryPrimary {
+					where = append(where, categorySQL("", true))
+				} else {
+					where = append(where, categorySQL(arg(c), false))
+				}
+			}
 			if to := strings.ToLower(strings.TrimSpace(in.To)); to != "" {
 				where = append(where, arg(to)+` = ANY(t.addresses)`)
 			}
@@ -273,8 +300,9 @@ func (s *service) registerThreadRoutes(api huma.API) {
 		func(ctx context.Context, in *struct {
 			Body struct {
 				ThreadIDs []uuid.UUID `json:"thread_ids" minItems:"1" maxItems:"100"`
-				Action    string      `json:"action" enum:"read,unread,star,unstar,archive,inbox,trash,spam,not_spam,move,label,unlabel"`
+				Action    string      `json:"action" enum:"read,unread,star,unstar,archive,inbox,trash,spam,not_spam,move,label,unlabel,done,needs_action,categorize"`
 				FolderID  *uuid.UUID  `json:"folder_id,omitempty" doc:"The folder or label of move, label and unlabel"`
+				Category  string      `json:"category,omitempty" maxLength:"40" doc:"The category key of categorize"`
 			}
 		}) (*struct {
 			Body struct {
@@ -300,6 +328,11 @@ func (s *service) registerThreadRoutes(api huma.API) {
 			if len(threads) != len(tids) {
 				return nil, httpx.NotFound("Conversation")
 			}
+			if b.Action == ActionCategorize {
+				if err := s.categorizeThreads(ctx, p, threads, b.Category); err != nil {
+					return nil, err
+				}
+			}
 			var folder *folderRow
 			if b.Action == ActionMove || b.Action == ActionLabel || b.Action == ActionUnlabel {
 				if b.FolderID == nil {
@@ -323,12 +356,18 @@ func (s *service) registerThreadRoutes(api huma.API) {
 				byAccount[t.AccountID] = append(byAccount[t.AccountID], t.ID)
 			}
 			for _, aid := range order {
+				if b.Action == ActionCategorize {
+					break // done above, in opendesk only
+				}
 				a, err := loadAccount(ctx, s.d.DB.Pool, p.WorkspaceID, aid)
 				if err != nil {
 					return nil, httpx.Wrap(err)
 				}
 				if (b.Action == ActionLabel || b.Action == ActionUnlabel) && a.Provider == ProviderIMAP {
 					return nil, errLabels
+				}
+				if (b.Action == ActionDone || b.Action == ActionNeedsAction) && (a.Visibility != VisibilityShared || !a.HandlingEnabled) {
+					return nil, httpx.Validation("Handling state is not enabled for this account.")
 				}
 				list := byAccount[aid]
 				err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
@@ -608,17 +647,19 @@ func (s *service) detailResponse(ctx context.Context, p *auth.Principal, id uuid
 
 // counts are the sidebar's numbers for the caller.
 func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (CollabCounts, error) {
-	out := CollabCounts{Accounts: map[uuid.UUID]int{}, Folders: map[uuid.UUID]int{}, Assigned: map[uuid.UUID]int{}, Addresses: map[uuid.UUID]map[string]int{}}
+	out := CollabCounts{Accounts: map[uuid.UUID]int{}, Folders: map[uuid.UUID]int{}, Assigned: map[uuid.UUID]int{}, Addresses: map[uuid.UUID]map[string]int{},
+		Categories: map[uuid.UUID]map[string]int{}}
 	inAccounts := `t.workspace_id = $1 AND t.account_id IN ` + visibleAccountsSQL("$2")
 	err := q.QueryRow(ctx, `SELECT
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND t.unread AND t.folder_ids && `+inboxSQL+`),
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+boxSQL(BoxUnread, "$2")+`),
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+boxSQL(BoxDrafts, "$2")+`),
+		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+boxSQL(BoxNeedsAction, "$2")+`),
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1 AND `+threadVisibleSQL("t", "$2")+`
 			AND EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND t.folder_ids && `+inboxSQL+`),
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1
 			AND EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = $2) AND t.folder_ids && `+inboxSQL+`)`,
-		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.Shared, &out.Boxes.Assigned)
+		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.NeedsAction, &out.Boxes.Shared, &out.Boxes.Assigned)
 	if err != nil {
 		return out, err
 	}
@@ -645,6 +686,30 @@ func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (
 		return out, err
 	}
 	if out.Assigned, err = collectCounts(rows); err != nil {
+		return out, err
+	}
+	rows, err = q.Query(ctx, `SELECT t.account_id, CASE WHEN t.category = ANY(a.category_keys) THEN t.category ELSE 'primary' END, count(*)
+		FROM collab_threads t JOIN collab_accounts a ON a.id = t.account_id
+		WHERE `+inAccounts+` AND cardinality(a.category_keys) > 0 AND t.unread AND t.folder_ids && `+inboxSQL+`
+		GROUP BY 1, 2`, p.WorkspaceID, p.UserID)
+	if err != nil {
+		return out, err
+	}
+	for rows.Next() {
+		var aid uuid.UUID
+		var key string
+		var n int
+		if err := rows.Scan(&aid, &key, &n); err != nil {
+			rows.Close()
+			return out, err
+		}
+		if out.Categories[aid] == nil {
+			out.Categories[aid] = map[string]int{}
+		}
+		out.Categories[aid][key] = n
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
 		return out, err
 	}
 	// Every address of the accounts with aliases (their own included), matched like to=.

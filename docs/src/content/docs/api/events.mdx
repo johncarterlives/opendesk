@@ -65,7 +65,7 @@ Every state change that someone else should see is written as an event, in the s
 | `member.removed` | agents | `user:<uid>` | `{ user_id }` |
 | `workspace.updated` | agents | | `{ workspace }`, when the name, settings, logo or a brand image changes |
 | `notification.created` | agents | `user:<uid>` | `{ notification }` |
-| `saved_reply.*`, `view.*`, `automation.*`, `sla_policy.*`, `kb_article.*`, `kb_collection.*`, `team.*`, `webhook.*` | agents | | `{ <resource> }` on create and update, `{ <resource>_id }` on delete |
+| `saved_reply.*`, `view.*`, `automation.*`, `sla_policy.*`, `kb_article.*`, `kb_collection.*`, `changelog_entry.*`, `team.*`, `webhook.*` | agents | | `{ <resource> }` on create and update, `{ <resource>_id }` on delete |
 | `email_template.updated` | agents | | `{ brand_id, kind }`, when a brand's email layout (`layout`) or satisfaction email (`csat`) is saved or reset. See [Templates and email design](/api/resources/templates/) |
 | `billing.updated` | agents | | `Billing`, see [Billing API](/api/resources/billing/). Cloud only. |
 | `import.created`, `import.updated` | agents | | `{ import }`, a [history import](/guides/importing/) as it starts, moves and ends, at most once a second while it writes. The tickets, contacts and articles it brings in have no events of their own; refetch lists on `import.updated` |

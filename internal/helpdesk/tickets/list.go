@@ -43,6 +43,21 @@ func forCaller(ctx context.Context, qr db.Querier, p *auth.Principal, q listQuer
 	return q, nil
 }
 
+// prepareListQuery loads and normalizes custom field filters before they reach SQL.
+func prepareListQuery(ctx context.Context, q db.Querier, wid uuid.UUID, f listQuery, sort string) (listQuery, error) {
+	if f.Defs == nil && (len(f.Fields) > 0 || strings.HasPrefix(sort, "field.")) {
+		defs, err := domain.LoadFieldDefs(ctx, q, wid, domain.FieldEntityTicket)
+		if err != nil {
+			return f, err
+		}
+		f.Defs = defs
+		if f.Fields, err = hd.NormalizeFieldFilters(defs, f.Fields); err != nil {
+			return f, err
+		}
+	}
+	return f, nil
+}
+
 // sqlBuilder accumulates WHERE clauses and positional args.
 type sqlBuilder struct {
 	where []string
@@ -122,40 +137,19 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 		b.add("t.assignee_id = " + b.arg(id))
 	}
 	if strings.TrimSpace(f.TeamID) != "" {
-		// A comma-separated list of team ids, mine (the caller's teams) and none: any of them.
-		var ors []string
-		var teams []uuid.UUID
-		parts := strings.Split(f.TeamID, ",")
-		if len(parts) > 50 {
-			return httpx.Validation("team_id takes at most 50 values")
+		clause, err := teamClause(b, me, f.TeamID, "team_id")
+		if err != nil {
+			return err
 		}
-		for _, raw := range parts {
-			switch v := strings.TrimSpace(raw); v {
-			case "":
-			case hd.TeamNone:
-				ors = append(ors, "t.team_id IS NULL")
-			case hd.TeamMine:
-				if me != nil {
-					ors = append(ors, "t.team_id IN (SELECT mt.team_id FROM team_members mt WHERE mt.user_id = "+b.arg(*me)+")")
-				}
-			default:
-				id, err := hd.ParseRef(v, "team_id")
-				if err != nil {
-					return err
-				}
-				if !slices.Contains(teams, id) {
-					teams = append(teams, id)
-				}
-			}
+		b.add(clause)
+	}
+	if strings.TrimSpace(f.TeamNot) != "" {
+		clause, err := teamClause(b, me, f.TeamNot, "team_not")
+		if err != nil {
+			return err
 		}
-		if len(teams) > 0 {
-			ors = append(ors, "t.team_id = ANY("+b.arg(teams)+"::uuid[])")
-		}
-		if len(ors) == 0 {
-			b.add("false")
-		} else {
-			b.add("(" + strings.Join(ors, " OR ") + ")")
-		}
+		// A ticket without a team is in none of the listed teams.
+		b.add("NOT COALESCE(" + clause + ", false)")
 	}
 	for _, ref := range []struct{ v, col string }{{f.MailboxID, "t.mailbox_id"}, {f.ContactID, "t.contact_id"},
 		{f.BrandID, "t.brand_id"}, {f.WidgetID, "t.widget_id"}} {
@@ -168,15 +162,45 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 		}
 		b.add(ref.col + " = " + b.arg(id))
 	}
+	if strings.TrimSpace(f.MailboxNot) != "" {
+		var boxes []uuid.UUID
+		for _, raw := range hd.SplitCSV(f.MailboxNot) {
+			id, err := hd.ParseRef(raw, "mailbox_not")
+			if err != nil {
+				return err
+			}
+			boxes = append(boxes, id)
+		}
+		if len(boxes) > 50 {
+			return httpx.Validation("mailbox_not takes at most 50 values")
+		}
+		b.add("(t.mailbox_id IS NULL OR NOT t.mailbox_id = ANY(" + b.arg(boxes) + "::uuid[]))")
+	}
 	if a := strings.ToLower(strings.TrimSpace(f.ReceivedAt)); a != "" {
 		b.add("t.received_at = " + b.arg(a))
 	}
-	if f.Tag != "" {
-		b.add(`EXISTS (SELECT 1 FROM ticket_tags ftt JOIN tags fg ON fg.id = ftt.tag_id
-			WHERE ftt.ticket_id = t.id AND fg.workspace_id = t.workspace_id AND lower(fg.name) = lower(` + b.arg(f.Tag) + `))`)
+	for _, l := range []struct {
+		raw, field, op string
+	}{{f.Tag, "tag", "EXISTS"}, {f.TagNot, "tag_not", "NOT EXISTS"}} {
+		names, err := hd.SplitLabels(l.raw, l.field)
+		if err != nil {
+			return err
+		}
+		if len(names) > 0 {
+			b.add(l.op + ` (SELECT 1 FROM ticket_tags ftt JOIN tags fg ON fg.id = ftt.tag_id
+				WHERE ftt.ticket_id = t.id AND fg.workspace_id = t.workspace_id
+				AND lower(fg.name) IN (SELECT lower(n) FROM unnest(` + b.arg(names) + `::text[]) n))`)
+		}
+	}
+	if f.Untagged {
+		b.add(`NOT EXISTS (SELECT 1 FROM ticket_tags ftt JOIN tags fg ON fg.id = ftt.tag_id
+			WHERE ftt.ticket_id = t.id AND fg.workspace_id = t.workspace_id)`)
 	}
 	if f.Channel != "" {
 		b.add("t.channel = " + b.arg(f.Channel))
+	}
+	if len(f.ChannelNot) > 0 {
+		b.add("NOT t.channel = ANY(" + b.arg(f.ChannelNot) + "::text[])")
 	}
 	for _, ff := range f.Fields {
 		def, ok := f.Defs[ff.Key]
@@ -201,6 +225,44 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 		b.add("(" + strings.Join(parts, " OR ") + ")")
 	}
 	return nil
+}
+
+// teamClause is the predicate for tickets of any of a comma-separated list of team ids,
+// mine (the caller's teams) and none. It is NULL for a ticket without a team unless none
+// is listed.
+func teamClause(b *sqlBuilder, me *uuid.UUID, raw, field string) (string, error) {
+	var ors []string
+	var teams []uuid.UUID
+	parts := strings.Split(raw, ",")
+	if len(parts) > 50 {
+		return "", httpx.Validation(field + " takes at most 50 values")
+	}
+	for _, part := range parts {
+		switch v := strings.TrimSpace(part); v {
+		case "":
+		case hd.TeamNone:
+			ors = append(ors, "t.team_id IS NULL")
+		case hd.TeamMine:
+			if me != nil {
+				ors = append(ors, "t.team_id IN (SELECT mt.team_id FROM team_members mt WHERE mt.user_id = "+b.arg(*me)+")")
+			}
+		default:
+			id, err := hd.ParseRef(v, field)
+			if err != nil {
+				return "", err
+			}
+			if !slices.Contains(teams, id) {
+				teams = append(teams, id)
+			}
+		}
+	}
+	if len(teams) > 0 {
+		ors = append(ors, "t.team_id = ANY("+b.arg(teams)+"::uuid[])")
+	}
+	if len(ors) == 0 {
+		return "false", nil
+	}
+	return "(" + strings.Join(ors, " OR ") + ")", nil
 }
 
 var wordRe = regexp.MustCompile(`[\p{L}\p{N}]+`)
@@ -341,15 +403,9 @@ type ticketCursor struct {
 // listTickets runs a filtered, sorted, keyset-paginated ticket query.
 func listTickets(ctx context.Context, q db.Querier, wid uuid.UUID, me *uuid.UUID, f listQuery, sort, order string, limit int, cursor string) (httpx.Page[domain.Ticket], error) {
 	var page httpx.Page[domain.Ticket]
-	if f.Defs == nil && (len(f.Fields) > 0 || strings.HasPrefix(sort, "field.")) {
-		defs, err := domain.LoadFieldDefs(ctx, q, wid, domain.FieldEntityTicket)
-		if err != nil {
-			return page, err
-		}
-		f.Defs = defs
-		if f.Fields, err = hd.NormalizeFieldFilters(defs, f.Fields); err != nil {
-			return page, err
-		}
+	var err error
+	if f, err = prepareListQuery(ctx, q, wid, f, sort); err != nil {
+		return page, err
 	}
 	b := &sqlBuilder{}
 	if err := applyFilters(b, wid, me, f); err != nil {
@@ -406,6 +462,24 @@ func listTickets(ctx context.Context, q db.Querier, wid uuid.UUID, me *uuid.UUID
 	}), nil
 }
 
+// filteredTicketIDs finds every ticket that matches f for this caller. It is used by
+// bulk actions so the same filters and private-team visibility as the inbox apply.
+func filteredTicketIDs(ctx context.Context, q db.Querier, wid uuid.UUID, me *uuid.UUID, f listQuery) ([]uuid.UUID, error) {
+	var err error
+	if f, err = prepareListQuery(ctx, q, wid, f, ""); err != nil {
+		return nil, err
+	}
+	b := &sqlBuilder{}
+	if err := applyFilters(b, wid, me, f); err != nil {
+		return nil, err
+	}
+	rows, err := q.Query(ctx, "SELECT t.id FROM tickets t"+b.sql()+" ORDER BY t.id", b.args...)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+}
+
 // loadView returns the filters of a view the caller can see.
 func loadView(ctx context.Context, q db.Querier, p *auth.Principal, id string) (hd.TicketFilters, error) {
 	var f hd.TicketFilters
@@ -438,13 +512,18 @@ func mergeFilters(view, req hd.TicketFilters) hd.TicketFilters {
 	if len(req.Severity) > 0 {
 		out.Severity = req.Severity
 	}
-	for _, f := range []struct{ dst, src *string }{{&out.Assignee, &req.Assignee}, {&out.TeamID, &req.TeamID},
-		{&out.MailboxID, &req.MailboxID}, {&out.Tag, &req.Tag}, {&out.Channel, &req.Channel}, {&out.Q, &req.Q},
-		{&out.BrandID, &req.BrandID}, {&out.WidgetID, &req.WidgetID}, {&out.ReceivedAt, &req.ReceivedAt}} {
+	if len(req.ChannelNot) > 0 {
+		out.ChannelNot = req.ChannelNot
+	}
+	for _, f := range []struct{ dst, src *string }{{&out.Assignee, &req.Assignee}, {&out.TeamID, &req.TeamID}, {&out.TeamNot, &req.TeamNot},
+		{&out.MailboxID, &req.MailboxID}, {&out.MailboxNot, &req.MailboxNot}, {&out.Tag, &req.Tag}, {&out.TagNot, &req.TagNot},
+		{&out.Channel, &req.Channel}, {&out.Q, &req.Q}, {&out.BrandID, &req.BrandID}, {&out.WidgetID, &req.WidgetID},
+		{&out.ReceivedAt, &req.ReceivedAt}} {
 		if *f.src != "" {
 			*f.dst = *f.src
 		}
 	}
+	out.Untagged = view.Untagged || req.Untagged
 	// Field filters add up: the view's and the request's all apply.
 	out.Fields = append(slices.Clone(view.Fields), req.Fields...)
 	return out
@@ -554,7 +633,7 @@ func ticketCounts(ctx context.Context, q db.Querier, p *auth.Principal) (TicketC
 		myTeams    = `NOT spam AND status IN ('open','pending') AND team_id IN (SELECT mt.team_id FROM team_members mt WHERE mt.user_id = $2)`
 	)
 	var sUnassigned, sMine, sOpen, sPending, sMyTeams TicketStats
-	dest := []any{&c.Unassigned, &c.Mine, &c.Open, &c.Pending, &c.OnHold, &c.Solved, &c.Spam, &c.MyTeams.Open, &c.MyTeams.Unassigned}
+	dest := []any{&c.Unassigned, &c.Mine, &c.Open, &c.Pending, &c.OnHold, &c.Spam, &c.MyTeams.Open, &c.MyTeams.Unassigned}
 	for _, s := range []*TicketStats{&sUnassigned, &sMine, &sOpen, &sPending, &sMyTeams} {
 		dest = append(dest, s.dest()...)
 	}
@@ -564,14 +643,15 @@ func ticketCounts(ctx context.Context, q db.Querier, p *auth.Principal) (TicketC
 	if err != nil {
 		return c, err
 	}
+	// Every folder but Solved and Spam holds open, pending and on-hold tickets, read here through
+	// the status index. Spam counts spam that is not closed: these tickets' and the solved ones'.
 	err = q.QueryRow(ctx, `SELECT
 		count(*) FILTER (WHERE `+unassigned+`),
 		count(*) FILTER (WHERE `+mine+`),
 		count(*) FILTER (WHERE `+open+`),
 		count(*) FILTER (WHERE NOT spam AND status = 'pending'),
 		count(*) FILTER (WHERE NOT spam AND status = 'on_hold'),
-		count(*) FILTER (WHERE NOT spam AND status = 'solved'),
-		count(*) FILTER (WHERE spam AND status <> 'closed'),
+		count(*) FILTER (WHERE spam),
 		count(*) FILTER (WHERE `+myTeams+`),
 		count(*) FILTER (WHERE `+myTeams+` AND assignee_id IS NULL),
 		`+statCols("", unassigned)+`,
@@ -579,11 +659,22 @@ func ticketCounts(ctx context.Context, q db.Querier, p *auth.Principal) (TicketC
 		`+statCols("", open)+`,
 		`+statCols("", pending)+`,
 		`+statCols("", myTeams)+`
-		FROM tickets WHERE workspace_id = $1 AND deleted_at IS NULL AND `+domain.VisibleSQLUser("tickets", 3, 2), p.WorkspaceID, p.ActorUserID(), hidden).
+		FROM tickets WHERE workspace_id = $1 AND deleted_at IS NULL AND status IN ('open','pending','on_hold')
+			AND `+domain.VisibleSQLUser("tickets", 3, 2), p.WorkspaceID, p.ActorUserID(), hidden).
 		Scan(dest...)
 	if err != nil {
 		return c, err
 	}
+	// Solved tickets are most of a workspace's: their counts read tickets_ws_solved_count_idx alone.
+	var solvedSpam int
+	err = q.QueryRow(ctx, `SELECT count(*) FILTER (WHERE NOT spam), count(*) FILTER (WHERE spam)
+		FROM tickets WHERE workspace_id = $1 AND deleted_at IS NULL AND status = 'solved'
+			AND `+domain.VisibleSQLUser("tickets", 3, 2), p.WorkspaceID, p.ActorUserID(), hidden).
+		Scan(&c.Solved, &solvedSpam)
+	if err != nil {
+		return c, err
+	}
+	c.Spam += solvedSpam
 	c.Stats["ticket_folder:unassigned"] = sUnassigned
 	c.Stats["ticket_folder:mine"] = sMine
 	c.Stats["ticket_folder:open"] = sOpen

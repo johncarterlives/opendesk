@@ -26,7 +26,22 @@
     "results_one": "{{count}} Ergebnis",
     "results_other": "{{count}} Ergebnisse",
     "theme_light": "Zum hellen Design wechseln",
-    "theme_dark": "Zum dunklen Design wechseln"
+    "theme_dark": "Zum dunklen Design wechseln",
+    "changelog": "Änderungsprotokoll",
+    "changelog_subtitle": "Neue Funktionen, Verbesserungen und Fehlerbehebungen.",
+    "latest_updates": "Neueste Updates",
+    "all_updates": "Alle Updates",
+    "all_categories": "Alle",
+    "categories": "Kategorien",
+    "changelog_empty_title": "Noch keine Updates",
+    "changelog_empty_body": "Updates erscheinen hier, sobald sie veröffentlicht sind.",
+    "category_empty_title": "Keine Updates in „{{category}}“",
+    "entry_not_found_title": "Update nicht gefunden",
+    "entry_not_found_body": "Es wurde möglicherweise entfernt oder nicht mehr veröffentlicht.",
+    "newer": "Neuere Updates",
+    "older": "Ältere Updates",
+    "feed": "RSS-Feed",
+    "permalink": "Link zu diesem Update"
   },
   "csat": {
     "page_title": "Bewerten Sie Ihr Gespräch",

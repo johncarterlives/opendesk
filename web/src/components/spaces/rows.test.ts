@@ -31,7 +31,7 @@ function data(p: Partial<WorkspaceData> = {}): WorkspaceData {
     myTeams: new Set(["t1"]),
     views: [{ id: "v1", name: "Hot", shared: true, filters: {}, position: 0 } as View],
     accounts: [{ id: "a1", name: "Work", email: "[EMAIL]", color: "blue", unread: 2 } as MailAccount],
-    mailCounts: { boxes: { inbox: 6, unread: 6, shared: 1, assigned: 0, drafts: 0 }, assigned: {}, accounts: { a1: 5 }, folders: {} },
+    mailCounts: { boxes: { inbox: 6, unread: 6, shared: 1, assigned: 0, drafts: 0, needs_action: 0 }, assigned: {}, accounts: { a1: 5 }, folders: {} },
     folders: {},
     ...p,
   };
@@ -45,6 +45,7 @@ describe("Space rows", () => {
     expect(rowHref({ kind: "mail", box: "folder", account: "a1", folder: "f1" }, "w1")).toBe("/mail/folder?account=a1&folder=f1&ws=w1");
     expect(rowHref({ kind: "page", page: "knowledge" }, "w1")).toBe("/kb?ws=w1");
     expect(rowHref({ kind: "page", page: "contacts" })).toBe("/contacts");
+    expect(rowHref({ kind: "page", page: "wiki" }, "w1")).toBe("/wiki?ws=w1");
   });
 
   it("names and numbers each kind from the workspace's data", () => {

@@ -14,6 +14,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/events"
 	"github.com/useopendesk/opendesk/internal/helpdesk/hd"
 	"github.com/useopendesk/opendesk/internal/helpdesk/hdtest"
+	"github.com/useopendesk/opendesk/internal/helpdesk/tickets"
 	"github.com/useopendesk/opendesk/internal/httpx"
 	"github.com/useopendesk/opendesk/internal/ids"
 )
@@ -363,5 +364,90 @@ func TestCountStats(t *testing.T) {
 	e.Do("GET", "/v1/tickets/counts", ws.Admin.As(ws), nil).Want(t, 200).JSON(t, &c)
 	if c.Stats["team:"+priv.String()] != (stats{0, 1, 0}) || c.Stats["view:"+view.String()] != (stats{2, 4, 0}) {
 		t.Errorf("admin stats %+v", c.Stats)
+	}
+}
+
+// Folder counts cover every status: the open folders, Solved and Spam each count the caller's
+// tickets, never a closed or deleted one, and a private team's only for its members and the
+// ticket's assignee.
+func TestFolderCounts(t *testing.T) {
+	e, ws := newEnv(t)
+	team := addTeam(t, e, ws, ws.Agent.ID)
+	priv := addPrivateTeam(t, e, ws, map[uuid.UUID]string{ws.Admin.ID: hd.TeamLead})
+	agent, admin := ws.Agent.ID, ws.Admin.ID
+	type tk struct {
+		name                  string
+		status                string
+		spam, urgent, deleted bool
+		assignee, team        *uuid.UUID
+	}
+	for _, c := range []tk{
+		{name: "t1", status: "open", urgent: true},
+		{name: "t2", status: "pending", assignee: &agent},
+		{name: "t3", status: "on_hold", urgent: true},
+		{name: "t4", status: "open", team: &team},
+		{name: "t5", status: "pending", assignee: &admin, team: &team},
+		{name: "t6", status: "solved", urgent: true},
+		{name: "t7", status: "solved", assignee: &agent},
+		{name: "t8", status: "closed", urgent: true},
+		{name: "t9", status: "closed", spam: true},
+		{name: "t10", status: "open", spam: true, urgent: true},
+		{name: "t11", status: "on_hold", spam: true},
+		{name: "t12", status: "solved", spam: true, assignee: &agent},
+		{name: "t13", status: "open", urgent: true, team: &priv},
+		{name: "t14", status: "solved", team: &priv},
+		{name: "t15", status: "solved", spam: true, team: &priv},
+		{name: "t16", status: "pending", urgent: true, assignee: &agent, team: &priv},
+		{name: "t17", status: "solved", assignee: &agent, team: &priv},
+		{name: "t18", status: "open", spam: true, assignee: &agent, team: &priv},
+		{name: "t19", status: "open", deleted: true},
+		{name: "t20", status: "solved", deleted: true},
+		{name: "t21", status: "open", spam: true, deleted: true},
+	} {
+		id := createTicket(t, e, ws, map[string]any{"subject": c.name}).ID
+		priority := "normal"
+		if c.urgent {
+			priority = "urgent"
+		}
+		e.Exec(`UPDATE tickets SET status = $2, spam = $3, priority = $4, assignee_id = $5, team_id = $6,
+			deleted_at = CASE WHEN $7 THEN now() END WHERE id = $1`, id, c.status, c.spam, priority, c.assignee, c.team, c.deleted)
+	}
+
+	type folders struct{ Unassigned, Mine, Open, Pending, OnHold, Solved, Spam, MyTeams, MyTeamsUnassigned int }
+	type urgent struct{ Unassigned, Mine, Open, Pending, MyTeams int }
+	cases := []struct {
+		who     string
+		as      hdtest.Auth
+		folders folders
+		urgent  urgent
+	}{
+		// The agent: t13, t14 and t15 are a private team's; t16, t17 and t18 are theirs.
+		{"agent", ws.Agent.As(ws),
+			folders{
+				Unassigned: 3, Mine: 2, Open: 2, Pending: 3, OnHold: 1, // t1 t3 t4; t2 t16; t1 t4; t2 t5 t16; t3
+				Solved: 3, Spam: 4, // t6 t7 t17; t10 t11 t12 t18
+				MyTeams: 2, MyTeamsUnassigned: 1, // t4 t5; t4
+			},
+			urgent{Unassigned: 2, Mine: 1, Open: 1, Pending: 2}}, // t1 t3; t16; t1; t3 t16
+		// The private team's lead counts its tickets too.
+		{"lead", ws.Admin.As(ws),
+			folders{
+				Unassigned: 4, Mine: 1, Open: 3, Pending: 3, OnHold: 1, // t1 t3 t4 t13; t5; t1 t4 t13; t2 t5 t16; t3
+				Solved: 4, Spam: 5, // t6 t7 t14 t17; t10 t11 t12 t15 t18
+				MyTeams: 2, MyTeamsUnassigned: 1, // t13 t16; t13
+			},
+			urgent{Unassigned: 3, Open: 2, Pending: 2, MyTeams: 2}}, // t1 t3 t13; t1 t13; t3 t16; t13 t16
+	}
+	for _, c := range cases {
+		var got tickets.TicketCounts
+		e.Do("GET", "/v1/tickets/counts", c.as, nil).Want(t, 200).JSON(t, &got)
+		if f := (folders{got.Unassigned, got.Mine, got.Open, got.Pending, got.OnHold, got.Solved, got.Spam,
+			got.MyTeams.Open, got.MyTeams.Unassigned}); f != c.folders {
+			t.Errorf("%s folders: got %+v want %+v", c.who, f, c.folders)
+		}
+		if u := (urgent{got.Stats["ticket_folder:unassigned"].Urgent, got.Stats["ticket_folder:mine"].Urgent,
+			got.Stats["ticket_folder:open"].Urgent, got.Stats["ticket_folder:pending"].Urgent, got.Stats["team:mine"].Urgent}); u != c.urgent {
+			t.Errorf("%s urgent: got %+v want %+v", c.who, u, c.urgent)
+		}
 	}
 }

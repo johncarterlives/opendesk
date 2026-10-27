@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"net/http"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/crypto"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/domain"
+	"github.com/useopendesk/opendesk/internal/helpdesk/hd"
 	"github.com/useopendesk/opendesk/internal/helpdesk/tickets"
 	"github.com/useopendesk/opendesk/internal/httpx"
 	"github.com/useopendesk/opendesk/internal/ids"
@@ -34,7 +36,62 @@ func (w *dispatchWorker) Timeout(*river.Job[jobs.SupportChannelDispatchArgs]) ti
 	return 30 * time.Second
 }
 func (w *dispatchWorker) Work(ctx context.Context, j *river.Job[jobs.SupportChannelDispatchArgs]) error {
-	return w.s.dispatch(ctx, j.Args)
+	return snoozeRateLimit(w.s.runDispatch(ctx, j))
+}
+
+func (s *Service) runDispatch(ctx context.Context, j *river.Job[jobs.SupportChannelDispatchArgs]) error {
+	a := j.Args
+	status := "queued"
+	if j.Attempt > 1 {
+		status = "retrying"
+	}
+	tag, err := s.d.DB.Pool.Exec(ctx, `INSERT INTO support_channel_dispatches(workspace_id,event_seq,status,attempts)
+		SELECT workspace_id,seq,$3,1 FROM events WHERE workspace_id=$1 AND seq=$2
+		ON CONFLICT (workspace_id,event_seq) DO UPDATE
+		SET status=$3,attempts=support_channel_dispatches.attempts+1,updated_at=now()`, a.WorkspaceID, a.EventSeq, status)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return nil
+	}
+
+	err = s.dispatch(ctx, a)
+	if err != nil {
+		status = "retrying"
+		var limited *channel.RateLimited
+		if j.Attempt >= j.MaxAttempts && !errors.As(err, &limited) {
+			status = "failed"
+		}
+		_, updateErr := s.d.DB.Pool.Exec(ctx, `UPDATE support_channel_dispatches SET status=$3,last_error=$4,updated_at=now()
+			WHERE workspace_id=$1 AND event_seq=$2`, a.WorkspaceID, a.EventSeq, status, deliveryError)
+		if updateErr != nil {
+			return updateErr
+		}
+		return err
+	}
+
+	var deliveries int
+	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM support_channel_deliveries d
+		JOIN support_channel_destinations dest ON dest.id=d.destination_id
+		WHERE dest.workspace_id=$1 AND d.event_seq=$2`, a.WorkspaceID, a.EventSeq).Scan(&deliveries); err != nil {
+		return err
+	}
+	if deliveries == 0 {
+		_, err = s.d.DB.Pool.Exec(ctx, `DELETE FROM support_channel_dispatches WHERE workspace_id=$1 AND event_seq=$2`, a.WorkspaceID, a.EventSeq)
+		return err
+	}
+	_, err = s.d.DB.Pool.Exec(ctx, `UPDATE support_channel_dispatches SET status='delivered',last_error='',delivered_at=now(),updated_at=now()
+		WHERE workspace_id=$1 AND event_seq=$2`, a.WorkspaceID, a.EventSeq)
+	return err
+}
+
+func snoozeRateLimit(err error) error {
+	var limited *channel.RateLimited
+	if errors.As(err, &limited) {
+		return river.JobSnooze(limited.RetryAfter)
+	}
+	return err
 }
 
 type inboundWorker struct {
@@ -53,7 +110,7 @@ func (w *inboundWorker) Work(ctx context.Context, j *river.Job[jobs.SupportChann
 		// Waiting for an earlier command is not a failure: it uses no attempt.
 		return river.JobSnooze(2 * time.Second)
 	}
-	return err
+	return snoozeRateLimit(err)
 }
 
 type deliveryTarget struct {
@@ -90,7 +147,7 @@ func (s *Service) dispatch(ctx context.Context, a jobs.SupportChannelDispatchArg
 	if t.Channel != domain.ChannelEmail {
 		return nil
 	}
-	rows, err := s.d.DB.Pool.Query(ctx, `SELECT DISTINCT ON (d.connection_id) d.id,d.connection_id,d.team_id,d.external_channel_id,d.external_channel_name,d.enabled,d.include_notes,d.created_at,c.provider,c.credentials_enc
+	rows, err := s.d.DB.Pool.Query(ctx, `SELECT DISTINCT ON (d.connection_id) d.id,d.connection_id,d.team_id,d.external_channel_id,d.external_channel_name,d.enabled,d.include_notes,d.message_limit,d.created_at,c.provider,c.credentials_enc
 		FROM support_channel_destinations d JOIN support_channel_connections c ON c.id=d.connection_id
 		WHERE d.workspace_id=$1 AND d.enabled AND (d.team_id IS NOT DISTINCT FROM $2 OR d.team_id IS NULL)
 		ORDER BY d.connection_id,(d.team_id IS NOT NULL) DESC`, a.WorkspaceID, t.TeamID)
@@ -99,7 +156,7 @@ func (s *Service) dispatch(ctx context.Context, a jobs.SupportChannelDispatchArg
 	}
 	targets, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (deliveryTarget, error) {
 		var d deliveryTarget
-		err := row.Scan(&d.ID, &d.ConnectionID, &d.TeamID, &d.ExternalChannelID, &d.ExternalChannelName, &d.Enabled, &d.IncludeNotes, &d.CreatedAt, &d.Provider, &d.CredentialsEnc)
+		err := row.Scan(&d.ID, &d.ConnectionID, &d.TeamID, &d.ExternalChannelID, &d.ExternalChannelName, &d.Enabled, &d.IncludeNotes, &d.MessageLimit, &d.CreatedAt, &d.Provider, &d.CredentialsEnc)
 		return d, err
 	})
 	if err != nil {
@@ -208,14 +265,69 @@ func (s *Service) dispatchTo(ctx context.Context, a jobs.SupportChannelDispatchA
 				break
 			}
 		}
-		text, decodeErr := messageCreatedText(data, d.IncludeNotes)
+		message, source, decodeErr := messageEvent(data, d.IncludeNotes, richTextLimit(adapter, d.MessageLimit), ct.URL)
 		if decodeErr != nil {
 			return decodeErr
 		}
-		if text != "" {
-			if err = adapter.Post(ctx, s.http, creds, thread.ID, text); err != nil {
+		if source != nil {
+			ref, postErr := postRich(ctx, adapter, s.http, creds, thread.ID, message)
+			if postErr != nil {
+				err = postErr
 				return s.connectionError(ctx, d.ConnectionID, err)
 			}
+			if ref.ID != "" {
+				_, err = s.d.DB.Pool.Exec(ctx, `INSERT INTO support_channel_messages(destination_id,message_id,kind,external_message_id)
+					VALUES($1,$2,'mirror',$3) ON CONFLICT(destination_id,message_id,kind) DO UPDATE SET external_message_id=EXCLUDED.external_message_id,removed_at=NULL,updated_at=now()`,
+					d.ID, source.ID, ref.ID)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	case "message.updated":
+		message, source, decodeErr := messageEvent(data, d.IncludeNotes, richTextLimit(adapter, d.MessageLimit), ct.URL)
+		if decodeErr != nil {
+			return decodeErr
+		}
+		if source == nil {
+			break
+		}
+		var external string
+		var removed *time.Time
+		err = s.d.DB.Pool.QueryRow(ctx, `SELECT external_message_id,removed_at FROM support_channel_messages WHERE destination_id=$1 AND message_id=$2 AND kind='mirror'`, d.ID, source.ID).Scan(&external, &removed)
+		if db.IsNotFound(err) {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		rich, ok := adapter.(channel.RichAdapter)
+		if !ok {
+			break
+		}
+		if source.DeletedAt != nil || source.SentAsReplyID != nil {
+			if removed == nil {
+				if err = rich.DeleteRich(ctx, s.http, creds, thread.ID, external); err != nil {
+					return s.connectionError(ctx, d.ConnectionID, err)
+				}
+				_, err = s.d.DB.Pool.Exec(ctx, `UPDATE support_channel_messages SET removed_at=now(),updated_at=now() WHERE destination_id=$1 AND message_id=$2 AND kind='mirror'`, d.ID, source.ID)
+				if err != nil {
+					return err
+				}
+			}
+			break
+		}
+		if removed != nil {
+			var ref channel.MessageRef
+			ref, err = rich.PostRich(ctx, s.http, creds, thread.ID, message)
+			if err == nil {
+				_, err = s.d.DB.Pool.Exec(ctx, `UPDATE support_channel_messages SET external_message_id=$3,removed_at=NULL,updated_at=now() WHERE destination_id=$1 AND message_id=$2 AND kind='mirror'`, d.ID, source.ID, ref.ID)
+			}
+		} else {
+			err = rich.UpdateRich(ctx, s.http, creds, thread.ID, external, message)
+		}
+		if err != nil {
+			return s.connectionError(ctx, d.ConnectionID, err)
 		}
 	case "ticket.updated":
 		if thread.RootID != "" {
@@ -390,23 +502,21 @@ type messageCreatedEvent struct {
 	Message *domain.Message `json:"message"`
 }
 
-// messageCreatedText is the line posted for a new message, or "" for nothing.
-// Internal notes are posted only to a destination that includes them.
-func messageCreatedText(data []byte, includeNotes bool) (string, error) {
+// messageEvent is the bounded provider message, or nil when the destination
+// excludes it. Attachment URLs are freshly signed instead of trusting an old
+// event's URL, which may have expired before a retry.
+func messageEvent(data []byte, includeNotes bool, limit int, viewURL string) (channel.RichMessage, *domain.Message, error) {
 	var ev messageCreatedEvent
 	if err := json.Unmarshal(data, &ev); err != nil {
-		return "", fmt.Errorf("decode message.created event: %w", err)
+		return channel.RichMessage{}, nil, fmt.Errorf("decode message event: %w", err)
 	}
 	if ev.Message == nil {
-		return "", errors.New("decode message.created event: message is missing")
+		return channel.RichMessage{}, nil, errors.New("decode message event: message is missing")
 	}
 	if ev.Message.Kind == "note" && !includeNotes {
-		return "", nil
+		return channel.RichMessage{}, nil, nil
 	}
 	body := strings.TrimSpace(ev.Message.BodyText)
-	if body == "" {
-		return "", nil
-	}
 	who := "Agent"
 	if ev.Message.Direction == "inbound" {
 		who = "Customer"
@@ -414,7 +524,60 @@ func messageCreatedText(data []byte, includeNotes bool) (string, error) {
 	if ev.Message.Kind == "note" {
 		who = "Internal note"
 	}
-	return who + ": " + clip(body, 3500), nil
+	prefix := who + ": "
+	if limit < 500 || limit > 3500 {
+		limit = 3500
+	}
+	text := prefix + body
+	truncated := len([]rune(text)) > limit
+	if truncated {
+		text = clip(text, limit-1)
+	}
+	out := channel.RichMessage{Text: text}
+	if truncated || len(ev.Message.Attachments) > 0 {
+		out.ViewURL = viewURL
+	}
+	for _, a := range ev.Message.Attachments {
+		out.Attachments = append(out.Attachments, channel.Attachment{ID: a.ID.String(), Name: a.Filename, ContentType: a.ContentType, SizeBytes: a.SizeBytes, URL: domain.AttachmentURL(a.ID), Preview: hd.InlineSafe(a.ContentType)})
+	}
+	// Deleted messages and notes sent as replies are empty markers by design.
+	// Keep their identity so message.updated can remove the provider copy.
+	if ev.Message.DeletedAt != nil || ev.Message.SentAsReplyID != nil {
+		return out, ev.Message, nil
+	}
+	if strings.TrimSpace(body) == "" && len(out.Attachments) == 0 {
+		return channel.RichMessage{}, nil, nil
+	}
+	return out, ev.Message, nil
+}
+
+func richTextLimit(adapter channel.Adapter, configured int) int {
+	if configured < 500 || configured > 3500 {
+		configured = 3500
+	}
+	if limiter, ok := adapter.(channel.RichTextLimiter); ok && limiter.RichTextLimit() < configured {
+		return limiter.RichTextLimit()
+	}
+	return configured
+}
+
+func postRich(ctx context.Context, adapter channel.Adapter, client *http.Client, credentials map[string]string, thread string, message channel.RichMessage) (channel.MessageRef, error) {
+	if rich, ok := adapter.(channel.RichAdapter); ok {
+		return rich.PostRich(ctx, client, credentials, thread, message)
+	}
+	return channel.MessageRef{}, adapter.Post(ctx, client, credentials, thread, richText(message))
+}
+
+func richText(message channel.RichMessage) string {
+	var out strings.Builder
+	out.WriteString(message.Text)
+	for _, file := range message.Attachments {
+		fmt.Fprintf(&out, "\n%s (%d bytes): %s", file.Name, file.SizeBytes, file.URL)
+	}
+	if message.ViewURL != "" {
+		fmt.Fprintf(&out, "\nView in opendesk: %s", message.ViewURL)
+	}
+	return strings.TrimSpace(out.String())
 }
 
 func toChannelTicket(app string, t domain.Ticket) channel.Ticket {
@@ -525,10 +688,11 @@ func (s *Service) handleInbound(ctx context.Context, c connection, r *reply) err
 	}
 	control := in.Command == "confirm" || in.Command == "cancel"
 	var tid uuid.UUID
+	var destinationID uuid.UUID
 	var includeNotes bool
 	var teamID *uuid.UUID
-	err = s.d.DB.Pool.QueryRow(ctx, `SELECT t.ticket_id,d.include_notes,d.team_id FROM support_channel_threads t JOIN support_channel_destinations d ON d.id=t.destination_id
-		WHERE t.connection_id=$1 AND t.external_channel_id=$2 AND t.external_thread_id=$3`, c.ID, in.ExternalChannelID, in.ExternalThreadID).Scan(&tid, &includeNotes, &teamID)
+	err = s.d.DB.Pool.QueryRow(ctx, `SELECT t.ticket_id,d.id,d.include_notes,d.team_id FROM support_channel_threads t JOIN support_channel_destinations d ON d.id=t.destination_id
+		WHERE t.connection_id=$1 AND t.external_channel_id=$2 AND t.external_thread_id=$3`, c.ID, in.ExternalChannelID, in.ExternalThreadID).Scan(&tid, &destinationID, &includeNotes, &teamID)
 	if db.IsNotFound(err) {
 		creating := control || in.Command == "chat" && in.Directed
 		if in.Command == "chat" && !in.Directed {
@@ -587,12 +751,32 @@ func (s *Service) handleInbound(ctx context.Context, c connection, r *reply) err
 	}
 	if p == nil {
 		if p, err = s.externalPrincipal(ctx, c, in.ExternalUserID); err != nil {
+			if in.Mutation != "" {
+				return nil
+			}
 			r.notice(ctx, "Link your opendesk account before using this command.")
 			return nil
 		}
 	}
+	in.DestinationID = destinationID.String()
 	if control {
 		return s.answerControl(ctx, c, r, p, conversationTarget{TicketID: &tid})
+	}
+	if in.Mutation != "" {
+		if err = s.applyProviderMutation(ctx, p, tid, destinationID, *in); err != nil {
+			r.notice(ctx, publicError(err))
+		}
+		return nil
+	}
+	if (in.Command == "reply" || in.Command == "note") && in.ExternalMessageID != "" {
+		var exists bool
+		if err = s.d.DB.Pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM support_channel_messages
+			WHERE destination_id=$1 AND external_message_id=$2 AND kind='source')`, destinationID, in.ExternalMessageID).Scan(&exists); err != nil {
+			return err
+		}
+		if exists {
+			return nil
+		}
 	}
 	if in.Command == "chat" {
 		answer, err := s.converse(ctx, p, c.ID, tid, includeNotes, *in)
@@ -610,6 +794,17 @@ func (s *Service) handleInbound(ctx context.Context, c connection, r *reply) err
 		}
 		r.message(ctx, answer)
 		return nil
+	}
+	if (in.Command == "reply" || in.Command == "note") && len(in.Files) > 0 {
+		// Reject hidden tickets before provider bytes are downloaded and stored.
+		if _, err = domain.LoadVisibleTicket(ctx, s.d.DB.Pool, p, tid); err != nil {
+			r.notice(ctx, publicError(err))
+			return nil
+		}
+		if err = s.importProviderAttachments(ctx, r.a, creds, p, in); err != nil {
+			r.notice(ctx, publicError(err))
+			return nil
+		}
 	}
 	fromCard := in.SourceMessageID != ""
 	if fromCard && in.Command == "status" && strings.TrimSpace(in.Value) == domain.StatusClosed {
@@ -634,6 +829,9 @@ func (s *Service) handleInbound(ctx context.Context, c connection, r *reply) err
 		return nil
 	}
 	if err = s.applyCommand(ctx, p, tid, *in); err != nil {
+		if len(in.UploadIDs) > 0 {
+			s.removeProviderAttachments(ctx, p, in.UploadIDs)
+		}
 		r.notice(ctx, publicError(err))
 		return nil
 	}
@@ -642,6 +840,59 @@ func (s *Service) handleInbound(ctx context.Context, c connection, r *reply) err
 		r.post(ctx, "Done in opendesk.")
 	}
 	return nil
+}
+
+func (s *Service) applyProviderMutation(ctx context.Context, p *auth.Principal, tid, destinationID uuid.UUID, in channel.Inbound) error {
+	if in.ExternalMessageID == "" {
+		return nil
+	}
+	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+		if _, err := domain.LoadVisibleTicket(ctx, tx, p, tid); err != nil {
+			return err
+		}
+		var messageID uuid.UUID
+		var externalUser, sourceText, kind string
+		err := tx.QueryRow(ctx, `SELECT s.message_id,s.external_user_id,s.source_text,m.kind FROM support_channel_messages s
+			JOIN messages m ON m.id=s.message_id AND m.ticket_id=$3
+			WHERE s.destination_id=$1 AND s.external_message_id=$2 AND s.kind='source'`,
+			destinationID, in.ExternalMessageID, tid).Scan(&messageID, &externalUser, &sourceText, &kind)
+		if db.IsNotFound(err) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if externalUser == "" || externalUser != in.ExternalUserID {
+			return nil
+		}
+		if in.Mutation == "edit" && strings.TrimSpace(in.Text) == strings.TrimSpace(sourceText) {
+			return nil
+		}
+		// A customer-facing reply may already be in an inbox. Editing or deleting
+		// its provider command never rewrites or recalls that reply.
+		if kind != "note" {
+			return httpx.Validation("A reply already sent to the customer cannot be changed from the provider.")
+		}
+		switch in.Mutation {
+		case "edit":
+			body := "<p>" + strings.ReplaceAll(html.EscapeString(in.Text), "\n", "<br>") + "</p>"
+			if _, err = tickets.EditNote(ctx, tx, s.d, p, tid, messageID, body); err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, `UPDATE support_channel_messages SET source_text=$3,updated_at=now()
+				WHERE destination_id=$1 AND message_id=$2 AND kind='source'`, destinationID, messageID, in.Text)
+			return err
+		case "delete":
+			if err = tickets.DeleteMessage(ctx, tx, s.d, p, tid, messageID); err != nil {
+				return err
+			}
+			_, err = tx.Exec(ctx, `UPDATE support_channel_messages SET removed_at=now(),updated_at=now()
+				WHERE destination_id=$1 AND message_id=$2 AND kind='source'`, destinationID, messageID)
+			return err
+		default:
+			return nil
+		}
+	})
 }
 
 // answerControl settles a Confirm or Cancel button.
@@ -761,11 +1012,20 @@ func (s *Service) applyCommandTx(ctx context.Context, tx pgx.Tx, p *auth.Princip
 	switch in.Command {
 	case "reply", "note":
 		kind := in.Command
-		if strings.TrimSpace(in.Text) == "" {
-			return httpx.Validation("Message text is required.")
+		if strings.TrimSpace(in.Text) == "" && len(in.UploadIDs) == 0 {
+			return httpx.Validation("Message text or an attachment is required.")
 		}
 		body := "<p>" + strings.ReplaceAll(html.EscapeString(in.Text), "\n", "<br>") + "</p>"
-		_, err := tickets.PostMessage(ctx, tx, s.d, p, tid, tickets.MessageInput{Kind: kind, BodyHTML: body})
+		msg, err := tickets.PostMessage(ctx, tx, s.d, p, tid, tickets.MessageInput{Kind: kind, BodyHTML: body, AttachmentIDs: in.UploadIDs})
+		if err != nil || in.ExternalMessageID == "" || in.DestinationID == "" {
+			return err
+		}
+		destinationID, err := uuid.Parse(in.DestinationID)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, `INSERT INTO support_channel_messages(destination_id,message_id,kind,external_message_id,external_user_id,source_text)
+			VALUES($1,$2,'source',$3,$4,$5) ON CONFLICT(destination_id,message_id,kind) DO NOTHING`, destinationID, msg.ID, in.ExternalMessageID, in.ExternalUserID, in.Text)
 		return err
 	case "assign", "assign_self":
 		_, err := tickets.ApplyPatch(ctx, tx, s.d, p, tid, tickets.Patch{Assignee: tickets.Opt[uuid.UUID]{Set: true, Value: p.UserID}})
@@ -780,6 +1040,83 @@ func (s *Service) applyCommandTx(ctx context.Context, tx pgx.Tx, p *auth.Princip
 		return err
 	default:
 		return httpx.Validation("Unknown command. Use reply, note, assign, status or priority.")
+	}
+}
+
+func (s *Service) importProviderAttachments(ctx context.Context, adapter channel.Adapter, credentials map[string]string, p *auth.Principal, in *channel.Inbound) (err error) {
+	if len(in.Files) > 20 {
+		return httpx.Validation("At most 20 attachments can be added to a message.")
+	}
+	downloader, ok := adapter.(channel.AttachmentDownloader)
+	if !ok {
+		return httpx.Validation("This provider cannot import attachments.")
+	}
+	var total int64
+	var actualTotal int64
+	firstUpload := len(in.UploadIDs)
+	defer func() {
+		if err != nil && len(in.UploadIDs) > firstUpload {
+			s.removeProviderAttachments(context.WithoutCancel(ctx), p, in.UploadIDs[firstUpload:])
+			in.UploadIDs = in.UploadIDs[:firstUpload]
+		}
+	}()
+	for _, file := range in.Files {
+		if file.SizeBytes <= 0 || file.SizeBytes > hd.MaxAttachmentBytes || total+file.SizeBytes > hd.MaxAttachmentBytes {
+			return httpx.E(413, "too_large", "Attachments are limited to 25 MB per message.")
+		}
+		total += file.SizeBytes
+	}
+	for _, file := range in.Files {
+		body, err := downloader.DownloadAttachment(ctx, s.http, credentials, file)
+		if err != nil {
+			return httpx.E(422, "provider_attachment_failed", "Couldn't import an attachment from the provider.")
+		}
+		att, saveErr := hd.SaveUpload(ctx, s.d.Storage, s.d.DB.Pool, hd.Upload{
+			WorkspaceID: p.WorkspaceID, UploadedBy: &p.UserID, Filename: file.Name, Size: file.SizeBytes, Body: body,
+		})
+		body.Close()
+		if saveErr != nil {
+			return saveErr
+		}
+		in.UploadIDs = append(in.UploadIDs, att.ID.String())
+		actualTotal += att.SizeBytes
+		if actualTotal > hd.MaxAttachmentBytes {
+			return httpx.E(413, "too_large", "Attachments are limited to 25 MB per message.")
+		}
+	}
+	return nil
+}
+
+// removeProviderAttachments removes only this agent's still-unattached imports. Once
+// PostMessage commits, message_id makes the files ineligible for cleanup.
+func (s *Service) removeProviderAttachments(ctx context.Context, p *auth.Principal, raw []string) {
+	ids, err := hd.ParseAttachmentIDs(raw)
+	if err != nil || len(ids) == 0 {
+		return
+	}
+	rows, err := s.d.DB.Pool.Query(ctx, `DELETE FROM attachments
+		WHERE workspace_id=$1 AND id=ANY($2) AND message_id IS NULL AND uploaded_by=$3
+		RETURNING id,storage_key`, p.WorkspaceID, ids, p.UserID)
+	if err != nil {
+		s.d.Log.Warn("clean provider attachments", "err", err)
+		return
+	}
+	type removed struct {
+		id  uuid.UUID
+		key string
+	}
+	files, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (removed, error) {
+		var file removed
+		return file, row.Scan(&file.id, &file.key)
+	})
+	if err != nil {
+		s.d.Log.Warn("clean provider attachments", "err", err)
+		return
+	}
+	for _, file := range files {
+		if err := s.d.Storage.Delete(ctx, file.key); err != nil {
+			s.d.Log.Warn("clean provider attachment object", "attachment_id", file.id, "err", err)
+		}
 	}
 }
 
@@ -930,7 +1267,10 @@ func (r *reply) clearActions(ctx context.Context) {
 const deliveryError = "Couldn't deliver to the provider."
 
 func (s *Service) connectionError(ctx context.Context, id uuid.UUID, cause error) error {
-	_, _ = s.d.DB.Pool.Exec(ctx, `UPDATE support_channel_connections SET status='error',last_error=$2,updated_at=now() WHERE id=$1 AND (status<>'error' OR last_error=$2)`, id, deliveryError)
+	var limited *channel.RateLimited
+	if !errors.As(cause, &limited) {
+		_, _ = s.d.DB.Pool.Exec(ctx, `UPDATE support_channel_connections SET status='error',last_error=$2,updated_at=now() WHERE id=$1 AND (status<>'error' OR last_error=$2)`, id, deliveryError)
+	}
 	return fmt.Errorf("support channel delivery: %w", cause)
 }
 func publicError(err error) string {

@@ -93,7 +93,7 @@ Push a tag `desktop-v<semver>`: `desktop-v0.2.0` for a stable version,
    links to: `opendesk-mac.dmg`, `opendesk-windows.exe`,
    `opendesk-linux-x64.AppImage`, `opendesk-linux-arm64.AppImage`,
    `opendesk-linux-amd64.deb` and `opendesk-linux-arm64.deb`, plus `version.json`
-   (`{version, date, notes_url}`), which the site reads at build time;
+   (`{version, date, notes_url, platforms}`), which the site reads at build time;
 3. after a stable version, runs the Deploy workflow with `target=site`, so the
    download page shows the new version.
 
@@ -107,10 +107,12 @@ publishes nothing. Pull requests touching `desktop/` typecheck and build.
 
 ### Signing
 
-Signing and notarization run only when their secrets exist (repository
-Settings > Secrets and variables > Actions). Without them the builds are
-unsigned: macOS Gatekeeper and Windows SmartScreen warn on first launch, and
-macOS won't install updates into an unsigned app.
+Signing and notarization use these secrets (repository Settings > Secrets and
+variables > Actions). A `desktop-v*` tag refuses to package macOS or Windows
+without them and checks the signatures before publishing. Pull requests and
+manual runs build unsigned when they are missing: macOS Gatekeeper and Windows
+SmartScreen warn on first launch, and macOS won't install updates into an
+unsigned app.
 
 | secret | for | where to get it |
 | --- | --- | --- |
@@ -132,6 +134,23 @@ the Apple ID trio. Windows uses Azure Trusted Signing when its four
 `AZURE_TRUSTED_SIGNING_*` are set, otherwise `WIN_CSC_LINK`.
 
 A fork can point its builds at its own feed with `OPENDESK_UPDATE_URL` at package time.
+
+### Leaving a system out
+
+The repository variable `DESKTOP_RELEASE_EXCLUDE` leaves systems out of tags and
+manual runs: `windows`, or `mac,linux`, any of `mac`, `windows` and `linux`
+(an unknown name, or all three, fails the run). Use it for a system whose
+signing isn't set up yet, or one you don't ship. Every system that is built is
+still signed and checked. For a system left out:
+
+- the release notes say it is not in this version;
+- `desktop-latest` keeps its previous channel files, the installers they point
+  at and its download names, so its installed apps and download link stay on
+  the earlier version;
+- `version.json` lists in `platforms` only the systems with a download, and
+  opendesk.sh/download shows the others as coming soon.
+
+Remove a system from the variable to ship it again.
 
 ## Security model
 

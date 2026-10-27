@@ -26,7 +26,22 @@
     "results_one": "{{count}} resultaat",
     "results_other": "{{count}} resultaten",
     "theme_light": "Naar licht thema",
-    "theme_dark": "Naar donker thema"
+    "theme_dark": "Naar donker thema",
+    "changelog": "Wijzigingslogboek",
+    "changelog_subtitle": "Nieuwe functies, verbeteringen en oplossingen.",
+    "latest_updates": "Laatste updates",
+    "all_updates": "Alle updates",
+    "all_categories": "Alle",
+    "categories": "Categorieën",
+    "changelog_empty_title": "Nog geen updates",
+    "changelog_empty_body": "Updates verschijnen hier zodra ze gepubliceerd zijn.",
+    "category_empty_title": "Geen updates in ‘{{category}}’",
+    "entry_not_found_title": "Update niet gevonden",
+    "entry_not_found_body": "Deze update is misschien verwijderd of niet meer gepubliceerd.",
+    "newer": "Nieuwere updates",
+    "older": "Oudere updates",
+    "feed": "RSS-feed",
+    "permalink": "Link naar deze update"
   },
   "csat": {
     "page_title": "Beoordeel je gesprek",

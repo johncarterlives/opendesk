@@ -29,6 +29,7 @@
     "all": "Tous les messages",
     "shared": "Partagés avec moi",
     "assigned": "Attribués à moi",
+    "needs_action": "À traiter",
     "folder": "Dossier"
   },
   "customize": {
@@ -147,6 +148,8 @@
     "unstar": "Ne plus suivre",
     "read": "Marquer comme lu",
     "unread": "Marquer comme non lu",
+    "done": "Marquer comme traité",
+    "needsAction": "Marquer comme à traiter",
     "share": "Partager",
     "assign": "Attribuer",
     "more": "Plus d’actions",
@@ -446,6 +449,12 @@
     "signatureHint": "Ajoutée aux nouveaux messages et aux réponses de ce compte",
     "sharing": "Partage",
     "sharingHint": "Les personnes qui lisent les messages de ce compte et y répondent avec vous",
+    "handling": {
+      "title": "Traitement",
+      "hint": "Distinguez le travail de la boîte partagée des messages lus et non lus",
+      "enabled": "Suivre les conversations à traiter",
+      "enabledHint": "Les nouveaux messages entrants restent à traiter jusqu’à ce qu’une personne les marque comme traités. Cela ne modifie pas les messages chez votre fournisseur."
+    },
     "server": "Paramètres du serveur",
     "serverHint": "Les nouveaux paramètres sont testés avant d’être enregistrés",
     "passwordUnchanged": "Laissez vide pour conserver le mot de passe actuel. Un nouveau serveur nécessite de saisir à nouveau le mot de passe.",
@@ -705,5 +714,22 @@
       "workspace": "Le nom de l’espace de travail"
     },
     "signatureVars": "Tapez une variable pour ajouter le nom, le poste ou le téléphone de l’expéditeur : les messages de chacun portent les siens."
+  },
+  "categories": {
+    "group": "Catégories",
+    "tabs": "Catégories de la boîte de réception",
+    "settings": "Réglages des catégories",
+    "moved_one": "Conversation déplacée vers {{name}}",
+    "moved_many": "{{count}} conversations déplacées vers {{name}}",
+    "moved_other": "{{count}} conversations déplacées vers {{name}}",
+    "always": "Toujours",
+    "alwaysHint": "Envoyer ici aussi les prochains e-mails de {{sender}}",
+    "ruleSaved": "Les e-mails de {{sender}} vont désormais dans {{name}}",
+    "offer": {
+      "title": "Répartissez votre boîte de réception en onglets.",
+      "body": "Les e-mails des personnes restent dans Principale, tandis que les newsletters, les notifications et les promotions ont leurs propres onglets. Ollie peut proposer des catégories à partir de vos e-mails.",
+      "action": "Configurer les catégories",
+      "dismiss": "Plus tard"
+    }
   }
 }

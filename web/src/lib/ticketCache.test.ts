@@ -41,6 +41,34 @@ describe("ticketMatches", () => {
     expect(ticketMatches({ received_at: "support@acme.test" }, t, "u1")).toBe(false);
   });
 
+  it("filters by any of several labels, none of them, or no label", () => {
+    const tag = (name: string) => ({ id: name, name }) as Ticket["tags"][number];
+    const t = ticket({ tags: [tag("ORDER-CHANGE/CANCEL"), tag("Q&A Done")] });
+    expect(ticketMatches({ tag: "cancel/refund,order-change/cancel" }, t, "u1")).toBe(true);
+    expect(ticketMatches({ tag: "cancel/refund" }, t, "u1")).toBe(false);
+    expect(ticketMatches({ tag_not: "q&a done" }, t, "u1")).toBe(false);
+    expect(ticketMatches({ tag_not: "cancel/refund" }, t, "u1")).toBe(true);
+    expect(ticketMatches({ untagged: true }, t, "u1")).toBe(false);
+    expect(ticketMatches({ untagged: true }, ticket({ tags: [] }), "u1")).toBe(true);
+    const views = [{ id: "v1", name: "To handle", shared: true, position: 0, filters: { tag_not: "Q&A Done", team_not: "t1" } }];
+    expect(ticketMatches({ view_id: "v1" }, t, "u1", views)).toBe(false);
+    expect(ticketMatches({ view_id: "v1" }, ticket({ tags: [], team_id: null }), "u1", views)).toBe(true);
+  });
+
+  it("leaves out excluded teams, mailboxes and channels", () => {
+    const t = ticket({ team_id: "t1", mailbox_id: "m1", channel: "email" });
+    expect(ticketMatches({ team_not: "t1,t2" }, t, "u1")).toBe(false);
+    expect(ticketMatches({ team_not: "t2" }, t, "u1")).toBe(true);
+    expect(ticketMatches({ team_not: "t2" }, ticket({ team_id: null }), "u1")).toBe(true);
+    expect(ticketMatches({ team_not: "none" }, ticket({ team_id: null }), "u1")).toBe(false);
+    expect(ticketMatches({ team_not: "mine" }, t, "u1")).toBeNull();
+    expect(ticketMatches({ team_not: "mine" }, t, "u1", undefined, ["t1"])).toBe(false);
+    expect(ticketMatches({ mailbox_not: "m2,m1" }, t, "u1")).toBe(false);
+    expect(ticketMatches({ mailbox_not: "m2" }, t, "u1")).toBe(true);
+    expect(ticketMatches({ channel_not: ["chat", "email"] }, t, "u1")).toBe(false);
+    expect(ticketMatches({ channel_not: ["chat"] }, t, "u1")).toBe(true);
+  });
+
   it("can't decide full-text or unknown views", () => {
     expect(ticketMatches({ q: "refund" }, ticket(), "u1")).toBeNull();
     expect(ticketMatches({ view_id: "v1" }, ticket(), "u1", [])).toBeNull();

@@ -84,7 +84,7 @@ Each rule sees the ticket as the rules above it left it. A rule that sets a team
 | **Sender email** | The sender's address. |
 | **Channel** | Email, chat, API or portal. |
 | **Mailbox** | The mailbox the ticket arrived on. |
-| **Address written to** | The exact address the first email was sent to, such as an alias like `refunds@`. `is`, `is not` or `contains`, ignoring case. |
+| **Address written to** | The exact address the first email was sent to, such as an alias like `refunds@`. `is`, `is not`, `contains`, `contains any of` or `contains none of`, ignoring case. |
 | **Team** | The ticket's team, or no team. |
 | **Brand** | The ticket's [brand](/guides/brands-and-widgets/). |
 | **Chat widget** | The chat widget the conversation started on, or none. |
@@ -94,7 +94,7 @@ Each rule sees the ticket as the rules above it left it. A rule that sets a team
 | **Ask Ollie a yes/no question** | A question Ollie answers about the ticket. See below. |
 | Ticket and contact fields | A [custom field](/guides/labels-and-custom-fields/#custom-fields) of the ticket or of its contact. |
 
-Text fields compare with **contains**, **doesn't contain**, **is** and **is not**. Custom fields use the comparisons of their type, like **is at least** for a number, **is any of** for a select, and **is set** or **is empty**.
+Text fields compare with **contains**, **doesn't contain**, **contains any of**, **contains none of**, **is** and **is not**. **Contains any of** and **contains none of** take a list of phrases, one per line (up to 100), and match when the text holds at least one of them, or none of them. Custom fields use the comparisons of their type, like **is at least** for a number, **is any of** for a select, and **is set** or **is empty**.
 
 ## Actions
 
@@ -143,6 +143,7 @@ A **Send a reply** action is careful not to start mail loops or answer machines:
 ## Examples
 
 - **Urgent keywords.** When a ticket is created, if Subject contains "outage", set priority to Urgent and assign to team On call.
+- **Carrier and newsletter mail.** When a ticket is created, if Subject contains any of "Your parcel has shipped", "Out for delivery" and "Newsletter", one per line, set status to Closed.
 - **Refund alias.** When a ticket is created, if Address written to is `refunds@example.com`, assign to team Billing and add tag Refund.
 - **Brand reply address.** When a ticket is created, if Brand is Pressroom, set reply address to `help@pressroom.example`.
 - **Chat follow up.** When a ticket is created, if Chat widget is "Pricing page", set priority to High.

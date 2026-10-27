@@ -28,7 +28,22 @@
     "results_many": "{{count}} de resultados",
     "results_other": "{{count}} resultados",
     "theme_light": "Mudar para o tema claro",
-    "theme_dark": "Mudar para o tema escuro"
+    "theme_dark": "Mudar para o tema escuro",
+    "changelog": "Registro de alterações",
+    "changelog_subtitle": "Novos recursos, melhorias e correções.",
+    "latest_updates": "Últimas atualizações",
+    "all_updates": "Todas as atualizações",
+    "all_categories": "Todas",
+    "categories": "Categorias",
+    "changelog_empty_title": "Ainda não há atualizações",
+    "changelog_empty_body": "As atualizações aparecerão aqui assim que forem publicadas.",
+    "category_empty_title": "Nenhuma atualização em “{{category}}”",
+    "entry_not_found_title": "Atualização não encontrada",
+    "entry_not_found_body": "Ela pode ter sido removida ou despublicada.",
+    "newer": "Atualizações mais recentes",
+    "older": "Atualizações mais antigas",
+    "feed": "Feed RSS",
+    "permalink": "Link para esta atualização"
   },
   "csat": {
     "page_title": "Avalie seu atendimento",

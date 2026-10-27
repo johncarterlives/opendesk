@@ -4,6 +4,7 @@ import type { Attachment, Channel, Message, Priority, ReportsOverview, Severity,
 import { contactRef, db, me, userRef, type WsData } from "../db";
 import { publish } from "../gateway";
 import { HttpError, del, forbidden, get, invalid, notFound, paginate, patch, post, required, respond, s, strArr, type Ctx } from "../router";
+import { searchWiki } from "./wiki";
 import { canCreateLabels, checkRequiredOnSolve, mergeFields } from "../labels";
 import { canSeeTicket, defaultBrand, teamRole } from "../teams";
 import { addActivity, addMessage, applyPatch, buildMessage, canSendFrom, counts, fieldFiltersFromQuery, findTicket, matches, newTicket, notify, publishTicketUpdated, sortTickets, type ListFilters } from "../tickets";
@@ -13,6 +14,7 @@ import { renderSentReply } from "./templates";
 import { cannotSend, sendingOf } from "./mailhost";
 
 const STATUSES: TicketStatus[] = ["open", "pending", "on_hold", "solved", "closed"];
+const CHANNELS: Channel[] = ["email", "chat", "api", "portal"];
 const PRIORITIES: Priority[] = ["low", "normal", "high", "urgent"];
 const SEVERITIES: Severity[] = ["sev1", "sev2", "sev3", "sev4"];
 const SUGGESTION_FIELDS: SuggestionField[] = ["priority", "severity", "labels", "team", "spam"];
@@ -31,12 +33,17 @@ function filtersFrom(ctx: Ctx): ListFilters {
     severity: csv(q.get("severity"), [...SEVERITIES, "none" as const]),
     assignee: q.get("assignee") ?? undefined,
     team_id: q.get("team_id") ?? undefined,
+    team_not: q.get("team_not") ?? undefined,
     mailbox_id: q.get("mailbox_id") ?? undefined,
+    mailbox_not: q.get("mailbox_not") ?? undefined,
     received_at: q.get("received_at")?.trim().toLowerCase() || undefined,
     brand_id: q.get("brand_id") ?? undefined,
     widget_id: q.get("widget_id") ?? undefined,
     tag: q.get("tag") ?? undefined,
+    tag_not: q.get("tag_not") ?? undefined,
+    untagged: q.get("untagged") === "true" || undefined,
     channel: (q.get("channel") as Channel | null) ?? undefined,
+    channel_not: csv(q.get("channel_not"), CHANNELS),
     contact_id: q.get("contact_id") ?? undefined,
     view_id: q.get("view_id") ?? undefined,
     q: q.get("q") ?? undefined,
@@ -337,25 +344,32 @@ export function registerTickets() {
   });
   post("/v1/tickets/bulk", (ctx) => {
     const ids = strArr(ctx.body.ids) ?? [];
-    if (!ids.length) throw invalid("ids is required");
+    const rawQuery = isRecord(ctx.body.query) ? ctx.body.query : null;
+    const query = rawQuery ? ({ ...rawQuery, spam: rawQuery.spam === "true" ? true : rawQuery.spam === "false" ? false : undefined } as ListFilters) : null;
+    if ((ids.length === 0) === (query === null)) throw invalid("Send either ids or query");
     if (ids.length > 100) throw invalid("At most 100 tickets at a time");
     const doDelete = ctx.body.delete === true;
     const p = isRecord(ctx.body.patch) ? readPatch(ctx.body.patch) : null;
     if (!doDelete && !p) throw invalid("patch or delete is required");
-    for (const id of ids) {
-      const t = findTicket(ctx.ws, id);
-      if (!t || !canSeeTicket(ctx.ws, t)) continue;
+    const tickets = query
+      ? ctx.ws.tickets.filter((t) => matches(ctx.ws, t, query, db.meId))
+      : ids.map((id) => findTicket(ctx.ws, id)).filter((t): t is Ticket => !!t && canSeeTicket(ctx.ws, t));
+    let updated = 0;
+    let deleted = 0;
+    for (const t of tickets) {
       if (doDelete) {
         ctx.ws.deletedTickets.add(t.id);
         publish(ctx.ws, "ticket.deleted", { ticket_id: t.id });
+        deleted++;
       } else if (p) {
         checkPatch(ctx.ws, t, p);
         const from = t.team_id;
         applyPatch(ctx.ws, t, p, userRef(db.meId), true, personOpts(ctx.ws));
         hideIfPrivate(ctx.ws, t, from);
+        updated++;
       }
     }
-    return respond(204);
+    return respond(200, { data: query ? [] : tickets, updated, deleted });
   });
   post("/v1/tickets/:id/merge", (ctx) => {
     const src = ticket(ctx);
@@ -552,12 +566,12 @@ export function registerTickets() {
 
   get("/v1/search", (ctx) => {
     const q = (ctx.query.get("q") ?? "").trim().toLowerCase();
-    if (!q) return { tickets: [], contacts: [], articles: [] };
+    if (!q) return { tickets: [], contacts: [], articles: [], wiki_pages: [] };
     const ws = ctx.ws;
     const tickets = sortTickets(ws.tickets.filter((t) => matches(ws, t, { q }, db.meId)), "last_message_at", "desc").slice(0, 5);
     const contacts = ws.contacts.filter((c) => [c.name, c.email ?? "", c.company?.name ?? ""].join(" ").toLowerCase().includes(q)).slice(0, 5);
     const articles = ws.articles.filter((a) => (a.title + " " + a.excerpt).toLowerCase().includes(q)).slice(0, 5);
-    return { tickets, contacts, articles };
+    return { tickets, contacts, articles, wiki_pages: searchWiki(ws, q, 5) };
   });
 
   get("/v1/reports/overview", (ctx) => reports(ctx));

@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/useopendesk/opendesk/internal/auth"
+	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/deps"
 	"github.com/useopendesk/opendesk/internal/displayname"
 	"github.com/useopendesk/opendesk/internal/domain"
@@ -43,12 +44,17 @@ type listIn struct {
 	Severity   string `query:"severity" doc:"Comma separated severities (sev1..sev4), none for tickets without one"`
 	Assignee   string `query:"assignee" doc:"me, none or a user id"`
 	TeamID     string `query:"team_id" doc:"Comma-separated team ids, mine (the caller's teams) and none: tickets of any of them"`
+	TeamNot    string `query:"team_not" doc:"Comma-separated team ids, mine and none: tickets of none of them"`
 	MailboxID  string `query:"mailbox_id"`
+	MailboxNot string `query:"mailbox_not" doc:"Comma-separated mailbox ids: tickets whose reply address is none of them"`
 	ReceivedAt string `query:"received_at" maxLength:"254" doc:"Tickets first written to this address (a mailbox's address or one of its aliases)"`
 	BrandID    string `query:"brand_id"`
 	WidgetID   string `query:"widget_id"`
-	Tag        string `query:"tag" doc:"Label name"`
+	Tag        string `query:"tag" doc:"Comma-separated label names: tickets carrying any of them"`
+	TagNot     string `query:"tag_not" doc:"Comma-separated label names: tickets carrying none of them"`
+	Untagged   bool   `query:"untagged" doc:"Tickets carrying no label"`
 	Channel    string `query:"channel" enum:"email,chat,api,portal,"`
+	ChannelNot string `query:"channel_not" doc:"Comma-separated channels: tickets on none of them"`
 	ContactID  string `query:"contact_id"`
 	ViewID     string `query:"view_id" doc:"Apply a saved view's filters; explicit filters override it"`
 	Q          string `query:"q" maxLength:"200" doc:"Full text over subjects and messages, or #number"`
@@ -58,6 +64,68 @@ type listIn struct {
 
 	fields    []hd.FieldFilter
 	fieldsErr error
+}
+
+// ticketBulkQuery is the inbox's filter state when a bulk action targets every
+// matching ticket rather than an explicit page of ticket IDs.
+type ticketBulkQuery struct {
+	Status     []string         `json:"status,omitempty"`
+	Priority   []string         `json:"priority,omitempty"`
+	Severity   []string         `json:"severity,omitempty"`
+	Assignee   string           `json:"assignee,omitempty"`
+	TeamID     string           `json:"team_id,omitempty"`
+	TeamNot    string           `json:"team_not,omitempty"`
+	MailboxID  string           `json:"mailbox_id,omitempty"`
+	MailboxNot string           `json:"mailbox_not,omitempty"`
+	ReceivedAt string           `json:"received_at,omitempty"`
+	BrandID    string           `json:"brand_id,omitempty"`
+	WidgetID   string           `json:"widget_id,omitempty"`
+	Tag        string           `json:"tag,omitempty"`
+	TagNot     string           `json:"tag_not,omitempty"`
+	Untagged   bool             `json:"untagged,omitempty"`
+	Channel    string           `json:"channel,omitempty"`
+	ChannelNot []string         `json:"channel_not,omitempty"`
+	ContactID  string           `json:"contact_id,omitempty"`
+	ViewID     string           `json:"view_id,omitempty"`
+	Q          string           `json:"q,omitempty" maxLength:"200"`
+	Spam       string           `json:"spam,omitempty" enum:"true,false,any,"`
+	Fields     []hd.FieldFilter `json:"fields,omitempty" maxItems:"20"`
+}
+
+func (q ticketBulkQuery) listInput() listIn {
+	return listIn{Status: strings.Join(q.Status, ","), Priority: strings.Join(q.Priority, ","), Severity: strings.Join(q.Severity, ","), Assignee: q.Assignee,
+		TeamID: q.TeamID, TeamNot: q.TeamNot, MailboxID: q.MailboxID, MailboxNot: q.MailboxNot, ReceivedAt: q.ReceivedAt, BrandID: q.BrandID, WidgetID: q.WidgetID, Tag: q.Tag, TagNot: q.TagNot, Untagged: q.Untagged,
+		Channel: q.Channel, ChannelNot: strings.Join(q.ChannelNot, ","), ContactID: q.ContactID, ViewID: q.ViewID, Q: q.Q, Spam: q.Spam, fields: q.Fields}
+}
+
+func ticketListQuery(ctx context.Context, q db.Querier, p *auth.Principal, in listIn) (listQuery, error) {
+	if in.fieldsErr != nil {
+		return listQuery{}, in.fieldsErr
+	}
+	req := hd.TicketFilters{Status: hd.SplitCSV(in.Status), Priority: hd.SplitCSV(in.Priority), Severity: hd.SplitCSV(in.Severity), Assignee: in.Assignee,
+		TeamID: in.TeamID, TeamNot: in.TeamNot, MailboxID: in.MailboxID, MailboxNot: in.MailboxNot, ReceivedAt: in.ReceivedAt, BrandID: in.BrandID, WidgetID: in.WidgetID, Tag: in.Tag, TagNot: in.TagNot, Untagged: in.Untagged, Channel: in.Channel, ChannelNot: hd.SplitCSV(in.ChannelNot), Q: in.Q, Fields: in.fields}
+	f := req
+	if in.ViewID != "" {
+		view, err := loadView(ctx, q, p, in.ViewID)
+		if err != nil {
+			return listQuery{}, err
+		}
+		f = mergeFilters(view, req)
+	}
+	var err error
+	if f.Status, err = validEnum(f.Status, domain.Statuses, "status"); err != nil {
+		return listQuery{}, err
+	}
+	if f.Priority, err = validEnum(f.Priority, domain.Priorities, "priority"); err != nil {
+		return listQuery{}, err
+	}
+	if f.Severity, err = validEnum(f.Severity, hd.SeverityFilterValues, "severity"); err != nil {
+		return listQuery{}, err
+	}
+	if f.ChannelNot, err = validEnum(f.ChannelNot, domain.Channels, "channel_not"); err != nil {
+		return listQuery{}, err
+	}
+	return forCaller(ctx, q, p, listQuery{TicketFilters: f, ContactID: in.ContactID, Spam: in.Spam})
 }
 
 // Resolve reads the field.<key> and field.<key>[op] parameters (custom field filters).
@@ -239,29 +307,7 @@ func registerTickets(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			if in.fieldsErr != nil {
-				return nil, in.fieldsErr
-			}
-			req := hd.TicketFilters{Status: hd.SplitCSV(in.Status), Priority: hd.SplitCSV(in.Priority), Severity: hd.SplitCSV(in.Severity), Assignee: in.Assignee,
-				TeamID: in.TeamID, MailboxID: in.MailboxID, ReceivedAt: in.ReceivedAt, BrandID: in.BrandID, WidgetID: in.WidgetID, Tag: in.Tag, Channel: in.Channel, Q: in.Q, Fields: in.fields}
-			f := req
-			if in.ViewID != "" {
-				view, err := loadView(ctx, d.DB.Pool, p, in.ViewID)
-				if err != nil {
-					return nil, httpx.Wrap(err)
-				}
-				f = mergeFilters(view, req)
-			}
-			if f.Status, err = validEnum(f.Status, domain.Statuses, "status"); err != nil {
-				return nil, err
-			}
-			if f.Priority, err = validEnum(f.Priority, domain.Priorities, "priority"); err != nil {
-				return nil, err
-			}
-			if f.Severity, err = validEnum(f.Severity, hd.SeverityFilterValues, "severity"); err != nil {
-				return nil, err
-			}
-			lq, err := forCaller(ctx, d.DB.Pool, p, listQuery{TicketFilters: f, ContactID: in.ContactID, Spam: in.Spam})
+			lq, err := ticketListQuery(ctx, d.DB.Pool, p, *in)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -401,7 +447,8 @@ func registerTickets(d *deps.Deps, api huma.API) {
 		})
 
 	type ticketBulkBody struct {
-		IDs    []string         `json:"ids" minItems:"1" maxItems:"100"`
+		IDs    []string         `json:"ids,omitempty" maxItems:"100"`
+		Query  *ticketBulkQuery `json:"query,omitempty"`
 		Patch  *ticketPatchBody `json:"patch,omitempty"`
 		Delete bool             `json:"delete,omitempty"`
 	}
@@ -412,7 +459,7 @@ func registerTickets(d *deps.Deps, api huma.API) {
 	}
 	huma.Register(api, huma.Operation{OperationID: "bulk-tickets", Method: http.MethodPost, Path: "/v1/tickets/bulk",
 		Summary: "Update or delete many tickets", Tags: tags,
-		Description: "All or nothing: a validation error on any ticket changes none. Ids not in the workspace are refused."},
+		Description: "All or nothing: a validation error on any ticket changes none. Ids not in the workspace are refused. A query uses the same filters and visibility as the inbox."},
 		func(ctx context.Context, in *struct{ Body ticketBulkBody }) (*struct{ Body ticketBulkResult }, error) {
 			p, err := auth.RequireWorkspace(ctx, auth.RoleAgent, auth.ScopeTicketsWrite)
 			if err != nil {
@@ -420,6 +467,9 @@ func registerTickets(d *deps.Deps, api huma.API) {
 			}
 			if (in.Body.Patch == nil) == !in.Body.Delete {
 				return nil, httpx.Validation("send either patch or delete: true")
+			}
+			if (len(in.Body.IDs) == 0) == (in.Body.Query == nil) {
+				return nil, httpx.Validation("send either ids or query")
 			}
 			var patch Patch
 			if in.Body.Patch != nil {
@@ -436,8 +486,23 @@ func registerTickets(d *deps.Deps, api huma.API) {
 			}
 			out := ticketBulkResult{Data: []domain.Ticket{}}
 			err = d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				ids := in.Body.IDs
+				if in.Body.Query != nil {
+					f, err := ticketListQuery(ctx, tx, p, in.Body.Query.listInput())
+					if err != nil {
+						return err
+					}
+					selected, err := filteredTicketIDs(ctx, tx, p.WorkspaceID, p.ActorUserID(), f)
+					if err != nil {
+						return err
+					}
+					ids = make([]string, len(selected))
+					for i, id := range selected {
+						ids[i] = id.String()
+					}
+				}
 				seen := map[uuid.UUID]bool{}
-				for _, raw := range in.Body.IDs {
+				for _, raw := range ids {
 					id, err := resolveVisible(ctx, tx, p, raw)
 					if err != nil {
 						return err
@@ -463,11 +528,13 @@ func registerTickets(d *deps.Deps, api huma.API) {
 					if len(changes) > 0 {
 						out.Updated++
 					}
-					t, err := domain.LoadTicket(ctx, tx, p.WorkspaceID, id)
-					if err != nil {
-						return err
+					if in.Body.Query == nil {
+						t, err := domain.LoadTicket(ctx, tx, p.WorkspaceID, id)
+						if err != nil {
+							return err
+						}
+						out.Data = append(out.Data, t)
 					}
-					out.Data = append(out.Data, t)
 				}
 				return nil
 			})

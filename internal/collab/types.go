@@ -44,23 +44,27 @@ const (
 
 // Actions on conversations (contracts/collab.md "Actions").
 const (
-	ActionRead    = "read"
-	ActionUnread  = "unread"
-	ActionStar    = "star"
-	ActionUnstar  = "unstar"
-	ActionArchive = "archive"
-	ActionInbox   = "inbox"
-	ActionTrash   = "trash"
-	ActionSpam    = "spam"
-	ActionNotSpam = "not_spam"
-	ActionMove    = "move"
-	ActionLabel   = "label"
-	ActionUnlabel = "unlabel"
+	ActionRead        = "read"
+	ActionUnread      = "unread"
+	ActionStar        = "star"
+	ActionUnstar      = "unstar"
+	ActionArchive     = "archive"
+	ActionInbox       = "inbox"
+	ActionTrash       = "trash"
+	ActionSpam        = "spam"
+	ActionNotSpam     = "not_spam"
+	ActionMove        = "move"
+	ActionLabel       = "label"
+	ActionUnlabel     = "unlabel"
+	ActionDone        = "done"
+	ActionNeedsAction = "needs_action"
+	// ActionCategorize moves conversations to one of their inbox's categories, in opendesk only.
+	ActionCategorize = "categorize"
 )
 
 // Actions lists every action, for request validation.
 var Actions = []string{ActionRead, ActionUnread, ActionStar, ActionUnstar, ActionArchive, ActionInbox, ActionTrash,
-	ActionSpam, ActionNotSpam, ActionMove, ActionLabel, ActionUnlabel}
+	ActionSpam, ActionNotSpam, ActionMove, ActionLabel, ActionUnlabel, ActionDone, ActionNeedsAction, ActionCategorize}
 
 // Colors are the tone keys an account may use.
 var Colors = []string{"gray", "red", "orange", "amber", "green", "teal", "blue", "indigo", "violet", "pink"}
@@ -94,24 +98,25 @@ type IMAPSettings struct {
 }
 
 type MailAccount struct {
-	ID            uuid.UUID       `json:"id"`
-	Provider      string          `json:"provider" enum:"google,microsoft,imap"`
-	Email         string          `json:"email"`
-	Name          string          `json:"name"`
-	DisplayName   string          `json:"display_name"`
-	Color         string          `json:"color"`
-	Owner         *domain.UserRef `json:"owner"`
-	Visibility    string          `json:"visibility" enum:"private,shared"`
-	SharedWith    Audience        `json:"shared_with"`
-	SignatureHTML string          `json:"signature_html"`
-	Status        string          `json:"status" enum:"syncing,active,error,paused"`
-	Reconnect     bool            `json:"reconnect"`
-	LastError     string          `json:"last_error"`
-	LastSyncedAt  *time.Time      `json:"last_synced_at"`
-	CanManage     bool            `json:"can_manage"`
-	Unread        int             `json:"unread"`
-	IMAP          *IMAPSettings   `json:"imap,omitempty"`
-	CreatedAt     time.Time       `json:"created_at"`
+	ID              uuid.UUID       `json:"id"`
+	Provider        string          `json:"provider" enum:"google,microsoft,imap"`
+	Email           string          `json:"email"`
+	Name            string          `json:"name"`
+	DisplayName     string          `json:"display_name"`
+	Color           string          `json:"color"`
+	Owner           *domain.UserRef `json:"owner"`
+	Visibility      string          `json:"visibility" enum:"private,shared"`
+	SharedWith      Audience        `json:"shared_with"`
+	SignatureHTML   string          `json:"signature_html"`
+	Status          string          `json:"status" enum:"syncing,active,error,paused"`
+	Reconnect       bool            `json:"reconnect"`
+	LastError       string          `json:"last_error"`
+	LastSyncedAt    *time.Time      `json:"last_synced_at"`
+	CanManage       bool            `json:"can_manage"`
+	Unread          int             `json:"unread"`
+	HandlingEnabled bool            `json:"handling_enabled"`
+	IMAP            *IMAPSettings   `json:"imap,omitempty"`
+	CreatedAt       time.Time       `json:"created_at"`
 
 	// How its own settings sync with the provider (contracts/collab.md "Account settings").
 	SignatureSync     string       `json:"signature_sync" enum:"two_way,read_only,none"`
@@ -131,6 +136,8 @@ type MailAccount struct {
 	OldestMessageAt *time.Time `json:"oldest_message_at"`
 	// FoldersLeftOut counts an IMAP account's folders past the ones the sync reads.
 	FoldersLeftOut int `json:"folders_left_out"`
+	// Categories is how its inbox is split into tabs (contracts/collab.md "Categories").
+	Categories MailAccountCategories `json:"categories"`
 }
 
 // MailHistory is a history import: older mail brought in on request.
@@ -220,6 +227,7 @@ type MailThread struct {
 	Unread         bool             `json:"unread"`
 	Starred        bool             `json:"starred"`
 	HasAttachments bool             `json:"has_attachments"`
+	NeedsAction    bool             `json:"needs_action"`
 	FolderIDs      []uuid.UUID      `json:"folder_ids"`
 	Shared         bool             `json:"shared"`
 	Assignees      []domain.UserRef `json:"assignees"`
@@ -227,6 +235,9 @@ type MailThread struct {
 	// ToAddress is the account's address other than its own the conversation was written
 	// to or sent from (an alias), newest first; null when none.
 	ToAddress *string `json:"to_address"`
+	// Category is its category key (contracts/collab.md "Categories"); null when the
+	// account's inbox is not split.
+	Category *string `json:"category"`
 }
 
 type MailMessage struct {

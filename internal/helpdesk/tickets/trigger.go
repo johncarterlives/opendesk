@@ -326,8 +326,8 @@ func match(c hd.Condition, f facts) bool {
 		return p > c.DecideThreshold()
 	}
 	if c.Field == "tag" {
-		if c.Op == "not_contains" || c.Op == "not_equals" {
-			// "tag not_equals x" holds when no tag equals x.
+		if c.Op == "not_contains" || c.Op == "not_equals" || c.Op == "none" {
+			// "tag not_equals x" holds when no tag equals x; "tag none" when no tag contains a phrase.
 			for _, t := range f.tags {
 				if !compare(c.Op, t, c.Value) {
 					return false
@@ -389,6 +389,10 @@ func compare(op, have, want string) bool {
 		return h == w
 	case "not_equals":
 		return h != w
+	case "any", "none":
+		// One phrase per line: any holds when one is contained, none when none is.
+		found := slices.ContainsFunc(hd.Phrases(w), func(p string) bool { return strings.Contains(h, p) })
+		return found == (op == "any")
 	}
 	return false
 }

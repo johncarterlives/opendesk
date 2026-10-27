@@ -192,7 +192,8 @@ func tagAudit(t domain.Tag) map[string]any {
 type tagOut struct{ Body domain.Tag }
 
 // rewriteLabelRefs renames a label in automations (tag conditions, add_tag and remove_tag
-// actions) and views (filters.tag), so they keep working after a rename or merge.
+// actions) and views (the label lists filters.tag and filters.tag_not), so they keep working
+// after a rename or merge.
 func rewriteLabelRefs(ctx context.Context, tx pgx.Tx, p *auth.Principal, from, to string) error {
 	wid := p.WorkspaceID
 	rows, err := tx.Query(ctx, `SELECT id, conditions, actions FROM automations WHERE workspace_id = $1 FOR UPDATE`, wid)
@@ -247,7 +248,9 @@ func rewriteLabelRefs(ctx context.Context, tx pgx.Tx, p *auth.Principal, from, t
 			return err
 		}
 	}
-	vrows, err := tx.Query(ctx, `SELECT id, filters FROM views WHERE workspace_id = $1 AND lower(filters->>'tag') = lower($2) FOR UPDATE`, wid, from)
+	vrows, err := tx.Query(ctx, `SELECT id, filters FROM views WHERE workspace_id = $1 AND EXISTS (
+		SELECT 1 FROM unnest(string_to_array(filters->>'tag', ',') || string_to_array(filters->>'tag_not', ',')) n
+		WHERE lower(trim(n)) = lower($2)) FOR UPDATE`, wid, from)
 	if err != nil {
 		return err
 	}
@@ -273,7 +276,17 @@ func rewriteLabelRefs(ctx context.Context, tx pgx.Tx, p *auth.Principal, from, t
 		if json.Unmarshal(v.raw, &f) != nil {
 			continue
 		}
-		f["tag"] = to
+		changed := false
+		for _, key := range []string{"tag", "tag_not"} {
+			if list, ok := f[key].(string); ok {
+				if next, hit := hd.RenameLabel(list, from, to); hit {
+					f[key], changed = next, true
+				}
+			}
+		}
+		if !changed {
+			continue
+		}
 		if _, err := tx.Exec(ctx, `UPDATE views SET filters = $3, updated_at = now() WHERE workspace_id = $1 AND id = $2`, wid, v.id, f); err != nil {
 			return err
 		}

@@ -14,7 +14,12 @@ name: Desktop
 #
 # Signing and notarization use these secrets. A desktop-v* tag refuses to package
 # macOS or Windows without them, and checks the signatures before publishing; pull
-# requests and manual runs build unsigned when they are missing:
+# requests and manual runs build unsigned when they are missing.
+#
+# The repository variable DESKTOP_RELEASE_EXCLUDE leaves systems out of tags and
+# manual runs: `windows`, or `mac,linux`, any of mac, windows and linux. A system
+# left out keeps its previous version on `desktop-latest`, so its installed apps
+# and download link stay as they were:
 #   macOS signing:        CSC_LINK, CSC_KEY_PASSWORD
 #   macOS notarization:   APPLE_API_KEY (base64 .p8), APPLE_API_KEY_ID, APPLE_API_ISSUER
 #                         or APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID
@@ -80,14 +85,32 @@ jobs:
         run: pnpm audit --audit-level high
 
   validate:
-    name: Validate tag
-    if: startsWith(github.ref, 'refs/tags/desktop-v')
+    name: Validate tag and systems
+    # On a tag, or a manual run (no version).
+    if: startsWith(github.ref, 'refs/tags/desktop-v') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
       prerelease: ${{ steps.v.outputs.prerelease }}
+      matrix: ${{ steps.systems.outputs.matrix }}
     steps:
+      - id: systems
+        env:
+          EXCLUDE: ${{ vars.DESKTOP_RELEASE_EXCLUDE }}
+        run: |
+          all='[{"os":"mac","name":"macOS","runner":"macos-latest","flag":"--mac"},
+                {"os":"windows","name":"Windows","runner":"windows-latest","flag":"--win"},
+                {"os":"linux","name":"Linux","runner":"ubuntu-latest","flag":"--linux"}]'
+          skip=$(printf '%s' "$EXCLUDE" | tr ',[:upper:]' ' [:lower:]' | xargs)
+          for s in $skip; do
+            case "$s" in mac|windows|linux) ;; *) echo "::error::DESKTOP_RELEASE_EXCLUDE: unknown system '$s' (mac, windows or linux)"; exit 1 ;; esac
+          done
+          matrix=$(jq -c --arg skip "$skip" '($skip | split(" ")) as $s | {include: [.[] | select(.os as $o | $s | index($o) | not)]}' <<< "$all")
+          [ "$(jq '.include | length' <<< "$matrix")" -gt 0 ] || { echo "::error::DESKTOP_RELEASE_EXCLUDE leaves out every system"; exit 1; }
+          [ -n "$skip" ] && echo "::notice::Left out of this build: $skip (DESKTOP_RELEASE_EXCLUDE)"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
       - id: v
+        if: startsWith(github.ref, 'refs/tags/desktop-v')
         env:
           TAG: ${{ github.ref_name }}
         run: |
@@ -100,24 +123,11 @@ jobs:
 
   package:
     name: Package (${{ matrix.name }})
+    # On a tag or a manual run, for the systems validate kept.
     needs: [check, validate]
-    # On a tag (after validate) or a manual run (validate skipped).
-    if: >-
-      always() && needs.check.result == 'success' &&
-      (needs.validate.result == 'success' || (github.event_name == 'workflow_dispatch' && needs.validate.result == 'skipped'))
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: macOS
-            runner: macos-latest
-            flag: --mac
-          - name: Windows
-            runner: windows-latest
-            flag: --win
-          - name: Linux
-            runner: ubuntu-latest
-            flag: --linux
+      matrix: ${{ fromJSON(needs.validate.outputs.matrix) }}
     runs-on: ${{ matrix.runner }}
     defaults:
       run:
@@ -311,9 +321,22 @@ jobs:
               echo "A beta. Apps with **Get beta updates** turned on update to it; everyone else stays on the stable version."
               echo
             fi
-            echo "- **macOS** 13 or later, Apple silicon and Intel: $(link '*-mac.dmg' 'dmg')"
-            echo "- **Windows** 10 or later, x64 and arm64: $(link '*-setup.exe' 'installer')"
-            echo "- **Linux** x64: $(link '*-linux-x86_64.AppImage' 'AppImage') or $(link '*-linux-amd64.deb' 'deb'); arm64: $(link '*-linux-arm64.AppImage' 'AppImage') or $(link '*-linux-arm64.deb' 'deb')"
+            # A system left out of the build (DESKTOP_RELEASE_EXCLUDE) is named as not in it.
+            if [ "$(file '*-mac.dmg')" != "?" ]; then
+              echo "- **macOS** 13 or later, Apple silicon and Intel: $(link '*-mac.dmg' 'dmg')"
+            else
+              echo "- **macOS**: not in this version"
+            fi
+            if [ "$(file '*-setup.exe')" != "?" ]; then
+              echo "- **Windows** 10 or later, x64 and arm64: $(link '*-setup.exe' 'installer')"
+            else
+              echo "- **Windows**: not in this version"
+            fi
+            if [ "$(file '*-linux-x86_64.AppImage')" != "?" ]; then
+              echo "- **Linux** x64: $(link '*-linux-x86_64.AppImage' 'AppImage') or $(link '*-linux-amd64.deb' 'deb'); arm64: $(link '*-linux-arm64.AppImage' 'AppImage') or $(link '*-linux-arm64.deb' 'deb')"
+            else
+              echo "- **Linux**: not in this version"
+            fi
             echo
             echo "Checksums are in [SHA256SUMS]($base/SHA256SUMS). Installed apps update themselves."
             if [ "$PRERELEASE" != true ]; then
@@ -367,11 +390,14 @@ jobs:
             while read -r n; do [ -f "dist/$n" ] && files+=("dist/$n"); done < <(refs "${beta[@]}")
             gh release upload desktop-latest "${files[@]}" --repo "$R" --clobber
             gh release upload desktop-latest "${beta[@]}" --repo "$R" --clobber
-            # Older prerelease leftovers: what the previous beta files pointed at,
-            # unless the new beta files or the stable channel still use it.
-            in_use=$( { refs "${beta[@]}"; refs feed/latest*.yml; } )
+            # Older prerelease leftovers: what the beta files just replaced pointed
+            # at, unless the new beta files, the stable channel or the beta files of
+            # a system left out of this build still use it.
+            replaced=() kept=()
+            for f in feed/beta*.yml; do if [ -f "dist/${f#feed/}" ]; then replaced+=("$f"); else kept+=("$f"); fi; done
+            in_use=$( { refs "${beta[@]}"; refs feed/latest*.yml; refs "${kept[@]}"; } )
             have=$(assets)
-            refs feed/beta*.yml | while read -r a; do
+            refs "${replaced[@]}" | while read -r a; do
               printf '%s\n' "$in_use" | grep -qxF "$a" && continue
               printf '%s\n' "$have" | grep -qxF "$a" || continue
               gh release delete-asset desktop-latest "$a" --repo "$R" --yes
@@ -381,26 +407,43 @@ jobs:
           fi
 
           # Stable. The download links on opendesk.sh/download use these names.
+          # A system left out of this build (DESKTOP_RELEASE_EXCLUDE) has none of
+          # its files in dist/ and keeps its previous ones.
           mkdir -p stable
+          have=$(assets)
+          platforms=()
           stable() {
             # shellcheck disable=SC2206 # $1 is a glob
             local m=(dist/$1)
             [ ${#m[@]} -eq 1 ] && [ -f "${m[0]}" ] || { echo "::error::expected one dist/$1"; exit 1; }
             cp "${m[0]}" "stable/$2"
           }
-          stable '*-mac.dmg' opendesk-mac.dmg
-          stable '*-setup.exe' opendesk-windows.exe
-          stable '*-linux-x86_64.AppImage' opendesk-linux-x64.AppImage
-          stable '*-linux-arm64.AppImage' opendesk-linux-arm64.AppImage
-          stable '*-linux-amd64.deb' opendesk-linux-amd64.deb
-          stable '*-linux-arm64.deb' opendesk-linux-arm64.deb
+          # system, the file that says it was built, then its download names.
+          system() {
+            local os=$1 marker=$2; shift 2
+            if compgen -G "dist/$marker" >/dev/null; then
+              while [ $# -gt 0 ]; do stable "$1" "$2"; shift 2; done
+              platforms+=("$os")
+            elif printf '%s\n' "$have" | grep -qxF "$2"; then
+              platforms+=("$os")
+            fi
+          }
+          system mac '*-mac.dmg' '*-mac.dmg' opendesk-mac.dmg
+          system windows '*-setup.exe' '*-setup.exe' opendesk-windows.exe
+          system linux '*-linux-x86_64.AppImage' \
+            '*-linux-x86_64.AppImage' opendesk-linux-x64.AppImage '*-linux-arm64.AppImage' opendesk-linux-arm64.AppImage \
+            '*-linux-amd64.deb' opendesk-linux-amd64.deb '*-linux-arm64.deb' opendesk-linux-arm64.deb
+          # platforms: the systems with a download on desktop-latest, this version's or an earlier one.
           jq -n --arg v "$VERSION" --arg d "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg u "https://github.com/$R/releases/tag/$TAG" \
-            '{version: $v, date: $d, notes_url: $u}' > version.json
+            --argjson p "$(printf '%s\n' "${platforms[@]}" | jq -R . | jq -cs .)" \
+            '{version: $v, date: $d, notes_url: $u, platforms: $p}' > version.json
 
           # A beta newer than this version keeps the beta channel; otherwise beta
           # users move to this version.
-          keep_beta=false
-          if [ -f feed/beta.yml ] && gt "$(ver feed/beta.yml)" "$VERSION"; then keep_beta=true; fi
+          keep_beta=false beta_version=
+          for f in feed/beta*.yml; do
+            if [ -f "$f" ] && gt "$(ver "$f")" "$VERSION"; then keep_beta=true beta_version=$(ver "$f"); fi
+          done
 
           # This version's files first, then the channel files that point at them,
           # then version.json, so nothing ever points at a missing file.
@@ -411,13 +454,26 @@ jobs:
           [ "$keep_beta" = true ] || gh release upload desktop-latest dist/beta*.yml --repo "$R" --clobber
           gh release upload desktop-latest version.json --repo "$R" --clobber
 
-          # Everything else is a previous version's leftover.
+          # Channel files this version did not replace (a newer beta, or a system
+          # left out of the build) stay, with what they point at, and so do the
+          # download names of a system left out. Everything else is a previous
+          # version's leftover.
+          kept=()
+          for f in feed/*.yml; do
+            [ -f "$f" ] || continue
+            n=${f#feed/}
+            case "$n" in
+              latest*) [ -f "dist/$n" ] || kept+=("$f") ;;
+              beta*) { [ "$keep_beta" = true ] || [ ! -f "dist/$n" ]; } && kept+=("$f") ;;
+            esac
+          done
           keep=$( { (cd dist && printf '%s\n' *); (cd stable && printf '%s\n' *); echo version.json
-                    if [ "$keep_beta" = true ]; then (cd feed && printf '%s\n' beta*.yml); refs feed/beta*.yml; fi; } )
+                    for f in "${kept[@]}"; do echo "${f#feed/}"; done; refs "${kept[@]}"
+                    printf '%s\n' "$have" | grep -xE 'opendesk-(mac\.dmg|windows\.exe|linux-.+)' || true; } )
           assets | while read -r a; do
             printf '%s\n' "$keep" | grep -qxF "$a" || gh release delete-asset desktop-latest "$a" --repo "$R" --yes
           done
-          echo "desktop-latest serves $VERSION$([ "$keep_beta" = true ] && echo ", beta channel kept on $(ver feed/beta.yml)")"
+          echo "desktop-latest serves $VERSION$([ "$keep_beta" = true ] && echo ", beta channel kept on $beta_version")"
 
   site:
     name: Redeploy the download page

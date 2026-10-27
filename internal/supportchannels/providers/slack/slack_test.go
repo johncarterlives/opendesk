@@ -6,10 +6,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -126,6 +128,58 @@ func TestParseRootMentionStartsConversationThread(t *testing.T) {
 	}
 }
 
+func TestParseAttachmentAndNoteEdit(t *testing.T) {
+	created := []byte(`{"type":"event_callback","event_id":"E1","team_id":"T1","event":{"type":"app_mention","user":"U1","channel":"C1","thread_ts":"10","ts":"11","text":"<@B1> note see this","files":[{"id":"F1","name":"screen.png","mimetype":"image/png","size":42,"url_private_download":"https://files.slack.com/files-pri/F1"}]}}`)
+	result, err := (Adapter{}).Parse(http.Header{}, created)
+	if err != nil || len(result.Events) != 1 {
+		t.Fatalf("created: %+v, %v", result, err)
+	}
+	in := result.Events[0]
+	if in.Command != "note" || in.Text != "see this" || in.ExternalMessageID != "11" || len(in.Files) != 1 || in.Files[0].Name != "screen.png" {
+		t.Fatalf("created event: %+v", in)
+	}
+
+	edited := []byte(`{"type":"event_callback","event_id":"E2","team_id":"T1","event":{"type":"message","subtype":"message_changed","channel":"C1","message":{"user":"U1","thread_ts":"10","ts":"11","text":"<@B1> note corrected"}}}`)
+	result, err = (Adapter{}).Parse(http.Header{}, edited)
+	if err != nil || len(result.Events) != 1 || result.Events[0].Mutation != "edit" || result.Events[0].Text != "corrected" {
+		t.Fatalf("edited: %+v, %v", result, err)
+	}
+
+	deleted := []byte(`{"type":"event_callback","event_id":"E3","team_id":"T1","event":{"type":"message","subtype":"message_deleted","channel":"C1","deleted_ts":"11","previous_message":{"user":"U1","thread_ts":"10","ts":"11","text":"<@B1> note corrected"}}}`)
+	result, err = (Adapter{}).Parse(http.Header{}, deleted)
+	if err != nil || len(result.Events) != 1 || result.Events[0].Mutation != "delete" || result.Events[0].ExternalMessageID != "11" || result.Events[0].ExternalUserID != "U1" {
+		t.Fatalf("deleted: %+v, %v", result, err)
+	}
+}
+
+func TestDownloadAttachmentRefusesAnotherHost(t *testing.T) {
+	body, err := (Adapter{}).DownloadAttachment(context.Background(), http.DefaultClient, map[string]string{"bot_token": "secret"}, channel.Attachment{
+		URL: "https://customer.example/private-file",
+	})
+	if err == nil || body != nil || !strings.Contains(err.Error(), "invalid") {
+		t.Fatalf("body=%v err=%v", body, err)
+	}
+}
+
+func TestRichPayloadKeepsViewLinkWithinSlackBlockLimit(t *testing.T) {
+	payload := richPayload("C1", "T1", "", channel.RichMessage{
+		Text:    strings.Repeat("a", 2500),
+		ViewURL: "https://app.test/ticket/1",
+		Attachments: []channel.Attachment{
+			{Name: strings.Repeat("n", 200), SizeBytes: 42, URL: "https://api.test/file/1", Preview: true},
+		},
+	})
+	text := payload["text"].(string)
+	if len([]rune(text)) > 3000 || !strings.Contains(text, "View in opendesk") {
+		t.Fatalf("text length = %d, text = %q", len([]rune(text)), text)
+	}
+	blocks := payload["blocks"].([]any)
+	section := blocks[0].(map[string]any)["text"].(map[string]string)["text"]
+	if section != text {
+		t.Fatal("section and fallback text differ")
+	}
+}
+
 func TestParseBlockActions(t *testing.T) {
 	payload := `{"type":"block_actions","trigger_id":"T9","response_url":"https://hooks.slack.com/actions/T/1/x","team":{"id":"TEAM"},"user":{"id":"U1"},"channel":{"id":"C1"},"container":{"message_ts":"10.1","thread_ts":"10.1"},"actions":[{"action_id":"opendesk:status","selected_option":{"value":"pending"}}]}`
 	body := []byte(url.Values{"payload": {payload}}.Encode())
@@ -182,6 +236,20 @@ func TestRespondOnlyToSlackHooks(t *testing.T) {
 	}
 	if err := (Adapter{}).Respond(context.Background(), server.Client(), nil, server.URL+"/actions/1", "x"); err == nil {
 		t.Fatal("answered through a URL that isn't Slack's")
+	}
+}
+
+func TestPostReturnsRateLimitDelay(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Retry-After", "17")
+		w.WriteHeader(http.StatusTooManyRequests)
+	}))
+	defer server.Close()
+
+	err := (Adapter{BaseURL: server.URL}).Post(context.Background(), server.Client(), map[string]string{"bot_token": "token", "channel_id": "C1"}, "T1", "hello")
+	var limited *channel.RateLimited
+	if !errors.As(err, &limited) || limited.RetryAfter != 17*time.Second {
+		t.Fatalf("post error = %v, want rate limit of 17s", err)
 	}
 }
 

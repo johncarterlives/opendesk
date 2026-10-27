@@ -156,5 +156,89 @@
     "articleHint": "Les centres d’aide qui affichent cet article.",
     "fromCollection": "Suit sa collection, {{name}}.",
     "only": "Uniquement dans le centre d’aide de {{name}}"
+  },
+  "switch": {
+    "articles": "Articles",
+    "changelog": "Journal des modifications"
+  },
+  "changelog": {
+    "new": "Nouvelle mise à jour",
+    "view": "Voir le journal des modifications",
+    "all": "Toutes les mises à jour",
+    "search": "Rechercher des mises à jour",
+    "loadMore": "Charger plus",
+    "undated": "Sans date",
+    "error": "Impossible de charger les mises à jour",
+    "status": {
+      "scheduled": "Programmée"
+    },
+    "filter": {
+      "allCategories": "Toutes les catégories",
+      "scheduled": "Programmées"
+    },
+    "col": {
+      "update": "Mise à jour",
+      "categories": "Catégories",
+      "date": "Date"
+    },
+    "empty": {
+      "title": "Aucune mise à jour pour le moment",
+      "description": "Annoncez à vos clients les nouveautés, les améliorations et les corrections. Les mises à jour s’affichent dans le journal des modifications de votre centre d’aide et dans son flux.",
+      "noMatch": "Aucune mise à jour correspondante",
+      "noneHere": "Rien ici",
+      "noneHereHint": "Aucune mise à jour ne correspond à ces filtres."
+    },
+    "tips": {
+      "categories": "Classez les mises à jour en Nouveau, Amélioré ou Corrigé",
+      "schedule": "Choisissez une date ultérieure pour en programmer une",
+      "api": "Publiez-les depuis vos outils de mise en production avec l’API"
+    },
+    "toast": {
+      "published": "Mise à jour publiée",
+      "scheduled": "Mise à jour programmée pour le {{date}}",
+      "unpublished": "Mise à jour dépubliée",
+      "deleted": "Mise à jour supprimée"
+    },
+    "editor": {
+      "notFound": "Mise à jour introuvable",
+      "openInHelp": "Ouvrir dans le centre d’aide",
+      "saveLiveHint": "Enregistrer les modifications de la mise à jour publiée",
+      "schedule": "Programmer",
+      "deletePublished": "Elle disparaît immédiatement de votre journal des modifications et de son flux.",
+      "delete": "Supprimer la mise à jour",
+      "titlePlaceholder": "Qu’est-ce qui a changé ?",
+      "excerptPlaceholder": "Un résumé en une ligne pour le journal des modifications et son flux",
+      "bodyPlaceholder": "Décrivez la mise à jour. Des captures d’écran et des listes courtes aident les lecteurs à voir les nouveautés.",
+      "body": "Contenu de la mise à jour",
+      "leaveBody": "Vos modifications de cette mise à jour n’ont pas été enregistrées."
+    },
+    "details": {
+      "date": "Date",
+      "time": "Heure",
+      "whenPublished": "À la publication",
+      "dateEmptyHint": "Fixée au moment où vous publiez.",
+      "dateHint": "Les lecteurs voient cette date sur la mise à jour.",
+      "scheduledFor": "Programmée pour le {{date}}. Elle reste masquée jusque-là.",
+      "willSchedule": "À la publication, elle sera programmée pour le {{date}}.",
+      "categories": "Catégories",
+      "brandHint": "Les centres d’aide qui affichent cette mise à jour.",
+      "urlHint": "L’adresse de cette mise à jour dans votre centre d’aide. La modifier rend les anciens liens invalides."
+    },
+    "categories": {
+      "remove": "Retirer {{name}}",
+      "create": "Ajouter",
+      "search": "Rechercher des catégories",
+      "none": "Aucune catégorie pour le moment",
+      "add": "Ajouter",
+      "addFirst": "Ajouter une catégorie",
+      "empty": "Aucune catégorie",
+      "hint": "Jusqu’à {{max}}, comme Nouveau, Amélioré ou Corrigé.",
+      "problem": {
+        "empty": "Saisissez un nom.",
+        "tooLong": "{{length}} caractères maximum.",
+        "duplicate": "Cette catégorie figure déjà ici.",
+        "full": "{{max}} catégories maximum."
+      }
+    }
   }
 }

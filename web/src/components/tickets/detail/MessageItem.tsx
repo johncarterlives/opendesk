@@ -29,6 +29,7 @@ import { useConfirm } from "@/components/ui/confirm";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "@/components/ui/menu";
 import { toast } from "@/components/ui/toast";
 import { useNow } from "@/lib/useNow";
+import { messageAuthor, messageFrame } from "./messageFrame";
 import { asNote, release, undo, useHeld } from "./outbox";
 import { showInTimeline } from "./Timeline";
 
@@ -185,7 +186,7 @@ function SentAsReply({ m, name, admin }: { m: Message; name: string; admin: bool
   return (
     <article id={`m-${m.id}`} aria-label={t("message.sentAsReplyLabel", { name })} className="rounded-lg border border-dashed border-note-line bg-note px-4 py-2">
       <div className="flex items-center gap-2 text-[12px] text-fg-3">
-        <Lock className="size-3.5 shrink-0 text-fg-4" />
+        <Lock className={cn("size-3.5 shrink-0", tone.amber.text)} />
         <span className="min-w-0 flex-1">{t("message.sentAsReply", { name })}</span>
         <Tooltip content={fullDate(m.created_at)}>
           <time dateTime={m.created_at} className="mono shrink-0 text-[11px] text-fg-4">
@@ -585,13 +586,7 @@ export const MessageItem = memo(function MessageItem({
       aria-label={t(note ? "message.noteFrom" : inThread ? "message.threadFrom" : "message.from", { name })}
       className={cn(
         "group/msg relative rounded-lg border transition-shadow duration-300",
-        note
-          ? "border-dashed border-note-line bg-note"
-          : failed
-            ? cn(tone.red.line, "bg-surface")
-            : inThread
-              ? cn(tone.cyan.line, "bg-surface")
-              : "border-line bg-surface",
+        messageFrame(messageAuthor(m), failed),
         highlight && "shadow-[0_0_0_3px_var(--focus)]",
       )}
     >
@@ -605,8 +600,8 @@ export const MessageItem = memo(function MessageItem({
           {inbound && m.auth_failed && <UnverifiedSender />}
           {outbound && m.from_account && <OwnAddress />}
           {note ? (
-            <span className="flex shrink-0 items-center gap-1 text-[11.5px] text-fg-3">
-              <Lock className="size-3" /> {t("message.internalNote")}
+            <span className="flex shrink-0 items-center gap-1 text-[11.5px] font-medium text-fg-2">
+              <Lock className={cn("size-3", tone.amber.text)} /> {t("message.internalNote")}
             </span>
           ) : outbound ? (
             <span className="min-w-0 truncate text-[11.5px] text-fg-3" data-ph-mask>

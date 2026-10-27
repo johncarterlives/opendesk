@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/useopendesk/opendesk/internal/supportchannels/channel"
 )
@@ -40,12 +41,25 @@ func TestConfigureAndHealth(t *testing.T) {
 		t.Fatalf("setWebhook: %+v", configured)
 	}
 	updates, ok := configured["allowed_updates"].([]any)
-	if !ok || len(updates) != 3 {
+	if !ok || len(updates) != 4 {
 		t.Fatalf("allowed updates: %#v", configured["allowed_updates"])
 	}
 	health, err := a.Health(context.Background(), server.Client(), credentials, setup)
 	if err != nil || health.Status != "healthy" {
 		t.Fatalf("health: %+v, %v", health, err)
+	}
+}
+
+func TestPostReturnsProviderRateLimitDelay(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"ok":false,"error_code":429,"description":"Too Many Requests","parameters":{"retry_after":9}}`))
+	}))
+	defer server.Close()
+
+	err := (Adapter{BaseURL: server.URL}).Post(context.Background(), server.Client(), map[string]string{"bot_token": "token", "channel_id": "C1"}, "T1", "hello")
+	var limited *channel.RateLimited
+	if !errors.As(err, &limited) || limited.RetryAfter != 9*time.Second {
+		t.Fatalf("post error = %v, want provider rate limit of 9s", err)
 	}
 }
 
@@ -99,6 +113,35 @@ func TestVerifyAndParseCommand(t *testing.T) {
 	h.Set("X-Telegram-Bot-Api-Secret-Token", "wrong")
 	if err := (Adapter{}).Verify(h, body, map[string]string{"webhook_secret": "secret"}); err == nil {
 		t.Fatal("accepted invalid secret")
+	}
+}
+
+func TestParseDocumentAndEditedNote(t *testing.T) {
+	created := []byte(`{"update_id":21,"message":{"message_id":7,"message_thread_id":22,"caption":"/note screenshot","document":{"file_id":"F1","file_name":"screen.png","mime_type":"image/png","file_size":42},"from":{"id":9},"chat":{"id":-10,"title":"Support","type":"supergroup","is_forum":true}}}`)
+	result, err := (Adapter{}).Parse(http.Header{}, created)
+	if err != nil || len(result.Events) != 1 {
+		t.Fatalf("created: %+v, %v", result, err)
+	}
+	in := result.Events[0]
+	if in.Command != "note" || in.Text != "screenshot" || in.ExternalMessageID != "7" || len(in.Files) != 1 || in.Files[0].ID != "F1" {
+		t.Fatalf("document event: %+v", in)
+	}
+
+	edited := []byte(`{"update_id":22,"edited_message":{"message_id":7,"message_thread_id":22,"text":"/note corrected","from":{"id":9},"chat":{"id":-10,"title":"Support","type":"supergroup","is_forum":true}}}`)
+	result, err = (Adapter{}).Parse(http.Header{}, edited)
+	if err != nil || len(result.Events) != 1 || result.Events[0].Mutation != "edit" || result.Events[0].Text != "corrected" {
+		t.Fatalf("edited: %+v, %v", result, err)
+	}
+}
+
+func TestRichPayloadPreviewsOnlyTheAttachmentURL(t *testing.T) {
+	payload := richPayload("C1", "T1", channel.RichMessage{
+		Text:        "Customer link: https://customer.example/private",
+		Attachments: []channel.Attachment{{Name: "screen.png", SizeBytes: 42, URL: "https://api.test/attachment/1", Preview: true}},
+	})
+	preview := payload["link_preview_options"].(map[string]any)
+	if preview["is_disabled"] != false || preview["url"] != "https://api.test/attachment/1" {
+		t.Fatalf("preview = %#v", preview)
 	}
 }
 

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Command } from "cmdk";
 import { Dialog as D } from "radix-ui";
@@ -8,12 +8,15 @@ import {
   BookOpen,
   Building2,
   CircleDashed,
+  FilePlus2,
   FileText,
   Inbox,
   Keyboard,
   Layers,
   Mail,
   Moon,
+  Newspaper,
+  NotebookText,
   Search,
   Server,
   Settings,
@@ -31,8 +34,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { StatusIcon } from "@/components/tickets/bits";
 import { folders } from "@/lib/folders";
 import { relShort } from "@/lib/format";
-import { q } from "@/lib/queries";
-import { useSession } from "@/lib/session";
+import { q, qk } from "@/lib/queries";
+import { atLeast, useRole, useSession } from "@/lib/session";
+import { api } from "@/lib/api/endpoints";
+import { toast } from "@/components/ui/toast";
 import { useTheme } from "@/lib/theme";
 import { desktop } from "@/lib/desktop";
 import { shell, usePageCommands, useShell } from "./shellStore";
@@ -103,13 +108,28 @@ export function CommandPalette() {
     }
   }, [open]);
 
+  const qc = useQueryClient();
+  const { t: tWiki } = useTranslation("wiki");
+  const newWikiPage = async () => {
+    try {
+      const p = await api.wiki.create({});
+      qc.setQueryData(qk.wikiPage(p.id), p);
+      void qc.invalidateQueries({ queryKey: qk.wikiTree });
+      void navigate({ to: "/wiki/$pageId", params: { pageId: p.id } });
+    } catch (e) {
+      toast.error(e);
+    }
+  };
+
   const go = (fn: () => void) => {
     shell.palette(false);
     fn();
   };
 
   const results = search.data;
-  const hasResults = !!results && (results.tickets.length + results.contacts.length + results.articles.length > 0);
+  const wikiPages = results?.wiki_pages ?? [];
+  const hasResults = !!results && (results.tickets.length + results.contacts.length + results.articles.length + wikiPages.length > 0);
+  const role = useRole();
 
   return (
     <D.Root open={open} onOpenChange={(o) => shell.palette(o)}>
@@ -245,6 +265,23 @@ export function CommandPalette() {
                 </Command.Group>
               )}
 
+              {hasResults && wikiPages.length > 0 && (
+                <Command.Group heading={tNav("command.wikiPages")} forceMount className={groupCls}>
+                  {wikiPages.map((p) => (
+                    <Item
+                      forceMount
+                      key={p.id}
+                      value={`wiki page ${p.title} ${p.id}`}
+                      icon={p.icon ? <span className="flex size-4 shrink-0 items-center justify-center text-[13px] leading-none">{p.icon}</span> : <NotebookText />}
+                      hint={p.path.length ? p.path.map((x) => x.title || tWiki("untitled")).join(" / ") : undefined}
+                      onSelect={() => go(() => void navigate({ to: "/wiki/$pageId", params: { pageId: p.id } }))}
+                    >
+                      {p.title || tWiki("untitled")}
+                    </Item>
+                  ))}
+                </Command.Group>
+              )}
+
               {pageCommands.length > 0 && (
                 <Command.Group heading={tNav("command.thisTicket")} className={groupCls}>
                   {pageCommands.map((c) => (
@@ -329,6 +366,12 @@ export function CommandPalette() {
                 <Item value="go knowledge base kb articles" keywords={[tNav("titles.knowledgeBase")]} icon={<BookOpen />} onSelect={() => go(() => void navigate({ to: "/kb" }))}>
                   {tNav("titles.knowledgeBase")}
                 </Item>
+                <Item value="go changelog product updates release notes" keywords={[tNav("titles.changelog")]} icon={<Newspaper />} onSelect={() => go(() => void navigate({ to: "/kb/changelog" }))}>
+                  {tNav("titles.changelog")}
+                </Item>
+                <Item value="go wiki internal docs runbooks policies" keywords={[tNav("titles.wiki")]} icon={<NotebookText />} hint={<Kbd>g w</Kbd>} onSelect={() => go(() => void navigate({ to: "/wiki" }))}>
+                  {tNav("titles.wiki")}
+                </Item>
                 <Item value="go reports analytics" keywords={[tNav("titles.reports")]} icon={<BarChart3 />} onSelect={() => go(() => void navigate({ to: "/reports" }))}>
                   {tNav("titles.reports")}
                 </Item>
@@ -372,6 +415,11 @@ export function CommandPalette() {
                 <Item value="new ticket compose create" keywords={[tNav("command.newTicket")]} icon={<SquarePen />} hint={<Kbd>c</Kbd>} onSelect={() => go(() => shell.newTicket())}>
                   {tNav("command.newTicket")}
                 </Item>
+                {atLeast(role, "agent") && (
+                  <Item value="new wiki page doc create write" keywords={[tNav("command.newWikiPage")]} icon={<FilePlus2 />} onSelect={() => go(() => void newWikiPage())}>
+                    {tNav("command.newWikiPage")}
+                  </Item>
+                )}
                 {collab.enabled && !!mailAccounts?.length && (
                   <Item value="compose email new mail message write" keywords={[tCollab("palette.compose")]} icon={<Mail />} onSelect={() => go(() => compose.open())}>
                     {tCollab("palette.compose")}

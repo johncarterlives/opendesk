@@ -208,6 +208,8 @@ func TestBrandDefaultAndDelete(t *testing.T) {
 		e.Exec(`INSERT INTO kb_articles (id, workspace_id, collection_id, title, slug, brand_id) VALUES ($1, $2, $3, 'A', $4, $5)`,
 			a.id, ws.ID, a.col, "a-"+a.id.String(), a.brand)
 	}
+	entry := ids.New()
+	e.Exec(`INSERT INTO changelog_entries (id, workspace_id, title, slug, brand_id) VALUES ($1, $2, 'Shop update', $3, $4)`, entry, ws.ID, "u-"+entry.String(), bid)
 	tk := ids.New()
 	e.Exec(`INSERT INTO tickets (id, workspace_id, number, channel, brand_id, widget_id) VALUES ($1, $2, 1, 'chat', $3, $4)`, tk, ws.ID, bid, widget)
 	_, seq := e.Events(ws.ID, 0)
@@ -215,7 +217,7 @@ func TestBrandDefaultAndDelete(t *testing.T) {
 	e.Do("DELETE", "/v1/brands/"+b.ID, admin, nil).Want(t, 204)
 	var left int
 	e.Scalar(`SELECT (SELECT count(*) FROM widgets WHERE id = $1) + (SELECT count(*) FROM kb_collections WHERE id = $2)
-		+ (SELECT count(*) FROM kb_articles WHERE id = ANY($3))`, &left, widget, col, []uuid.UUID{inCol, own})
+		+ (SELECT count(*) FROM kb_articles WHERE id = ANY($3)) + (SELECT count(*) FROM changelog_entries WHERE id = $4)`, &left, widget, col, []uuid.UUID{inCol, own}, entry)
 	if left != 0 {
 		t.Fatalf("%d rows left", left)
 	}
@@ -226,7 +228,7 @@ func TestBrandDefaultAndDelete(t *testing.T) {
 		t.Fatal(tkBrand, left)
 	}
 	types, _ := e.Events(ws.ID, seq)
-	for _, want := range []string{"brand.deleted", "widget.deleted", "kb_collection.deleted", "kb_article.deleted"} {
+	for _, want := range []string{"brand.deleted", "widget.deleted", "kb_collection.deleted", "kb_article.deleted", "changelog_entry.deleted"} {
 		if !contains(types, want) {
 			t.Fatalf("events %v", types)
 		}

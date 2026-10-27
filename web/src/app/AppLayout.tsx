@@ -263,6 +263,7 @@ export function AppLayout() {
     "g m": () => void navigate({ to: "/inbox/$folder/{-$ticketId}", params: { folder: "mine", ticketId: undefined } }),
     "g c": () => void navigate({ to: "/contacts/{-$contactId}", params: { contactId: undefined } }),
     "g k": () => void navigate({ to: "/kb" }),
+    "g w": () => void navigate({ to: "/wiki" }),
     "g r": () => void navigate({ to: "/reports" }),
     "g s": () => void navigate({ to: "/settings" }),
   });
