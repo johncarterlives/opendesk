@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-quer
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CircleCheck, CircleDashed, Clock, Inbox, Layers, ShieldAlert, User, Users } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Ticket } from "@/lib/api/types";
 import { folderById, listQuery, teamQuery, type FolderId, type InboxSearch } from "@/lib/folders";
@@ -16,6 +16,7 @@ import { snoozeOptions } from "@/components/tickets/detail/SnoozeMenu";
 import { InboxEmpty } from "./InboxEmpty";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { ResizeHandle } from "@/components/ui/resize-handle";
 import { toast } from "@/components/ui/toast";
 import { TicketRow, awaitingReply, type QuickAction } from "@/components/tickets/TicketRow";
 import { BulkBar } from "@/components/tickets/BulkBar";
@@ -27,6 +28,7 @@ import { useUpdateTicket } from "@/components/tickets/useTicketActions";
 import { intent } from "@/components/tickets/motion";
 import { focusField, missingForSolve, useTicketFields } from "@/components/tickets/fields";
 import { atLeast, useRole, useSession } from "@/lib/session";
+import { paneCss, setLiveWidth, usePaneWidth } from "@/lib/panes";
 import { useDocumentTitle } from "@/app/RootLayout";
 import { TeamDot, useTeamsCtx } from "@/components/tickets/teams";
 import { TeamTabs } from "./TeamTabs";
@@ -188,6 +190,10 @@ export default function InboxPage() {
   const previewing = !openId && wide && layout === "split" && tickets.length > 0;
   const split = !!openId || previewing;
   const compact = split || phone;
+  // Beside a ticket the list keeps the width its edge was dragged to, at most half the inbox.
+  const [listWidth, setListWidth] = usePaneWidth("list");
+  const pageRef = useRef<HTMLDivElement>(null);
+  const listPaneRef = useRef<HTMLElement>(null);
 
   // ── Selection and keyboard focus ────────────────────────────────────────
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -436,12 +442,16 @@ export default function InboxPage() {
   }, [tickets]);
 
   return (
-    <div className="relative flex h-full min-h-0">
+    <div ref={pageRef} className="relative flex h-full min-h-0">
       <section
+        ref={listPaneRef}
         aria-label={title}
+        style={listWidth === null ? undefined : ({ "--pane-list": paneCss("list", listWidth, "%") } as CSSProperties)}
         className={cn(
           "relative flex min-h-0 flex-col",
-          split ? "hidden w-[340px] shrink-0 border-r border-line lg:flex xl:w-[380px] 2xl:w-[420px]" : "min-w-0 flex-1",
+          split
+            ? "hidden w-[var(--pane-list-live,var(--pane-list,340px))] shrink-0 border-r border-line lg:flex xl:w-[var(--pane-list-live,var(--pane-list,380px))] 2xl:w-[var(--pane-list-live,var(--pane-list,420px))]"
+            : "min-w-0 flex-1",
         )}
       >
         <ListToolbar
@@ -522,6 +532,18 @@ export default function InboxPage() {
           compact={compact}
         />
       </section>
+      {split && (
+        <ResizeHandle
+          pane="list"
+          side="before"
+          target={listPaneRef}
+          room={() => pageRef.current?.clientWidth}
+          width={listWidth}
+          onLive={(px) => setLiveWidth(listPaneRef.current, "list", px === null ? null : paneCss("list", px, "%"))}
+          onWidth={setListWidth}
+          className="hidden lg:block"
+        />
+      )}
 
       {openId ? (
         <section aria-label={tr("detail.label")} className="flex min-w-0 flex-1 flex-col">

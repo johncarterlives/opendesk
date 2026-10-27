@@ -256,6 +256,10 @@
     "resend": "Bestätigung erneut senden",
     "appearance": "Darstellung",
     "appearanceHint": "Gilt für diesen Browser.",
+    "conversation": {
+      "label": "Gesprächsansicht",
+      "hint": "Nachrichten des Kunden links, Antworten und Notizen deines Teams rechts, wie in einem Chat. Volle Breite auf schmalen Bildschirmen."
+    },
     "sounds": {
       "title": "Töne",
       "hint": "Gilt für diesen Browser. Live-Chat hat einen helleren Klang; alles andere ist leise.",

@@ -162,6 +162,11 @@ export function matches(ws: WsData, t: Ticket, raw: ListFilters, meId: string): 
   if (f.channel && t.channel !== f.channel) return false;
   if (f.channel_not?.includes(t.channel)) return false;
   if (f.contact_id && t.contact?.id !== f.contact_id) return false;
+  if (f.contact_not && t.contact && f.contact_not.split(",").includes(t.contact.id)) return false;
+  if (f.company_not && t.contact) {
+    const company = ws.contacts.find((c) => c.id === t.contact?.id)?.company?.id;
+    if (company && f.company_not.split(",").includes(company)) return false;
+  }
   if (!labelsMatch(f, t.tags)) return false;
   if (!matchFields(ws, "ticket", t.fields, [...(f.fields ?? []), ...(f.fieldFilters ?? [])])) return false;
   if (f.q) {

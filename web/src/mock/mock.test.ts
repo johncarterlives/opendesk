@@ -104,6 +104,29 @@ describe("mock backend", () => {
     expect((await call("GET", `/v1/tickets/${open[0]!.id}`)).body.priority).toBe("high");
   });
 
+  it("leaves out tickets of chosen contacts and companies, in lists and views", async () => {
+    type Row = { id: string; contact: { id: string } | null };
+    const all = (await call("GET", "/v1/tickets?limit=100")).body.data as Row[];
+    const contacts = (await call("GET", "/v1/contacts?limit=100")).body.data as { id: string; company: { id: string } | null }[];
+    const companyOf = (t: Row) => contacts.find((c) => c.id === t.contact?.id)?.company?.id;
+    const from = all.find((t) => companyOf(t));
+    expect(from).toBeDefined();
+    const contactId = from!.contact!.id;
+    const companyId = companyOf(from!)!;
+
+    const notContact = (await call("GET", `/v1/tickets?contact_not=${contactId}&limit=100`)).body.data as Row[];
+    expect(notContact.length).toBeGreaterThan(0);
+    for (const t of notContact) expect(t.contact?.id).not.toBe(contactId);
+    const notCompany = (await call("GET", `/v1/tickets?company_not=${companyId}&limit=100`)).body.data as Row[];
+    expect(notCompany.length).toBeGreaterThan(0);
+    expect(notCompany.map((t) => t.id)).not.toContain(from!.id);
+    for (const t of notCompany) if (companyOf(t)) expect(companyOf(t)).not.toBe(companyId);
+
+    const v = (await call("POST", "/v1/views", { name: "Not them", shared: true, filters: { company_not: companyId } })).body;
+    const inView = (await call("GET", `/v1/tickets?view_id=${v.id}&limit=100`)).body.data as Row[];
+    expect(inView.map((t) => t.id)).toEqual(notCompany.map((t) => t.id));
+  });
+
   it("serves every list endpoint the app reads", async () => {
     for (const path of [
       "/v1/me", "/v1/tickets", "/v1/tickets/counts", "/v1/contacts", "/v1/companies", "/v1/tags", "/v1/views",
@@ -195,6 +218,24 @@ describe("mock backend", () => {
     expect((await call("DELETE", `/v1/support-channels/destinations/${plain.body.id}`)).status).toBe(204);
     expect((await call("DELETE", `/v1/support-channels/connections/${created.body.id}`)).status).toBe(204);
     expect((await call("GET", "/v1/support-channels/destinations")).body.data).toEqual([]);
+  });
+
+  it("connects Google Chat and discovers named spaces", async () => {
+    const providers = (await call("GET", "/v1/support-channels/providers")).body.data;
+    expect(providers.find((p: { key: string }) => p.key === "google_chat").fields).toContainEqual(
+      expect.objectContaining({ name: "service_account_json", secret: true }),
+    );
+    const created = await call("POST", "/v1/support-channels/connections", {
+      provider: "google_chat",
+      credentials: { service_account_json: "{\"type\":\"service_account\"}" },
+    });
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({ provider: "google_chat", health_status: "action_required", external_account_name: "Margin Chat app" });
+    expect(created.body).not.toHaveProperty("credentials");
+    expect((await call("GET", `/v1/support-channels/connections/${created.body.id}/destinations`)).body.data).toEqual([
+      { id: "spaces/AAAAsupport", name: "Support", kind: "space", available: true },
+    ]);
+    expect((await call("DELETE", `/v1/support-channels/connections/${created.body.id}`)).status).toBe(204);
   });
 
   it("sends presence_state when a ticket topic is joined", async () => {

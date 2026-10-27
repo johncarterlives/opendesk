@@ -69,6 +69,8 @@ curl "https://api.opendesk.sh/v1/tickets?status=open,pending&assignee=none&sort=
 | `team_not` | the same values: tickets of none of them |
 | `mailbox_id`, `contact_id`, `view_id` | ids |
 | `mailbox_not` | comma-separated mailbox ids: tickets whose reply address is none of them |
+| `contact_not` | comma-separated contact ids: tickets whose contact is none of them |
+| `company_not` | comma-separated company ids: tickets whose contact belongs to none of them |
 | `tag` | comma-separated label names: tickets carrying any of them |
 | `tag_not` | comma-separated label names: tickets carrying none of them |
 | `untagged` | `true` for tickets carrying no label |

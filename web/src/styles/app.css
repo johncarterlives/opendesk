@@ -60,6 +60,10 @@
   --reply-line: color-mix(in oklab, var(--tone-blue-solid) 30%, var(--surface));
   --note: color-mix(in oklab, var(--tone-amber-solid) 10%, var(--surface));
   --note-line: color-mix(in oklab, var(--tone-amber-solid) 60%, var(--surface));
+  /* The conversation layout's message width (Settings → Profile → Appearance): the
+     customer's cards at the start, the team's at the end, each this share of the timeline,
+     and never under 26rem, so a header keeps its name in a narrow pane (the offset shrinks). */
+  --conversation-card: max(80%, 26rem);
   --focus: rgb(10 10 10 / 0.14);
   --focus-line: #a3a3a3;
   --ok: #16a34a;
@@ -585,6 +589,13 @@
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
+  }
+  /* While a pane edge is dragged (components/ui/resize-handle.tsx): one cursor, no selection, nothing easing behind it. */
+  [data-pane-resizing],
+  [data-pane-resizing] * {
+    cursor: col-resize !important;
+    user-select: none !important;
+    transition: none !important;
   }
   /* Thin, quiet scrollbars. */
   * {

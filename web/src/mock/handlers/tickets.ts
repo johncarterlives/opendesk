@@ -45,6 +45,8 @@ function filtersFrom(ctx: Ctx): ListFilters {
     channel: (q.get("channel") as Channel | null) ?? undefined,
     channel_not: csv(q.get("channel_not"), CHANNELS),
     contact_id: q.get("contact_id") ?? undefined,
+    contact_not: q.get("contact_not") ?? undefined,
+    company_not: q.get("company_not") ?? undefined,
     view_id: q.get("view_id") ?? undefined,
     q: q.get("q") ?? undefined,
     spam: q.get("spam") === "true",

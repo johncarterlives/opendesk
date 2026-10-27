@@ -32,6 +32,10 @@ export type TicketListQuery = ListQuery & {
   channel?: T.Channel;
   channel_not?: T.Channel[];
   contact_id?: string;
+  /** Contact ids, comma separated: tickets whose contact is none of them. */
+  contact_not?: string;
+  /** Company ids, comma separated: tickets whose contact belongs to none of them. */
+  company_not?: string;
   view_id?: string;
   q?: string;
   spam?: boolean | "any";

@@ -102,6 +102,8 @@
       "team": "Team",
       "mailbox": "Mailbox",
       "writtenTo": "Written to",
+      "contact": "Contact",
+      "company": "Company",
       "tag": "Label",
       "channel": "Channel",
       "keyword": "Keyword"
@@ -128,6 +130,8 @@
     "unknown": "unknown",
     "inMailbox": "In {{name}}",
     "aMailbox": "a mailbox",
+    "aContact": "a contact",
+    "aCompany": "a company",
     "writtenTo": "Written to {{address}}",
     "matching": "Matching “{{q}}”",
     "ops": {
@@ -143,12 +147,16 @@
       "tag": "Choose labels",
       "team": "Choose teams",
       "mailbox": "Choose mailboxes",
+      "contact": "Choose contacts",
+      "company": "Choose companies",
       "channel": "Choose channels"
     },
     "myTeams": "my teams",
     "noTeam": "no team",
     "notTeamNamed": "Not team {{name}}",
     "notInMailbox": "Not in {{name}}",
+    "notContact": "Not from {{name}}",
+    "notCompany": "Not from {{name}}",
     "withoutLabels": "Without {{labels}}",
     "noLabel": "No label",
     "notChannel": "Not {{channel}}",
@@ -373,6 +381,8 @@
   },
   "pickers": {
     "search": "Search",
+    "searchContacts": "Search name or email",
+    "searchCompanies": "Search name or domain",
     "andMore": "{{first}} and {{count}} more"
   },
   "customFields": {

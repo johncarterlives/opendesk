@@ -256,6 +256,10 @@
     "resend": "Resend verification",
     "appearance": "Appearance",
     "appearanceHint": "Applies to this browser.",
+    "conversation": {
+      "label": "Conversation layout",
+      "hint": "The customer's messages on the left, your team's replies and notes on the right, like a chat. Full width on a narrow screen."
+    },
     "sounds": {
       "title": "Sounds",
       "hint": "Applies to this browser. Live chat has a brighter chime; everything else is quiet.",

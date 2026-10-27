@@ -102,6 +102,8 @@
       "team": "Team",
       "mailbox": "Postfach",
       "writtenTo": "Geschrieben an",
+      "contact": "Kontakt",
+      "company": "Unternehmen",
       "tag": "Label",
       "channel": "Kanal",
       "keyword": "Stichwort"
@@ -128,8 +130,20 @@
     "unknown": "unbekannt",
     "inMailbox": "In {{name}}",
     "aMailbox": "ein Postfach",
+    "aContact": "ein Kontakt",
+    "aCompany": "ein Unternehmen",
     "writtenTo": "Geschrieben an {{address}}",
     "matching": "Passend zu „{{q}}“",
+    "ops": {
+      "is": "ist",
+      "not": "ist nicht"
+    },
+    "choose": {
+      "contact": "Kontakte wählen",
+      "company": "Unternehmen wählen"
+    },
+    "notContact": "Nicht von {{name}}",
+    "notCompany": "Nicht von {{name}}",
     "emptyTips": {
       "sidebar": "Geteilte Ansichten erscheinen in der Seitenleiste aller",
       "personal": "Persönliche Ansichten bleiben nur in deiner Seitenleiste"
@@ -351,6 +365,8 @@
   },
   "pickers": {
     "search": "Suchen",
+    "searchContacts": "Name oder E-Mail suchen",
+    "searchCompanies": "Name oder Domain suchen",
     "andMore": "{{first}} und {{count}} weitere"
   },
   "customFields": {
