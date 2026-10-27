@@ -352,21 +352,26 @@ func (s *service) lockDraft(ctx context.Context, p *auth.Principal, rawID string
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
-	tx, err := s.d.DB.Pool.Begin(ctx)
+	lockCtx, cancel := context.WithTimeout(ctx, draftLockWait)
+	defer cancel()
+	tx, err := s.d.DB.Locks.Begin(lockCtx)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil {
+			return nil, nil, nil, nil, errDraftBusy
+		}
 		return nil, nil, nil, nil, httpx.Wrap(err)
 	}
 	// The lock is the transaction's: rolling back (or a lost connection) releases it.
 	unlock := func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }
-	if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout', $1, true)`,
+	if _, err := tx.Exec(lockCtx, `SELECT set_config('lock_timeout', $1, true)`,
 		strconv.FormatInt(draftLockWait.Milliseconds(), 10)+"ms"); err != nil {
 		unlock()
 		return nil, nil, nil, nil, httpx.Wrap(err)
 	}
-	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('collab_draft:' || $1::text, 0))`, id); err != nil {
+	if _, err := tx.Exec(lockCtx, `SELECT pg_advisory_xact_lock(hashtextextended('collab_draft:' || $1::text, 0))`, id); err != nil {
 		unlock()
 		var pg *pgconn.PgError
-		if errors.As(err, &pg) && pg.Code == "55P03" {
+		if (errors.As(err, &pg) && pg.Code == "55P03") || (errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil) {
 			return nil, nil, nil, nil, errDraftBusy
 		}
 		return nil, nil, nil, nil, httpx.Wrap(err)
