@@ -85,6 +85,43 @@ func TestHeaderCategory(t *testing.T) {
 	}
 }
 
+// TestGmailCategory: Gmail's own tab decides where its built-in category is the account's,
+// and leaves the rest to Ollie and the headers.
+func TestGmailCategory(t *testing.T) {
+	gmailLike := []string{"primary", "updates", "newsletters", "promotions"}
+	all := []string{"primary", "updates", "newsletters", "promotions", "social"}
+	own := []string{"primary", "invoices", "promotions"}
+	tab := func(sig ...string) *sortItem { return &sortItem{Signals: sig} }
+	cases := []struct {
+		name string
+		keys []string
+		it   *sortItem
+		want string
+	}{
+		{"primary", gmailLike, tab(signalGmailPrimary), "primary"},
+		{"primary with a category of the account's own", own, tab(signalGmailPrimary), ""},
+		{"promotions", own, tab(signalGmailPromotions), "promotions"},
+		{"social without Social", gmailLike, tab(signalGmailSocial), ""},
+		{"social", all, tab(signalGmailSocial), "social"},
+		{"forums are Social's", all, tab(signalGmailForums), "social"},
+		{"updates", gmailLike, tab(signalGmailUpdates), "updates"},
+		{"a list Gmail calls an update, with Newsletters", gmailLike, tab(signalGmailUpdates, signalList), ""},
+		{"a list Gmail calls an update, without Newsletters", []string{"primary", "updates"}, tab(signalGmailUpdates, signalList), "updates"},
+		{"no tab", all, tab(signalList), ""},
+	}
+	for _, c := range cases {
+		if got := gmailCategory(c.keys, c.it); got != c.want {
+			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
+		}
+	}
+	if got := gmailSignals([]string{"INBOX", "UNREAD", "CATEGORY_PROMOTIONS"}); !slices.Equal(got, []string{signalGmailPromotions}) {
+		t.Errorf("signals of the labels: %v", got)
+	}
+	if got := gmailSignals([]string{"INBOX"}); got != nil {
+		t.Errorf("no tab: %v", got)
+	}
+}
+
 func TestMailSignals(t *testing.T) {
 	raw := "From: Shop <" + at("noreply", "shop.example") + ">\r\nTo: " + at("me", "acme.test") + "\r\nSubject: Hi\r\nList-Unsubscribe: <https://shop.example/u>\r\n" +
 		"Precedence: bulk\r\nAuto-Submitted: auto-generated\r\nMessage-ID: <" + at("1", "shop.example") + ">\r\n\r\nHello\r\n"
@@ -246,6 +283,8 @@ func TestCategorizeSorts(t *testing.T) {
 	promo := thread("Big sale", at("deals", "shop.example"), []string{signalList})
 	unsure := thread("Maybe", at("hello", "unknown.example"), nil)
 	friend := thread("Dinner", at("pal", "friends.example"), []string{signalList})
+	// Mail Gmail filed under Updates goes there without asking Ollie.
+	shipped := thread("Your order shipped", at("orders", "store.example"), []string{signalGmailUpdates})
 	// Someone the account writes to stays in Primary without asking Ollie.
 	sentTo, _ := w.seedThread(a, "Re: earlier", sent)
 	mustExec(t, w.d, `UPDATE collab_threads SET addresses = ARRAY[$2::text] WHERE id = $1`, sentTo, at("pal", "friends.example"))
@@ -261,13 +300,16 @@ func TestCategorizeSorts(t *testing.T) {
 		}
 		return *c
 	}
-	for id, want := range map[uuid.UUID]string{news: "newsletters", promo: "promotions", unsure: "primary", friend: "primary"} {
+	for id, want := range map[uuid.UUID]string{news: "newsletters", promo: "promotions", unsure: "primary", friend: "primary", shipped: "updates"} {
 		if got := cat(id); got != want {
 			t.Errorf("%s: got %q, want %q", id, got, want)
 		}
 	}
 	if slices.Contains(fake.asked, at("pal", "friends.example")) {
 		t.Errorf("Ollie was asked about someone the account writes to")
+	}
+	if slices.Contains(fake.asked, at("orders", "store.example")) {
+		t.Errorf("Ollie was asked about mail Gmail had sorted")
 	}
 	// Ollie unsure (a low probability) leaves it in Primary.
 	fake.prob = 0.3

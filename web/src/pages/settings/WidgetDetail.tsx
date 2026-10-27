@@ -175,6 +175,7 @@ function WidgetEditor({ widget, brand, back }: { widget: Widget; brand: Brand | 
   const navigate = useNavigate();
   const confirm = useConfirm();
   const { data: members } = useQuery(q.members());
+  const { data: mailboxes } = useQuery(q.mailboxes());
   const { teams } = useTeams();
   const base = useMemo(() => toDraft(widget), [widget]);
   const [draft, setDraft] = useState<Draft>(base);
@@ -199,6 +200,12 @@ function WidgetEditor({ widget, brand, back }: { widget: Widget; brand: Brand | 
   const s = draft.settings;
   const dirty = JSON.stringify(draft) !== JSON.stringify(base);
   const agentOn = ai.enabled && agentSettings(ai.features).widget_answers;
+  const hasFollowUpMailbox = mailboxes?.some(
+    (m) =>
+      (m.brand_id === widget.brand_id || Object.values(m.alias_settings ?? {}).some((alias) => alias.brand_id === widget.brand_id)) &&
+      m.status === "active" &&
+      m.sending !== "system_off",
+  );
   const team = teams.find((x) => x.id === draft.team_id);
   const { t: tb } = useTranslation("bots");
   const { data: bots } = useQuery(q.bots());
@@ -507,7 +514,19 @@ function WidgetEditor({ widget, brand, back }: { widget: Widget; brand: Brand | 
                   </div>
                 </div>
               </Row>
-              <Row label={tt("widget.followUp")} description={tt("widget.followUpHint")}>
+              <Row
+                label={tt("widget.followUp")}
+                description={
+                  <>
+                    {tt("widget.followUpHint")}
+                    {s.email_follow_up && mailboxes && !hasFollowUpMailbox && (
+                      <span className="mt-1 block text-fg-2">
+                        {tt("widget.followUpMailboxMissing")} <Link className="underline underline-offset-2" to="/settings/mailboxes/new" search={{ brand: widget.brand_id }}>{tt("widget.followUpAddMailbox")}</Link>
+                      </span>
+                    )}
+                  </>
+                }
+              >
                 <Switch checked={s.email_follow_up} onCheckedChange={(email_follow_up) => set({ email_follow_up })} aria-label={tt("widget.followUp")} />
               </Row>
             </Section>

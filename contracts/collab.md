@@ -104,9 +104,14 @@ after a connect, a reconnect, `POST .../sync` or an action. One runs per account
   - IMAP: new UIDs, the oldest first; the stored UID goes on from the last one imported.
 - Changes made at the provider (read elsewhere, moved on the phone, deleted) arrive with the next
   sync. A message gone from every folder is removed from opendesk.
+- A provider that is busy (a rate limit, or a 5xx to a read) is asked again within the call after
+  1 and 4 seconds, or after its `Retry-After` when that is at most 15 seconds. A request that
+  changes something is asked again only after a rate limit, which refused it before it ran.
 - Failures are stored on the account (`status: "error"`, a safe `last_error`), retried with
-  backoff (1 minute doubling to 1 hour). A refused grant (`invalid_grant`, an IMAP login refused)
-  needs a reconnect: `status: "error"`, `reconnect: true`.
+  backoff (1 minute doubling to 1 hour). A passing failure (a busy or unreachable provider) waits
+  with the backoff without changing the status for the first two in a row, so a short outage never
+  shows; the third shows. A refused grant (`invalid_grant`, an IMAP login refused) needs a reconnect
+  at once: `status: "error"`, `reconnect: true`.
 - Each message is parsed with the email area's parser. Its HTML is sanitized with bluemonday before
   storage (the same policy as inbound email), and it renders in the sandboxed frame without scripts
   with remote images on request (`web/src/lib/sanitize.ts`). A message with attachments or inline
@@ -116,8 +121,10 @@ after a connect, a reconnect, `POST .../sync` or an action. One runs per account
 ## History
 
 The first sync is quick and recent. A **history import** brings the rest: as far back as the person
-chooses, all mail included, without holding up the live sync. Whoever manages the account starts it
-from the account's settings (`PUT /v1/collab/accounts/{id}/history`); `MailAccount.history` follows it.
+chooses, all mail included, without holding up the live sync. Whoever connects the account chooses
+how far back while connecting (`history` on the connect routes; the app offers the last year first,
+and "only the last 30 days" for none), and whoever manages it starts or changes it from the account's
+settings (`PUT /v1/collab/accounts/{id}/history`, also while one runs); `MailAccount.history` follows it.
 
 - **Scope**: `since`, mail received from then on (`null`: all of it), in every folder the sync reads;
   spam and trash only with `include_spam_trash`. It reads the mail that was there when it started
@@ -342,15 +349,22 @@ order:
 
 1. **Sender rules**: the account's (`POST …/category-rules`): an address, or `@domain` for a whole domain.
 2. **People you write to stay in Primary**: a sender the account has sent mail to before.
-3. **Ollie**: with `sorting: "ai"`, the account's `ai` on and AI on for the workspace (`settings.ai.enabled`),
+3. **Gmail's own tab** (Gmail accounts): the sync keeps the tab Gmail filed a message under (its
+   `CATEGORY_*` label) as a signal (`gmail_primary`, `gmail_social`, `gmail_promotions`,
+   `gmail_updates`, `gmail_forums`). Social, Promotions and Updates go to the built-in key of that
+   name and Forums to `social`, when the account has it; Gmail's Primary goes to Primary while every
+   category is a built-in one (one of the account's own is Ollie's to fill). List mail Gmail filed
+   under Updates or Promotions goes on to the next steps while there is `newsletters`, which Gmail lacks.
+4. **Ollie**: with `sorting: "ai"`, the account's `ai` on and AI on for the workspace (`settings.ai.enabled`),
    one decision call (contracts/ai.md "Decisions", feature `mail_categorize`) asks for up to 10
    conversations at once, one Choice question each over the categories, with each category's
    description as its rubric. The state is data, never instructions: the sender's name and address,
    the subject, the first 1,200 characters of the text and the mail's signals (`list`: List-Id or
    List-Unsubscribe, `bulk`: Precedence bulk or list, `campaign`: a mailing tool's campaign header,
-   `auto`: Auto-Submitted, `noreply`: a no-reply sender, `direct`: the account's address in To). On a calibrated engine (Jev) a category other than
+   `auto`: Auto-Submitted, `noreply`: a no-reply sender, `direct`: the account's address in To, and
+   Gmail's tab). On a calibrated engine (Jev) a category other than
    Primary needs a probability of at least 0.5, so mail Ollie is unsure of stays in Primary.
-4. **Headers** (without Ollie, or when its call fails or the AI balance is too low): for the built-in
+5. **Headers** (without Ollie, or when its call fails or the AI balance is too low): for the built-in
    keys only, list mail goes to `promotions` when its subject reads like an offer and `promotions` is
    there, else to `newsletters`, else `promotions`; mail from a social network to `social`; automatic
    mail (`auto`, `noreply`, and list mail when neither of the others is there) to `updates`.
@@ -636,11 +650,17 @@ interface SidebarPrefs {
   unified_inbox: boolean       // default true: "All inboxes" on top of the Mail section
   badges: Record<string, "unread" | "total" | "count" | "awaiting" | "urgent" | "overdue" | "open" | "none">  // the number beside a row; default {}
   mail_tabs: string[]          // the mail page's folder bar, in order; default ["inbox","starred","sent","drafts","archive"]
+  auto_pins: string[]          // pins the sidebar added once by itself, so one unpinned stays so; default []
 }
 ```
 
 These arrange a workspace's own sidebar. A Space (contracts/spaces.md) picked in the switcher shows
 its own rows instead; a whole section in a Space follows these preferences.
+
+**All inboxes in Favorites.** When a member first sees two accounts, `GET /v1/collab/sidebar` pins
+All inboxes (`{kind: "box", id: "inbox"}`) to the top of Favorites, unless `unified_inbox` is off,
+`box:inbox` is hidden or it is pinned already, and records `"box:inbox"` in `auto_pins` either way:
+unpinned later, it stays unpinned.
 
 `badges` keys are a row (`box:inbox` for All inboxes, `box:shared`, `box:assigned`, `account:<id>`,
 `folder:<id>`, `ticket_folder:<id>`, `view:<id>`, `team:<id>`) or a section's default (`section:mail`,
@@ -727,9 +747,9 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | --- | --- | --- | --- |
 | GET | `/v1/collab` | member | `CollabStatus`; the only route without Collab |
 | GET | `/v1/collab/accounts` | member | `MailAccount[]` the caller sees, theirs first. `?manage=true`: an admin also gets the shared accounts of people who left (`owner: null`), to manage or disconnect |
-| POST | `/v1/collab/accounts/oauth/{provider}/start` | agent+ | `{visibility, shared_with? (at most 40 teams and people: it travels in the signed state; add more afterwards), name?, email? (login hint), account_id? (reconnect, manage)}` → `{url}`; sets the flow cookie (send with credentials). `422 provider_not_configured` |
+| POST | `/v1/collab/accounts/oauth/{provider}/start` | agent+ | `{visibility, shared_with? (at most 40 teams and people: it travels in the signed state; add more afterwards), name?, email? (login hint), account_id? (reconnect, manage), history?: {since: string \| null} (older mail to import once connected, as `PUT …/history`; left out, none; kept when the account already has an import)}` → `{url}`; sets the flow cookie (send with credentials). `422 provider_not_configured` |
 | GET | `/v1/collab/accounts/oauth/{provider}/callback` | provider | redirects to `APP_URL/settings/mail-accounts?connected=<id>` or `?error=<code>`: `oauth_state`, `access_denied`, `provider_error`, `account_conflict` (the address is already connected in this workspace by someone else), `collab_required`, `forbidden`, `internal` |
-| POST | `/v1/collab/accounts/imap` | agent+ | `{email, name?, display_name?, imap_host, imap_port, imap_tls, imap_username?, password, smtp_host, smtp_port, smtp_tls, smtp_username?, smtp_password?, visibility, shared_with?}` → `MailAccount`. Both servers are tried first: `422 connection_failed` with `detail`. `409 account_conflict`. `422 imap_unavailable` with `COLLAB_IMAP` off |
+| POST | `/v1/collab/accounts/imap` | agent+ | `{email, name?, display_name?, imap_host, imap_port, imap_tls, imap_username?, password, smtp_host, smtp_port, smtp_tls, smtp_username?, smtp_password?, visibility, shared_with?, history?}` → `MailAccount` (`history` as on the OAuth start). Both servers are tried first: `422 connection_failed` with `detail`. `409 account_conflict`. `422 imap_unavailable` with `COLLAB_IMAP` off |
 | PATCH | `/v1/collab/accounts/{id}` | manage | `{name?, display_name?, color?, signature_html?, visibility?, handling_enabled?, shared_with?, imap? {…same fields, password?, smtp_password?}, default_from?}` → `MailAccount`; `handling_enabled` is available on shared accounts only and clears when an account becomes private. `default_from` must be one of its addresses that can send (`422 validation_failed`) and is kept in opendesk (Gmail's own change of its default still comes in, "Addresses"); new IMAP settings are tried first. A changed `signature_html` or `display_name` that syncs `two_way` is made at Gmail first (sanitized): a refusal is `502 provider_error` and nothing of the change is saved. `read_only` and `none` save in opendesk only. A changed `display_name` stops a Microsoft account following its profile name. A `display_name` or `signature_html` with variables ("Who sends") is checked (`422 validation_failed`) and saved in opendesk only, never at Gmail |
 | POST | `/v1/collab/accounts/{id}/identities` | manage | Add an address ("Addresses"): `{email, display_name?, signature_html?, reply_to?}` → `MailAccount`. Microsoft and IMAP only (`422 identities_from_provider` for Gmail); `409 identity_conflict` for the account's own or an existing address; at most 50 |
 | PATCH | `/v1/collab/accounts/{id}/identities/{identity_id}` | manage | `{display_name?, signature_html?, reply_to? (hand-added only)}` → `MailAccount`. Saved in opendesk; a Gmail address's From name and signature are replaced by Gmail's when they next change there (`pull`) |
@@ -779,8 +799,8 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | POST | `/v1/collab/drafts/{id}/send` | act on its conversation | Send it; the body (as for `PUT`) is optional: when given the draft is saved with it first, else it goes as saved (composed again from what was saved when its From name names the sender, so it goes out with the sender's name). Needs a recipient. → `MailMessage`, the sent message, stored like `POST /v1/collab/messages` does (in the draft's conversation and in Sent) with the draft removed. `502 send_failed`; counts toward the 60 sends a minute |
 | GET | `/v1/collab/messages/{id}/details` | see | `MessageDetails` ("Message details"), read from the message's source (stored, else the provider: `502 provider_error`) |
 | GET | `/v1/collab/attachments/{message_id}/{index}` | signed (`exp`, `sig`) | the file, `Content-Disposition: attachment` unless an image; `?inline=1` for images. `404` when the signature is wrong or expired |
-| GET | `/v1/collab/sidebar` | member | `SidebarPrefs` (defaults when never saved) |
-| PUT | `/v1/collab/sidebar` | member | `SidebarPrefs` → `SidebarPrefs`; at most 16 KB; unknown ids are kept (an id of something gone is ignored by the app). `badges`: at most 300, keys of at most 100 characters with the prefixes above, values `unread`, `total`, `count`, `awaiting`, `urgent`, `overdue`, `open` or `none`; `mail_tabs`: at most 30, each a box above or `folder:<uuid>`, once. Leaving out `badges` or `mail_tabs` keeps the saved value; `422` otherwise |
+| GET | `/v1/collab/sidebar` | member | `SidebarPrefs` (defaults when never saved); pins All inboxes once at a second account ("All inboxes in Favorites") |
+| PUT | `/v1/collab/sidebar` | member | `SidebarPrefs` → `SidebarPrefs`; at most 16 KB; unknown ids are kept (an id of something gone is ignored by the app). `badges`: at most 300, keys of at most 100 characters with the prefixes above, values `unread`, `total`, `count`, `awaiting`, `urgent`, `overdue`, `open` or `none`; `mail_tabs`: at most 30, each a box above or `folder:<uuid>`, once. Leaving out `badges`, `mail_tabs` or `auto_pins` keeps the saved value; `422` otherwise |
 
 Errors: `402 collab_required`, `404 not_found`, `422 labels_unsupported`, `422 connection_failed`,
 `409 account_conflict`, `502 provider_error`, `502 send_failed`, `422 provider_not_configured`,

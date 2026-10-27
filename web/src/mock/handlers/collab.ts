@@ -670,6 +670,35 @@ function storage(): CollabStatus["storage"] {
   return { used_bytes: 9.4 * 1024 ** 3, limit_bytes: 0, history_limited: false, full: false };
 }
 
+/** A history import's start: null for all mail; a date in the past, else 422. */
+function historySince(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  const d = new Date(String(v));
+  if (Number.isNaN(d.getTime()) || d.getTime() > Date.now()) throw invalid("since must be a date in the past");
+  return d.toISOString();
+}
+
+/** Starts (or starts again) an account's history import. */
+function startHistory(ws: WsData, a: Account, since: string | null, spamTrash: boolean) {
+  const history: MailHistory = {
+    status: "running",
+    since,
+    include_spam_trash: spamTrash,
+    requested_by: userRef(db.meId),
+    started_at: nowIso(),
+    finished_at: null,
+    reached: null,
+    imported: 0,
+    present: 0,
+    too_large: 0,
+    unreadable: 0,
+    total: a.provider === "microsoft" && since ? null : since ? 2_400 : 9_800,
+    last_error: "",
+  };
+  a.history = history;
+  runHistory(ws, a);
+}
+
 /** A history import moving on: a batch every couple of seconds while it runs, until its total. */
 const historyTimers = new Map<string, ReturnType<typeof setInterval>>();
 function runHistory(ws: WsData, a: Account) {
@@ -1199,6 +1228,7 @@ export function registerCollab() {
     requireCollab(ctx.ws);
     requireAct(ctx.ws);
     if (ctx.params.provider !== "google" && ctx.params.provider !== "microsoft") throw new HttpError(422, "provider_not_configured", "That provider is not set up on this instance.");
+    if (ctx.body.history) historySince((ctx.body.history as { since?: unknown }).since);
     // The mock has no provider to visit: come straight back as if one was connected.
     const existing = visibleAccounts(ctx.ws).find((a) => a.provider === ctx.params.provider);
     const back = new URL("/settings/mail-accounts", location.origin);
@@ -1215,6 +1245,7 @@ export function registerCollab() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw invalid("email is not an address");
     if (String(b.password ?? "") === "wrong") throw new HttpError(422, "connection_failed", "Failed to connect", { detail: "IMAP imap.example.com:993: authentication failed (AUTHENTICATIONFAILED)" });
     if (String(b.imap_host ?? "").includes("unreachable")) throw new HttpError(422, "connection_failed", "IMAP: dial tcp: lookup unreachable: no such host");
+    const since = b.history ? historySince((b.history as { since?: unknown }).since) : undefined;
     const s = state(ctx.ws);
     if (s.accounts.some((a) => a.email.toLowerCase() === email.toLowerCase())) throw new HttpError(409, "account_conflict", "That address is already connected in this workspace.");
     const me = db.meId;
@@ -1263,6 +1294,7 @@ export function registerCollab() {
     };
     s.accounts.push(a);
     for (const [n, role] of [["Inbox", "inbox"], ["Sent", "sent"], ["Drafts", "drafts"], ["Archive", "archive"], ["Spam", "spam"], ["Trash", "trash"]] as [string, MailFolderRole][]) s.folders.push(folder(a.id, n, role));
+    if (since !== undefined) startHistory(ctx.ws, a, since, false);
     emit(ctx.ws, "collab.accounts", { account_id: a.id }, audienceOf(ctx.ws, a.id, []));
     setTimeout(() => {
       a.status = "active";
@@ -1512,30 +1544,7 @@ export function registerCollab() {
     requireCollab(ctx.ws);
     const a = accountOr404(ctx.ws, ctx.params.id);
     requireManage(ctx.ws, a);
-    const b = ctx.body;
-    let since: string | null = null;
-    if (b.since !== null && b.since !== undefined) {
-      const d = new Date(String(b.since));
-      if (Number.isNaN(d.getTime()) || d.getTime() > Date.now()) throw invalid("since must be a date in the past");
-      since = d.toISOString();
-    }
-    const history: MailHistory = {
-      status: "running",
-      since,
-      include_spam_trash: b.include_spam_trash === true,
-      requested_by: userRef(db.meId),
-      started_at: nowIso(),
-      finished_at: null,
-      reached: null,
-      imported: 0,
-      present: 0,
-      too_large: 0,
-      unreadable: 0,
-      total: a.provider === "microsoft" && since ? null : since ? 2_400 : 9_800,
-      last_error: "",
-    };
-    a.history = history;
-    runHistory(ctx.ws, a);
+    startHistory(ctx.ws, a, historySince(ctx.body.since), ctx.body.include_spam_trash === true);
     emit(ctx.ws, "collab.accounts", { account_id: a.id }, audienceOf(ctx.ws, a.id, []));
     return accountOut(ctx.ws, a);
   });
@@ -2025,7 +2034,14 @@ export function registerCollab() {
 
   get("/v1/collab/sidebar", (ctx) => {
     requireCollab(ctx.ws);
-    return state(ctx.ws).prefs[db.meId] ?? defaultSidebarPrefs();
+    const p = state(ctx.ws).prefs[db.meId] ?? defaultSidebarPrefs();
+    // Like the API: All inboxes is pinned once, when the member first sees two accounts.
+    if (p.auto_pins.includes("box:inbox") || visibleAccounts(ctx.ws).length < 2) return p;
+    const pinned = p.pinned.some((x) => x.kind === "box" && x.id === "inbox");
+    const pin = p.unified_inbox && !p.hidden.includes("box:inbox") && !pinned && p.pinned.length < 30;
+    const next = { ...p, pinned: pin ? [{ kind: "box" as const, id: "inbox" }, ...p.pinned] : p.pinned, auto_pins: [...p.auto_pins, "box:inbox"] };
+    state(ctx.ws).prefs[db.meId] = next;
+    return next;
   });
 
   put("/v1/collab/sidebar", (ctx) => {
@@ -2033,8 +2049,8 @@ export function registerCollab() {
     if (JSON.stringify(ctx.body).length > 16 * 1024) throw invalid("Sidebar preferences are limited to 16 KB");
     const body = ctx.body as Partial<SidebarPrefs>;
     const saved = state(ctx.ws).prefs[db.meId] ?? defaultSidebarPrefs();
-    // Like the API: a client that leaves out the numbers or the tabs keeps them as saved.
-    const p = normalizePrefs({ ...body, badges: body.badges ?? saved.badges, mail_tabs: body.mail_tabs ?? saved.mail_tabs });
+    // Like the API: a client that leaves out the numbers, the tabs or the pins added by themselves keeps them as saved.
+    const p = normalizePrefs({ ...body, badges: body.badges ?? saved.badges, mail_tabs: body.mail_tabs ?? saved.mail_tabs, auto_pins: body.auto_pins ?? saved.auto_pins });
     if (p.pinned.length > 30) throw invalid("At most 30 favorites");
     if (Object.keys(p.badges).length > 300) throw invalid("Numbers can be chosen for at most 300 rows.");
     if (p.mail_tabs.length > 30) throw invalid("The folder bar holds at most 30 tabs.");

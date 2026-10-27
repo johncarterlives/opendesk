@@ -337,6 +337,7 @@ type newMessage struct {
 	State          state
 	SentBy         *uuid.UUID
 	ThreadID       *uuid.UUID // a reply sent from opendesk stays in its conversation
+	Signals        []string   // the provider's own, besides the headers' (Gmail's tab)
 	// ID is the stored id to use (a draft saved again keeps its id); nil = a new one.
 	ID *uuid.UUID
 	// AI is the API key that saved a draft ("AI drafts"); nil = a person.
@@ -448,7 +449,7 @@ func (p *pass) insert(ctx context.Context, tx pgx.Tx, in *newMessage) (uuid.UUID
 		id, wid, p.a.ID, threadID, in.RemoteID, msgID, inReplyTo, refs, from, addressList(pm, "To"), addressList(pm, "Cc"),
 		addressList(pm, "Bcc"), addressList(pm, "Reply-To"), truncateRunes(pm.Subject, 998), cleanLine(text, 200), bodyHTML, text,
 		sentAt, in.State.Unread, in.State.Starred, in.State.Draft, atts, rawKey, locationOrEmpty(in.State.Location), in.SentBy, deliveredTo(pm),
-		size, mailSignals(pm), aiKey, aiClient).Scan(&inserted)
+		size, append(mailSignals(pm), in.Signals...), aiKey, aiClient).Scan(&inserted)
 	if db.IsNotFound(err) {
 		// Stored meanwhile (a sync and a send racing): keep that row.
 		if rawKey != "" {

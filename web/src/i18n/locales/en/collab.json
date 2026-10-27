@@ -431,7 +431,10 @@
     "connectButton": "Connect account",
     "connecting": "Signing in to both servers",
     "failed": "Could not sign in",
-    "nothingDeleted": "opendesk never deletes mail at your provider."
+    "nothingDeleted": "opendesk never deletes mail at your provider.",
+    "history": "Older mail",
+    "historyHint": "The last 30 days arrive first. Older mail follows in the background, and you can change this in the account's settings.",
+    "historyNone": "Only the last 30 days"
   },
   "detail": {
     "back": "Mail accounts",
@@ -586,6 +589,7 @@
     "unpin": "Unpin from favorites",
     "hide": "Hide from sidebar",
     "customize": "Customize sidebar",
+    "accountSettings": "Account settings",
     "more": "Options for {{name}}"
   },
   "address": {
@@ -808,7 +812,9 @@
       "runningPercent": "Importing history {{percent}}",
       "paused": "History paused",
       "limited": "History waiting for storage"
-    }
+    },
+    "changeHint": "Changing it starts the import again with the new range. Mail already imported stays.",
+    "changed": "Import range changed"
   },
   "categories": {
     "group": "Categories",

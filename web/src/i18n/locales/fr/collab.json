@@ -435,7 +435,10 @@
     "connectButton": "Connecter le compte",
     "connecting": "Connexion aux deux serveurs",
     "failed": "Impossible de se connecter",
-    "nothingDeleted": "opendesk ne supprime jamais de messages chez votre fournisseur."
+    "nothingDeleted": "opendesk ne supprime jamais de messages chez votre fournisseur.",
+    "history": "Anciens e-mails",
+    "historyHint": "Les 30 derniers jours arrivent d’abord. Les e-mails plus anciens suivent en arrière-plan, et vous pouvez changer ce choix dans les paramètres du compte.",
+    "historyNone": "Seulement les 30 derniers jours"
   },
   "detail": {
     "back": "Comptes de messagerie",
@@ -589,6 +592,7 @@
     "unpin": "Retirer des favoris",
     "hide": "Masquer dans la barre latérale",
     "customize": "Personnaliser la barre latérale",
+    "accountSettings": "Paramètres du compte",
     "more": "Options pour {{name}}"
   },
   "address": {

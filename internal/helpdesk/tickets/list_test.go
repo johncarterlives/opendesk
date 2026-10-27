@@ -59,7 +59,7 @@ func TestListFilters(t *testing.T) {
 		"assignee_id": ws.Admin.ID.String()})
 	t4 := createTicket(t, e, ws, map[string]any{"subject": "Buy cheap pills", "status": "open"})
 	e.Do("PATCH", "/v1/tickets/"+t4.ID.String(), agent, map[string]any{"spam": true}).Want(t, 200)
-	t5 := createTicket(t, e, ws, map[string]any{"subject": "Thanks!", "status": "solved", "contact": map[string]any{"email": "fan@example.com"}})
+	t5 := createTicket(t, e, ws, map[string]any{"subject": "Thanks!", "status": "solved", "contact": map[string]any{"email": "fan@example.com", "name": "Aysel Məmmədova"}})
 	// Another workspace's ticket never appears.
 	other := e.NewWorkspace()
 	createTicket(t, e, other, map[string]any{"subject": "Refund for order 1001"})
@@ -93,6 +93,9 @@ func TestListFilters(t *testing.T) {
 		{"q=sparkles", []uuid.UUID{t2.ID}}, // message body search
 		{"q=" + url.QueryEscape(fmt.Sprintf("#%d", t3.Number)), []uuid.UUID{t3.ID}},
 		{"q=" + fmt.Sprint(t5.Number), []uuid.UUID{t5.ID}},
+		{"q=aysel", []uuid.UUID{t5.ID}},                                 // customer name
+		{"q=" + url.QueryEscape("Məmməd"), []uuid.UUID{t5.ID}},          // prefix on customer name
+		{"q=" + url.QueryEscape("fan@example.com"), []uuid.UUID{t5.ID}}, // customer email
 		{"q=nothingmatches", []uuid.UUID{}},
 	}
 	for _, c := range cases {
