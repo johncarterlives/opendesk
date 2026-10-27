@@ -1,5 +1,5 @@
-import type { SupportChannelConnection, SupportChannelDestination, SupportChannelProvider } from "@/lib/api/types";
-import { del, get, invalid, notFound, patch, post, respond } from "../router";
+import type { SupportChannelConnection, SupportChannelDelivery, SupportChannelDestination, SupportChannelProvider } from "@/lib/api/types";
+import { del, get, invalid, notFound, paginate, patch, post, respond } from "../router";
 import { nowIso, uuid } from "../util";
 
 const providers: SupportChannelProvider[] = [
@@ -57,11 +57,25 @@ const health = (provider: string) =>
     ? { health_status: "action_required" as const, health_detail: "Credentials work. Verify the Events API, interactivity and /opendesk request URLs in Slack." }
     : { health_status: "healthy" as const, health_detail: provider === "discord" ? "Discord's interactions endpoint and commands are configured." : "Telegram's webhook is configured and accepting updates." };
 const destinations: SupportChannelDestination[] = [];
+const deliveries: SupportChannelDelivery[] = [
+  { event_seq: 1842, event_type: "ticket.created", ticket_number: 284, status: "queued", attempts: 0, last_error: "", created_at: new Date(Date.now() - 2 * 60_000).toISOString(), updated_at: new Date(Date.now() - 2 * 60_000).toISOString() },
+  { event_seq: 1841, event_type: "message.created", ticket_number: 283, status: "retrying", attempts: 2, last_error: "", created_at: new Date(Date.now() - 8 * 60_000).toISOString(), updated_at: new Date(Date.now() - 45_000).toISOString() },
+  { event_seq: 1840, event_type: "ticket.updated", ticket_number: 282, status: "failed", attempts: 8, last_error: "Couldn't deliver to the provider.", created_at: new Date(Date.now() - 23 * 60_000).toISOString(), updated_at: new Date(Date.now() - 10 * 60_000).toISOString() },
+  { event_seq: 1839, event_type: "ticket.created", ticket_number: 281, status: "delivered", attempts: 1, last_error: "", created_at: new Date(Date.now() - 36 * 60_000).toISOString(), updated_at: new Date(Date.now() - 35 * 60_000).toISOString(), delivered_at: new Date(Date.now() - 35 * 60_000).toISOString() },
+];
 
 export function registerSupportChannels() {
   get("/v1/support-channels/providers", () => ({ data: providers }));
   get("/v1/support-channels/connections", () => ({ data: connections }));
   get("/v1/support-channels/destinations", () => ({ data: destinations }));
+  get("/v1/support-channels/deliveries", (ctx) => paginate(ctx, deliveries));
+  post("/v1/support-channels/deliveries/:event_seq/retry", (ctx) => {
+    const row = deliveries.find((delivery) => delivery.event_seq === Number(ctx.params.event_seq));
+    if (!row) throw notFound("Support channel delivery");
+    if (row.status !== "failed") throw invalid("Only failed deliveries can be retried.");
+    Object.assign(row, { status: "queued" as const, updated_at: nowIso() });
+    return respond(202, { event_seq: row.event_seq, status: row.status });
+  });
   post("/v1/support-channels/providers/:provider/accounts", (ctx) => {
     if (ctx.params.provider !== "discord") throw invalid("This provider does not have selectable accounts.");
     if (!String((ctx.body.credentials as Record<string, string> | undefined)?.bot_token ?? "").trim()) throw invalid("Couldn't load accounts from the provider.");
@@ -130,6 +144,7 @@ export function registerSupportChannels() {
       external_channel_name: String(ctx.body.external_channel_name ?? "").trim(),
       enabled: true,
       include_notes: ctx.body.include_notes === true,
+      message_limit: typeof ctx.body.message_limit === "number" ? ctx.body.message_limit : 3500,
       created_at: nowIso(),
     };
     destinations.push(row);

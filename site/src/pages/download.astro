@@ -12,13 +12,20 @@ const release = await getDesktopRelease();
 // Before the first release there are no files: the page says so instead of linking to them.
 const published = await isDesktopPublished();
 const DOCS = `${LINKS.docs}/guides/desktop-app/`;
+// A system with no download yet (left out of every release so far) says it is coming.
+// Without version.json the links are shown for all three.
+const ships = (os: DesktopOs) => !release || release.platforms.includes(os);
 
 // The hero's button for each system. Mac is the default until the script knows better.
-const picks: { os: DesktopOs; glyph: BrandName; label: string; href: string; meta: string }[] = [
-  { os: 'mac', glyph: 'apple', label: 'Download for Mac', href: A.mac.url, meta: 'macOS 13 or later · Apple silicon and Intel' },
-  { os: 'windows', glyph: 'windows', label: 'Download for Windows', href: A.windows.url, meta: 'Windows 10 or later · x64 and arm64' },
-  { os: 'linux', glyph: 'linux', label: 'Download for Linux', href: A.appImageX64.url, meta: 'AppImage for x64 · .deb files below' },
-];
+const picks: { os: DesktopOs; glyph: BrandName | null; label: string; href: string; meta: string }[] = (
+  [
+    { os: 'mac', glyph: 'apple', name: 'Mac', label: 'Download for Mac', href: A.mac.url, meta: 'macOS 13 or later · Apple silicon and Intel' },
+    { os: 'windows', glyph: 'windows', name: 'Windows', label: 'Download for Windows', href: A.windows.url, meta: 'Windows 10 or later · x64 and arm64' },
+    { os: 'linux', glyph: 'linux', name: 'Linux', label: 'Download for Linux', href: A.appImageX64.url, meta: 'AppImage for x64 · .deb files below' },
+  ] as const
+).map(({ name, ...p }) =>
+  ships(p.os) ? p : { os: p.os, glyph: null, label: 'Open opendesk in your browser', href: LINKS.login, meta: `The ${name} app is coming soon` },
+);
 
 interface Card {
   os: DesktopOs;
@@ -78,7 +85,7 @@ const appJsonLd = {
   applicationCategory: 'BusinessApplication',
   operatingSystem: 'macOS 13 or later, Windows 10 or later, Linux',
   url: new URL('/download/', SITE.url).toString(),
-  ...(published ? { downloadUrl: [A.mac.url, A.windows.url, A.appImageX64.url, A.appImageArm64.url, A.debAmd64.url, A.debArm64.url] } : {}),
+  ...(published ? { downloadUrl: Object.values(A).filter((a) => ships(a.os)).map((a) => a.url) } : {}),
   ...(release ? { softwareVersion: release.version, releaseNotes: release.notesUrl, datePublished: release.date.slice(0, 10) } : {}),
   license: 'https://www.apache.org/licenses/LICENSE-2.0',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -116,7 +123,7 @@ const appJsonLd = {
             <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               {picks.map((p) => (
                 <a href={p.href} class="btn btn-lg min-w-[230px] bg-white text-[#0a0a0a] shadow-[0_10px_30px_-10px_rgb(10_30_80/0.5)] hover:bg-white/90" data-pick={p.os} hidden={p.os !== 'mac'}>
-                  <Icon name={p.glyph} size={16} />{p.label}
+                  {p.glyph ? <><Icon name={p.glyph} size={16} />{p.label}</> : <>{p.label}<Icon name="arrowRight" size={15} /></>}
                 </a>
               ))}
               <a href="#platforms" class="btn btn-lg bg-white/10 text-white ring-1 ring-white/30 backdrop-blur-md hover:bg-white/20">Other platforms<Icon name="chevronDown" size={15} /></a>
@@ -172,19 +179,19 @@ const appJsonLd = {
                 <dd class="text-[14.5px] leading-relaxed text-body">{v}</dd>
               </div>
             ))}
-            {c.file && (
+            {c.file && ships(c.os) && (
               <div class="grid grid-cols-[92px_1fr] gap-4 border-t border-line py-3">
                 <dt class="pt-[3px] font-mono text-[10.5px] uppercase tracking-[0.08em] text-subtle">File</dt>
                 <dd class="truncate font-mono text-[12.5px] leading-[1.7rem] text-fg">{c.file}</dd>
               </div>
             )}
           </dl>
-          {!published && (
+          {(!published || !ships(c.os)) && (
             <div class="border-t border-line p-4 md:p-5">
               <span class="btn btn-ghost pointer-events-none w-full text-muted" aria-disabled="true">Coming soon</span>
             </div>
           )}
-          {published && <div class={`border-t border-line p-4 md:p-5 ${c.downloads.length > 1 ? 'grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2' : ''}`}>
+          {published && ships(c.os) && <div class={`border-t border-line p-4 md:p-5 ${c.downloads.length > 1 ? 'grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2' : ''}`}>
             {c.downloads.length > 1
               ? c.downloads.map((d) => (
                   <a href={d.href} class="btn btn-ghost h-10 justify-between px-3.5 text-[13.5px]"><span class="min-w-0 truncate">{d.label}</span><Icon name="download" size={14} class="shrink-0 text-subtle" /></a>

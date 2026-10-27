@@ -26,6 +26,8 @@ export const eventGroups: { label: ParseKeys<"ui">; events: string[] }[] = [
   { label: "webhookGroups.mailboxes", events: ["mailbox.created", "mailbox.updated", "mailbox.deleted"] },
   { label: "webhookGroups.members", events: ["member.added", "member.updated", "member.removed"] },
   { label: "webhookGroups.knowledgeBase", events: ["kb_article.created", "kb_article.updated", "kb_article.deleted", "kb_collection.created", "kb_collection.updated", "kb_collection.deleted"] },
+  { label: "webhookGroups.changelog", events: ["changelog_entry.created", "changelog_entry.updated", "changelog_entry.deleted"] },
+  { label: "webhookGroups.wiki", events: ["wiki_page.created", "wiki_page.updated", "wiki_page.moved", "wiki_page.deleted"] },
   { label: "webhookGroups.savedReplies", events: ["saved_reply.created", "saved_reply.updated", "saved_reply.deleted"] },
   { label: "webhookGroups.views", events: ["view.created", "view.updated", "view.deleted"] },
   { label: "webhookGroups.automations", events: ["automation.created", "automation.updated", "automation.deleted"] },

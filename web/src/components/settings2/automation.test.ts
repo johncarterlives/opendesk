@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { actionLabel, actionNeedsValue, aiActions, fieldLabel, offered, opLabel, opsFor, sentimentLabel, triggerLabel } from "./automation";
+import { actionLabel, actionNeedsValue, aiActions, fieldLabel, isPhraseOp, offered, opLabel, opsFor, phrases, sentimentLabel, triggerLabel, validPhrases } from "./automation";
 
 describe("automation AI helpers", () => {
   it("offers AI actions only when AI is on, but keeps one in use", () => {
@@ -29,5 +29,31 @@ describe("automation labels", () => {
     expect(Object.keys(fieldLabel)).toContain("sentiment");
     expect(Object.keys(actionLabel).at(-1)).toBe("ai_triage");
     expect(actionLabel.set_field).toBe("Set field");
+    expect(opLabel.any).toBe("contains any of");
+    expect(opLabel.none).toBe("contains none of");
+  });
+});
+
+describe("phrase lists", () => {
+  it("offers contains any of and none of on text fields and the address written to only", () => {
+    for (const f of ["subject", "body", "from_email", "received_at"] as const) expect(opsFor(f)).toEqual(expect.arrayContaining(["any", "none"]));
+    for (const f of ["status", "channel", "tag", "sentiment", "ai_decide"] as const) expect(opsFor(f)).not.toContain("any");
+    expect(isPhraseOp("none")).toBe(true);
+    expect(isPhraseOp("not_contains")).toBe(false);
+  });
+
+  it("reads one phrase per line, trimmed, without empty lines", () => {
+    expect(phrases("  Your order has shipped \r\n\n\tnewsletter  \n   \ninvoice ")).toEqual(["Your order has shipped", "newsletter", "invoice"]);
+    expect(phrases(" \n ")).toEqual([]);
+  });
+
+  it("takes 1 to 100 phrases of up to 500 characters, 5000 in all", () => {
+    expect(validPhrases("refund")).toBe(true);
+    expect(validPhrases(" \n \n ")).toBe(false);
+    expect(validPhrases(Array.from({ length: 100 }, (_, i) => `p${i}`).join("\n"))).toBe(true);
+    expect(validPhrases(Array.from({ length: 101 }, (_, i) => `p${i}`).join("\n"))).toBe(false);
+    expect(validPhrases("x".repeat(500))).toBe(true);
+    expect(validPhrases("x".repeat(501))).toBe(false);
+    expect(validPhrases(Array.from({ length: 11 }, () => "x".repeat(500)).join("\n"))).toBe(false);
   });
 });

@@ -29,6 +29,7 @@ import { updateWorkspace, useSession } from "../session";
 import { cachedTicket, forgetTicket, patchTicketEverywhere, removeTicketEverywhere, teamsOf } from "../ticketCache";
 import { markHidden, unmarkHidden } from "./store";
 import { applyCollabEvent } from "../collab/cache";
+import { applyWikiEvent } from "../wiki/events";
 
 // Events that can tick off a setup checklist step (contracts/api.md "Onboarding").
 const onboardingResources = new Set(["mailbox", "member", "tag", "kb_article", "workspace"]);
@@ -101,12 +102,16 @@ function refreshImported(qc: QueryClient) {
   });
 }
 
-/** Coalesce bursts (bulk edits) into one counts refetch, the sidebar's numbers of every workspace with it. */
+/**
+ * Coalesce bursts (bulk edits, imports, auto-close) into one counts refetch every two seconds at
+ * most, the sidebar's numbers of every workspace with it. A refetch still running is left to
+ * finish and the next one starts after it, so the numbers settle on a read after the last event.
+ */
 function refreshCounts(qc: QueryClient) {
-  later("counts", 250, () => {
-    void qc.invalidateQueries({ queryKey: qk.counts });
-    void qc.invalidateQueries({ queryKey: qk.of("tickets", "everywhere") });
-    void qc.invalidateQueries({ queryKey: qk.overview });
+  later("counts", 2000, function refetch() {
+    const keys = [qk.counts, qk.of("tickets", "everywhere"), qk.overview];
+    if (keys.some((queryKey) => qc.isFetching({ queryKey }) > 0)) return later("counts", 2000, refetch);
+    for (const queryKey of keys) void qc.invalidateQueries({ queryKey }, { cancelRefetch: false });
   });
 }
 
@@ -425,6 +430,11 @@ function applyInScope(qc: QueryClient, env: Envelope, ctx: ApplyContext): void {
     return;
   }
 
+  if (resource === "wiki_page") {
+    applyWikiEvent(qc, verb, d);
+    return;
+  }
+
   if (resource === "kb_article") {
     void qc.invalidateQueries({ queryKey: qk.kbArticleLists });
     if (verb === "deleted") qc.removeQueries({ queryKey: qk.kbArticle(d.kb_article_id as string) });
@@ -433,6 +443,17 @@ function applyInScope(qc: QueryClient, env: Envelope, ctx: ApplyContext): void {
       qc.setQueryData(qk.kbArticle(a.id), a);
     }
     void qc.invalidateQueries({ queryKey: qk.kbCollections });
+    return;
+  }
+
+  if (resource === "changelog_entry") {
+    if (verb === "deleted") qc.removeQueries({ queryKey: qk.changelogEntry(d.changelog_entry_id as string) });
+    else {
+      const e = d.changelog_entry as { id: string } | undefined;
+      if (e) qc.setQueryData(qk.changelogEntry(e.id), e);
+    }
+    void qc.invalidateQueries({ queryKey: qk.changelogEntryLists });
+    void qc.invalidateQueries({ queryKey: qk.changelogCategories });
     return;
   }
 

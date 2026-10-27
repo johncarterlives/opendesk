@@ -22,7 +22,9 @@ var (
 	AutomationTriggers = []string{jobs.TriggerTicketCreated, jobs.TriggerCustomerReplied, jobs.TriggerAgentReplied, jobs.TriggerTicketUpdated}
 	ConditionFields    = []string{"subject", "body", "from_email", "channel", "mailbox_id", "priority", "severity", "status", "tag", "sentiment", "ai_decide",
 		"assignee_id", "team_id", "brand_id", "widget_id", "received_at"}
-	ConditionOps = []string{"contains", "not_contains", "equals", "not_equals"}
+	ConditionOps = []string{"contains", "not_contains", "equals", "not_equals", "any", "none"}
+	// PhraseFields take the phrase ops any and none: a list of phrases, one per line.
+	PhraseFields = []string{"subject", "body", "from_email", "received_at", "tag"}
 	ActionTypes  = []string{"set_status", "set_priority", "set_severity", "assign_user", "assign_team", "add_tag", "remove_tag", "send_reply", "add_note", "mark_spam", "ai_triage", "set_field", "set_reply_address"}
 	// Sentiments are the values triage writes to custom.ai_sentiment (contracts/ai.md).
 	Sentiments = []string{"positive", "neutral", "negative", "frustrated"}
@@ -33,12 +35,17 @@ const (
 	MaxActions    = 20
 	// MaxAIDecideConditions bounds the ai_decide conditions of one automation.
 	MaxAIDecideConditions = 3
+	// MaxConditionValue bounds a condition value, and each phrase of an any or none list.
+	MaxConditionValue = 500
+	// MaxPhrases and MaxPhraseList bound the phrase list of an any or none condition.
+	MaxPhrases    = 100
+	MaxPhraseList = 5000
 )
 
 type Condition struct {
 	Field string `json:"field" maxLength:"60" doc:"subject, body, from_email, channel, mailbox_id, priority, severity, status, tag, sentiment, ai_decide, assignee_id, team_id, brand_id, widget_id, received_at, field.<key> (ticket custom field) or contact.field.<key>"`
 	Op    string `json:"op" enum:"contains,not_contains,equals,not_equals,eq,ne,gt,gte,lt,lte,any,all,none,set,not_set" doc:"eq is an alias of equals, ne of not_equals; custom fields take the ops of their type"`
-	Value string `json:"value" maxLength:"500"`
+	Value string `json:"value" maxLength:"5000" doc:"up to 500 characters; any and none on subject, body, from_email, received_at and tag: up to 100 phrases, one per line"`
 	// Question is the yes/no question of an ai_decide condition (contracts/ai.md "Automations").
 	Question string `json:"question,omitempty" maxLength:"300" doc:"ai_decide only: a yes/no question about the ticket"`
 }
@@ -115,7 +122,16 @@ func ValidateConditions(ctx context.Context, q db.Querier, wid uuid.UUID, cs []C
 		if !slices.Contains(ConditionOps, c.Op) {
 			return nil, httpx.Validation("condition op must be one of " + strings.Join(ConditionOps, ", "))
 		}
-		if len([]rune(c.Value)) > 500 {
+		if c.Op == "any" || c.Op == "none" {
+			if !slices.Contains(PhraseFields, c.Field) {
+				return nil, httpx.Validation("any and none conditions take " + strings.Join(PhraseFields, ", "))
+			}
+			v, err := phraseList(c.Value)
+			if err != nil {
+				return nil, err
+			}
+			c.Value = v
+		} else if utf8.RuneCountInString(c.Value) > MaxConditionValue {
 			return nil, httpx.Validation("condition values must be 500 characters or less")
 		}
 		exact := c.Op == "equals" || c.Op == "not_equals"
@@ -178,12 +194,47 @@ func ValidateConditions(ctx context.Context, q db.Querier, wid uuid.UUID, cs []C
 			c.Value = id.String()
 		case "received_at":
 			// The exact address the customer wrote to.
-			if c.Op != "equals" && c.Op != "not_equals" && c.Op != "contains" {
-				return nil, httpx.Validation("received_at conditions use equals, not_equals or contains")
+			if !slices.Contains([]string{"equals", "not_equals", "contains", "any", "none"}, c.Op) {
+				return nil, httpx.Validation("received_at conditions use equals, not_equals, contains, any or none")
 			}
 			c.Value = strings.ToLower(strings.TrimSpace(c.Value))
 		}
 		out = append(out, c)
+	}
+	return out, nil
+}
+
+// Phrases splits the value of an any or none condition: one phrase per line, each
+// trimmed, empty lines dropped.
+func Phrases(v string) []string {
+	var out []string
+	for _, p := range strings.Split(v, "\n") {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// phraseList checks the phrase list of an any or none condition and returns it one
+// phrase per line: 1 to MaxPhrases phrases of at most MaxConditionValue characters,
+// MaxPhraseList characters in all.
+func phraseList(v string) (string, error) {
+	list := Phrases(v)
+	if len(list) == 0 {
+		return "", httpx.Validation("any and none conditions need at least one phrase, one per line")
+	}
+	if len(list) > MaxPhrases {
+		return "", httpx.Validation("any and none conditions take at most 100 phrases")
+	}
+	for _, p := range list {
+		if utf8.RuneCountInString(p) > MaxConditionValue {
+			return "", httpx.Validation("each phrase must be 500 characters or less")
+		}
+	}
+	out := strings.Join(list, "\n")
+	if utf8.RuneCountInString(out) > MaxPhraseList {
+		return "", httpx.Validation("a phrase list must be 5000 characters or less")
 	}
 	return out, nil
 }

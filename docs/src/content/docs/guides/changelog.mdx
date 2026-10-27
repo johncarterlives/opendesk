@@ -1,0 +1,160 @@
+---
+title: Changelog
+description: Publish product updates on your help center, with categories, scheduled dates, an RSS feed and an API for release tooling and your own product.
+---
+
+import Steps from '../../../components/Steps.astro';
+import Step from '../../../components/Step.astro';
+import Callout from '../../../components/Callout.astro';
+import Fold from '../../../components/Fold.astro';
+
+The changelog is where you tell customers what changed in your product: new features, improvements and fixes. Each update is an **entry** with a title, a body and a date. Published entries appear on your [help center](/guides/knowledge-base/#the-help-center) at `/changelog`, in an RSS feed, and through a public JSON API, so you can post them from your release tooling and show them inside your own product.
+
+Open **Knowledge base** in the sidebar and switch to **Changelog**, next to **Articles**. Agents, admins and owners write entries; viewers can read them.
+
+## Write an entry
+
+<Steps>
+<Step title="Start an entry">
+
+Start a new entry and give it a **title**, such as "Export reports as CSV". The title is required, up to 200 characters.
+
+</Step>
+<Step title="Write the body">
+
+Write what changed and why it matters. The body is rich text, like an article: headings, lists, links, code and images. Drop images straight into the text.
+
+The **excerpt** is the short summary shown in lists, the feed and the API. Leave it empty and it is taken from the start of the body; write one (up to 300 characters) to choose the words yourself.
+
+</Step>
+<Step title="Pick categories">
+
+Add up to 5 **categories**, such as **New**, **Improved** or **Fixed**. Categories are free names of up to 32 characters: type a new one, or pick one your team already uses. Each name keeps its own colour everywhere it shows.
+
+</Step>
+<Step title="Publish it">
+
+Save it as a draft while you work on it, and publish it when it is ready. Drafts are visible only to your team.
+
+</Step>
+</Steps>
+
+<Callout>
+
+- Entry bodies are sanitized before they are stored, so only safe formatting reaches readers.
+- Each entry has a **slug**, the end of its address on the help center (`/changelog/<slug>`). It is taken from the title unless you set one, and must be unique in the workspace. Changing it breaks old links.
+- To take an entry down, unpublish it: it goes back to being a draft and keeps its date.
+
+</Callout>
+
+## Categories
+
+Categories help readers find the kind of update they care about. On the help center, the changelog lists the categories in use, and choosing one shows only its entries (`/changelog?category=Fixed`). In the app, filter the list the same way.
+
+Names are compared without case, so "fixed" and "Fixed" are the same category, and the second spelling on one entry is dropped. Keep a short, steady set, such as **New**, **Improved** and **Fixed**, so the filter stays useful.
+
+## Dates and scheduling
+
+Every entry carries a date, its **published at**. It is the date readers see, and the changelog is ordered by it, newest first.
+
+- Leave the date empty and it is set when the entry is first published. Unpublishing and publishing again keeps it, so republishing a fix does not move the entry to the top.
+- Set a date in the past to backfill updates you shipped before you started the changelog.
+- Set a date in the future on a published entry to **schedule** it. Nothing public shows it before then: not the help center, the feed, the sitemap or the public API. At that time it appears on its own, with nothing else to do.
+
+In the app, the list can show scheduled entries on their own, so you can see what is coming.
+
+## Brands
+
+With more than one [brand](/guides/brands-and-widgets/), pick an entry's **brand** to show it on that brand's help center only. An entry with no brand shows on every brand's help center. Deleting a brand deletes its entries.
+
+## Where it shows
+
+A brand's changelog is on its help center, so its help center must be turned on ([Turn it on for a brand](/guides/knowledge-base/#turn-it-on-for-a-brand)). Once there is a published entry:
+
+| Page | What it shows |
+| --- | --- |
+| `/changelog` | The brand's entries and those of every brand, newest first, 10 a page, with the category filter |
+| `/changelog/<slug>` | One entry, with its date, categories and a link to share it |
+| `/changelog/feed.xml` | The feed of the latest 30 entries |
+| `/` | The help center's home page shows the latest three updates, and its header links the changelog |
+
+The changelog follows the help center's address, so with a custom domain it is at `https://help.example.com/changelog` ([Help center addresses](/guides/help-center-addresses/)). Entries are listed in the help center's sitemap and carry structured data, so search engines find them. Pages are cached for about a minute, so a new entry shows within a minute.
+
+### The feed
+
+`/changelog/feed.xml` is an Atom feed, which every RSS reader understands. Customers can subscribe in their feed reader, and tools that post feeds to Slack or email can follow it. The changelog page links the feed.
+
+## Publish from your release tooling
+
+You can post entries from CI, a release script or a deploy hook with an [API key](/api/authentication/#api-keys). Create a key in **Settings, API keys** with the `changelog:write` scope (and `changelog:read` if the script also reads entries).
+
+Create a draft as part of the release:
+
+```sh
+curl https://api.opendesk.sh/v1/changelog/entries \
+  -H "Authorization: Bearer $OPENDESK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Export reports as CSV",
+    "body_html": "<p>Every report now has an <strong>Export</strong> button.</p>",
+    "categories": ["New"]
+  }'
+```
+
+The answer is the entry, with its `id`. Publish it once the release is out:
+
+```sh
+curl -X PATCH https://api.opendesk.sh/v1/changelog/entries/$ENTRY_ID \
+  -H "Authorization: Bearer $OPENDESK_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "published" }'
+```
+
+To publish in one step, send `"status": "published"` when you create it. Add `"published_at"` to date it, or to schedule it for a launch. Send an `Idempotency-Key` header with the create so a retried CI job does not post the entry twice ([Idempotency](/api/idempotency/)). The full reference is the [Changelog API](/api/resources/changelog/).
+
+## Show updates in your product
+
+The public changelog route needs no credentials, so your website or app can fetch it and show a "What's new" list:
+
+```sh
+curl "https://api.opendesk.sh/v1/public/help/margin/changelog?limit=5"
+```
+
+```json
+{
+  "data": [
+    {
+      "id": "0192f0c4-...",
+      "title": "Export reports as CSV",
+      "slug": "export-reports-as-csv",
+      "excerpt": "Every report now has an Export button.",
+      "body_html": "<p>Every report now has an <strong>Export</strong> button.</p>",
+      "categories": ["New"],
+      "status": "published",
+      "published_at": "2026-10-20T09:00:00Z",
+      "author": { "id": "0192f0c5-...", "name": "Ana", "avatar_url": null },
+      "brand_id": null,
+      "created_at": "2026-10-20T08:40:00Z",
+      "updated_at": "2026-10-20T09:00:00Z"
+    }
+  ],
+  "next_cursor": "eyJ..."
+}
+```
+
+`margin` is the brand's help center slug, its **Default address** on the brand's **Help center** tab. The route returns the same entries as the help center: published, dated now or earlier, of that brand or of every brand. Filter by `?category=`, and page with `?limit=` and `?cursor=`. Link each entry to `/changelog/<slug>` on your help center for the full page. See [Public help center](/api/resources/public/#changelog).
+
+<Fold>
+
+## Changes in the app
+
+The changelog updates live for your team: entries created, changed or deleted by someone else, or by an API key, show up at once. Webhooks receive the same `changelog_entry.created`, `changelog_entry.updated` and `changelog_entry.deleted` events ([Events catalog](/api/events/)), so you can, for example, post each new update to a chat channel.
+
+</Fold>
+
+## Related
+
+- [Knowledge base and help center](/guides/knowledge-base/)
+- [Help center addresses](/guides/help-center-addresses/)
+- [Changelog API](/api/resources/changelog/)
+- [Public help center API](/api/resources/public/#changelog)

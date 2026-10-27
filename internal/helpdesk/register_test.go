@@ -49,6 +49,11 @@ func TestRegisterAll(t *testing.T) {
 		"/v1/kb/collections/{id}":          {"get", "patch", "delete"},
 		"/v1/kb/articles":                  {"get", "post"},
 		"/v1/kb/articles/{id}":             {"get", "patch", "delete"},
+		"/v1/wiki/pages":                   {"get", "post"},
+		"/v1/wiki/pages/{id}":              {"get", "patch", "delete"},
+		"/v1/wiki/pages/{id}/move":         {"post"},
+		"/v1/wiki/pages/{id}/revisions":    {"get"},
+		"/v1/wiki/search":                  {"get"},
 		"/v1/search":                       {"get"},
 		"/v1/reports/overview":             {"get"},
 		"/v1/attachments":                  {"post"},
@@ -80,6 +85,8 @@ func TestRegisterAll(t *testing.T) {
 		"/v1/imports/{id}/resume":                             {"post"},
 		"/v1/imports/{id}/undo":                               {"post"},
 		"/v1/imports/{id}/credentials":                        {"delete"},
+		"/v1/wiki/pages/{id}/revisions/{revisionId}":          {"get"},
+		"/v1/wiki/pages/{id}/revisions/{revisionId}/restore":  {"post"},
 	}
 	for path, methods := range want {
 		for _, m := range methods {

@@ -1,6 +1,6 @@
-// Package kb is the knowledge base: collections and articles for agents, and the public
-// help center of each brand (published articles of that brand or of every brand, when the
-// brand's help center is on).
+// Package kb is the knowledge base: collections and articles for agents, the changelog, and
+// the public help center of each brand (published articles and changelog entries of that
+// brand or of every brand, when the brand's help center is on).
 package kb
 
 import (
@@ -14,5 +14,6 @@ import (
 func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	registerCollections(d, api)
 	registerArticles(d, api)
+	registerChangelog(d, api)
 	registerPublic(d, api)
 }

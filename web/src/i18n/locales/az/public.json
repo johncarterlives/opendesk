@@ -26,7 +26,22 @@
     "results_one": "{{count}} nəticə",
     "results_other": "{{count}} nəticə",
     "theme_light": "Açıq temaya keç",
-    "theme_dark": "Tünd temaya keç"
+    "theme_dark": "Tünd temaya keç",
+    "changelog": "Dəyişikliklər jurnalı",
+    "changelog_subtitle": "Yeni funksiyalar, təkmilləşdirmələr və düzəlişlər.",
+    "latest_updates": "Son yeniləmələr",
+    "all_updates": "Bütün yeniləmələr",
+    "all_categories": "Hamısı",
+    "categories": "Kateqoriyalar",
+    "changelog_empty_title": "Hələ yeniləmə yoxdur",
+    "changelog_empty_body": "Yeniləmələr dərc olunduqdan sonra burada görünəcək.",
+    "category_empty_title": "“{{category}}” üzrə yeniləmə yoxdur",
+    "entry_not_found_title": "Yeniləmə tapılmadı",
+    "entry_not_found_body": "O, silinmiş və ya dərcdən çıxarılmış ola bilər.",
+    "newer": "Daha yeni yeniləmələr",
+    "older": "Daha köhnə yeniləmələr",
+    "feed": "RSS lenti",
+    "permalink": "Bu yeniləmənin linki"
   },
   "csat": {
     "page_title": "Söhbətinizi qiymətləndirin",

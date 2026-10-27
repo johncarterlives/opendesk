@@ -538,6 +538,9 @@ func TestAutomations(t *testing.T) {
 		{"name": "x", "trigger": "ticket_created", "conditions": []map[string]any{{"field": "mailbox_id", "op": "equals", "value": ids.New().String()}}, "actions": []map[string]any{{"type": "add_tag", "value": "a"}}},
 		{"name": "x", "trigger": "ticket_created", "conditions": []map[string]any{{"field": "assignee_id", "op": "equals", "value": other.Agent.ID.String()}}, "actions": []map[string]any{{"type": "add_tag", "value": "a"}}},
 		{"trigger": "ticket_created", "actions": []map[string]any{{"type": "add_tag", "value": "a"}}},
+		{"name": "x", "trigger": "ticket_created", "conditions": []map[string]any{{"field": "subject", "op": "any", "value": " \n \n "}}, "actions": []map[string]any{{"type": "add_tag", "value": "a"}}},
+		{"name": "x", "trigger": "ticket_created", "conditions": []map[string]any{{"field": "priority", "op": "none", "value": "high"}}, "actions": []map[string]any{{"type": "add_tag", "value": "a"}}},
+		{"name": "x", "trigger": "ticket_created", "conditions": []map[string]any{{"field": "body", "op": "any", "value": strings.Repeat("x", 5001)}}, "actions": []map[string]any{{"type": "add_tag", "value": "a"}}},
 	}
 	for i, b := range bad {
 		if r := e.Do("POST", "/v1/automations", ad, b); r.Status != 422 {
@@ -572,5 +575,14 @@ func TestAutomations(t *testing.T) {
 		if !slices.Contains(types, w) {
 			t.Errorf("missing %s", w)
 		}
+	}
+
+	// A phrase list is kept one trimmed phrase per line.
+	var phrased automation
+	e.Do("POST", "/v1/automations", ad, map[string]any{"name": "Carrier mail", "trigger": "ticket_created",
+		"conditions": []map[string]any{{"field": "subject", "op": "any", "value": " Your parcel has shipped \r\n\n newsletter \n"}},
+		"actions":    []map[string]any{{"type": "set_status", "value": "closed"}}}).Want(t, 201).JSON(t, &phrased)
+	if v := phrased.Conditions[0]["value"]; v != "Your parcel has shipped\nnewsletter" {
+		t.Fatalf("phrase list stored as %q", v)
 	}
 }

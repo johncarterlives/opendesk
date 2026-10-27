@@ -31,7 +31,24 @@ import {
   useTeamItems,
 } from "@/components/settings2/pickers";
 import { rowSpring } from "@/components/settings2/motion";
-import { actionLabel, actionNeedsValue, aiActions, aiFields, brandFields, fieldLabel, offered, opLabel, opsFor, teamFields, validProbability, validQuestion } from "@/components/settings2/automation";
+import {
+  MAX_PHRASES,
+  actionLabel,
+  actionNeedsValue,
+  aiActions,
+  aiFields,
+  brandFields,
+  fieldLabel,
+  isPhraseOp,
+  offered,
+  opLabel,
+  opsFor,
+  phrases,
+  teamFields,
+  validPhrases,
+  validProbability,
+  validQuestion,
+} from "@/components/settings2/automation";
 import { brandItems, teamItems, useBrands, useTeams } from "@/components/settings2/teams";
 import { AiIcon, useCostText } from "@/components/ai/bits";
 import { formatUsd } from "@/lib/format";
@@ -237,7 +254,15 @@ export default function AutomationEdit() {
 
   const set = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
   const condInvalid = (c: Rule) =>
-    isFieldRule(c) ? !fieldConditionComplete(c) : c.field === "ai_decide" ? !validProbability(c.value) || !validQuestion(c.question) : !c.value.trim();
+    isFieldRule(c)
+      ? !fieldConditionComplete(c)
+      : c.field === "ai_decide"
+        ? !validProbability(c.value) || !validQuestion(c.question)
+        : isPhraseOp(c.op)
+          ? !validPhrases(c.value)
+          : !c.value.trim();
+  /** A phrase list past the API's bounds; an empty one is a missing value. */
+  const overPhrases = (c: Rule) => !isFieldRule(c) && isPhraseOp(c.op) && phrases(c.value).length > 0 && !validPhrases(c.value);
   const actInvalid = (a: Action) =>
     a.type === "set_field"
       ? !a.field
@@ -245,7 +270,8 @@ export default function AutomationEdit() {
   const problems: string[] = [];
   if (!draft.name.trim()) problems.push(t("edit.problems.name"));
   if (!draft.actions.length) problems.push(t("edit.problems.action"));
-  if (draft.conditions.some(condInvalid)) problems.push(t("edit.problems.condition"));
+  if (draft.conditions.some((c) => condInvalid(c) && !overPhrases(c))) problems.push(t("edit.problems.condition"));
+  if (draft.conditions.some(overPhrases)) problems.push(t("edit.problems.phrases"));
   if (draft.actions.some(actInvalid)) problems.push(t("edit.problems.actionValue"));
 
   const rowMotion = {
@@ -505,9 +531,11 @@ function ConditionRow({
     }
   };
 
+  // A phrase list is taller than the row: the row lines up on its first line.
+  const list = !isFieldRule(c) && isPhraseOp(c.op);
   return (
-    <div className="flex flex-wrap items-center gap-2 px-4 py-2.5">
-      <span className="w-9 shrink-0 text-[12px] text-fg-4">{first ? t("edit.if") : t("edit.and")}</span>
+    <div className={cn("flex flex-wrap gap-2 px-4 py-2.5", list ? "items-start" : "items-center")}>
+      <span className={cn("w-9 shrink-0 text-[12px] text-fg-4", list && "leading-7")}>{first ? t("edit.if") : t("edit.and")}</span>
       <SinglePick
         items={fieldItems}
         value={c.field}
@@ -539,7 +567,8 @@ function ConditionRow({
         <Select<ConditionOp>
           size="sm"
           value={c.op}
-          onChange={(op) => onChange({ ...c, op })}
+          // Leaving a phrase list keeps its first phrase as the single value.
+          onChange={(op) => onChange({ ...c, op, value: isPhraseOp(c.op) && !isPhraseOp(op) ? (phrases(c.value)[0] ?? "") : c.value })}
           options={builtInOps.map((o) => ({ value: o, label: opLabel[o] }))}
           className="w-[150px]"
           aria-label={t("edit.operator")}
@@ -593,6 +622,23 @@ function ConditionValue({ c, invalid, onChange }: { c: Condition; invalid: boole
   const { teams } = useTeams();
   const { brands } = useBrands();
   const { data: widgets } = useQuery({ ...q.widgets(), enabled: c.field === "widget_id" });
+  if (isPhraseOp(c.op)) {
+    const n = phrases(c.value).length;
+    return (
+      <div>
+        <Textarea
+          rows={3}
+          value={c.value}
+          invalid={invalid && !validPhrases(c.value)}
+          aria-label={ts("edit.phrasesLabel", { field: fieldLabel[c.field] })}
+          placeholder={ts("edit.phrasesPlaceholder")}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn("min-h-[64px] text-[12.5px]", (c.field === "from_email" || c.field === "received_at") && "mono")}
+        />
+        <p className={cn("mt-1 text-[11.5px]", n > MAX_PHRASES ? "text-danger-fg" : "text-fg-3")}>{ts("edit.phrasesCount", { count: n, max: MAX_PHRASES })}</p>
+      </div>
+    );
+  }
   switch (c.field) {
     case "status":
       return <SinglePick items={statusItems()} value={c.value} onChange={onChange} placeholder={ts("edit.chooseStatus")} invalid={invalid} className="w-full" />;

@@ -57,6 +57,9 @@ type service struct {
 
 	// tickets is ticket email, for replies on tickets sent from an account ("Answering tickets").
 	tickets *email.TicketMail
+
+	// mailAI sorts mail into categories and suggests them ("Categories"); tests replace it.
+	mailAI mailAI
 }
 
 func newService(d *deps.Deps) *service {
@@ -71,6 +74,7 @@ func newService(d *deps.Deps) *service {
 	s.oauth = oauthClients(d.Cfg)
 	s.newProvider = s.defaultProvider
 	s.tickets = email.NewTicketMail(d)
+	s.mailAI = mailAIFor(d)
 	return s
 }
 
@@ -91,6 +95,7 @@ func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	s.registerCommentRoutes(api)
 	s.registerDetailRoutes(api)
 	s.registerSidebarRoutes(api)
+	s.registerCategoryRoutes(api)
 	r.Get("/v1/collab/attachments/{message_id}/{index}", s.attachmentHandler)
 	d.Overview.MailCounts = s.overviewCounts
 }
@@ -119,6 +124,7 @@ func RegisterWorkers(d *deps.Deps, w *river.Workers) {
 	river.AddWorker(w, &cleanupWorker{s: s})
 	river.AddWorker(w, &sendTicketReplyWorker{s: s})
 	river.AddWorker(w, &ticketAnswerWorker{s: s})
+	river.AddWorker(w, &categorizeWorker{s: s})
 }
 
 // Periodic returns this area's scheduled jobs: every minute, queue a sync for each due

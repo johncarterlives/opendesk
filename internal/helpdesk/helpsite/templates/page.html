@@ -28,10 +28,13 @@
 {{- if .Site.Image}}
 <meta property="og:image" content="{{.Site.Image}}">
 {{- end}}
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="{{if .LargeCard}}summary_large_image{{else}}summary{{end}}">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1b1c1f" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="{{.Site.Icon}}">
+{{- if .Site.Changelog}}
+<link rel="alternate" type="application/atom+xml" title="{{.Site.Title}} · {{.T.T "help.changelog"}}" href="{{.FeedURL}}">
+{{- end}}
 <link rel="preload" href="{{.Asset "geist-latin-wght-normal.woff2"}}" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="{{.Asset "help.css"}}">
 <script src="{{.Asset "boot.js"}}"></script>
@@ -48,6 +51,9 @@
       <bdi>{{.Site.Title}}</bdi>
     </a>
     <div class="hc-actions">
+      {{- if .Site.Changelog}}
+      <a class="hc-nav" href="{{.CategoryURL ""}}"{{if or (eq .Kind "changelog") (eq .Kind "entry")}} aria-current="page"{{end}}>{{.T.T "help.changelog"}}</a>
+      {{- end}}
       {{- if ne .Kind "home"}}{{if ne .Kind "search"}}
       {{template "search" (.SearchBox false)}}
       {{- end}}{{end}}
@@ -64,6 +70,8 @@
 {{- else if eq .Kind "collection"}}{{template "collection" .}}
 {{- else if eq .Kind "article"}}{{template "article" .}}
 {{- else if eq .Kind "search"}}{{template "searchpage" .}}
+{{- else if eq .Kind "changelog"}}{{template "changelog" .}}
+{{- else if eq .Kind "entry"}}{{template "entry" .}}
 {{- else}}{{template "notfound" .}}{{end}}
 </main>
 <footer class="hc-footer">
@@ -158,7 +166,7 @@
   </div>
 </section>
 <div class="wrap wrap-wide home-body">
-  {{- if and (not .Home.Collections) (not .Home.Featured)}}
+  {{- if and (not .Home.Collections) (not .Home.Featured) (not .Home.Latest)}}
   {{template "empty" (.Empty 0 false (.T.T "help.empty_title") (.T.T "help.empty_body"))}}
   {{- else}}
   {{- if .Home.Collections}}
@@ -180,6 +188,15 @@
   <section class="section" aria-labelledby="popular">
     <h2 id="popular" class="label-caps section-title tight">{{.T.T "help.popular"}}</h2>
     {{template "rows" (.Rows .Home.Featured false)}}
+  </section>
+  {{- end}}
+  {{- if .Home.Latest}}
+  <section class="section" aria-labelledby="latest">
+    <div class="section-head">
+      <h2 id="latest" class="label-caps section-title tight">{{.T.T "help.latest_updates"}}</h2>
+      <a class="section-link" href="{{.CategoryURL ""}}">{{.T.T "help.all_updates"}}{{template "arrow"}}</a>
+    </div>
+    {{template "updates" (.Updates .Home.Latest)}}
   </section>
   {{- end}}
   {{- end}}
@@ -246,6 +263,111 @@
     {{- end}}
   </div>
 </div>
+{{- end}}
+
+{{define "cats" -}}
+{{- if .Entry.Categories}}
+<span class="cats">
+  {{- range .Entry.Categories}}
+  <a class="cat {{$.Page.ToneFor .}}" href="{{$.Page.CategoryURL .}}"><bdi>{{.}}</bdi></a>
+  {{- end}}
+</span>
+{{- end}}
+{{- end}}
+
+{{define "updates" -}}
+<ul class="rows">
+  {{- range $i, $e := .Entries}}
+  <li class="rise {{$.Page.Delay $i}}">
+    <a class="row" href="{{$.Page.Link (printf "/changelog/%s" $e.Slug)}}">
+      <span class="row-icon">{{template "spark"}}</span>
+      <span class="row-main">
+        <span class="row-title"><bdi>{{$e.Title}}</bdi></span>
+        {{- if $e.Excerpt}}
+        <span class="row-excerpt"><bdi>{{$e.Excerpt}}</bdi></span>
+        {{- end}}
+      </span>
+      <time class="row-date" datetime="{{$.Page.ISO ($.Page.Dated $e)}}" data-format="short">{{$.Page.ShortDate ($.Page.Dated $e)}}</time>
+      {{template "arrow"}}
+    </a>
+  </li>
+  {{- end}}
+</ul>
+{{- end}}
+
+{{define "spark"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.94 14.06 4 20M14 4l1.5 4.5L20 10l-4.5 1.5L14 16l-1.5-4.5L8 10l4.5-1.5Z"/></svg>{{end}}
+{{define "rss"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>{{end}}
+
+{{define "changelog" -}}
+<div class="wrap wrap-narrow page rise">
+  {{template "crumbs" (.Crumbs)}}
+  <div class="cl-head">
+    <div>
+      <h1>{{.T.T "help.changelog"}}</h1>
+      <p class="lede">{{.T.T "help.changelog_subtitle"}}</p>
+    </div>
+    <a class="feed" href="{{.FeedURL}}" type="application/atom+xml">{{template "rss"}}{{.T.T "help.feed"}}</a>
+  </div>
+  {{- if .Changelog.Categories}}
+  <nav class="cl-filter" aria-label="{{.T.T "help.categories"}}">
+    <a href="{{.CategoryURL ""}}"{{if not .Changelog.Category}} aria-current="page"{{end}}>{{.T.T "help.all_categories"}}</a>
+    {{- range .Changelog.Categories}}
+    <a class="{{$.ToneFor .}}" href="{{$.CategoryURL .}}"{{if eq (lower .) (lower $.Changelog.Category)}} aria-current="page"{{end}}><bdi>{{.}}</bdi></a>
+    {{- end}}
+  </nav>
+  {{- end}}
+  {{- if .Changelog.Entries}}
+  <ol class="timeline">
+    {{- range $i, $e := .Changelog.Entries}}
+    <li class="cl-entry rise {{$.Delay $i}}">
+      <div class="cl-date"><time datetime="{{$.ISO ($.Dated $e.ChangelogEntry)}}" data-format="long">{{$.LongDate ($.Dated $e.ChangelogEntry)}}</time></div>
+      <article class="cl-body">
+        {{template "cats" ($.EntryCats $e.ChangelogEntry)}}
+        <h2 dir="auto"><a href="{{$.Link (printf "/changelog/%s" $e.Slug)}}" title="{{$.T.T "help.permalink"}}">{{$e.Title}}</a></h2>
+        <div class="prose" dir="auto">{{$e.Body}}</div>
+      </article>
+    </li>
+    {{- end}}
+  </ol>
+  {{- if or .Changelog.Newer .Changelog.Older}}
+  <nav class="pager">
+    {{- if .Changelog.Newer}}<a href="{{.Changelog.Newer}}" rel="prev"><span class="flip">{{template "arrow"}}</span>{{.T.T "help.newer"}}</a>{{end}}
+    {{- if .Changelog.Older}}<a class="older" href="{{.Changelog.Older}}" rel="next">{{.T.T "help.older"}}{{template "arrow"}}</a>{{end}}
+  </nav>
+  {{- end}}
+  {{- else if .Changelog.Category}}
+  {{template "empty" (.Empty 3 false (.T.T "help.category_empty_title" "category" .Changelog.Category) "")}}
+  {{- else}}
+  {{template "empty" (.Empty 3 false (.T.T "help.changelog_empty_title") (.T.T "help.changelog_empty_body"))}}
+  {{- end}}
+</div>
+{{- end}}
+
+{{define "entry" -}}
+<article class="wrap wrap-read page page-article rise">
+  {{template "crumbs" (.Crumbs)}}
+  <div class="cl-meta">
+    <time datetime="{{.ISO (.Dated .Entry.ChangelogEntry)}}" data-format="long">{{.LongDate (.Dated .Entry.ChangelogEntry)}}</time>
+    {{template "cats" (.EntryCats .Entry.ChangelogEntry)}}
+  </div>
+  <h1 dir="auto">{{.Entry.Title}}</h1>
+  {{- if .Entry.Author}}{{if .Entry.Author.Name}}
+  <div class="meta">
+    {{template "avatar" (.Avatar .Entry.Author.Name (.Entry.Author.AvatarURL.URL))}}
+    <bdi class="who">{{.Entry.Author.Name}}</bdi>
+  </div>
+  {{- end}}{{end}}
+  <div class="prose" dir="auto">{{.Entry.Body}}</div>
+  {{- if .MoreEntries}}
+  <section class="more" aria-labelledby="more">
+    <div class="section-head">
+      <h2 id="more" class="label-caps section-title tight">{{.T.T "help.latest_updates"}}</h2>
+      <a class="section-link" href="{{.CategoryURL ""}}">{{.T.T "help.all_updates"}}{{template "arrow"}}</a>
+    </div>
+    {{template "updates" (.Updates .MoreEntries)}}
+  </section>
+  {{- end}}
+</article>
 {{- end}}
 
 {{define "notfound" -}}

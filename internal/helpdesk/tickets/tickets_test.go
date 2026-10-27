@@ -432,3 +432,67 @@ func TestBulkDeleteMerge(t *testing.T) {
 		t.Fatalf("bulk delete %+v", del)
 	}
 }
+
+func TestBulkFilteredTickets(t *testing.T) {
+	e, ws := newEnv(t)
+	openA := createTicket(t, e, ws, map[string]any{"subject": "Open A"})
+	openB := createTicket(t, e, ws, map[string]any{"subject": "Open B"})
+	pending := createTicket(t, e, ws, map[string]any{"subject": "Pending"})
+	hidden, _ := privateTicket(t, e, ws)
+	e.Do("PATCH", "/v1/tickets/"+pending.ID.String(), ws.Agent.As(ws), map[string]any{"status": "pending"}).Want(t, 200)
+
+	var out struct {
+		Data    []domain.Ticket
+		Updated int
+	}
+	e.Do("POST", "/v1/tickets/bulk", ws.Agent.As(ws), map[string]any{
+		"query": map[string]any{"status": []string{"open"}},
+		"patch": map[string]any{"priority": "high"},
+	}).Want(t, 200).JSON(t, &out)
+	if out.Updated != 2 || len(out.Data) != 0 {
+		t.Fatalf("bulk filtered %+v", out)
+	}
+	if getTicket(t, e, ws, openA.ID).Priority != "high" || getTicket(t, e, ws, openB.ID).Priority != "high" {
+		t.Fatal("open tickets were not updated")
+	}
+	if getTicket(t, e, ws, pending.ID).Priority != "normal" {
+		t.Fatal("filtered update changed pending ticket")
+	}
+	var hiddenAfter domain.Ticket
+	e.Do("GET", "/v1/tickets/"+hidden.ID.String(), ws.Admin.As(ws), nil).Want(t, 200).JSON(t, &hiddenAfter)
+	if hiddenAfter.Priority != "normal" {
+		t.Fatal("filtered update changed a private ticket the caller cannot see")
+	}
+
+	e.Do("POST", "/v1/tickets/bulk", ws.Agent.As(ws), map[string]any{
+		"ids": []string{openA.ID.String()}, "query": map[string]any{"status": []string{"open"}},
+		"patch": map[string]any{"priority": "urgent"},
+	}).Want(t, 422)
+}
+
+func TestBulkFilteredExclusions(t *testing.T) {
+	e, ws := newEnv(t)
+	a := createTicket(t, e, ws, map[string]any{"subject": "Tagged", "tags": []string{"VIP"}})
+	b := createTicket(t, e, ws, map[string]any{"subject": "Plain"})
+	for _, query := range []map[string]any{
+		{"tag_not": "vip"},
+		{"untagged": true},
+		{"tag": "missing,VIP", "channel_not": []string{"api"}},
+		{"team_not": "none"},
+		{"mailbox_not": ids.New().String(), "tag_not": "VIP"},
+	} {
+		var out struct{ Updated int }
+		e.Do("POST", "/v1/tickets/bulk", ws.Agent.As(ws), map[string]any{"query": query, "patch": map[string]any{"priority": "high"}}).Want(t, 200).JSON(t, &out)
+		want := 1
+		if query["channel_not"] != nil || query["team_not"] != nil {
+			want = 0
+		}
+		if out.Updated != want {
+			t.Fatalf("query %v updated %d, want %d", query, out.Updated, want)
+		}
+		if getTicket(t, e, ws, a.ID).Priority != "normal" {
+			t.Fatalf("query %v changed excluded ticket", query)
+		}
+		e.Do("PATCH", "/v1/tickets/"+b.ID.String(), ws.Agent.As(ws), map[string]any{"priority": "normal"}).Want(t, 200)
+	}
+}

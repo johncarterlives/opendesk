@@ -151,5 +151,89 @@
     "articleHint": "Welche Hilfecenter diesen Artikel zeigen.",
     "fromCollection": "Folgt seiner Sammlung, {{name}}.",
     "only": "Nur im Hilfecenter von {{name}}"
+  },
+  "switch": {
+    "articles": "Artikel",
+    "changelog": "Änderungsprotokoll"
+  },
+  "changelog": {
+    "new": "Neues Update",
+    "view": "Änderungsprotokoll ansehen",
+    "all": "Alle Updates",
+    "search": "Updates suchen",
+    "loadMore": "Mehr laden",
+    "undated": "Ohne Datum",
+    "error": "Updates konnten nicht geladen werden",
+    "status": {
+      "scheduled": "Geplant"
+    },
+    "filter": {
+      "allCategories": "Alle Kategorien",
+      "scheduled": "Geplant"
+    },
+    "col": {
+      "update": "Update",
+      "categories": "Kategorien",
+      "date": "Datum"
+    },
+    "empty": {
+      "title": "Noch keine Updates",
+      "description": "Zeig deinen Kunden, was neu, besser und behoben ist. Updates erscheinen im Änderungsprotokoll deines Hilfecenters und in seinem Feed.",
+      "noMatch": "Keine passenden Updates",
+      "noneHere": "Hier ist nichts",
+      "noneHereHint": "Keine Updates passen zu diesen Filtern."
+    },
+    "tips": {
+      "categories": "Markiere Updates als Neu, Verbessert oder Behoben",
+      "schedule": "Wähle ein späteres Datum, um eines zu planen",
+      "api": "Veröffentliche sie per API aus deinen Release-Tools"
+    },
+    "toast": {
+      "published": "Update veröffentlicht",
+      "scheduled": "Update geplant für {{date}}",
+      "unpublished": "Update nicht mehr veröffentlicht",
+      "deleted": "Update gelöscht"
+    },
+    "editor": {
+      "notFound": "Update nicht gefunden",
+      "openInHelp": "Im Hilfecenter öffnen",
+      "saveLiveHint": "Änderungen im veröffentlichten Update speichern",
+      "schedule": "Planen",
+      "deletePublished": "Es verschwindet sofort aus deinem Änderungsprotokoll und seinem Feed.",
+      "delete": "Update löschen",
+      "titlePlaceholder": "Was hat sich geändert?",
+      "excerptPlaceholder": "Eine einzeilige Zusammenfassung für das Änderungsprotokoll und seinen Feed",
+      "bodyPlaceholder": "Beschreib das Update. Screenshots und kurze Listen zeigen Lesern schnell, was neu ist.",
+      "body": "Inhalt des Updates",
+      "leaveBody": "Deine Änderungen an diesem Update wurden nicht gespeichert."
+    },
+    "details": {
+      "date": "Datum",
+      "time": "Uhrzeit",
+      "whenPublished": "Bei Veröffentlichung",
+      "dateEmptyHint": "Wird auf den Zeitpunkt gesetzt, an dem du veröffentlichst.",
+      "dateHint": "Leser sehen dieses Datum am Update.",
+      "scheduledFor": "Geplant für {{date}}. Bis dahin bleibt es verborgen.",
+      "willSchedule": "Beim Veröffentlichen wird es für {{date}} geplant.",
+      "categories": "Kategorien",
+      "brandHint": "Welche Hilfecenter dieses Update zeigen.",
+      "urlHint": "Die Adresse dieses Updates in deinem Hilfecenter. Wenn du sie änderst, funktionieren alte Links nicht mehr."
+    },
+    "categories": {
+      "remove": "{{name}} entfernen",
+      "create": "Hinzufügen",
+      "search": "Kategorien suchen",
+      "none": "Noch keine Kategorien",
+      "add": "Hinzufügen",
+      "addFirst": "Kategorie hinzufügen",
+      "empty": "Keine Kategorien",
+      "hint": "Bis zu {{max}}, etwa Neu, Verbessert oder Behoben.",
+      "problem": {
+        "empty": "Gib einen Namen ein.",
+        "tooLong": "Höchstens {{length}} Zeichen.",
+        "duplicate": "Diese Kategorie ist schon da.",
+        "full": "Höchstens {{max}} Kategorien."
+      }
+    }
   }
 }

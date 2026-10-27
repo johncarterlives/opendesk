@@ -36,6 +36,7 @@ import { parseHours, readUpload } from "./pictures";
 import { widgetPatch } from "./widget";
 import { checkBotId } from "./bots";
 import { forgetHelpDomain, registerHelpDomainRoutes } from "./helpDomains";
+import { removeBrandChangelog } from "./changelog";
 
 const TEAM_ROLES: TeamRole[] = ["lead", "member", "observer"];
 const MODES: AssignMode[] = ["none", "round_robin", "load_balanced"];
@@ -385,6 +386,7 @@ function registerBrandRoutes() {
       publish(ctx.ws, "widget.deleted", { widget_id: w.id });
     }
     ctx.ws.widgets = ctx.ws.widgets.filter((x) => x.brand_id !== b.id);
+    removeBrandChangelog(ctx.ws, b.id);
     ctx.ws.brands = ctx.ws.brands.filter((x) => x !== b);
     forgetHelpDomain(b.id);
     ctx.ws.brands.sort((x, y) => x.position - y.position).forEach((x, i) => (x.position = i));

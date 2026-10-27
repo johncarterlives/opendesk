@@ -191,6 +191,7 @@ export default function InboxPage() {
 
   // ── Selection and keyboard focus ────────────────────────────────────────
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [allMatching, setAllMatching] = useState(false);
   const [focusIdx, setFocusIdx] = useState(0);
   const lastToggled = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -199,20 +200,27 @@ export default function InboxPage() {
 
   useEffect(() => {
     setSelected(new Set());
+    setAllMatching(false);
     setFocusIdx(0);
   }, [params.folder, params.viewId, params.teamId, tab]);
+
+  useEffect(() => {
+    setSelected(new Set());
+    setAllMatching(false);
+  }, [listKey]);
 
   // Drop selections that left the list (solved elsewhere, deleted), and keep
   // the focus in range when rows leave.
   useEffect(() => {
     setSelected((s) => {
+      if (allMatching) return s;
       if (!s.size) return s;
       const ids = new Set(tickets.map((t) => t.id));
       const next = new Set([...s].filter((id) => ids.has(id)));
       return next.size === s.size ? s : next;
     });
     setFocusIdx((i) => Math.max(0, Math.min(i, tickets.length - 1)));
-  }, [tickets]);
+  }, [tickets, allMatching]);
 
   // Keep the focus marker on the open ticket.
   useEffect(() => {
@@ -253,6 +261,12 @@ export default function InboxPage() {
 
   const toggle = useCallback(
     (t: Ticket, shift: boolean) => {
+      if (allMatching) {
+        setAllMatching(false);
+        setSelected(new Set([t.id]));
+        lastToggled.current = t.id;
+        return;
+      }
       setSelected((s) => {
         const next = new Set(s);
         if (shift && lastToggled.current) {
@@ -269,7 +283,7 @@ export default function InboxPage() {
         return next;
       });
     },
-    [tickets],
+    [tickets, allMatching],
   );
 
   const move = (d: 1 | -1) => {
@@ -358,10 +372,18 @@ export default function InboxPage() {
       if (!searchRef.current) document.querySelector<HTMLButtonElement>("[data-inbox-search]")?.click();
     },
     escape: () => {
-      if (selected.size) setSelected(new Set());
+      if (selected.size || allMatching) {
+        setSelected(new Set());
+        setAllMatching(false);
+      }
       else if (openId) close();
     },
-    "mod+a": () => !openId && setSelected(new Set(tickets.map((t) => t.id))),
+    "mod+a": () => {
+      if (!openId) {
+        setAllMatching(false);
+        setSelected(new Set(tickets.map((t) => t.id)));
+      }
+    },
   });
 
   // Infinite scroll.
@@ -391,7 +413,7 @@ export default function InboxPage() {
   }, [previewing, focusIdx, tickets, prefetch]);
 
   const fid = folder?.id ?? (teamId ? "team" : "view");
-  const selecting = selected.size > 0;
+  const selecting = selected.size > 0 || allMatching;
   const idx = tickets.findIndex((t) => t.id === openId || String(t.number) === openId);
   const focusedTicket = tickets[focusIdx];
   const summary = useMemo(() => {
@@ -467,7 +489,7 @@ export default function InboxPage() {
                     ticket={t}
                     active={t.id === openId || String(t.number) === openId}
                     focused={i === focusIdx}
-                    selected={selected.has(t.id)}
+                    selected={allMatching || selected.has(t.id)}
                     selecting={selecting}
                     compact={compact}
                     hideAssignee={fid === "mine"}
@@ -487,7 +509,18 @@ export default function InboxPage() {
               </div>
           )}
         </div>
-        <BulkBar ids={[...selected]} onClear={() => setSelected(new Set())} spamView={fid === "spam"} compact={compact} />
+        <BulkBar
+          ids={[...selected]}
+          query={query}
+          allMatching={allMatching}
+          onSelectAll={selected.size === tickets.length && list.hasNextPage ? () => setAllMatching(true) : undefined}
+          onClear={() => {
+            setSelected(new Set());
+            setAllMatching(false);
+          }}
+          spamView={fid === "spam"}
+          compact={compact}
+        />
       </section>
 
       {openId ? (

@@ -95,6 +95,15 @@ describe("mock backend", () => {
     }
   });
 
+  it("updates every ticket matching a bulk query", async () => {
+    const open = (await call("GET", "/v1/tickets?status=open")).body.data as { id: string }[];
+    const result = await call("POST", "/v1/tickets/bulk", { query: { status: ["open"] }, patch: { priority: "high" } });
+    expect(result.status).toBe(200);
+    expect(result.body).toMatchObject({ data: [], deleted: 0 });
+    expect(result.body.updated).toBeGreaterThan(0);
+    expect((await call("GET", `/v1/tickets/${open[0]!.id}`)).body.priority).toBe("high");
+  });
+
   it("serves every list endpoint the app reads", async () => {
     for (const path of [
       "/v1/me", "/v1/tickets", "/v1/tickets/counts", "/v1/contacts", "/v1/companies", "/v1/tags", "/v1/views",
@@ -109,6 +118,22 @@ describe("mock backend", () => {
     }
     // The survey token rides in the body.
     expect((await call("POST", "/v1/public/csat/survey", { token: "demo" })).status).toBe(200);
+  });
+
+  it("keeps an automation's phrase list one trimmed phrase per line", async () => {
+    const action = [{ type: "set_status", value: "closed" }];
+    const made = await call("POST", "/v1/automations", {
+      name: "Carrier mail",
+      trigger: "ticket_created",
+      conditions: [{ field: "subject", op: "any", value: " Your parcel \r\n\nhas shipped \n" }],
+      actions: action,
+    });
+    expect(made.status).toBe(201);
+    expect(made.body.conditions[0]).toEqual({ field: "subject", op: "any", value: "Your parcel\nhas shipped" });
+    const empty = await call("POST", "/v1/automations", { name: "x", trigger: "ticket_created", conditions: [{ field: "body", op: "none", value: " \n " }], actions: action });
+    expect(empty.status).toBe(422);
+    const status = await call("POST", "/v1/automations", { name: "x", trigger: "ticket_created", conditions: [{ field: "status", op: "any", value: "open" }], actions: action });
+    expect(status.status).toBe(422);
   });
 
   it("publishes contiguous events for mutations", async () => {

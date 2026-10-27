@@ -26,7 +26,22 @@
     "results_one": "{{count}} result",
     "results_other": "{{count}} results",
     "theme_light": "Switch to light theme",
-    "theme_dark": "Switch to dark theme"
+    "theme_dark": "Switch to dark theme",
+    "changelog": "Changelog",
+    "changelog_subtitle": "New features, improvements and fixes.",
+    "latest_updates": "Latest updates",
+    "all_updates": "All updates",
+    "all_categories": "All",
+    "categories": "Categories",
+    "changelog_empty_title": "No updates yet",
+    "changelog_empty_body": "Updates will appear here once they are published.",
+    "category_empty_title": "No updates in “{{category}}”",
+    "entry_not_found_title": "Update not found",
+    "entry_not_found_body": "It may have been removed or unpublished.",
+    "newer": "Newer updates",
+    "older": "Older updates",
+    "feed": "RSS feed",
+    "permalink": "Link to this update"
   },
   "csat": {
     "page_title": "Rate your conversation",

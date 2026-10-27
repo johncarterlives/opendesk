@@ -24,7 +24,22 @@
     "no_results_body": "キーワードを減らすか、別の言葉でお試しください。",
     "results_other": "{{count}} 件の結果",
     "theme_light": "ライトテーマに切り替え",
-    "theme_dark": "ダークテーマに切り替え"
+    "theme_dark": "ダークテーマに切り替え",
+    "changelog": "変更履歴",
+    "changelog_subtitle": "新機能、改善、修正のお知らせです。",
+    "latest_updates": "最新のアップデート",
+    "all_updates": "すべてのアップデート",
+    "all_categories": "すべて",
+    "categories": "カテゴリ",
+    "changelog_empty_title": "まだアップデートはありません",
+    "changelog_empty_body": "アップデートが公開されると、ここに表示されます。",
+    "category_empty_title": "「{{category}}」のアップデートはありません",
+    "entry_not_found_title": "アップデートが見つかりません",
+    "entry_not_found_body": "削除されたか、公開が停止された可能性があります。",
+    "newer": "新しいアップデート",
+    "older": "以前のアップデート",
+    "feed": "RSS フィード",
+    "permalink": "このアップデートへのリンク"
   },
   "csat": {
     "page_title": "対応の評価",

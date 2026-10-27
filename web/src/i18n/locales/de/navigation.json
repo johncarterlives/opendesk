@@ -22,6 +22,8 @@
     "companies": "Unternehmen",
     "knowledgeBase": "Wissensdatenbank",
     "article": "Artikel",
+    "wiki": "Wiki",
+    "wikiPage": "Wiki-Seite",
     "reports": "Berichte",
     "settings": "Einstellungen",
     "brand": "Marke",
@@ -72,7 +74,11 @@
     "agentPlayground": "Testbereich des Agenten",
     "agentTests": "Agententests",
     "newArticle": "Neuer Artikel",
-    "myTeams": "Meine Teams"
+    "changelog": "Änderungsprotokoll",
+    "changelogEntry": "Update",
+    "newUpdate": "Neues Update",
+    "myTeams": "Meine Teams",
+    "mailCategories": "Posteingangskategorien"
   },
   "folders": {
     "unassigned": "Nicht zugewiesen",
@@ -129,7 +135,8 @@
     "apiKeys": "API-Schlüssel",
     "aiClients": "KI-Clients",
     "webhooks": "Webhooks",
-    "auditLog": "Audit-Log"
+    "auditLog": "Audit-Log",
+    "mailCategories": "Posteingangskategorien"
   },
   "settingsPage": "Einstellungsseite",
   "command": {
@@ -140,6 +147,8 @@
     "noResultsHelp": "Versuch ein anderes Wort, eine Ticketnummer oder eine E-Mail.",
     "tickets": "Tickets",
     "articles": "Artikel",
+    "wikiPages": "Wiki",
+    "newWikiPage": "Neue Wiki-Seite",
     "thisTicket": "Dieses Ticket",
     "goTo": "Gehe zu",
     "actions": "Aktionen",

@@ -26,11 +26,13 @@ type HelpCenter struct {
 	Favicon     domain.Avatar
 	Enabled     bool
 	ActiveHost  string // the active custom domain, or ""
+	Changelog   bool   // it has a public changelog entry
 }
 
 // A suspended workspace's help centers read as off (contracts/admin.md).
 var helpCenterSelect = `SELECT b.id, b.workspace_id, b.slug, b.name, b.help_center_title, b.help_center_enabled AND w.suspended_at IS NULL, b.locale, b.color, b.images,
-	COALESCE(w.settings ->> 'locale', ''), COALESCE(w.settings ->> 'locale_fixed' = 'true', false), COALESCE(w.settings ->> 'brand_color', ''), w.avatar_url, COALESCE(` + brands.ActiveHostSQL("b.id") + `, '')
+	COALESCE(w.settings ->> 'locale', ''), COALESCE(w.settings ->> 'locale_fixed' = 'true', false), COALESCE(w.settings ->> 'brand_color', ''), w.avatar_url, COALESCE(` + brands.ActiveHostSQL("b.id") + `, ''),
+	EXISTS (SELECT 1 FROM changelog_entries e WHERE e.workspace_id = b.workspace_id AND e.status = 'published' AND e.published_at <= now() AND COALESCE(e.brand_id, b.id) = b.id)
 	FROM brands b JOIN workspaces w ON w.id = b.workspace_id`
 
 func loadHelpCenter(ctx context.Context, q db.Querier, where string, arg any) (HelpCenter, error) {
@@ -39,7 +41,7 @@ func loadHelpCenter(ctx context.Context, q db.Querier, where string, arg any) (H
 	var imgs map[string]string
 	var wsLogo domain.Avatar
 	err := q.QueryRow(ctx, helpCenterSelect+` WHERE `+where, arg).
-		Scan(&hc.BrandID, &hc.WorkspaceID, &hc.Slug, &name, &title, &hc.Enabled, &hc.Locale, &hc.Color, &imgs, &wsLocale, &hc.LocaleFixed, &wsColor, &wsLogo, &hc.ActiveHost)
+		Scan(&hc.BrandID, &hc.WorkspaceID, &hc.Slug, &name, &title, &hc.Enabled, &hc.Locale, &hc.Color, &imgs, &wsLocale, &hc.LocaleFixed, &wsColor, &wsLogo, &hc.ActiveHost, &hc.Changelog)
 	if err != nil {
 		return hc, err
 	}
@@ -135,7 +137,7 @@ func SearchHelpCenter(ctx context.Context, q db.Querier, hc HelpCenter, query st
 
 // SitemapEntry is one page of a help center's sitemap.
 type SitemapEntry struct {
-	Kind      string // "collection" | "article"
+	Kind      string // "collection" | "article" | "changelog"
 	Slug      string
 	UpdatedAt time.Time
 }
@@ -143,16 +145,20 @@ type SitemapEntry struct {
 // maxSitemap is what one sitemap file may list.
 const maxSitemap = 50000
 
-// Sitemap lists the help center's topics and published articles, each with when it last
-// changed (a topic: its newest article).
+// Sitemap lists the help center's topics, published articles and public changelog entries,
+// each with when it last changed (a topic: its newest article).
 func Sitemap(ctx context.Context, q db.Querier, hc HelpCenter) ([]SitemapEntry, error) {
 	rows, err := q.Query(ctx, `SELECT 'collection', k.slug, max(a.updated_at) FROM kb_collections k
 			JOIN kb_articles a ON a.collection_id = k.id AND a.status = 'published' AND COALESCE(k.brand_id, a.brand_id, $1) = $1
 			WHERE k.workspace_id = $2 AND COALESCE(k.brand_id, $1) = $1 GROUP BY k.id, k.slug
 		UNION ALL
 		(SELECT 'article', a.slug, a.updated_at FROM kb_articles a
-			WHERE a.workspace_id = $2 AND a.status = 'published' AND `+forBrand(1)+` ORDER BY a.updated_at DESC LIMIT $3)`,
-		hc.BrandID, hc.WorkspaceID, maxSitemap-1000)
+			WHERE a.workspace_id = $2 AND a.status = 'published' AND `+forBrand(1)+` ORDER BY a.updated_at DESC LIMIT $3)
+		UNION ALL
+		(SELECT 'changelog', e.slug, e.updated_at FROM changelog_entries e
+			WHERE e.workspace_id = $2 AND e.status = 'published' AND e.published_at <= now() AND COALESCE(e.brand_id, $1) = $1
+			ORDER BY e.published_at DESC LIMIT 1000)`,
+		hc.BrandID, hc.WorkspaceID, maxSitemap-2000)
 	if err != nil {
 		return nil, err
 	}

@@ -253,22 +253,27 @@ func (s *service) claimOnce(ctx context.Context, p *auth.Principal, account *uui
 // the provider is called, and nobody can take the claim over until the draft is stored
 // (which ends the claim). A worker whose claim expired or passed on is refused.
 func (s *service) fenceClaim(ctx context.Context, p *auth.Principal, threadID, token uuid.UUID) (func(), error) {
-	tx, err := s.d.DB.Pool.Begin(ctx)
+	lockCtx, cancel := context.WithTimeout(ctx, draftLockWait)
+	defer cancel()
+	tx, err := s.d.DB.Locks.Begin(lockCtx)
 	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil {
+			return nil, errDraftBusy
+		}
 		return nil, httpx.Wrap(err)
 	}
 	unlock := func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }
 	// It waits its turn behind a claim being made, or another draft carrying this token
 	// (which, once stored, ends the claim: this one is then refused).
-	if _, err := tx.Exec(ctx, `SELECT set_config('lock_timeout', $1, true)`,
+	if _, err := tx.Exec(lockCtx, `SELECT set_config('lock_timeout', $1, true)`,
 		strconv.FormatInt(draftLockWait.Milliseconds(), 10)+"ms"); err != nil {
 		unlock()
 		return nil, httpx.Wrap(err)
 	}
-	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(`+claimLockKey+`)`, threadID); err != nil {
+	if _, err := tx.Exec(lockCtx, `SELECT pg_advisory_xact_lock(`+claimLockKey+`)`, threadID); err != nil {
 		unlock()
 		var pg *pgconn.PgError
-		if errors.As(err, &pg) && pg.Code == "55P03" {
+		if (errors.As(err, &pg) && pg.Code == "55P03") || (errors.Is(err, context.DeadlineExceeded) && ctx.Err() == nil) {
 			return nil, errDraftBusy
 		}
 		return nil, httpx.Wrap(err)

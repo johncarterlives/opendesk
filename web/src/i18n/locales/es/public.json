@@ -28,7 +28,22 @@
     "results_many": "{{count}} de resultados",
     "results_other": "{{count}} resultados",
     "theme_light": "Cambiar al tema claro",
-    "theme_dark": "Cambiar al tema oscuro"
+    "theme_dark": "Cambiar al tema oscuro",
+    "changelog": "Registro de cambios",
+    "changelog_subtitle": "Nuevas funciones, mejoras y correcciones.",
+    "latest_updates": "Últimas actualizaciones",
+    "all_updates": "Todas las actualizaciones",
+    "all_categories": "Todas",
+    "categories": "Categorías",
+    "changelog_empty_title": "Todavía no hay actualizaciones",
+    "changelog_empty_body": "Las actualizaciones aparecerán aquí cuando se publiquen.",
+    "category_empty_title": "No hay actualizaciones en «{{category}}»",
+    "entry_not_found_title": "No se encontró la actualización",
+    "entry_not_found_body": "Puede que se haya eliminado o despublicado.",
+    "newer": "Actualizaciones más recientes",
+    "older": "Actualizaciones anteriores",
+    "feed": "Feed RSS",
+    "permalink": "Enlace a esta actualización"
   },
   "csat": {
     "page_title": "Valora tu conversación",

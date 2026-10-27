@@ -714,5 +714,22 @@
       "workspace": "Le nom de l’espace de travail"
     },
     "signatureVars": "Tapez une variable pour ajouter le nom, le poste ou le téléphone de l’expéditeur : les messages de chacun portent les siens."
+  },
+  "categories": {
+    "group": "Catégories",
+    "tabs": "Catégories de la boîte de réception",
+    "settings": "Réglages des catégories",
+    "moved_one": "Conversation déplacée vers {{name}}",
+    "moved_many": "{{count}} conversations déplacées vers {{name}}",
+    "moved_other": "{{count}} conversations déplacées vers {{name}}",
+    "always": "Toujours",
+    "alwaysHint": "Envoyer ici aussi les prochains e-mails de {{sender}}",
+    "ruleSaved": "Les e-mails de {{sender}} vont désormais dans {{name}}",
+    "offer": {
+      "title": "Répartissez votre boîte de réception en onglets.",
+      "body": "Les e-mails des personnes restent dans Principale, tandis que les newsletters, les notifications et les promotions ont leurs propres onglets. Ollie peut proposer des catégories à partir de vos e-mails.",
+      "action": "Configurer les catégories",
+      "dismiss": "Plus tard"
+    }
   }
 }

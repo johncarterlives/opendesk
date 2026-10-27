@@ -17,6 +17,7 @@ import { registerEmailAnswers } from "./handlers/emailAnswers";
 import { registerAuth, setSignedIn } from "./handlers/auth";
 import { registerBilling } from "./handlers/billing";
 import { registerBots } from "./handlers/bots";
+import { registerChangelog } from "./handlers/changelog";
 import { registerCollab } from "./handlers/collab";
 import { registerWorkspaces } from "./handlers/workspaces";
 import { registerDrafts, stageDraft } from "./handlers/drafts";
@@ -33,6 +34,7 @@ import { registerResources } from "./handlers/resources";
 import { registerSpaces } from "./handlers/spaces";
 import { registerTickets } from "./handlers/tickets";
 import { registerWorkspace } from "./handlers/workspace";
+import { registerWiki } from "./handlers/wiki";
 import { pauseLive, resumeLive, startLive } from "./live";
 import { chatTicket, ollieReply } from "./ollie";
 import { dispatch } from "./router";
@@ -81,6 +83,7 @@ export function installMock(): void {
   registerTickets();
   registerLabels();
   registerResources();
+  registerChangelog();
   registerBilling();
   registerAi();
   registerAiTicket();
@@ -102,6 +105,7 @@ export function installMock(): void {
   registerCollab();
   registerWorkspaces();
   registerSpaces();
+  registerWiki();
 
   setTransport((input, init) => dispatch(input, init));
   setSocketFactory(socketFactory);

@@ -161,6 +161,41 @@ func TestAutomationAssignsFirstReplyWhenUnassigned(t *testing.T) {
 	}
 }
 
+func TestAutomationPhraseLists(t *testing.T) {
+	e, ws := newEnv(t)
+	// One automation for a list of notification phrases, as a rule brought from another helpdesk.
+	closer := addAutomation(t, e, ws, jobs.TriggerTicketCreated, 0,
+		[]map[string]string{{"field": "subject", "op": "any", "value": "Your parcel has shipped\n\nnewsletter\ninvoice #"}},
+		[]map[string]string{{"type": "set_status", "value": "closed"}, {"type": "add_tag", "value": "auto-closed"}})
+	calm := addAutomation(t, e, ws, jobs.TriggerTicketCreated, 1,
+		[]map[string]string{{"field": "body", "op": "none", "value": "refund\ncomplaint"}},
+		[]map[string]string{{"type": "add_tag", "value": "calm"}})
+
+	notice := createTicket(t, e, ws, map[string]any{"subject": "Our monthly NEWSLETTER", "body_html": "<p>News</p>"})
+	refund := createTicket(t, e, ws, map[string]any{"subject": "Where is my parcel?", "body_html": "<p>I want a Refund</p>"})
+	runTriggers(t, e, ws.ID)
+
+	tags := func(tk domain.Ticket) []string {
+		var out []string
+		for _, g := range tk.Tags {
+			out = append(out, g.Name)
+		}
+		slices.Sort(out)
+		return out
+	}
+	if got := getTicket(t, e, ws, notice.ID); got.Status != "closed" || !slices.Equal(tags(got), []string{"auto-closed", "calm"}) {
+		t.Fatalf("matching ticket %s %v", got.Status, tags(got))
+	}
+	if got := getTicket(t, e, ws, refund.ID); got.Status == "closed" || len(got.Tags) != 0 {
+		t.Fatalf("other ticket %s %v", got.Status, tags(got))
+	}
+	var runs []int64
+	e.Scalar(`SELECT array_agg(run_count ORDER BY position) FROM automations WHERE id = ANY($1)`, &runs, []uuid.UUID{closer, calm})
+	if !slices.Equal(runs, []int64{1, 1}) {
+		t.Fatalf("run counts %v", runs)
+	}
+}
+
 func TestAutomationLoopGuard(t *testing.T) {
 	e, ws := newEnv(t)
 	// Two ticket_updated automations that flip each other forever without a guard.
@@ -417,12 +452,14 @@ func TestReportsAndSearch(t *testing.T) {
 
 	// Search: five of each kind; another workspace's rows never appear.
 	e.Exec(`INSERT INTO kb_articles (id, workspace_id, title, slug, body_html, status) VALUES ($1, $2, 'Shipping times', 'shipping-times', '<p>days</p>', 'published')`, ids.New(), ws.ID)
+	e.Exec(`INSERT INTO wiki_pages (id, workspace_id, title, body_html) VALUES ($1, $2, 'Shipping carriers', '<p>Which carrier for what</p>')`, ids.New(), ws.ID)
 	other := e.NewWorkspace()
+	e.Exec(`INSERT INTO wiki_pages (id, workspace_id, title) VALUES ($1, $2, 'Shipping elsewhere')`, ids.New(), other.ID)
 	createTicket(t, e, other, map[string]any{"subject": "Shipping everywhere"})
 	var res tickets.SearchResults
 	e.Do("GET", "/v1/search?q=shipping", ws.Agent.As(ws), nil).Want(t, 200).JSON(t, &res)
-	if len(res.Tickets) != 2 || len(res.Contacts) != 0 || len(res.Articles) != 1 {
-		t.Fatalf("search %d %d %d", len(res.Tickets), len(res.Contacts), len(res.Articles))
+	if len(res.Tickets) != 2 || len(res.Contacts) != 0 || len(res.Articles) != 1 || len(res.WikiPages) != 1 {
+		t.Fatalf("search %d %d %d %d", len(res.Tickets), len(res.Contacts), len(res.Articles), len(res.WikiPages))
 	}
 	e.Do("GET", "/v1/search?q=ship", ws.Agent.As(ws), nil).Want(t, 200).JSON(t, &res)
 	if len(res.Tickets) != 2 || len(res.Contacts) != 1 {
@@ -430,8 +467,26 @@ func TestReportsAndSearch(t *testing.T) {
 	}
 	key := e.APIKey(ws, auth.ScopeKBRead)
 	e.Do("GET", "/v1/search?q=shipping", hdtest.Auth{Bearer: key}, nil).Want(t, 200).JSON(t, &res)
-	if len(res.Tickets) != 0 || len(res.Contacts) != 0 || len(res.Articles) != 1 {
+	if len(res.Tickets) != 0 || len(res.Contacts) != 0 || len(res.Articles) != 1 || len(res.WikiPages) != 0 {
 		t.Fatalf("scoped search %+v", res)
+	}
+	// Knowledge base scopes don't reach the wiki, nor does an AI client's grant without wiki:read.
+	e.Do("GET", "/v1/search?q=shipping", hdtest.Auth{Bearer: e.APIKey(ws, auth.ScopeKBRead, auth.ScopeKBWrite)}, nil).Want(t, 200).JSON(t, &res)
+	if len(res.Articles) != 1 || len(res.WikiPages) != 0 {
+		t.Fatalf("kb key search %+v", res)
+	}
+	grant := &auth.Principal{Kind: auth.KindUser, UserID: ws.Viewer.ID, WorkspaceID: ws.ID, Role: auth.RoleViewer,
+		GrantID: uuid.New(), Scopes: []string{auth.ScopeTicketsRead, auth.ScopeKBRead}}
+	if got, err := tickets.Search(e.Ctx, e.D.DB.Pool, grant, "shipping", nil); err != nil || len(got.Articles) != 1 || len(got.WikiPages) != 0 {
+		t.Fatalf("grant search %v %+v", err, got)
+	}
+	grant.Scopes = append(grant.Scopes, auth.ScopeWikiRead)
+	if got, err := tickets.Search(e.Ctx, e.D.DB.Pool, grant, "shipping", nil); err != nil || len(got.WikiPages) != 1 {
+		t.Fatalf("grant with wiki:read %v %+v", err, got)
+	}
+	e.Do("GET", "/v1/search?q=shipping", hdtest.Auth{Bearer: e.APIKey(ws, auth.ScopeWikiRead)}, nil).Want(t, 200).JSON(t, &res)
+	if len(res.Articles) != 0 || len(res.WikiPages) != 1 || res.WikiPages[0].Title != "Shipping carriers" {
+		t.Fatalf("wiki search %+v", res)
 	}
 	e.Do("GET", "/v1/search?q=shipping", hdtest.Auth{Bearer: e.APIKey(ws, auth.ScopeRealtime)}, nil).Want(t, 403)
 	e.Do("GET", "/v1/search", ws.Agent.As(ws), nil).Want(t, 422)

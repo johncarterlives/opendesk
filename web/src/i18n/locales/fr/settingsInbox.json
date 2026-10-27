@@ -289,6 +289,11 @@
     "operator": "Opérateur",
     "action": "Action",
     "valueLabel": "Valeur de {{field}}",
+    "phrasesLabel": "Expressions de {{field}}",
+    "phrasesPlaceholder": "Une expression par ligne",
+    "phrasesCount_one": "{{count}} expression, {{max}} au maximum",
+    "phrasesCount_other": "{{count}} expressions, {{max}} au maximum",
+    "phrasesCount_many": "{{count}} expressions, {{max}} au maximum",
     "chooseStatus": "Choisir un statut",
     "choosePriority": "Choisir une priorité",
     "chooseChannel": "Choisir un canal",
@@ -305,7 +310,8 @@
       "name": "Donnez un nom à l’automatisation.",
       "action": "Ajoutez au moins une action.",
       "condition": "Renseignez une valeur pour chaque condition, ou supprimez-la.",
-      "actionValue": "Chaque action doit avoir une valeur."
+      "actionValue": "Chaque action doit avoir une valeur.",
+      "phrases": "Une liste compte de 1 à 100 expressions, une par ligne, de 500 caractères au plus chacune."
     },
     "chooseSeverity": "Choisir une gravité",
     "noSeverity": "Aucune gravité",
@@ -345,7 +351,9 @@
     "not_equals": "n’est pas",
     "eq": "est",
     "gt": "est supérieur à",
-    "lt": "est inférieur à"
+    "lt": "est inférieur à",
+    "any": "contient l’un de",
+    "none": "ne contient aucun de"
   },
   "actionTypes": {
     "set_status": "Définir le statut sur",

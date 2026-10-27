@@ -56,6 +56,8 @@ export interface DesktopRelease {
   /** "13 Oct 2026", the same in every locale and time zone. */
   dateLabel: string;
   notesUrl: string;
+  /** The systems with a download, this version's or an earlier one's (a release can leave systems out). */
+  platforms: DesktopOs[];
 }
 
 let cache: Promise<DesktopRelease | null> | undefined;
@@ -85,17 +87,21 @@ async function load(): Promise<DesktopRelease | null> {
     });
     if (res.status === 404) published = false;
     if (!res.ok) throw new Error(`responded ${res.status}`);
-    const body = (await res.json()) as { version?: unknown; date?: unknown; notes_url?: unknown };
+    const body = (await res.json()) as { version?: unknown; date?: unknown; notes_url?: unknown; platforms?: unknown };
     const { version, date, notes_url: notesUrl } = body;
     if (typeof version !== 'string' || !/^\d+\.\d+\.\d+$/.test(version)) throw new Error('no stable version in it');
     const when = typeof date === 'string' ? new Date(date) : null;
     if (!when || Number.isNaN(when.getTime())) throw new Error('no release date in it');
     if (typeof notesUrl !== 'string' || !notesUrl.startsWith(`https://github.com/${repo}/`)) throw new Error('no release notes link in it');
+    // Older version.json files have no list: every system.
+    const all: DesktopOs[] = ['mac', 'windows', 'linux'];
+    const platforms = Array.isArray(body.platforms) ? all.filter((os) => (body.platforms as unknown[]).includes(os)) : all;
     return {
       version,
       date: when.toISOString(),
       dateLabel: `${when.getUTCDate()} ${MONTHS[when.getUTCMonth()]} ${when.getUTCFullYear()}`,
       notesUrl,
+      platforms,
     };
   } catch (err) {
     console.info(

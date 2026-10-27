@@ -58,11 +58,13 @@ const (
 	ActionUnlabel     = "unlabel"
 	ActionDone        = "done"
 	ActionNeedsAction = "needs_action"
+	// ActionCategorize moves conversations to one of their inbox's categories, in opendesk only.
+	ActionCategorize = "categorize"
 )
 
 // Actions lists every action, for request validation.
 var Actions = []string{ActionRead, ActionUnread, ActionStar, ActionUnstar, ActionArchive, ActionInbox, ActionTrash,
-	ActionSpam, ActionNotSpam, ActionMove, ActionLabel, ActionUnlabel, ActionDone, ActionNeedsAction}
+	ActionSpam, ActionNotSpam, ActionMove, ActionLabel, ActionUnlabel, ActionDone, ActionNeedsAction, ActionCategorize}
 
 // Colors are the tone keys an account may use.
 var Colors = []string{"gray", "red", "orange", "amber", "green", "teal", "blue", "indigo", "violet", "pink"}
@@ -134,6 +136,8 @@ type MailAccount struct {
 	OldestMessageAt *time.Time `json:"oldest_message_at"`
 	// FoldersLeftOut counts an IMAP account's folders past the ones the sync reads.
 	FoldersLeftOut int `json:"folders_left_out"`
+	// Categories is how its inbox is split into tabs (contracts/collab.md "Categories").
+	Categories MailAccountCategories `json:"categories"`
 }
 
 // MailHistory is a history import: older mail brought in on request.
@@ -231,6 +235,9 @@ type MailThread struct {
 	// ToAddress is the account's address other than its own the conversation was written
 	// to or sent from (an alias), newest first; null when none.
 	ToAddress *string `json:"to_address"`
+	// Category is its category key (contracts/collab.md "Categories"); null when the
+	// account's inbox is not split.
+	Category *string `json:"category"`
 }
 
 type MailMessage struct {

@@ -184,6 +184,39 @@ func TestEditsInArchivedThreadsAreSkipped(t *testing.T) {
 	}
 }
 
+func TestRichMutationsUseTicketThreadChannel(t *testing.T) {
+	var paths []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.Method+" "+r.URL.Path)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer server.Close()
+	a := Adapter{BaseURL: server.URL}
+	credentials := map[string]string{"bot_token": "token", "channel_id": "PARENT"}
+	if err := a.UpdateRich(context.Background(), server.Client(), credentials, "THREAD", "M1", channel.RichMessage{Text: "edited"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.DeleteRich(context.Background(), server.Client(), credentials, "THREAD", "M1"); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"PATCH /channels/THREAD/messages/M1", "DELETE /channels/THREAD/messages/M1"}
+	if strings.Join(paths, ",") != strings.Join(want, ",") {
+		t.Fatalf("paths = %v, want %v", paths, want)
+	}
+}
+
+func TestRichPayloadKeepsImageEmbedsEnabled(t *testing.T) {
+	payload := richPayload(channel.RichMessage{Text: "Screenshot", Attachments: []channel.Attachment{{
+		Name: "screen.png", SizeBytes: 42, URL: "https://api.test/attachment/1", Preview: true,
+	}}})
+	if _, suppressed := payload["flags"]; suppressed {
+		t.Fatalf("payload suppresses its own embeds: %#v", payload)
+	}
+	if embeds := payload["embeds"].([]any); len(embeds) != 1 {
+		t.Fatalf("embeds = %#v", embeds)
+	}
+}
+
 func TestPostReturnsProviderRateLimitDelay(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Retry-After", "1")

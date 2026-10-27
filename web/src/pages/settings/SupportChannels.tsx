@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AtSign, Hash, KeyRound, Link2, MessagesSquare, Plus, RefreshCw, Sparkles, StickyNote, Trash2 } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,7 +16,8 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/api/client";
 import { api } from "@/lib/api/endpoints";
-import type { SupportChannelAccount, SupportChannelConnection, SupportChannelDestination, SupportChannelProvider } from "@/lib/api/types";
+import type { SupportChannelAccount, SupportChannelConnection, SupportChannelDelivery, SupportChannelDestination, SupportChannelProvider } from "@/lib/api/types";
+import { fullDate, relShort } from "@/lib/format";
 import { q, qk, upsertInList } from "@/lib/queries";
 import { atLeast, useRole } from "@/lib/session";
 
@@ -67,6 +68,8 @@ export default function SupportChannels() {
   const { data: providers } = useQuery(q.supportChannelProviders());
   const { data: connections, isLoading } = useQuery(q.supportChannelConnections());
   const { data: destinations } = useQuery(q.supportChannelDestinations());
+  const deliveries = useInfiniteQuery({ ...q.supportChannelDeliveries(), enabled: admin });
+  const deliveryRows = deliveries.data?.pages.flatMap((page) => page.data) ?? [];
   const { data: teams } = useQuery(q.teams());
   const [connecting, setConnecting] = useState<SupportChannelProvider | null>(null);
   const [routing, setRouting] = useState<string | null>(null);
@@ -103,6 +106,14 @@ export default function SupportChannels() {
       else toast.info(t("supportChannels.health.testedAttention"));
     },
     onError: (e) => toast.error(e, t("supportChannels.health.testError")),
+  });
+  const retryDelivery = useMutation({
+    mutationFn: api.supportChannels.retryDelivery,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.supportChannelDeliveries });
+      toast.success(t("supportChannels.delivery.retryQueued"));
+    },
+    onError: (e) => toast.error(e, t("supportChannels.delivery.retryError")),
   });
 
   return (
@@ -246,6 +257,43 @@ export default function SupportChannels() {
         )}
       </Section>
 
+      {admin && (
+        <Section
+          flush
+          title={t("supportChannels.delivery.title")}
+          description={t("supportChannels.delivery.description")}
+          actions={
+            <Button variant="ghost" icon={<RefreshCw />} loading={deliveries.isFetching} onClick={() => void deliveries.refetch()}>
+              {t("supportChannels.delivery.refresh")}
+            </Button>
+          }
+        >
+          {deliveries.isLoading ? (
+            <ListSkeleton rows={3} />
+          ) : !deliveryRows.length ? (
+            <SettingsEmpty art="settings" title={t("supportChannels.delivery.emptyTitle")} description={t("supportChannels.delivery.emptyBody")} />
+          ) : (
+            <div className="divide-y divide-line-soft">
+              {deliveryRows.map((delivery) => (
+                <DeliveryRow
+                  key={delivery.event_seq}
+                  delivery={delivery}
+                  retrying={retryDelivery.isPending && retryDelivery.variables === delivery.event_seq}
+                  onRetry={() => retryDelivery.mutate(delivery.event_seq)}
+                />
+              ))}
+              {deliveries.hasNextPage && (
+                <div className="flex justify-center py-3">
+                  <Button variant="secondary" loading={deliveries.isFetchingNextPage} onClick={() => void deliveries.fetchNextPage()}>
+                    {t("supportChannels.delivery.loadMore")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </Section>
+      )}
+
       <Section title={t("supportChannels.providers.title")} description={admin ? t("supportChannels.providers.descriptionAdmin") : t("supportChannels.providers.description")}>
         <div className="grid gap-3 py-3 sm:grid-cols-3">
           {(providers ?? []).map((provider) => (
@@ -296,6 +344,48 @@ export default function SupportChannels() {
         <CopyField value={link?.code ?? ""} />
       </Dialog>
     </SettingsPage>
+  );
+}
+
+function DeliveryRow({ delivery, retrying, onRetry }: { delivery: SupportChannelDelivery; retrying: boolean; onRetry: () => void }) {
+  const { t } = useTranslation("settingsChannels");
+  const state: ItemState = delivery.status === "delivered" ? "active" : delivery.status === "failed" ? "failing" : "pending";
+  const event =
+    delivery.event_type === "ticket.created"
+      ? t("supportChannels.delivery.eventCreated")
+      : delivery.event_type === "ticket.updated"
+        ? t("supportChannels.delivery.eventUpdated")
+        : t("supportChannels.delivery.eventMessage");
+  const subject = delivery.ticket_number
+    ? t("supportChannels.delivery.ticket", { number: delivery.ticket_number })
+    : t("supportChannels.delivery.event", { seq: delivery.event_seq });
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <StatePill state={state} pulse={delivery.status === "retrying"}>
+            {t(`supportChannels.delivery.status.${delivery.status}`)}
+          </StatePill>
+          <span className="text-[13px] font-medium">{subject}</span>
+          <span className="text-[12px] text-fg-3">{event}</span>
+        </div>
+        <p className="mt-1 text-[12px] text-fg-3">
+          {delivery.attempts === 0
+            ? t("supportChannels.delivery.waiting")
+            : t("supportChannels.delivery.attempts", { count: delivery.attempts })}
+          {delivery.status === "failed" && delivery.last_error && <span className="ml-2 text-danger-fg">{delivery.last_error}</span>}
+        </p>
+      </div>
+      <time className="text-[12px] text-fg-3" dateTime={delivery.updated_at} title={fullDate(delivery.updated_at)}>
+        {relShort(delivery.updated_at)}
+      </time>
+      {delivery.status === "failed" && (
+        <Button icon={<RefreshCw />} loading={retrying} onClick={onRetry}>
+          {t("supportChannels.delivery.retry")}
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -513,6 +603,7 @@ function DestinationDialog({ connectionId, provider, onClose }: { connectionId: 
   const [team, setTeam] = useState("all");
   const [channelId, setChannelId] = useState("");
   const [includeNotes, setIncludeNotes] = useState(false);
+  const [messageLimit, setMessageLimit] = useState("3500");
   // When the bot can't list channels (missing scopes, an older bot), its id still works.
   const [manual, setManual] = useState(false);
   const [error, setError] = useState("");
@@ -539,6 +630,7 @@ function DestinationDialog({ connectionId, provider, onClose }: { connectionId: 
         external_channel_id: manual ? manualId : channelId.trim(),
         external_channel_name: selectedChannel?.name,
         include_notes: includeNotes,
+        message_limit: Number(messageLimit),
       }),
     onSuccess: (row) => {
       upsertInList(qc, qk.supportChannelDestinations, row);
@@ -612,6 +704,20 @@ function DestinationDialog({ connectionId, provider, onClose }: { connectionId: 
           </label>
           <Switch id={notesId} checked={includeNotes} onCheckedChange={setIncludeNotes} />
         </div>
+        <Field label={t("supportChannels.destination.messageLimit")} hint={t("supportChannels.destination.messageLimitHint")}>
+          {({ id }) => (
+            <Select
+              id={id}
+              value={messageLimit}
+              onChange={setMessageLimit}
+              options={[
+                { value: "1000", label: t("supportChannels.destination.messageLimitValue", { count: 1000 }) },
+                { value: "2000", label: t("supportChannels.destination.messageLimitValue", { count: 2000 }) },
+                { value: "3500", label: t("supportChannels.destination.messageLimitValue", { count: 3500 }) },
+              ]}
+            />
+          )}
+        </Field>
         {error && (
           <p role="alert" className="text-[12px] text-danger-fg">
             {error}

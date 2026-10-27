@@ -668,8 +668,9 @@ export type ConditionField =
   | "assignee_id" | "team_id" | "brand_id" | "widget_id" | "received_at"
   /** A ticket custom field, or the ticket contact's. */
   | `field.${string}` | `contact.field.${string}`;
-/** `eq` is the AI sentiment condition's operator (contracts/ai.md). */
-export type ConditionOp = "contains" | "not_contains" | "equals" | "not_equals" | "eq" | "gt" | "lt";
+/** `eq` is the AI sentiment condition's operator (contracts/ai.md). `any` and `none` on subject, body, from_email,
+ *  received_at and tag hold phrases, one per line: the text contains any, or none, of them. */
+export type ConditionOp = "contains" | "not_contains" | "equals" | "not_equals" | "eq" | "gt" | "lt" | "any" | "none";
 /** Custom field conditions (`field.<key>`, `contact.field.<key>`) take the FieldOp set of their type; `ne` aliases `not_equals`. */
 /** ai_decide: op gt/lt, value a probability 0.01..0.99, question a yes/no question (3..300 chars). */
 export type Condition = { field: ConditionField; op: ConditionOp; value: string; question?: string };
@@ -901,6 +902,31 @@ export type KbArticle = {
   updated_at: string;
 };
 
+/** A product update the help center publishes at /changelog (contracts/api.md "Changelog"). */
+export type ChangelogEntry = {
+  id: string;
+  /** 1..200 characters. */
+  title: string;
+  /** Unique in the workspace; the entry's address is <help center>/changelog/<slug>. */
+  slug: string;
+  /** Plain text, up to 300; derived from the body unless written. */
+  excerpt: string;
+  body_html: string;
+  /** Up to 5 names, each up to 32 characters, compared without case. */
+  categories: string[];
+  status: "draft" | "published";
+  /** The date it carries: set when first published unless given. Published and in the future = scheduled. */
+  published_at: string | null;
+  author: UserRef | null;
+  /** The brand whose help center shows it; null = every brand. */
+  brand_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** A category the workspace's changelog entries use, with how many use it. */
+export type ChangelogCategory = { name: string; count: number };
+
 export type ApiKey = {
   id: string;
   name: string;
@@ -1016,7 +1042,20 @@ export type SupportChannelDestination = {
   enabled: boolean;
   /** Internal notes are posted too; off by default. */
   include_notes: boolean;
+  /** Maximum characters before the provider message links back to opendesk. */
+  message_limit: number;
   created_at: string;
+};
+export type SupportChannelDelivery = {
+  event_seq: number;
+  event_type: string;
+  ticket_number?: number;
+  status: "queued" | "retrying" | "delivered" | "failed";
+  attempts: number;
+  last_error: string;
+  created_at: string;
+  updated_at: string;
+  delivered_at?: string;
 };
 export type TicketLink = {
   id: string;
@@ -1202,7 +1241,63 @@ export type TicketCounts = {
 /** A sidebar row's tickets awaiting a reply (the customer wrote last), urgent, and overdue. */
 export type TicketStats = { awaiting: number; urgent: number; overdue: number };
 
-export type SearchResults = { tickets: Ticket[]; contacts: Contact[]; articles: KbArticle[] };
+/** `wiki_pages` is left out by servers without the wiki and for callers without `wiki:read`. */
+export type SearchResults = { tickets: Ticket[]; contacts: Contact[]; articles: KbArticle[]; wiki_pages?: WikiSearchHit[] };
+
+// ─── Wiki (contracts/wiki.md) ───────────────────────────────────────────────
+
+/** A page in the tree, without its body. */
+export type WikiNode = {
+  id: string;
+  parent_id: string | null;
+  /** "" until named: shown as "Untitled". */
+  title: string;
+  /** One emoji, or "". */
+  icon: string;
+  /** Order among its siblings, from 0. */
+  position: number;
+  /** Moves on every change of title, icon or body; PATCH sends it back. */
+  version: number;
+  updated_at: string;
+  /** Who created it; null for an API key or a deleted account. */
+  created_by_id: string | null;
+};
+
+export type WikiRef = { id: string; title: string; icon: string };
+
+export type WikiPage = WikiNode & {
+  body_html: string;
+  created_by: UserRef | null;
+  updated_by: UserRef | null;
+  created_at: string;
+  /** Its ancestors, the top-level page first. */
+  breadcrumbs: WikiRef[];
+  children: WikiRef[];
+};
+
+export type WikiRevision = {
+  id: string;
+  title: string;
+  icon: string;
+  /** Only when one revision is read. */
+  body_html?: string;
+  author: UserRef | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WikiSearchHit = {
+  id: string;
+  parent_id: string | null;
+  title: string;
+  icon: string;
+  /** Plain text around the match. */
+  snippet: string;
+  path: WikiRef[];
+  updated_at: string;
+};
+
+export type WikiPagePatch = { title?: string; icon?: string; body_html?: string; version?: number };
 
 export type ReportsOverview = {
   created: number;
@@ -1588,6 +1683,8 @@ export type AIConfig = {
   decisions?: DecisionEngine;
   /** LLM calls run on the workspace's own provider key and cost $0 (GET /v1/ai/provider). */
   own_key?: boolean;
+  /** Decisions run on the workspace's own TypeSafe or provider key and cost $0. */
+  decisions_own_key?: boolean;
 };
 
 // The workspace's AI provider (contracts/ai.md "Provider per workspace").
@@ -1614,6 +1711,23 @@ export type AIProvider = {
   /** Calls on the instance's provider are charged to the AI balance, in US dollars. */
   billing: boolean;
   key: AIProviderKey | null;
+  /** Where decisions run; missing on older servers. */
+  decisions?: AIDecisionsRoute;
+};
+/** Where the workspace's decisions (Jev) run, and its own TypeSafe key. */
+export type AIDecisionsRoute = {
+  runs_on: "instance" | "provider_key" | "typesafe_key" | "none";
+  engine: "jev" | "llm" | "none";
+  key: AIDecisionsKey | null;
+};
+/** A saved TypeSafe key, never the key itself. */
+export type AIDecisionsKey = {
+  last4: string;
+  status: AIKeyStatus;
+  status_at: string | null;
+  created_by: UserRef | null;
+  created_at: string;
+  updated_at: string;
 };
 export type AIProviderKeyInput = { kind: AIKeyKind; api_key: string; base_url?: string; model?: string; fast_model?: string };
 export type AIProviderTestReason = "invalid_key" | "no_funds" | "unreachable" | "busy" | "model_unavailable";
@@ -2165,7 +2279,46 @@ export type MailAccount = {
   oldest_message_at: string | null;
   /** IMAP: folders past the 30 the sync reads; 0 otherwise. */
   folders_left_out: number;
+  /** How its inbox is split into tabs (contracts/collab.md "Categories"). */
+  categories: MailAccountCategories;
 };
+
+/** One tab of an inbox (contracts/collab.md "Categories"). "primary" is always the first. */
+export type MailCategory = { key: string; name: string; description: string; color: MailColor };
+
+export type MailCategorySet = { enabled: boolean; categories: MailCategory[]; updated_at: string; updated_by: UserRef | null };
+
+/** GET /v1/collab/categories. */
+export type MailCategorySettings = {
+  /** The workspace's default; null when there is none. locked: members who are not admins cannot choose their own. */
+  workspace: (MailCategorySet & { locked: boolean }) | null;
+  /** Admins: every team with its own; others: their own teams'. The first in position order the owner is in decides. */
+  teams: (MailCategorySet & { team_id: string; team_name: string; position: number })[];
+  presets: MailCategory[];
+  /** ai: Ollie sorts new mail; rules: sender rules and headers only. */
+  sorting: "ai" | "rules";
+  /** Ollie can suggest categories. */
+  suggest: boolean;
+};
+
+export type MailAccountCategories = {
+  enabled: boolean;
+  /** What its inbox shows; [] when not split. */
+  categories: MailCategory[];
+  source: "account" | "team" | "workspace" | "none";
+  team: { id: string; name: string } | null;
+  /** The account's own choice. */
+  mode: "follow" | "custom" | "off";
+  /** Its own categories, kept while it follows. */
+  own: MailCategory[];
+  /** Ollie may sort its new mail. */
+  ai: boolean;
+  /** The caller cannot change mode or categories: the workspace locks them. */
+  locked: boolean;
+};
+
+/** A sender rule: mail from an address, or from "@domain", goes to a category. */
+export type MailCategoryRule = { id: string; sender: string; category: string; created_at: string };
 
 /** limited: at the workspace's Collab storage allowance (contracts/collab.md "Storage"). */
 export type MailHistoryStatus = "running" | "paused" | "limited" | "done" | "canceled" | "error";
@@ -2311,6 +2464,8 @@ export type MailThread = {
   comment_count: number;
   /** The account's address other than its own the conversation was written to or sent from (an alias); null when none. */
   to_address?: string | null;
+  /** Its category key (contracts/collab.md "Categories"); null when its account's inbox is not split. */
+  category?: string | null;
 };
 
 export type MailAttachment = {
@@ -2492,6 +2647,7 @@ export type MailThreadAction =
   | "spam"
   | "not_spam"
   | "move"
+  | "categorize"
   | "label"
   | "unlabel"
   | "done"
@@ -2506,6 +2662,8 @@ export type MailCounts = {
   addresses?: Record<string, Record<string, number>>;
   /** boxes.assigned by account; only accounts with some. */
   assigned: Record<string, number>;
+  /** By split account, then category key (primary included): unread conversations in its inbox; missing = 0. */
+  categories?: Record<string, Record<string, number>>;
 };
 
 /** `collab.changed` event data. */

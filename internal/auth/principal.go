@@ -27,15 +27,19 @@ func (r Role) Valid() bool { _, ok := roleRank[r]; return ok }
 
 // API key scopes.
 const (
-	ScopeTicketsRead   = "tickets:read"
-	ScopeTicketsWrite  = "tickets:write"
-	ScopeContactsRead  = "contacts:read"
-	ScopeContactsWrite = "contacts:write"
-	ScopeKBRead        = "kb:read"
-	ScopeKBWrite       = "kb:write"
-	ScopeSettingsRead  = "settings:read"
-	ScopeSettingsWrite = "settings:write"
-	ScopeRealtime      = "realtime"
+	ScopeTicketsRead    = "tickets:read"
+	ScopeTicketsWrite   = "tickets:write"
+	ScopeContactsRead   = "contacts:read"
+	ScopeContactsWrite  = "contacts:write"
+	ScopeKBRead         = "kb:read"
+	ScopeKBWrite        = "kb:write"
+	ScopeChangelogRead  = "changelog:read"
+	ScopeChangelogWrite = "changelog:write"
+	ScopeWikiRead       = "wiki:read"
+	ScopeWikiWrite      = "wiki:write"
+	ScopeSettingsRead   = "settings:read"
+	ScopeSettingsWrite  = "settings:write"
+	ScopeRealtime       = "realtime"
 	// ScopeCollabDraft lets an API key read the Collab conversations of the member who
 	// created it and save reply drafts there, never send them or change any mail's state
 	// (contracts/collab.md "AI drafts"). The key acts as that member while they are an
@@ -44,7 +48,7 @@ const (
 )
 
 var AllScopes = []string{ScopeTicketsRead, ScopeTicketsWrite, ScopeContactsRead, ScopeContactsWrite,
-	ScopeKBRead, ScopeKBWrite, ScopeSettingsRead, ScopeSettingsWrite, ScopeRealtime, ScopeCollabDraft}
+	ScopeKBRead, ScopeKBWrite, ScopeChangelogRead, ScopeChangelogWrite, ScopeWikiRead, ScopeWikiWrite, ScopeSettingsRead, ScopeSettingsWrite, ScopeRealtime, ScopeCollabDraft}
 
 type Kind string
 

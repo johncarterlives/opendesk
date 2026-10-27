@@ -151,5 +151,89 @@
     "articleHint": "Which help centers show this article.",
     "fromCollection": "Follows its collection, {{name}}.",
     "only": "Only in the {{name}} help center"
+  },
+  "switch": {
+    "articles": "Articles",
+    "changelog": "Changelog"
+  },
+  "changelog": {
+    "new": "New update",
+    "view": "View changelog",
+    "all": "All updates",
+    "search": "Search updates",
+    "loadMore": "Load more",
+    "undated": "Not dated",
+    "error": "Updates couldn't load",
+    "status": {
+      "scheduled": "Scheduled"
+    },
+    "filter": {
+      "allCategories": "All categories",
+      "scheduled": "Scheduled"
+    },
+    "col": {
+      "update": "Update",
+      "categories": "Categories",
+      "date": "Date"
+    },
+    "empty": {
+      "title": "No updates yet",
+      "description": "Tell customers what's new, improved and fixed. Updates show on your help center's changelog and in its feed.",
+      "noMatch": "No updates match",
+      "noneHere": "Nothing here",
+      "noneHereHint": "No updates match these filters."
+    },
+    "tips": {
+      "categories": "Tag updates as New, Improved or Fixed",
+      "schedule": "Pick a later date to schedule one",
+      "api": "Post them from your release tooling with the API"
+    },
+    "toast": {
+      "published": "Update published",
+      "scheduled": "Update scheduled for {{date}}",
+      "unpublished": "Update unpublished",
+      "deleted": "Update deleted"
+    },
+    "editor": {
+      "notFound": "Update not found",
+      "openInHelp": "Open in help center",
+      "saveLiveHint": "Save changes to the published update",
+      "schedule": "Schedule",
+      "deletePublished": "It disappears from your changelog and its feed right away.",
+      "delete": "Delete update",
+      "titlePlaceholder": "What changed?",
+      "excerptPlaceholder": "A one-line summary for the changelog and its feed",
+      "bodyPlaceholder": "Describe the update. Screenshots and short lists help readers see what's new.",
+      "body": "Update body",
+      "leaveBody": "Your changes to this update haven't been saved."
+    },
+    "details": {
+      "date": "Date",
+      "time": "Time",
+      "whenPublished": "When published",
+      "dateEmptyHint": "Set to the moment you publish.",
+      "dateHint": "Readers see this date on the update.",
+      "scheduledFor": "Scheduled for {{date}}. It stays hidden until then.",
+      "willSchedule": "Publishing schedules it for {{date}}.",
+      "categories": "Categories",
+      "brandHint": "Which help centers show this update.",
+      "urlHint": "The address of this update in your help center. Changing it breaks old links."
+    },
+    "categories": {
+      "remove": "Remove {{name}}",
+      "create": "Add",
+      "search": "Search categories",
+      "none": "No categories yet",
+      "add": "Add",
+      "addFirst": "Add a category",
+      "empty": "No categories",
+      "hint": "Up to {{max}}, such as New, Improved or Fixed.",
+      "problem": {
+        "empty": "Type a name.",
+        "tooLong": "Keep it to {{length}} characters.",
+        "duplicate": "That category is already here.",
+        "full": "Up to {{max}} categories."
+      }
+    }
   }
 }

@@ -58,14 +58,36 @@ export function sentimentLabel(s: string): string {
   return (sentiments as string[]).includes(s) ? i18n.t(`ai:sentiment.${s as Sentiment}`) : s;
 }
 
-export const opLabel: Record<ConditionOp, string> = labels(["contains", "not_contains", "equals", "not_equals", "eq", "gt", "lt"] as const, "ops");
+export const opLabel: Record<ConditionOp, string> = labels(["contains", "not_contains", "equals", "not_equals", "eq", "gt", "lt", "any", "none"] as const, "ops");
 
 /** Text fields take any operator; enumerated fields only is / is not. */
 export function opsFor(field: ConditionField): ConditionOp[] {
   if (field === "sentiment") return ["equals", "not_equals"]; // the API stores "eq" as "equals"
   if (field === "ai_decide") return ["gt", "lt"];
-  if (field === "received_at") return ["equals", "not_equals", "contains"];
-  return field === "subject" || field === "body" || field === "from_email" ? ["contains", "not_contains", "equals", "not_equals"] : ["equals", "not_equals"];
+  if (field === "received_at") return ["equals", "not_equals", "contains", "any", "none"];
+  return field === "subject" || field === "body" || field === "from_email" ? ["contains", "not_contains", "any", "none", "equals", "not_equals"] : ["equals", "not_equals"];
+}
+
+/** The bounds of an any or none phrase list (contracts/api.md). */
+export const MAX_PHRASES = 100;
+const MAX_PHRASE = 500;
+const MAX_PHRASE_LIST = 5000;
+
+/** any and none hold phrases, one per line: the text contains any, or none, of them. */
+export function isPhraseOp(op: string): boolean {
+  return op === "any" || op === "none";
+}
+/** The phrases of an any or none value: one per line, trimmed, empty lines dropped. */
+export function phrases(value: string): string[] {
+  return value
+    .split("\n")
+    .map((p) => p.trim())
+    .filter(Boolean);
+}
+/** A phrase list the API takes: 1 to 100 phrases of up to 500 characters, 5000 in all. */
+export function validPhrases(value: string): boolean {
+  const list = phrases(value);
+  return list.length > 0 && list.length <= MAX_PHRASES && list.every((p) => [...p].length <= MAX_PHRASE) && [...list.join("\n")].length <= MAX_PHRASE_LIST;
 }
 
 const plainActions = ["set_status", "set_priority", "set_severity", "assign_user", "assign_team", "set_reply_address", "add_tag", "remove_tag", "set_field", "send_reply", "add_note", "mark_spam"] as const;

@@ -99,9 +99,9 @@ func writeTools() []*tool {
 				"name":    str("Automation name."),
 				"trigger": enum("When it runs.", "ticket_created", "customer_replied", "agent_replied", "ticket_updated"),
 				"conditions": arr("All must match.", obj(map[string]any{
-					"field": str("subject, body, from_email, channel, mailbox_id, priority, severity, status, tag, sentiment or field.<key>"),
-					"op":    enum("", "contains", "not_contains", "equals", "not_equals", "gt", "gte", "lt", "lte", "any", "all", "none", "set", "not_set"),
-					"value": str(""),
+					"field": str("subject, body, from_email, received_at, channel, mailbox_id, priority, severity, status, tag, sentiment or field.<key>"),
+					"op":    enum("any and none on subject, body, from_email, received_at or tag: the text contains any, or none, of the phrases in value.", "contains", "not_contains", "equals", "not_equals", "gt", "gte", "lt", "lte", "any", "all", "none", "set", "not_set"),
+					"value": str("The value to compare; for any and none on a text field, up to 100 phrases, one per line."),
 				}, "field", "op", "value")),
 				"actions": arr("What it does.", obj(map[string]any{
 					"type":  enum("", "set_status", "set_priority", "set_severity", "assign_user", "assign_team", "add_tag", "remove_tag", "add_note", "ai_triage", "set_field"),
@@ -735,7 +735,18 @@ func proposeAutomation(_ context.Context, _ *runCtx, in json.RawMessage) (any, P
 	changes := []Change{{Field: "When", From: "", To: strings.ReplaceAll(a.Trigger, "_", " ")}}
 	for _, c := range a.Conditions {
 		args.Conditions = append(args.Conditions, map[string]any{"field": c.Field, "op": c.Op, "value": c.Value})
-		changes = append(changes, Change{Field: "If", From: "", To: strings.TrimSpace(c.Field + " " + strings.ReplaceAll(c.Op, "_", " ") + " " + c.Value)})
+		op, value := strings.ReplaceAll(c.Op, "_", " "), c.Value
+		if (c.Op == "any" || c.Op == "none") && !strings.Contains(c.Field, "field.") {
+			// A phrase list, one per line, reads as one line in the preview.
+			var phrases []string
+			for _, p := range strings.Split(value, "\n") {
+				if p = strings.TrimSpace(p); p != "" {
+					phrases = append(phrases, p)
+				}
+			}
+			op, value = "contains "+c.Op+" of", clip(strings.Join(phrases, ", "), 200)
+		}
+		changes = append(changes, Change{Field: "If", From: "", To: strings.TrimSpace(c.Field + " " + op + " " + value)})
 	}
 	for _, x := range a.Actions {
 		m := map[string]any{"type": x.Type, "value": x.Value}

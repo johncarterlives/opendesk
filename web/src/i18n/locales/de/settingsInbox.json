@@ -263,6 +263,10 @@
     "operator": "Operator",
     "action": "Aktion",
     "valueLabel": "Wert für {{field}}",
+    "phrasesLabel": "Begriffe für {{field}}",
+    "phrasesPlaceholder": "Ein Begriff pro Zeile",
+    "phrasesCount_one": "{{count}} Begriff, höchstens {{max}}",
+    "phrasesCount_other": "{{count}} Begriffe, höchstens {{max}}",
     "chooseStatus": "Status wählen",
     "choosePriority": "Priorität wählen",
     "chooseChannel": "Kanal wählen",
@@ -279,7 +283,8 @@
       "name": "Gib der Automatisierung einen Namen.",
       "action": "Füge mindestens eine Aktion hinzu.",
       "condition": "Jede Bedingung braucht einen Wert, oder entferne sie.",
-      "actionValue": "Jede Aktion braucht einen Wert."
+      "actionValue": "Jede Aktion braucht einen Wert.",
+      "phrases": "Eine Liste enthält 1 bis 100 Begriffe, einen pro Zeile, mit je höchstens 500 Zeichen."
     },
     "chooseSeverity": "Schweregrad wählen",
     "noSeverity": "Kein Schweregrad",
@@ -320,7 +325,9 @@
     "not_equals": "ist nicht",
     "eq": "ist",
     "gt": "ist über",
-    "lt": "ist unter"
+    "lt": "ist unter",
+    "any": "enthält eines von",
+    "none": "enthält keines von"
   },
   "actionTypes": {
     "set_status": "Status setzen auf",

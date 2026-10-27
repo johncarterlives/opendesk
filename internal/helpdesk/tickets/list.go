@@ -43,6 +43,21 @@ func forCaller(ctx context.Context, qr db.Querier, p *auth.Principal, q listQuer
 	return q, nil
 }
 
+// prepareListQuery loads and normalizes custom field filters before they reach SQL.
+func prepareListQuery(ctx context.Context, q db.Querier, wid uuid.UUID, f listQuery, sort string) (listQuery, error) {
+	if f.Defs == nil && (len(f.Fields) > 0 || strings.HasPrefix(sort, "field.")) {
+		defs, err := domain.LoadFieldDefs(ctx, q, wid, domain.FieldEntityTicket)
+		if err != nil {
+			return f, err
+		}
+		f.Defs = defs
+		if f.Fields, err = hd.NormalizeFieldFilters(defs, f.Fields); err != nil {
+			return f, err
+		}
+	}
+	return f, nil
+}
+
 // sqlBuilder accumulates WHERE clauses and positional args.
 type sqlBuilder struct {
 	where []string
@@ -388,15 +403,9 @@ type ticketCursor struct {
 // listTickets runs a filtered, sorted, keyset-paginated ticket query.
 func listTickets(ctx context.Context, q db.Querier, wid uuid.UUID, me *uuid.UUID, f listQuery, sort, order string, limit int, cursor string) (httpx.Page[domain.Ticket], error) {
 	var page httpx.Page[domain.Ticket]
-	if f.Defs == nil && (len(f.Fields) > 0 || strings.HasPrefix(sort, "field.")) {
-		defs, err := domain.LoadFieldDefs(ctx, q, wid, domain.FieldEntityTicket)
-		if err != nil {
-			return page, err
-		}
-		f.Defs = defs
-		if f.Fields, err = hd.NormalizeFieldFilters(defs, f.Fields); err != nil {
-			return page, err
-		}
+	var err error
+	if f, err = prepareListQuery(ctx, q, wid, f, sort); err != nil {
+		return page, err
 	}
 	b := &sqlBuilder{}
 	if err := applyFilters(b, wid, me, f); err != nil {
@@ -451,6 +460,24 @@ func listTickets(ctx context.Context, q db.Querier, wid uuid.UUID, me *uuid.UUID
 		raw, _ := json.Marshal(s.key(t))
 		return ticketCursor{K: raw, ID: t.ID}
 	}), nil
+}
+
+// filteredTicketIDs finds every ticket that matches f for this caller. It is used by
+// bulk actions so the same filters and private-team visibility as the inbox apply.
+func filteredTicketIDs(ctx context.Context, q db.Querier, wid uuid.UUID, me *uuid.UUID, f listQuery) ([]uuid.UUID, error) {
+	var err error
+	if f, err = prepareListQuery(ctx, q, wid, f, ""); err != nil {
+		return nil, err
+	}
+	b := &sqlBuilder{}
+	if err := applyFilters(b, wid, me, f); err != nil {
+		return nil, err
+	}
+	rows, err := q.Query(ctx, "SELECT t.id FROM tickets t"+b.sql()+" ORDER BY t.id", b.args...)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
 }
 
 // loadView returns the filters of a view the caller can see.
@@ -606,7 +633,7 @@ func ticketCounts(ctx context.Context, q db.Querier, p *auth.Principal) (TicketC
 		myTeams    = `NOT spam AND status IN ('open','pending') AND team_id IN (SELECT mt.team_id FROM team_members mt WHERE mt.user_id = $2)`
 	)
 	var sUnassigned, sMine, sOpen, sPending, sMyTeams TicketStats
-	dest := []any{&c.Unassigned, &c.Mine, &c.Open, &c.Pending, &c.OnHold, &c.Solved, &c.Spam, &c.MyTeams.Open, &c.MyTeams.Unassigned}
+	dest := []any{&c.Unassigned, &c.Mine, &c.Open, &c.Pending, &c.OnHold, &c.Spam, &c.MyTeams.Open, &c.MyTeams.Unassigned}
 	for _, s := range []*TicketStats{&sUnassigned, &sMine, &sOpen, &sPending, &sMyTeams} {
 		dest = append(dest, s.dest()...)
 	}
@@ -616,14 +643,15 @@ func ticketCounts(ctx context.Context, q db.Querier, p *auth.Principal) (TicketC
 	if err != nil {
 		return c, err
 	}
+	// Every folder but Solved and Spam holds open, pending and on-hold tickets, read here through
+	// the status index. Spam counts spam that is not closed: these tickets' and the solved ones'.
 	err = q.QueryRow(ctx, `SELECT
 		count(*) FILTER (WHERE `+unassigned+`),
 		count(*) FILTER (WHERE `+mine+`),
 		count(*) FILTER (WHERE `+open+`),
 		count(*) FILTER (WHERE NOT spam AND status = 'pending'),
 		count(*) FILTER (WHERE NOT spam AND status = 'on_hold'),
-		count(*) FILTER (WHERE NOT spam AND status = 'solved'),
-		count(*) FILTER (WHERE spam AND status <> 'closed'),
+		count(*) FILTER (WHERE spam),
 		count(*) FILTER (WHERE `+myTeams+`),
 		count(*) FILTER (WHERE `+myTeams+` AND assignee_id IS NULL),
 		`+statCols("", unassigned)+`,
@@ -631,11 +659,22 @@ func ticketCounts(ctx context.Context, q db.Querier, p *auth.Principal) (TicketC
 		`+statCols("", open)+`,
 		`+statCols("", pending)+`,
 		`+statCols("", myTeams)+`
-		FROM tickets WHERE workspace_id = $1 AND deleted_at IS NULL AND `+domain.VisibleSQLUser("tickets", 3, 2), p.WorkspaceID, p.ActorUserID(), hidden).
+		FROM tickets WHERE workspace_id = $1 AND deleted_at IS NULL AND status IN ('open','pending','on_hold')
+			AND `+domain.VisibleSQLUser("tickets", 3, 2), p.WorkspaceID, p.ActorUserID(), hidden).
 		Scan(dest...)
 	if err != nil {
 		return c, err
 	}
+	// Solved tickets are most of a workspace's: their counts read tickets_ws_solved_count_idx alone.
+	var solvedSpam int
+	err = q.QueryRow(ctx, `SELECT count(*) FILTER (WHERE NOT spam), count(*) FILTER (WHERE spam)
+		FROM tickets WHERE workspace_id = $1 AND deleted_at IS NULL AND status = 'solved'
+			AND `+domain.VisibleSQLUser("tickets", 3, 2), p.WorkspaceID, p.ActorUserID(), hidden).
+		Scan(&c.Solved, &solvedSpam)
+	if err != nil {
+		return c, err
+	}
+	c.Spam += solvedSpam
 	c.Stats["ticket_folder:unassigned"] = sUnassigned
 	c.Stats["ticket_folder:mine"] = sMine
 	c.Stats["ticket_folder:open"] = sOpen

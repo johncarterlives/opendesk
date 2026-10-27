@@ -162,4 +162,6 @@ func registerPublic(d *deps.Deps, api huma.API) {
 			}
 			return &struct{ Body []KbArticle }{arts}, nil
 		})
+
+	registerPublicChangelog(d, api, limited, public1)
 }

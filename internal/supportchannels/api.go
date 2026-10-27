@@ -22,6 +22,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/crypto"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/displayname"
+	"github.com/useopendesk/opendesk/internal/domain"
 	"github.com/useopendesk/opendesk/internal/events"
 	"github.com/useopendesk/opendesk/internal/httpx"
 	"github.com/useopendesk/opendesk/internal/ids"
@@ -372,13 +373,13 @@ func (s *Service) register(api huma.API, r chi.Router) {
 			if e != nil {
 				return nil, httpx.Wrap(e)
 			}
-			rows, e := s.d.DB.Pool.Query(ctx, `SELECT id,connection_id,team_id,external_channel_id,external_channel_name,enabled,include_notes,created_at FROM support_channel_destinations WHERE workspace_id=$1 ORDER BY created_at`, p.WorkspaceID)
+			rows, e := s.d.DB.Pool.Query(ctx, `SELECT id,connection_id,team_id,external_channel_id,external_channel_name,enabled,include_notes,message_limit,created_at FROM support_channel_destinations WHERE workspace_id=$1 ORDER BY created_at`, p.WorkspaceID)
 			if e != nil {
 				return nil, httpx.Wrap(e)
 			}
 			list, e := pgx.CollectRows(rows, func(r pgx.CollectableRow) (destination, error) {
 				var d destination
-				e := r.Scan(&d.ID, &d.ConnectionID, &d.TeamID, &d.ExternalChannelID, &d.ExternalChannelName, &d.Enabled, &d.IncludeNotes, &d.CreatedAt)
+				e := r.Scan(&d.ID, &d.ConnectionID, &d.TeamID, &d.ExternalChannelID, &d.ExternalChannelName, &d.Enabled, &d.IncludeNotes, &d.MessageLimit, &d.CreatedAt)
 				return d, e
 			})
 			if e != nil {
@@ -396,6 +397,124 @@ func (s *Service) register(api huma.API, r chi.Router) {
 			return out, nil
 		})
 
+	huma.Register(api, huma.Operation{OperationID: "list-support-channel-deliveries", Method: http.MethodGet, Path: "/v1/support-channels/deliveries", Tags: tags, Summary: "List recent support channel deliveries"},
+		func(ctx context.Context, in *struct {
+			httpx.ListParams
+		}) (*struct {
+			Body httpx.Page[delivery]
+		}, error) {
+			p, err := auth.RequireWorkspace(ctx, auth.RoleAdmin, auth.ScopeSettingsRead)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			var cur struct {
+				T   time.Time `json:"t"`
+				Seq int64     `json:"seq"`
+			}
+			if err := httpx.DecodeCursor(in.Cursor, &cur); err != nil {
+				return nil, err
+			}
+			if cur.T.IsZero() {
+				cur.T = time.Now().UTC().Add(time.Hour)
+			}
+			hidden, err := domain.HiddenTeams(ctx, s.d.DB.Pool, p)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			rows, err := s.d.DB.Pool.Query(ctx, `SELECT d.event_seq,e.type,t.number,d.status,d.attempts,d.last_error,d.created_at,d.updated_at,d.delivered_at
+				FROM support_channel_dispatches d JOIN events e ON e.workspace_id=d.workspace_id AND e.seq=d.event_seq
+				LEFT JOIN tickets t ON t.workspace_id=d.workspace_id AND t.id=COALESCE(NULLIF(e.data->>'ticket_id','')::uuid,NULLIF(e.data->'ticket'->>'id','')::uuid,NULLIF(e.data->'message'->>'ticket_id','')::uuid)
+				WHERE d.workspace_id=$1 AND (d.created_at,d.event_seq)<($2,$3)
+AND `+domain.VisibleSQLUser("t", 5, 6)+`
+AND (e.team_id IS NULL OR NOT e.team_id = ANY($5::uuid[]) OR t.assignee_id=$6)
+ORDER BY d.created_at DESC,d.event_seq DESC LIMIT $4`, p.WorkspaceID, cur.T, cur.Seq, in.Limit+1, hidden, p.ActorUserID())
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (delivery, error) {
+				var d delivery
+				err := r.Scan(&d.EventSeq, &d.EventType, &d.TicketNumber, &d.Status, &d.Attempts, &d.LastError, &d.CreatedAt, &d.UpdatedAt, &d.DeliveredAt)
+				return d, err
+			})
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			return &struct {
+				Body httpx.Page[delivery]
+			}{httpx.NewPage(list, in.Limit, func(d delivery) any {
+				return map[string]any{"t": d.CreatedAt, "seq": d.EventSeq}
+			})}, nil
+		})
+
+	huma.Register(api, huma.Operation{OperationID: "retry-support-channel-delivery", Method: http.MethodPost, Path: "/v1/support-channels/deliveries/{event_seq}/retry", Tags: tags, Summary: "Retry a failed support channel delivery", DefaultStatus: http.StatusAccepted},
+		func(ctx context.Context, in *struct {
+			EventSeq int64 `path:"event_seq" minimum:"1"`
+		}) (*struct {
+			Body struct {
+				EventSeq int64  `json:"event_seq"`
+				Status   string `json:"status"`
+			}
+		}, error) {
+			p, err := requireAdminUser(ctx)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				var status string
+				var team, ticketID *uuid.UUID
+				err := tx.QueryRow(ctx, `SELECT d.status,e.team_id,COALESCE(NULLIF(e.data->>'ticket_id','')::uuid,NULLIF(e.data->'ticket'->>'id','')::uuid,NULLIF(e.data->'message'->>'ticket_id','')::uuid)
+                FROM support_channel_dispatches d JOIN events e ON e.workspace_id=d.workspace_id AND e.seq=d.event_seq
+                WHERE d.workspace_id=$1 AND d.event_seq=$2 FOR UPDATE OF d`, p.WorkspaceID, in.EventSeq).Scan(&status, &team, &ticketID)
+				if db.IsNotFound(err) {
+					return httpx.NotFound("Support channel delivery")
+				}
+				if err != nil {
+					return err
+				}
+				var assignee *uuid.UUID
+				if ticketID != nil {
+					ticket, err := domain.LoadVisibleTicket(ctx, tx, p, *ticketID)
+					if err != nil {
+						return err
+					}
+					if ticket.Assignee != nil {
+						assignee = &ticket.Assignee.ID
+					}
+				}
+				visible, err := domain.CanSee(ctx, tx, p, team, assignee)
+				if err != nil {
+					return err
+				}
+				if !visible {
+					return httpx.NotFound("Support channel delivery")
+				}
+				if status != "failed" {
+					return httpx.Conflict("Only failed deliveries can be retried.")
+				}
+				if _, err := tx.Exec(ctx, `UPDATE support_channel_dispatches SET status='queued',updated_at=now() WHERE workspace_id=$1 AND event_seq=$2`, p.WorkspaceID, in.EventSeq); err != nil {
+					return err
+				}
+				if _, err := s.d.Jobs.InsertTx(ctx, tx, jobs.SupportChannelDispatchArgs{WorkspaceID: p.WorkspaceID, EventSeq: in.EventSeq}, nil); err != nil {
+					return err
+				}
+				if _, err := events.Publish(ctx, tx, events.Event{WorkspaceID: p.WorkspaceID, Type: "support_channel_delivery.retry_queued", Admins: true, Data: map[string]any{"event_seq": in.EventSeq}}); err != nil {
+					return err
+				}
+				return audit.Log(ctx, tx, p, p.WorkspaceID, "support_channel.delivery_retried", "support_channel_delivery", nil, map[string]any{"event_seq": in.EventSeq})
+			})
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			out := &struct {
+				Body struct {
+					EventSeq int64  `json:"event_seq"`
+					Status   string `json:"status"`
+				}
+			}{}
+			out.Body.EventSeq, out.Body.Status = in.EventSeq, "queued"
+			return out, nil
+		})
+
 	huma.Register(api, huma.Operation{OperationID: "create-support-channel-destination", Method: http.MethodPost, Path: "/v1/support-channels/destinations", Tags: tags, Summary: "Route a team to a provider channel", DefaultStatus: http.StatusCreated},
 		func(ctx context.Context, in *struct {
 			Body struct {
@@ -404,6 +523,7 @@ func (s *Service) register(api huma.API, r chi.Router) {
 				ExternalChannelID   string `json:"external_channel_id" maxLength:"200"`
 				ExternalChannelName string `json:"external_channel_name,omitempty" maxLength:"100"`
 				IncludeNotes        bool   `json:"include_notes,omitempty" doc:"Mirror internal notes too. Off by default: only customer and agent replies are posted."`
+				MessageLimit        *int   `json:"message_limit,omitempty" minimum:"500" maximum:"3500" doc:"Maximum mirrored message length before linking to the complete message in opendesk."`
 			}
 		}) (*struct{ Body destination }, error) {
 			p, e := requireAdminUser(ctx)
@@ -436,10 +556,14 @@ func (s *Service) register(api huma.API, r chi.Router) {
 			if strings.TrimSpace(in.Body.ExternalChannelID) == "" {
 				return nil, httpx.Validation("Enter the provider channel ID.")
 			}
-			d := destination{ID: ids.New(), ConnectionID: cid, TeamID: team, ExternalChannelID: strings.TrimSpace(in.Body.ExternalChannelID), ExternalChannelName: cleanExternalName(in.Body.ExternalChannelName), Enabled: true, IncludeNotes: in.Body.IncludeNotes, CreatedAt: time.Now().UTC()}
+			limit := 3500
+			if in.Body.MessageLimit != nil {
+				limit = *in.Body.MessageLimit
+			}
+			d := destination{ID: ids.New(), ConnectionID: cid, TeamID: team, ExternalChannelID: strings.TrimSpace(in.Body.ExternalChannelID), ExternalChannelName: cleanExternalName(in.Body.ExternalChannelName), Enabled: true, IncludeNotes: in.Body.IncludeNotes, MessageLimit: limit, CreatedAt: time.Now().UTC()}
 			inserted := false
 			e = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
-				tag, err := tx.Exec(ctx, `INSERT INTO support_channel_destinations(id,workspace_id,connection_id,team_id,external_channel_id,external_channel_name,include_notes,created_at) SELECT $1,$2,$3,$4,$5,$6,$7,$8 WHERE EXISTS(SELECT 1 FROM support_channel_connections WHERE workspace_id=$2 AND id=$3)`, d.ID, p.WorkspaceID, d.ConnectionID, d.TeamID, d.ExternalChannelID, d.ExternalChannelName, d.IncludeNotes, d.CreatedAt)
+				tag, err := tx.Exec(ctx, `INSERT INTO support_channel_destinations(id,workspace_id,connection_id,team_id,external_channel_id,external_channel_name,include_notes,message_limit,created_at) SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9 WHERE EXISTS(SELECT 1 FROM support_channel_connections WHERE workspace_id=$2 AND id=$3)`, d.ID, p.WorkspaceID, d.ConnectionID, d.TeamID, d.ExternalChannelID, d.ExternalChannelName, d.IncludeNotes, d.MessageLimit, d.CreatedAt)
 				if err != nil {
 					return err
 				}
@@ -450,7 +574,7 @@ func (s *Service) register(api huma.API, r chi.Router) {
 				if _, err := events.Publish(ctx, tx, events.Event{WorkspaceID: p.WorkspaceID, Type: "support_channel_destination.created", Data: map[string]any{"support_channel_destination": d}}); err != nil {
 					return err
 				}
-				return audit.Log(ctx, tx, p, p.WorkspaceID, "support_channel.destination_created", "support_channel_destination", &d.ID, map[string]any{"connection_id": d.ConnectionID, "team_id": d.TeamID, "include_notes": d.IncludeNotes})
+				return audit.Log(ctx, tx, p, p.WorkspaceID, "support_channel.destination_created", "support_channel_destination", &d.ID, map[string]any{"connection_id": d.ConnectionID, "team_id": d.TeamID, "include_notes": d.IncludeNotes, "message_limit": d.MessageLimit})
 			})
 			if db.IsUniqueViolation(e, "") {
 				return nil, httpx.Conflict("That team or provider channel already has a destination.")

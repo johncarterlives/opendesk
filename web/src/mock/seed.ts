@@ -3,6 +3,7 @@
 import { normalizeAliases, setGmailSendAs } from "./aliases";
 import { applyDecisions, severityFor } from "./decisions";
 import type {
+  ChangelogEntry,
   ApiKey,
   Brand,
   RoutingRule,
@@ -141,6 +142,7 @@ export function baseWorkspace(id: string, name: string, slug: string): WsData {
     mailboxes: [],
     collections: [],
     articles: [],
+    changelog: [],
     apiKeys: [],
     webhooks: [],
     deliveries: {},
@@ -1212,6 +1214,71 @@ function seedMargin(): WsData {
       views: a.views,
       published_at: a.status === "published" ? ago((90 - i * 4) * DAY) : null,
       updated_at: updated,
+    };
+  });
+
+  // Changelog: a few months of Margin's updates, one scheduled, one draft, one only on Pressroom's help center.
+  const updates: { title: string; excerpt: string; body: string; categories: string[]; days: number; status?: "draft"; brand?: string }[] = [
+    {
+      title: "Offline mode for iOS and Android",
+      excerpt: "Read and edit every notebook without a connection. Changes sync when you're back online.",
+      body: "<p>Margin now works without a connection on iOS and Android. Open any notebook, edit it, and your changes sync as soon as you're back online.</p><h2>What's included</h2><ul><li>Every notebook you opened in the last 30 days is kept on the device.</li><li>Conflicts are merged line by line, and you can see both versions.</li></ul>",
+      categories: ["New"],
+      days: -6,
+    },
+    {
+      title: "Faster search across large workspaces",
+      excerpt: "Search results now appear up to four times faster in workspaces with more than 10,000 notes.",
+      body: "<p>We rebuilt the search index. Results now appear up to four times faster in large workspaces, and typos are forgiven.</p>",
+      categories: ["Improved"],
+      days: 4,
+    },
+    {
+      title: "PDF export keeps your page breaks",
+      excerpt: "Exported PDFs now respect manual page breaks and keep images on the page they belong to.",
+      body: "<p>Exported PDFs now respect manual page breaks, and images no longer jump to the next page.</p>",
+      categories: ["Fixed"],
+      days: 11,
+    },
+    {
+      title: "Shared notebooks with guest access",
+      excerpt: "Invite people outside your workspace to read or comment on a single notebook.",
+      body: "<p>Invite anyone to a single notebook as a guest. Guests can read and comment, and never see the rest of your workspace.</p>",
+      categories: ["New", "Improved"],
+      days: 26,
+    },
+    {
+      title: "Press kit downloads in the Pressroom",
+      excerpt: "Journalists can now download logos and screenshots straight from the Pressroom help center.",
+      body: "<p>Logos, screenshots and product shots are now one click away in the Pressroom.</p>",
+      categories: ["New"],
+      days: 40,
+      brand: "pressroom",
+    },
+    {
+      title: "Calendar view for notebooks",
+      excerpt: "See notes with a date on a month calendar.",
+      body: "<p>A draft of the calendar view announcement.</p>",
+      categories: ["New"],
+      days: 0,
+      status: "draft",
+    },
+  ];
+  ws.changelog = updates.map((u): ChangelogEntry => {
+    const at = u.status === "draft" ? null : u.days < 0 ? iso(NOW - u.days * DAY) : ago(u.days * DAY);
+    return {
+      id: uuid(),
+      title: u.title,
+      slug: slugify(u.title),
+      excerpt: u.excerpt,
+      body_html: u.body,
+      categories: u.categories,
+      status: u.status ?? "published",
+      published_at: at,
+      author: userRef(uid(pick(["maya", "jonas", "priya"] as const))),
+      brand_id: brandOf(u.brand),
+      created_at: ago((Math.max(u.days, 0) + 2) * DAY),
+      updated_at: ago(Math.max(u.days, 0) * DAY + int(1, 20) * HOUR),
     };
   });
 

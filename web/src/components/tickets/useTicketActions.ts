@@ -3,7 +3,7 @@
 // back on failure. Merge and delete wait for the server.
 
 import { useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api/endpoints";
+import { api, type TicketBulkQuery } from "@/lib/api/endpoints";
 import type { Contact, Mailbox, Member, SuggestionField, Tag, TagGroup, TagRef, Team, Ticket, TicketPatch } from "@/lib/api/types";
 import { withoutSuggestion } from "@/lib/decisions";
 import { qk } from "@/lib/queries";
@@ -147,8 +147,10 @@ export function useBulkUpdate() {
   const qc = useQueryClient();
   const me = useSession((s) => s.user?.id ?? "");
   return useMutation({
-    mutationFn: (b: { ids: string[]; patch?: TicketPatch; delete?: true }) => api.tickets.bulk(b),
-    onMutate: ({ ids, patch, delete: del }) => {
+    mutationFn: (b: ({ ids: string[] } | { query: TicketBulkQuery }) & { patch?: TicketPatch; delete?: true }) => api.tickets.bulk(b),
+    onMutate: (b) => {
+      const ids = "ids" in b ? b.ids : [];
+      const { patch, delete: del } = b;
       const prev = ids.map((id) => cachedTicket(qc, id)).filter((t): t is Ticket => !!t);
       for (const t of prev) {
         if (del) removeTicketEverywhere(qc, t.id);

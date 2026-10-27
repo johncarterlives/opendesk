@@ -8,7 +8,7 @@ import Step from '../../../components/Step.astro';
 import Callout from '../../../components/Callout.astro';
 import Fold from '../../../components/Fold.astro';
 
-Every [brand](/guides/brands-and-widgets/) has a help center of its own: a website with the brand's [articles](/guides/knowledge-base/), its title, logo and colour. It has a default address from the start, and it can move to a domain you own, such as `help.example.com`.
+Every [brand](/guides/brands-and-widgets/) has a help center of its own: a website with the brand's [articles](/guides/knowledge-base/) and [changelog](/guides/changelog/), its title, logo and colour. It has a default address from the start, and it can move to a domain you own, such as `help.example.com`.
 
 ## The default address
 
@@ -89,9 +89,10 @@ Deleting a brand removes its custom domain too.
 Help centers are built to be found:
 
 - Every page names its address as the canonical URL: your custom domain once it is active, else the default address. The permanent redirects from older addresses move search rankings along with the pages.
-- Each address has a `/sitemap.xml` that lists every published topic and article, and a `/robots.txt` that points at it. Submit `https://help.example.com/sitemap.xml` in Google Search Console or Bing Webmaster Tools to have new pages found sooner.
+- Each address has a `/sitemap.xml` that lists every published topic, article and changelog entry, and a `/robots.txt` that points at it. Submit `https://help.example.com/sitemap.xml` in Google Search Console or Bing Webmaster Tools to have new pages found sooner.
 - The interface is translated into every language opendesk supports. Pages link their other languages with `hreflang`, and `?lang=` picks one; articles are shown as written. Without `?lang=`, pages are in the brand's language, else the workspace's.
 - Pages carry Open Graph tags and structured data, so links shared in chat apps and social networks show the title and description, and search results can show breadcrumbs.
+- The changelog has an Atom feed at `/changelog/feed.xml`, which RSS readers can follow ([Changelog](/guides/changelog/#the-feed)).
 - Pages are cached for about a minute, so an article you publish or edit shows up within a minute.
 
 <Fold>
@@ -105,5 +106,6 @@ Help centers get their own hosts when the instance sets `HELP_DOMAIN`, with a wi
 ## Related
 
 - [Knowledge base and help center](/guides/knowledge-base/)
+- [Changelog](/guides/changelog/)
 - [Brands and widgets](/guides/brands-and-widgets/)
 - [Configuration reference](/self-hosting/configuration/#help-centers)

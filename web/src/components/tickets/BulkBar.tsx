@@ -20,6 +20,7 @@ import { useLabelChoices } from "./detail/LabelPicker";
 import { useDisplay } from "./fields";
 import { useBulkUpdate } from "./useTicketActions";
 import { TeamMove, useTeamsCtx } from "./teams";
+import type { TicketBulkQuery } from "@/lib/api/endpoints";
 
 /** A bar action: labelled, or icon-only with a tooltip when the list is narrow. */
 const Act = forwardRef<HTMLButtonElement, { compact?: boolean; icon: ReactNode; label: string } & React.ButtonHTMLAttributes<HTMLButtonElement>>(function Act(
@@ -39,7 +40,23 @@ const Act = forwardRef<HTMLButtonElement, { compact?: boolean; icon: ReactNode; 
   );
 });
 
-export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; onClear: () => void; spamView?: boolean; compact?: boolean }) {
+export function BulkBar({
+  ids,
+  query,
+  allMatching,
+  onSelectAll,
+  onClear,
+  spamView,
+  compact,
+}: {
+  ids: string[];
+  query: TicketBulkQuery;
+  allMatching: boolean;
+  onSelectAll?: () => void;
+  onClear: () => void;
+  spamView?: boolean;
+  compact?: boolean;
+}) {
   const { t } = useTranslation("inbox");
   useTranslation("indicators");
   const bulk = useBulkUpdate();
@@ -52,13 +69,22 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
   const teams = useTeamsCtx();
   const qc = useQueryClient();
   const n = ids.length;
+  const target = allMatching ? { query } : { ids };
 
-  const run = (b: Parameters<typeof bulk.mutate>[0], done: string) =>
-    bulk.mutate(b, { onSuccess: () => toast.success(done) });
+  const run = (action: { patch: Parameters<typeof bulk.mutate>[0]["patch"] }, done: (count: number) => string) =>
+    bulk.mutate(
+      { ...target, ...action },
+      {
+        onSuccess: (result) => {
+          toast.success(done(allMatching ? result?.updated ?? 0 : n));
+          if (allMatching) onClear();
+        },
+      },
+    );
 
   return (
     <AnimatePresence>
-      {n > 0 && (
+      {(n > 0 || allMatching) && (
         <motion.div
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -69,9 +95,14 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
           className="absolute bottom-5 left-1/2 z-20 flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-lg border border-line bg-raised p-1 pl-3 shadow-float"
         >
           <span className="mr-2 whitespace-nowrap text-[12px] text-fg-2">
-            <AnimatedNumber value={n} className="font-medium text-fg" />
-            {!compact && <> {t("bulk.selectedWord", { count: n })}</>}
+            {allMatching ? t("bulk.allMatching") : <AnimatedNumber value={n} className="font-medium text-fg" />}
+            {!allMatching && !compact && <> {t("bulk.selectedWord", { count: n })}</>}
           </span>
+          {!allMatching && onSelectAll && (
+            <Button variant="ghost" size="xs" onClick={onSelectAll}>
+              {t("bulk.selectAll")}
+            </Button>
+          )}
           <span className="mx-1 h-5 w-px bg-line" />
           <Picker
             side="top"
@@ -83,19 +114,19 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
                 .filter((m) => m.role !== "viewer")
                 .map((m) => ({ value: m.user.id, label: m.user.name, icon: <Avatar name={m.user.name} src={m.user.avatar_url} size="xs" presence={m.presence} /> })),
             ]}
-            onSelect={(v) => run({ ids, patch: { assignee_id: v === "__none" ? null : v } }, t("bulk.assigned", { count: n }))}
+            onSelect={(v) => run({ patch: { assignee_id: v === "__none" ? null : v } }, (count) => t("bulk.assigned", { count }))}
             trigger={
               <Act compact={compact} icon={<UserRound className="size-3.5" />} label={t("bulk.assign")} />
             }
           />
-          {teams.hasTeams && (
+          {!allMatching && teams.hasTeams && (
             <TeamMove
               side="top"
               tickets={n ? ids.map((id) => cachedTicket(qc, id)).filter((x): x is Ticket => !!x) : []}
               onMove={(teamId) =>
                 run(
-                  { ids, patch: { team_id: teamId } },
-                  teamId ? t("bulk.moved", { count: n, team: teams.team(teamId)?.name ?? "" }) : t("bulk.teamCleared", { count: n }),
+                  { patch: { team_id: teamId } },
+                  (count) => (teamId ? t("bulk.moved", { count, team: teams.team(teamId)?.name ?? "" }) : t("bulk.teamCleared", { count })),
                 )
               }
               trigger={<Act compact={compact} icon={<Users className="size-3.5" />} label={t("bulk.team")} />}
@@ -106,7 +137,7 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
             placeholder={t("bulk.setStatus")}
             value={null}
             items={statusOrder.map((s) => ({ value: s, label: display.status(s), icon: <StatusIcon status={s} /> }))}
-            onSelect={(v) => run({ ids, patch: { status: v as TicketStatus } }, t("bulk.marked", { count: n, status: statusLabel(v as TicketStatus).toLowerCase() }))}
+            onSelect={(v) => run({ patch: { status: v as TicketStatus } }, (count) => t("bulk.marked", { count, status: statusLabel(v as TicketStatus).toLowerCase() }))}
             trigger={
               <Act compact={compact} icon={<CircleDot className="size-3.5" />} label={t("bulk.status")} />
             }
@@ -116,7 +147,7 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
             placeholder={t("bulk.setPriority")}
             value={null}
             items={priorityOrder.map((p) => ({ value: p, label: display.priority(p), icon: <PriorityIcon priority={p} /> }))}
-            onSelect={(v) => run({ ids, patch: { priority: v as Priority } }, t("bulk.prioritised", { count: n, priority: priorityLabel(v as Priority).toLowerCase() }))}
+            onSelect={(v) => run({ patch: { priority: v as Priority } }, (count) => t("bulk.prioritised", { count, priority: priorityLabel(v as Priority).toLowerCase() }))}
             trigger={
               <Act compact={compact} icon={<Signal className="size-3.5" />} label={t("bulk.priority")} />
             }
@@ -131,8 +162,8 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
             ]}
             onSelect={(v) =>
               v === "__none"
-                ? run({ ids, patch: { severity: null } }, t("bulk.severityCleared", { count: n }))
-                : run({ ids, patch: { severity: v as Severity } }, t("bulk.severitySet", { count: n, severity: severityLabel(v as Severity) }))
+                ? run({ patch: { severity: null } }, (count) => t("bulk.severityCleared", { count }))
+                : run({ patch: { severity: v as Severity } }, (count) => t("bulk.severitySet", { count, severity: severityLabel(v as Severity) }))
             }
             trigger={
               <Act compact={compact} icon={<Siren className="size-3.5" />} label={t("bulk.severity")} />
@@ -149,7 +180,7 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
             items={[...labelChoices.items, ...tagSel.filter((x) => !tags?.some((g) => g.name === x)).map((x) => ({ value: x, label: x }))]}
             onOpenChange={(o) => {
               if (!o && tagSel.length) {
-                run({ ids, patch: { add_tags: tagSel } }, t("bulk.tagged", { count: n }));
+                run({ patch: { add_tags: tagSel } }, (count) => t("bulk.tagged", { count }));
                 setTagSel([]);
               }
             }}
@@ -162,14 +193,20 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
             icon={<ShieldAlert className="size-3.5" />}
             label={spamView ? t("bulk.notSpam") : t("bulk.spam")}
             onClick={() => {
-              const those = [...ids];
               bulk.mutate(
-                { ids: those, patch: { spam: !spamView } },
+                { ...target, patch: { spam: !spamView } },
                 {
-                  onSuccess: () =>
-                    toast.success(spamView ? t("bulk.unspammed", { count: n }) : t("bulk.spammed", { count: n }), {
-                      action: { label: t("toast.undo"), onClick: () => bulk.mutate({ ids: those, patch: { spam: spamView } }) },
-                    }),
+                  onSuccess: (result) => {
+                    const done = spamView ? t("bulk.unspammed", { count: allMatching ? result?.updated ?? 0 : n }) : t("bulk.spammed", { count: allMatching ? result?.updated ?? 0 : n });
+                    if (allMatching) {
+                      onClear();
+                      toast.success(done);
+                      return;
+                    }
+                    toast.success(done, {
+                      action: { label: t("toast.undo"), onClick: () => bulk.mutate({ ids, patch: { spam: spamView } }) },
+                    });
+                  },
                 },
               );
             }}
@@ -183,13 +220,13 @@ export function BulkBar({ ids, onClear, spamView, compact }: { ids: string[]; on
               icon={<Trash2 className="size-3.5" />}
               onClick={() =>
                 confirm.show(
-                  t("bulk.deleteBody", { count: n }),
+                  allMatching ? t("bulk.deleteAllBody") : t("bulk.deleteBody", { count: n }),
                   async () => {
-                    await bulk.mutateAsync({ ids, delete: true });
+                    const result = await bulk.mutateAsync({ ...target, delete: true });
                     onClear();
-                    toast.success(t("bulk.deleted", { count: n }));
+                    toast.success(t("bulk.deleted", { count: allMatching ? result?.deleted ?? 0 : n }));
                   },
-                  { title: t("bulk.deleteTitle", { count: n }), confirmLabel: t("bulk.delete"), danger: true },
+                  { title: allMatching ? t("bulk.deleteAllTitle") : t("bulk.deleteTitle", { count: n }), confirmLabel: t("bulk.delete"), danger: true },
                 )
               }
             />
