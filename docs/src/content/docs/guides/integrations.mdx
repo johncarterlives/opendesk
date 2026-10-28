@@ -90,6 +90,203 @@ Integrations are for your team's Ollie. To let the [AI agent](/guides/ai/#the-ai
 
 </Callout>
 
+## Ticket panels
+
+A ticket panel shows, beside the ticket and under the contact, what another product knows about the ticket's contact: their orders in your Shopify store, or anything a system of your own can answer, such as an ERP's orders and supplier dates, a billing system's subscription or a CRM's account. Panels only read. They load when someone opens the ticket, each on its own, and a product that is slow or down shows a short note instead of holding the ticket up. Admins add them in **Settings, Integrations, Ticket panels**, or from the **Shopify** and **Your own data** cards of the integrations catalog. Tickets show a panel's name above what it answers: to change it, open the panel's menu and click **Rename**.
+
+<Steps>
+<Step title="Shopify: create an app for your shop">
+
+In Shopify's [Dev Dashboard](https://dev.shopify.com/dashboard), create an app. On its version, give the Admin API the **read_customers** and **read_orders** scopes, release the version and install the app on your shop. Shopify shows orders from the last 60 days unless the app also has **read_all_orders**. The app's **Settings** show its **Client ID** and **Client secret**.
+
+The app must belong to the shop's own Shopify organization: create it while signed in to the organization the shop is in.
+
+</Step>
+<Step title="Add the panel">
+
+Click **Add a panel**, keep **Shopify**, enter the shop's `myshopify.com` domain and paste the client ID and secret. opendesk checks them with the shop before saving them, then asks Shopify for a new access every 24 hours on its own. An app made in Shopify admin before 2026 still has an Admin API access token: choose **An access token** and paste it instead. Each ticket whose contact has an email then shows the customer (with their order count, what they spent and their tags) and their last five orders: number, date, total, payment and fulfilment status, each line with its unit price, the city and country it ships to and the shipping method, discount codes, what was refunded, and the parcel's tracking link. A cancelled order is marked with its date. Every order opens in Shopify admin. The city and country need the app's access to customer addresses (protected customer data in the Dev Dashboard); without it the orders show without them.
+
+</Step>
+<Step title="Shopify: choose what tickets show">
+
+Open the panel's menu and click **Choose what shows**. Tick the customer's fields (tags, their email in the store, number of orders, total spent) and each order's (payment and fulfilment status, products and their unit prices, city, country and shipping method, discount codes, refunded amount, tracking), and how many orders show, from one to five. A preview beside the list shows a ticket as it will look. What you leave out is not read from Shopify at all, and the customer's name and each order's number, date and total always show. If your store tags customers for marketing (newsletter, signup source), untick **Tags**. **Use the defaults** puts back what a new panel shows.
+
+</Step>
+<Step title="A system of your own: add a panel from a URL">
+
+Choose **From a URL** and enter an https address of yours. opendesk shows its signing secret once: keep it. When a ticket is open, opendesk posts the ticket, its contact and the order or invoice numbers it finds in the ticket to that URL, and shows what it answers: cards, labelled values, lists and short notes, in the same look as the Shopify panel.
+
+</Step>
+<Step title="Choose which numbers it looks for">
+
+Open the panel's menu and click **Order references**. opendesk looks for them in the ticket's subject and its newest messages (never a deleted one), and sends only what it finds, never the messages. The default finds a `#` and digits (`#1042`) or a few capitals and digits (`S00042`, `SO-2026-0042`, `INV/2026/00012`, `PO4471`), so years, prices, postcodes and phone numbers are left alone. Write your own regular expression if your numbers look different (with a group, only the group is sent; large repeat counts such as `{100}` are refused), try it on a sample text, or leave it empty to send none.
+
+</Step>
+</Steps>
+
+### What your URL receives
+
+A `POST`, signed like webhook deliveries (`OD-Signature: t=<unix>,v1=<hex>`, the HMAC-SHA256 of `"<t>.<body>"` with the secret):
+
+```json
+{ "panel_id": "…", "workspace_id": "…", "refresh": false,
+  "ticket": { "id": "…", "number": 1042, "subject": "Where is my order S00042?",
+              "references": ["S00042"] },
+  "contact": { "id": "…", "email": "ada@example.com", "name": "Ada Buyer",
+               "emails": ["ada@example.com"], "phone": "+32 470 12 34 56" } }
+```
+
+`references` holds at most ten numbers, `phone` is there when the contact has one, and `refresh` is true when an agent clicked the refresh button. A new or deleted message shows in them on the next open; a changed phone or an edited note within a minute, or at once on refresh. A workspace's panels read tickets at most 60 times a minute together; past that a panel says so until the minute ends, and a ticket it already read still shows. opendesk only ever adds fields, so ignore the ones you don't use.
+
+### What it answers
+
+At most 64 KB of JSON with `"version": 2` and a list of `blocks`. Four kinds:
+
+- **card**: one record, such as an order, an invoice, a subscription or a deal. A `title` (with an optional `url`), a `subtitle`, `badges`, `links`, labelled `fields`, `lines` (with a `quantity`) and a `footer` for totals. With `"collapsed": true` it shows folded to its title, links, subtitle and badges until the agent opens it.
+- **fields**: labelled values, `{ "label", "value", "url"? }`.
+- **list**: rows, `{ "title", "subtitle"?, "value"?, "badge"?, "url"?, "links"? }`.
+- **note**: one short sentence, `{ "text", "tone"? }`.
+
+A value is plain text or a number, or one of three typed values that opendesk writes in each agent's own language and timezone:
+
+- `{ "type": "date", "value": "2026-11-12", "relative": true }`: a day, or a time such as `2026-11-12T09:30:00Z`. `relative` adds "in 3 days" or "5 days ago".
+- `{ "type": "money", "amount": "1890.00", "currency": "EUR" }`
+- `{ "type": "badge", "text": "Overdue", "tone": "danger" }`
+
+`links` open the same record in each tool that holds it, as small buttons after the title: up to 5 of `{ "label", "url", "icon"? }`. The label names the button and shows as its tooltip. The icon is one opendesk draws itself: `external-link`, `store`, `shopping-cart`, `receipt`, `file-text`, `truck`, `package`, `user`, `building`, `phone`, `mail`, `credit-card`, `map-pin`, or the logo of a product opendesk ships, such as `shopify`, `stripe` or `paypal`. Without one the button shows the label's first letter; opendesk never loads a picture from your link's site.
+
+Tones are `neutral`, `info`, `success`, `warning` and `danger`. Everything shows as plain text and https links, never HTML. Anything opendesk does not recognize, such as a block type from a later version, is skipped and the rest still shows. Up to 10 blocks show, with 30 fields, 20 lines and 20 rows each. An answer is kept for a minute unless it says otherwise with `"cache_seconds"` (0 to 600). Answer `204` or `404` when you know nothing about the contact.
+
+<Fold>
+
+#### Example: an ERP order with a late supplier
+
+```json
+{ "version": 2, "blocks": [
+  { "type": "card", "title": "Sales order S00042", "url": "https://erp.example.com/so/42",
+    "subtitle": "Ships from Milan",
+    "badges": [ { "text": "Supplier late", "tone": "warning" }, { "text": "Paid", "tone": "success" } ],
+    "fields": [
+      { "label": "Promised", "value": { "type": "date", "value": "2026-11-04", "relative": true } },
+      { "label": "Supplier date", "value": { "type": "date", "value": "2026-11-12", "relative": true } } ],
+    "lines": [
+      { "quantity": 2, "title": "Arco floor lamp", "subtitle": "Marble",
+        "value": { "type": "money", "amount": "1890.00", "currency": "EUR" } } ],
+    "footer": [ { "label": "Total", "value": { "type": "money", "amount": "3780.00", "currency": "EUR" } } ] } ] }
+```
+
+</Fold>
+
+<Fold>
+
+#### Example: orders in each tool that holds them, older ones folded
+
+```json
+{ "version": 2, "blocks": [
+  { "type": "card", "title": "Order #1042", "url": "https://erp.example.com/so/42",
+    "badges": [ { "text": "Shipped", "tone": "success" } ],
+    "links": [
+      { "label": "Open in the shop", "url": "https://admin.shopify.com/store/lumen/orders/5042", "icon": "shopify" },
+      { "label": "Open in the ERP", "url": "https://erp.example.com/so/42", "icon": "receipt" },
+      { "label": "Track the parcel", "url": "https://carrier.example.com/t/JD0123", "icon": "truck" } ],
+    "fields": [ { "label": "Shipped", "value": { "type": "date", "value": "2026-10-24" } } ] },
+  { "type": "card", "title": "Order #1035", "url": "https://erp.example.com/so/35", "collapsed": true,
+    "badges": [ { "text": "Delivered", "tone": "success" } ],
+    "links": [ { "label": "Open in the shop", "url": "https://admin.shopify.com/store/lumen/orders/5035", "icon": "shopify" } ],
+    "footer": [ { "label": "Total", "value": { "type": "money", "amount": "1150.00", "currency": "EUR" } } ] } ] }
+```
+
+The newest order shows open; the older one shows its title, links and badge, and opens on a click.
+
+</Fold>
+
+<Fold>
+
+#### Example: a billing subscription
+
+```json
+{ "version": 2, "cache_seconds": 300, "blocks": [
+  { "type": "fields", "title": "Subscription", "items": [
+    { "label": "Plan", "value": { "type": "badge", "text": "Pro yearly", "tone": "info" } },
+    { "label": "Renews", "value": { "type": "date", "value": "2026-11-19", "relative": true } },
+    { "label": "Amount", "value": { "type": "money", "amount": 490, "currency": "EUR" } } ] },
+  { "type": "list", "title": "Invoices", "items": [
+    { "title": "INV/2026/00012", "url": "https://billing.example.com/inv/12",
+      "value": { "type": "money", "amount": "490.00", "currency": "EUR" },
+      "badge": { "text": "Overdue", "tone": "danger" } } ] } ] }
+```
+
+</Fold>
+
+<Fold>
+
+#### Example: a CRM account
+
+```json
+{ "version": 2, "blocks": [
+  { "type": "card", "title": "Lumen Studio", "url": "https://crm.example.com/accounts/77",
+    "subtitle": "Interior architects, Brussels",
+    "badges": [ { "text": "Key account", "tone": "info" } ],
+    "fields": [
+      { "label": "Owner", "value": "Camille" },
+      { "label": "Last call", "value": { "type": "date", "value": "2026-10-21T14:00:00Z", "relative": true } } ] },
+  { "type": "list", "title": "Open deals", "items": [
+    { "title": "Office fit-out", "subtitle": "Proposal sent",
+      "value": { "type": "money", "amount": "24500", "currency": "EUR" } } ] },
+  { "type": "note", "text": "Prefers email over phone." } ] }
+```
+
+</Fold>
+
+<Fold>
+
+#### A minimal server
+
+Python with the standard library only: it checks the signature (and that it is less than five minutes old) before answering. Replace `find_order` with a lookup in your own system.
+
+```python
+import hashlib, hmac, json, os, time
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+SECRET = os.environ["OPENDESK_PANEL_SECRET"].encode()  # the pnsec_… secret
+
+def signed(body: bytes, header: str) -> bool:
+    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)
+    t, v1 = parts.get("t", ""), parts.get("v1", "")
+    if not t.isdigit() or abs(time.time() - int(t)) > 300:
+        return False
+    mac = hmac.new(SECRET, t.encode() + b"." + body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(mac, v1)
+
+def find_order(refs, email):
+    return {"number": refs[0], "url": f"https://erp.example.com/so/{refs[0]}", "due": "2026-11-12"} if refs else None
+
+class Panel(BaseHTTPRequestHandler):
+    def do_POST(self):
+        body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+        if not signed(body, self.headers.get("OD-Signature", "")):
+            return self.send_error(401)
+        req = json.loads(body)
+        order = find_order(req["ticket"]["references"], req["contact"]["email"])
+        if not order:
+            self.send_response(204)
+            return self.end_headers()
+        answer = {"version": 2, "blocks": [{"type": "card", "title": f"Order {order['number']}", "url": order["url"],
+            "fields": [{"label": "Delivery", "value": {"type": "date", "value": order["due"], "relative": True}}]}]}
+        out = json.dumps(answer).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(out)))
+        self.end_headers()
+        self.wfile.write(out)
+
+HTTPServer(("", 8080), Panel).serve_forever()  # behind your https proxy
+```
+
+</Fold>
+
+An answer from before blocks, `{ "sections": [ { "title", "items": [ { "label", "value", "url"? } ] } ] }`, still shows as it always has. A panel whose credentials or secret are refused is marked **Needs attention** in settings until you replace the credentials, change the URL or it works again. When you rotate the app's secret in the Dev Dashboard, paste the new one with **Replace the credentials**. The full schema is in [the contract](https://github.com/useopendesk/opendesk/blob/main/contracts/integrations.md#the-http-answer).
+
 <Fold>
 
 ## Security
@@ -97,7 +294,8 @@ Integrations are for your team's Ollie. To let the [AI agent](/guides/ai/#the-ai
 - Sign-ins and tokens are stored encrypted and are never shown again, in the app, the API, events or logs.
 - opendesk only talks to public https servers, and checks every address a server names (its sign-in pages included) the same way.
 - Account sign-in uses OAuth with PKCE. The sign-in is bound to the browser that started it.
-- Connecting, changing and disconnecting an integration is recorded in the audit log.
+- Connecting, changing and disconnecting an integration or a ticket panel is recorded in the audit log.
+- A ticket panel never looks up the contact of a ticket the reader cannot see.
 - What a connected product returns is treated as data: it cannot approve changes or change Ollie's instructions.
 
 </Fold>
@@ -113,7 +311,7 @@ MCP_<KEY>_CLIENT_ID=...
 MCP_<KEY>_CLIENT_SECRET=...   # if the product issued one
 ```
 
-`<KEY>` is the integration's key in capitals, for example `MCP_SLACK_CLIENT_ID` (Slack and Box only accept apps registered in advance; GitHub signs in with a GitHub App when one is set and asks for a token otherwise; the compose file passes their variables). For another product, add its two variables to the `opendesk` service's `environment` in `docker-compose.yml`. The API for integrations and ticket links is in [the contract](https://github.com/useopendesk/opendesk/blob/main/contracts/integrations.md).
+`<KEY>` is the integration's key in capitals, for example `MCP_SLACK_CLIENT_ID` (Slack and Box only accept apps registered in advance; GitHub signs in with a GitHub App when one is set and asks for a token otherwise; the compose file passes their variables). For another product, add its two variables to the `opendesk` service's `environment` in `docker-compose.yml`. The API for integrations, ticket links and ticket panels is in [the contract](https://github.com/useopendesk/opendesk/blob/main/contracts/integrations.md).
 
 </Fold>
 

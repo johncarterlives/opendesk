@@ -16,14 +16,16 @@ func TestDeletedMessageLeavesNothingBehind(t *testing.T) {
 	tk := createTicket(t, e, ws, map[string]any{"channel": "api", "kind": "note", "contact": map[string]any{"email": "c@example.com"}})
 	e.Do("PATCH", "/v1/tickets/"+tk.ID.String(), ws.Admin.As(ws), map[string]any{"assignee_id": ws.Admin.ID.String()}).Want(t, 200)
 	runTriggers(t, e, ws.ID)
-	secret := "my card is 4242 4242 4242 4242"
-	msg := inbound(t, e, ws, tk.ID, secret)
+	// The message's text is found by a word no id or timestamp can hold: digits alone also
+	// turn up in event ids and created_at.
+	const mark = "quokka"
+	msg := inbound(t, e, ws, tk.ID, mark+" says my card is 4242 4242 4242 4242")
 	runTriggers(t, e, ws.ID)
-	if n := countRows(t, e, `SELECT count(*) FROM notifications WHERE ticket_id = $1 AND type = 'customer_replied' AND data->>'preview' LIKE '%4242%'`, tk.ID); n != 1 {
+	if n := countRows(t, e, `SELECT count(*) FROM notifications WHERE ticket_id = $1 AND type = 'customer_replied' AND data->>'preview' LIKE '%' || $2 || '%'`, tk.ID, mark); n != 1 {
 		t.Fatalf("customer_replied previews %d", n)
 	}
 	e.Do("DELETE", "/v1/tickets/"+tk.ID.String()+"/messages/"+msg.ID.String(), ws.Admin.As(ws), nil).Want(t, 204)
-	if n := countRows(t, e, `SELECT count(*) FROM notifications WHERE ticket_id = $1 AND data::text LIKE '%4242%'`, tk.ID); n != 0 {
+	if n := countRows(t, e, `SELECT count(*) FROM notifications WHERE ticket_id = $1 AND data::text LIKE '%' || $2 || '%'`, tk.ID, mark); n != 0 {
 		t.Fatal("a notification still quotes the deleted message")
 	}
 	if n := countRows(t, e, `SELECT count(*) FROM notifications WHERE ticket_id = $1 AND type = 'customer_replied'`, tk.ID); n != 1 {
@@ -36,7 +38,7 @@ func TestDeletedMessageLeavesNothingBehind(t *testing.T) {
 	}
 	stored := false
 	for _, ev := range evs {
-		stored = stored || strings.Contains(string(ev.Data), "4242")
+		stored = stored || strings.Contains(string(ev.Data), mark)
 	}
 	if !stored {
 		t.Fatal("expected the message's own message.created to hold its text before redaction")
@@ -45,7 +47,7 @@ func TestDeletedMessageLeavesNothingBehind(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, ev := range evs {
-		if strings.Contains(string(ev.Data), "4242") {
+		if strings.Contains(string(ev.Data), mark) {
 			t.Fatalf("replayed %s carries the deleted text: %s", ev.Type, ev.Data)
 		}
 	}

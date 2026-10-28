@@ -52,6 +52,11 @@ func RunTrigger(ctx context.Context, d *deps.Deps, a jobs.TicketTriggerArgs) err
 		}
 	}
 	return d.DB.Tx(ctx, func(tx pgx.Tx) error {
+		// Runs for one ticket share an advisory lock, so each sees the previous run's writes
+		// while agents can keep editing during a model call.
+		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('ticket_trigger:' || $1::text, 0))`, a.TicketID); err != nil {
+			return err
+		}
 		t, err := domain.LoadTicket(ctx, tx, a.WorkspaceID, a.TicketID)
 		if db.IsNotFound(err) {
 			return nil // deleted since
@@ -450,6 +455,15 @@ func (r *triggerRun) apply(ctx context.Context, a automation, f facts) ([]string
 				continue
 			}
 			patch.Assignee = Opt[uuid.UUID]{Set: true, Value: id}
+		case "assign_replier":
+			id, err := r.replier(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if id == nil {
+				continue
+			}
+			patch.Assignee = Opt[uuid.UUID]{Set: true, Value: *id}
 		case "assign_team":
 			id, err := uuid.Parse(act.Value)
 			if err != nil || hd.CheckRef(ctx, r.tx, r.wid, "team", id) != nil {
@@ -517,6 +531,29 @@ func (r *triggerRun) apply(ctx context.Context, a automation, f facts) ([]string
 		}
 	}
 	return fields, nil
+}
+
+// replier is the member who wrote the agent reply the run is about (a ticket an agent
+// opens starts with theirs), or nil: a run about no message, a customer's message, a note,
+// an automation, API or AI reply, and a member removed since have no one to assign.
+func (r *triggerRun) replier(ctx context.Context) (*uuid.UUID, error) {
+	if r.messageID == nil {
+		return nil, nil
+	}
+	var id *uuid.UUID
+	err := r.tx.QueryRow(ctx, `SELECT author_user_id FROM messages WHERE workspace_id = $1 AND ticket_id = $2 AND id = $3
+		AND kind = 'reply' AND direction = 'outbound' AND author_type = 'user' AND NOT ai AND deleted_at IS NULL`,
+		r.wid, r.tid, *r.messageID).Scan(&id)
+	if db.IsNotFound(err) || err == nil && id == nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if hd.CheckMember(ctx, r.tx, r.wid, *id) != nil {
+		return nil, nil
+	}
+	return id, nil
 }
 
 func (r *triggerRun) addMessage(ctx context.Context, act hd.Action, f facts) error {

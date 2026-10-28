@@ -813,6 +813,9 @@ function ActionRow({
         <SinglePick items={members} value={a.value} onChange={set} placeholder={ts("edit.chooseTeammate")} invalid={invalid} width={280} className="w-full" />
       );
       break;
+    case "assign_replier":
+      control = <span className="text-[12px] text-fg-3">{ts("edit.assignReplierHint")}</span>;
+      break;
     case "assign_team":
       control = <SinglePick items={teams} value={a.value} onChange={set} placeholder={ts("edit.chooseTeam")} invalid={invalid} className="w-full" />;
       break;

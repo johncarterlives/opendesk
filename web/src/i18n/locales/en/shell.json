@@ -11,6 +11,8 @@
     "settings": "Settings",
     "manageViews": "Manage views",
     "createView": "Create a view",
+    "viewSection": "Views in {{name}}",
+    "viewSectionCurrent": "contains the open view",
     "collapse": "Collapse",
     "expand": "Expand sidebar",
     "open": "Open navigation",
@@ -119,7 +121,9 @@
       "importArticles_one": "{{count}} article",
       "importArticles_other": "{{count}} articles",
       "importAnd": "{{a}} and {{b}}",
-      "importSource": "history"
+      "importSource": "history",
+      "supportChannel": "Support channel",
+      "supportChannelUnhealthy": "{{name}} needs attention"
     },
     "hold": {
       "paused": "Paused until {{when}}: nothing reaches your email, phone or desktop",

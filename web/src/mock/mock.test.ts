@@ -60,6 +60,35 @@ describe("mock backend", () => {
     expect((await call("GET", `/v1/reports/overview?${range}&team_id=nope`)).status).toBe(422);
   });
 
+  it("reports each agent's work to admins, and only your own to other members", async () => {
+    const range = "from=2026-09-12&to=2026-10-11";
+    const all = (await call("GET", `/v1/reports/agents?${range}`)).body;
+    const ws = db.workspaces[0];
+    const roster = ws.members.filter((m) => m.role !== "viewer").map((m) => m.user_id);
+    expect(all.online_time).toBe("all");
+    expect(all.data.map((r: { user: { id: string } }) => r.user.id).sort()).toEqual([...roster].sort());
+    expect(all.data.every((r: { online_minutes: number | null }) => r.online_minutes !== null)).toBe(true);
+    const solved = all.data.map((r: { solved: number }) => r.solved);
+    expect(solved).toEqual([...solved].sort((a: number, b: number) => b - a));
+    const team = ws.teams.find((t) => t.members.some((m) => m.role !== "observer"))!;
+    const one = (await call("GET", `/v1/reports/agents?${range}&team_id=${team.id}`)).body;
+    expect(one.data.length).toBeLessThanOrEqual(team.members.length);
+    expect(one.data.every((r: { user: { id: string } }) => team.members.some((m) => m.user_id === r.user.id && m.role !== "observer"))).toBe(true);
+    expect((await call("GET", `/v1/reports/agents?${range}&team_id=nope`)).status).toBe(422);
+    // An agent sees only their own row, with the figures an admin sees on it.
+    const me = db.meId;
+    const agent = ws.members.find((m) => m.role === "agent")!.user_id;
+    db.meId = agent;
+    try {
+      const mine = (await call("GET", `/v1/reports/agents?${range}`)).body;
+      expect(mine.online_time).toBe("self");
+      expect(mine.data).toEqual(all.data.filter((r: { user: { id: string } }) => r.user.id === agent));
+      expect(mine.data[0].online_minutes).not.toBeNull();
+    } finally {
+      db.meId = me;
+    }
+  });
+
   it("gives collections and articles a brand, and scopes help centers by it", async () => {
     const brands = (await call("GET", "/v1/brands")).body.data as { id: string; slug: string; is_default: boolean }[];
     const press = brands.find((b) => b.slug === "pressroom")!;
@@ -141,14 +170,27 @@ describe("mock backend", () => {
       "/v1/sla-policies", "/v1/automations", "/v1/mailboxes", "/v1/members", "/v1/invitations", "/v1/teams",
       "/v1/api-keys", "/v1/webhooks", "/v1/audit-logs", "/v1/notifications", "/v1/kb/collections", "/v1/kb/articles",
       "/v1/saved-replies", "/v1/me/sessions", "/v1/widget/settings", "/v1/workspace", "/v1/search?q=sso",
-      "/v1/reports/overview?from=2026-09-12&to=2026-10-11", "/v1/public/help/margin", "/v1/auth/config",
-      "/v1/integrations", "/v1/integrations/catalog",
+      "/v1/reports/overview?from=2026-09-12&to=2026-10-11", "/v1/reports/agents?from=2026-09-12&to=2026-10-11", "/v1/public/help/margin", "/v1/auth/config",
+      "/v1/integrations", "/v1/integrations/catalog", "/v1/ticket-panels",
       "/v1/support-channels/providers", "/v1/support-channels/connections", "/v1/support-channels/destinations",
     ]) {
       expect((await call("GET", path)).status, path).toBe(200);
     }
     // The survey token rides in the body.
     expect((await call("POST", "/v1/public/csat/survey", { token: "demo" })).status).toBe(200);
+  });
+
+  it("serves views in sections and keeps a view's section as the API does", async () => {
+    const seeded = (await call("GET", "/v1/views")).body.data as { section: string | null }[];
+    expect(new Set(seeded.map((v) => v.section).filter(Boolean))).toEqual(new Set(["Escalations"]));
+    const v = (await call("POST", "/v1/views", { name: "Refunds", shared: true, section: "  Billing   and plans " })).body;
+    expect(v.section).toBe("Billing and plans");
+    expect((await call("PATCH", `/v1/views/${v.id}`, { name: "Refunds due" })).body.section).toBe("Billing and plans");
+    expect((await call("PATCH", `/v1/views/${v.id}`, { section: "x".repeat(61) })).status).toBe(422);
+    expect((await call("PATCH", `/v1/views/${v.id}`, { section: "<b>x</b>" })).status).toBe(422);
+    expect((await call("PATCH", `/v1/views/${v.id}`, { section: "  " })).body.section).toBeNull();
+    expect((await call("PATCH", `/v1/views/${v.id}`, { section: "Delivery" })).body.section).toBe("Delivery");
+    expect((await call("PATCH", `/v1/views/${v.id}`, { section: null })).body.section).toBeNull();
   });
 
   it("keeps an automation's phrase list one trimmed phrase per line", async () => {

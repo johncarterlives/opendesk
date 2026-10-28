@@ -1142,11 +1142,12 @@ function seedMargin(): WsData {
     { id: uuid(), title: "Disclosure received", shortcut: "vuln", body_html: "<p>Thanks for the report. We've reproduced it and are working on a fix. We'll let you know when it ships and credit you in our security page if you like.</p>", team_id: teamId("Security"), created_at: ago(40 * DAY), updated_at: ago(12 * DAY) },
     { id: uuid(), title: "Pressroom custom domains", shortcut: "domain", body_html: "<p>DNS changes can take up to 48 hours. Once the CNAME points at <strong>domains.pressroom.app</strong>, the domain switches to active on its own.</p>", team_id: teamId("Support"), created_at: ago(30 * DAY), updated_at: ago(3 * DAY) },
   );
+  // Escalations is a section (contracts/api.md, /v1/views): its views fold together in the sidebar.
   ws.views = [
     { id: uuid(), name: "Urgent", shared: true, filters: { status: ["open", "pending"], priority: ["urgent", "high"] }, position: 0 },
     { id: uuid(), name: "Billing queue", shared: false, team_id: teamId("Billing"), filters: { status: ["open", "pending", "on_hold"], team_id: teamId("Billing")! }, position: 1 },
-    { id: uuid(), name: "Waiting on engineering", shared: false, filters: { status: ["on_hold", "pending"], tag: "Bug" }, position: 2 },
-    { id: uuid(), name: "Legal requests due", shared: false, team_id: teamId("Legal"), filters: { status: ["open", "pending"], team_id: teamId("Legal")! }, position: 3 },
+    { id: uuid(), name: "Waiting on engineering", shared: false, section: "Escalations", filters: { status: ["on_hold", "pending"], tag: "Bug" }, position: 2 },
+    { id: uuid(), name: "Legal requests due", shared: false, team_id: teamId("Legal"), section: "Escalations", filters: { status: ["open", "pending"], team_id: teamId("Legal")! }, position: 3 },
   ];
   const tagName = (n: string) => n;
   const autos: Automation[] = [

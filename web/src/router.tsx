@@ -543,6 +543,7 @@ const reportsRoute = createRoute({
     // The filters' names: teams and brands.
     void context.queryClient.prefetchQuery(q.teams());
     void context.queryClient.prefetchQuery({ ...q.brands(), retry: false });
+    void context.queryClient.prefetchQuery(q.reportAgents(reportsQuery(deps)));
     return context.queryClient.ensureQueryData(q.reports(reportsQuery(deps)));
   },
   component: page(() => import("./pages/reports/ReportsPage")),

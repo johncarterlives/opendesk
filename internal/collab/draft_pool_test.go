@@ -29,8 +29,7 @@ func TestDraftMissingOnSingleConnectionPool(t *testing.T) {
 	defer database.Close()
 	d := *w.d
 	d.DB = database
-	s := *w.s
-	s.d = &d
+	s := newService(&d)
 	ctx, cancel := context.WithTimeout(w.ctx, time.Second)
 	defer cancel()
 	_, _, _, unlock, err := s.lockDraft(ctx, w.agent, ids.New().String())

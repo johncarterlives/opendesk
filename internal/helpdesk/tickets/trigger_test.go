@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -158,6 +159,122 @@ func TestAutomationAssignsFirstReplyWhenUnassigned(t *testing.T) {
 	runTriggers(t, e, ws.ID)
 	if assignee := getTicket(t, e, ws, assigned.ID).Assignee; assignee == nil || assignee.ID != ws.Admin.ID {
 		t.Fatalf("assigned ticket assignee %+v", assignee)
+	}
+}
+
+func TestAutomationAssignsTheAgentWhoReplied(t *testing.T) {
+	e, ws := newEnv(t)
+	mailbox := addMailbox(t, e, ws)
+	// Whoever answers an unowned ticket first takes it.
+	take := addAutomation(t, e, ws, jobs.TriggerAgentReplied, 0,
+		[]map[string]string{{"field": "assignee_id", "op": "equals", "value": "none"}},
+		[]map[string]string{{"type": "assign_replier", "value": ""}})
+	// A run about no message has nobody to assign: the action is skipped, the rest runs.
+	flag := addAutomation(t, e, ws, jobs.TriggerTicketUpdated, 1,
+		[]map[string]string{{"field": "priority", "op": "equals", "value": "high"}},
+		[]map[string]string{{"type": "assign_replier", "value": ""}, {"type": "add_tag", "value": "flagged"}})
+
+	tk := createTicket(t, e, ws, map[string]any{"channel": "email", "mailbox_id": mailbox.String(), "contact": map[string]string{"email": "customer@example.com"}})
+	runTriggers(t, e, ws.ID)
+	e.Do("POST", "/v1/tickets/"+tk.ID.String()+"/messages", ws.Admin.As(ws), map[string]any{"kind": "note", "body_html": "<p>Looking</p>"}).Want(t, 201)
+	runTriggers(t, e, ws.ID)
+	if assignee := getTicket(t, e, ws, tk.ID).Assignee; assignee != nil {
+		t.Fatalf("a note assigned %+v", assignee)
+	}
+	e.Do("POST", "/v1/tickets/"+tk.ID.String()+"/messages", ws.Admin.As(ws), map[string]any{"kind": "reply", "body_html": "<p>First reply</p>"}).Want(t, 201)
+	runTriggers(t, e, ws.ID)
+	if assignee := getTicket(t, e, ws, tk.ID).Assignee; assignee == nil || assignee.ID != ws.Admin.ID {
+		t.Fatalf("assignee after the first reply %+v, want the admin who replied", assignee)
+	}
+	// A later reply by someone else leaves the ticket with whoever took it.
+	e.Do("POST", "/v1/tickets/"+tk.ID.String()+"/messages", ws.Agent.As(ws), map[string]any{"kind": "reply", "body_html": "<p>Another reply</p>"}).Want(t, 201)
+	runTriggers(t, e, ws.ID)
+	if assignee := getTicket(t, e, ws, tk.ID).Assignee; assignee == nil || assignee.ID != ws.Admin.ID {
+		t.Fatalf("assignee after another reply %+v", assignee)
+	}
+
+	other := createTicket(t, e, ws, map[string]any{"channel": "email", "mailbox_id": mailbox.String(), "contact": map[string]string{"email": "customer@example.com"}})
+	runTriggers(t, e, ws.ID)
+	e.Do("PATCH", "/v1/tickets/"+other.ID.String(), ws.Agent.As(ws), map[string]any{"priority": "high"}).Want(t, 200)
+	runTriggers(t, e, ws.ID)
+	if got := getTicket(t, e, ws, other.ID); got.Assignee != nil || len(got.Tags) != 1 || got.Tags[0].Name != "flagged" {
+		t.Fatalf("updated ticket assignee %+v tags %+v", got.Assignee, got.Tags)
+	}
+	var runs []int64
+	e.Scalar(`SELECT array_agg(run_count ORDER BY position) FROM automations WHERE id = ANY($1)`, &runs, []uuid.UUID{take, flag})
+	if !slices.Equal(runs, []int64{1, 1}) {
+		t.Fatalf("run counts %v", runs)
+	}
+}
+
+func TestAutomationAssignsOneOfTwoAgentsReplyingAtOnce(t *testing.T) {
+	e, ws := newEnv(t)
+	mailbox := addMailbox(t, e, ws)
+	take := addAutomation(t, e, ws, jobs.TriggerAgentReplied, 0,
+		[]map[string]string{{"field": "assignee_id", "op": "equals", "value": "none"}},
+		[]map[string]string{{"type": "assign_replier", "value": ""}})
+	tk := createTicket(t, e, ws, map[string]any{"channel": "email", "mailbox_id": mailbox.String(), "contact": map[string]string{"email": "both" + "@" + "example.com"}, "kind": "note"})
+	runTriggers(t, e, ws.ID)
+	e.Do("POST", "/v1/tickets/"+tk.ID.String()+"/messages", ws.Admin.As(ws), map[string]any{"kind": "reply", "body_html": "<p>Mine</p>"}).Want(t, 201)
+	e.Do("POST", "/v1/tickets/"+tk.ID.String()+"/messages", ws.Agent.As(ws), map[string]any{"kind": "reply", "body_html": "<p>No, mine</p>"}).Want(t, 201)
+	raw := e.Jobs(jobs.TicketTriggerArgs{}.Kind(), ws.ID)
+	if len(raw) != 2 {
+		t.Fatalf("%d trigger jobs, want 2", len(raw))
+	}
+
+	// Another write holds the ticket while both runs start, so neither has committed when
+	// the other reads the ticket.
+	hold, err := e.D.DB.Pool.Begin(e.Ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer hold.Rollback(e.Ctx)
+	var holder int32
+	if err := hold.QueryRow(e.Ctx, `SELECT pg_backend_pid() FROM tickets WHERE id = $1 FOR UPDATE`, tk.ID).Scan(&holder); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	errs := make([]error, len(raw))
+	for i, r := range raw {
+		var a jobs.TicketTriggerArgs
+		if err := json.Unmarshal(r, &a); err != nil {
+			t.Fatal(err)
+		}
+		wg.Add(1)
+		go func() { defer wg.Done(); errs[i] = tickets.RunTrigger(e.Ctx, e.D, a) }()
+	}
+	for deadline := time.Now().Add(10 * time.Second); ; time.Sleep(10 * time.Millisecond) {
+		var waiting int
+		// The second waiter queues behind the first, so count everyone behind the holder.
+		e.Scalar(`WITH RECURSIVE behind(pid) AS (SELECT $1::int UNION
+			SELECT a.pid FROM pg_stat_activity a, behind b WHERE b.pid = ANY(pg_blocking_pids(a.pid)))
+			SELECT count(*) - 1 FROM behind`, &waiting, holder)
+		if waiting == len(raw) {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("%d runs waiting on the ticket, want %d", waiting, len(raw))
+		}
+	}
+	if err := hold.Commit(e.Ctx); err != nil {
+		t.Fatal(err)
+	}
+	wg.Wait()
+	for _, err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Whichever run comes first takes the ticket; the other finds it taken.
+	var runs, assigned int64
+	e.Scalar(`SELECT run_count FROM automations WHERE id = $1`, &runs, take)
+	e.Scalar(`SELECT count(*) FROM activities WHERE ticket_id = $1 AND type = 'assigned'`, &assigned, tk.ID)
+	if runs != 1 || assigned != 1 {
+		t.Fatalf("the automation ran %d times and assigned %d times, want once: the second reply took the ticket from the first", runs, assigned)
+	}
+	if a := getTicket(t, e, ws, tk.ID).Assignee; a == nil || (a.ID != ws.Admin.ID && a.ID != ws.Agent.ID) {
+		t.Fatalf("assignee %+v, want one of the agents who replied", a)
 	}
 }
 

@@ -72,6 +72,7 @@ const simpleLists: Record<string, { key: () => readonly unknown[]; field: string
   routing_rule: { key: () => qk.routingRules, field: "routing_rule" },
   webhook: { key: () => qk.webhooks, field: "webhook" },
   integration: { key: () => qk.integrations, field: "integration" },
+  ticket_panel: { key: () => qk.ticketPanels, field: "panel" },
   support_channel_connection: { key: () => qk.supportChannelConnections, field: "support_channel_connection" },
   support_channel_destination: { key: () => qk.supportChannelDestinations, field: "support_channel_destination" },
 };
@@ -503,6 +504,8 @@ function applyInScope(qc: QueryClient, env: Envelope, ctx: ApplyContext): void {
       qc.setQueryData<{ connection_id: string }[]>(qk.supportChannelDestinations, (old) => old?.filter((x) => x.connection_id !== id));
     }
     if (resource === "view") refreshCounts(qc);
+    // A changed or removed panel's answers are from before the change.
+    if (resource === "ticket_panel" && verb !== "created") void qc.invalidateQueries({ queryKey: qk.of("tickets", "panels") });
     // Tickets name their brand and widget; a removed one leaves lists to refetch.
     if ((resource === "brand" || resource === "widget") && verb === "deleted") void qc.invalidateQueries({ queryKey: qk.ticketLists });
     // Records embed label names and colours, and field changes can clear stored values.

@@ -48,6 +48,15 @@ func (g *gmailProvider) do(ctx context.Context, method, path string, in, out any
 
 func (g *gmailProvider) Close() {}
 
+// fork is a client of the same account for a fetcher of its own (fetchEach).
+func (g *gmailProvider) fork() *gmailProvider { return &gmailProvider{s: g.s, a: copyAccount(g.a)} }
+
+// gmailFetched is a message read for the sync: its labels, and its raw MIME when new.
+type gmailFetched struct {
+	m   *gmailMessage
+	raw []byte
+}
+
 type gmailLabel struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
@@ -651,44 +660,45 @@ func (s *service) applyGmailChanges(ctx context.Context, p *pass, g *gmailProvid
 		if err != nil {
 			return nil, err
 		}
-		// Network first, then one transaction for the chunk.
-		fetched := map[string]*newMessage{}
+		// Network first, a few messages at once, then one transaction for the chunk. A known
+		// message only needs its labels; a new one is read whole.
+		var todo []string
+		var at []int // todo's index in chunk
 		for i := range chunk {
 			c := &chunk[i]
-			if c.Deleted || (known[c.ID] == nil && !admit[c.ID]) {
+			if c.Deleted || (known[c.ID] == nil && !admit[c.ID]) || (known[c.ID] != nil && c.Labels) {
 				continue
 			}
-			if known[c.ID] != nil && c.Labels {
-				continue
-			}
-			if known[c.ID] != nil {
-				// Known: its labels are enough.
+			todo, at = append(todo, c.ID), append(at, i)
+		}
+		res, errs := fetchEach(ctx, gmailFetchers, todo, g.fork, func(ctx context.Context, gp *gmailProvider, id string) (gmailFetched, error) {
+			if known[id] != nil {
 				var m gmailMessage
-				err := g.do(ctx, http.MethodGet, "/messages/"+url.PathEscape(c.ID)+"?format=minimal", nil, &m)
-				if isNotFound(err) {
-					c.Deleted = true
-					continue
-				}
-				if err != nil {
-					return nil, err
-				}
-				c.LabelIDs, c.Labels = m.LabelIDs, true
-				continue
+				err := gp.do(ctx, http.MethodGet, "/messages/"+url.PathEscape(id)+"?format=minimal", nil, &m)
+				return gmailFetched{m: &m}, err
 			}
-			m, raw, err := g.getRaw(ctx, c.ID)
-			if isNotFound(err) {
+			m, raw, err := gp.getRaw(ctx, id)
+			return gmailFetched{m: m, raw: raw}, err
+		})
+		fetched := map[string]*newMessage{}
+		for k, err := range errs {
+			c := &chunk[at[k]]
+			switch {
+			case isNotFound(err):
 				c.Deleted = true // gone before we read it
 				continue
-			}
-			if err == errTooLarge {
+			case err == errTooLarge:
 				s.log.Info("collab skipping oversized message", "account_id", p.a.ID)
 				continue
-			}
-			if err != nil {
+			case err != nil:
 				return nil, err
 			}
-			c.LabelIDs, c.Labels, c.ThreadID = m.LabelIDs, true, m.ThreadID
-			fetched[c.ID] = &newMessage{RemoteID: c.ID, ThreadRemoteID: m.ThreadID, Raw: raw, Date: m.date(), Signals: gmailSignals(m.LabelIDs)}
+			m := res[k].m
+			c.LabelIDs, c.Labels = m.LabelIDs, true
+			if known[c.ID] == nil {
+				c.ThreadID = m.ThreadID
+				fetched[c.ID] = &newMessage{RemoteID: c.ID, ThreadRemoteID: m.ThreadID, Raw: res[k].raw, Date: m.date(), Signals: gmailSignals(m.LabelIDs)}
+			}
 		}
 		err = p.batch(ctx, func(tx pgx.Tx) error {
 			for _, c := range chunk {

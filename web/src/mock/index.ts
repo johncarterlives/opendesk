@@ -25,6 +25,7 @@ import { registerDrafts, stageDraft } from "./handlers/drafts";
 import { registerKnowledge } from "./handlers/knowledge";
 import { registerImports } from "./handlers/imports";
 import { registerIntegrations } from "./handlers/integrations";
+import { registerTicketPanels } from "./handlers/ticketPanels";
 import { registerLabels } from "./handlers/labels";
 import { applyMockImap, syncReceiving } from "./handlers/mailhost";
 import { registerMcp } from "./handlers/mcp";
@@ -100,6 +101,7 @@ export function installMock(): void {
   registerMcp();
   registerKnowledge();
   registerIntegrations();
+  registerTicketPanels();
   registerImports();
   registerAiClients();
   registerBots();

@@ -56,6 +56,7 @@ import { compose } from "@/lib/collab/compose";
 import { AccountDot } from "@/components/collab/bits";
 import { WorkspaceBadge } from "@/components/workspaces/WorkspaceBadge";
 import { useWorkspaces } from "@/lib/workspaces";
+import { cleanSection } from "@/lib/viewSections";
 
 const itemCls =
   "flex h-9 cursor-default select-none items-center gap-2.5 rounded-md px-2.5 text-[13px] text-fg transition-colors duration-100 animate-item-in motion-reduce:animate-none data-[selected=true]:bg-hover [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-fg-3";
@@ -351,9 +352,10 @@ export function CommandPalette() {
                 {views?.map((v) => (
                   <Item
                     key={v.id}
-                    value={`go view ${v.name}`}
+                    // Its section finds it too, and reads beside it.
+                    value={`go view ${v.name} ${cleanSection(v.section)}`}
                     icon={<Layers />}
-                    hint={tNav("titles.view")}
+                    hint={cleanSection(v.section) || tNav("titles.view")}
                     onSelect={() => go(() => void navigate({ to: "/views/$viewId/{-$ticketId}", params: { viewId: v.id, ticketId: undefined } }))}
                   >
                     {v.name}

@@ -3,11 +3,11 @@
 // icon-only rail (`b` or the Collapse row) that keeps every row reachable.
 
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, BookOpen, Check, ChevronRight, ChevronsUpDown, CircleCheck, CircleDashed, Clock, EyeOff, Inbox, Keyboard, Layers, Lock, LogOut, Monitor, Moon, NotebookText, PanelLeftClose, PanelLeftOpen, Plus, Server, Settings, ShieldAlert, SlidersHorizontal, Sun, User, UserPlus, Users } from "lucide-react";
 import { DropdownMenu as M } from "radix-ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, lazy, Suspense, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ChecklistMini, ProgressRing, stepsLeft } from "@/components/onboarding/Checklist";
 import { useUrgentChats, useWaitingFor } from "@/components/tickets/useUrgentChats";
@@ -22,7 +22,7 @@ import { Picker } from "@/components/ui/picker";
 import { sortTeams, TeamDot, useTeamsCtx } from "@/components/tickets/teams";
 import { useHotkeys } from "@/lib/hotkeys";
 import { dur, ease } from "@/lib/motion";
-import type { Team, TicketCounts } from "@/lib/api/types";
+import type { Team, TicketCounts, View } from "@/lib/api/types";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/cn";
 import { folders, type FolderId } from "@/lib/folders";
@@ -32,6 +32,7 @@ import { q } from "@/lib/queries";
 import { atLeast, loadAccounts, useRole, useSession, useWorkspace } from "@/lib/session";
 import { useTheme, type ThemePref } from "@/lib/theme";
 import { desktop } from "@/lib/desktop";
+import { groupViews, readFolded, writeFolded } from "@/lib/viewSections";
 import { shell, toggleNav, useNav } from "./shellStore";
 import { quickEntries, quickSwitchKeys, useAccountActions, useQuickSwitch, useSwitcherEntries } from "./useAccounts";
 import { Count, Label, NavTip, PillCtx, rowActive, rowBase, rowIdle, rowShape, Section, WaitDot, WaitingBadge, withPill } from "./sidebarParts";
@@ -296,6 +297,75 @@ function TeamsSection({ rail, drawer, first, counts, hidden = NONE, rp }: { rail
   );
 }
 
+/**
+ * The views, those of a section under a row that folds them (lib/viewSections). The fold is
+ * the member's, kept in this browser per workspace; folded, the row shows what its views
+ * would. The rail shows every view, a hairline above each section.
+ */
+function ViewList({ views, rail, row, count, waiting }: {
+  views: View[];
+  rail: boolean;
+  row: (v: View, nested: boolean) => ReactNode;
+  /** The number a view's row shows. */
+  count: (v: View) => number | undefined;
+  /** Visitors waiting in chat on a view's tickets. */
+  waiting: (v: View) => number;
+}) {
+  const { t } = useTranslation("shell");
+  const wid = useSession((s) => s.workspaceId) ?? "";
+  const uid = useSession((s) => s.user?.id) ?? "";
+  const owner = `${wid}:${uid}`;
+  const [folded, setFolded] = useState(() => readFolded(wid, uid));
+  const [foldedFor, setFoldedFor] = useState(owner);
+  if (foldedFor !== owner) {
+    setFoldedFor(owner);
+    setFolded(readFolded(wid, uid));
+  }
+  // The open view, so a folded section that holds it reads as current.
+  const openView = useRouterState({ select: (s) => { const p = s.location.pathname.split("/").filter(Boolean); return p[0] === "views" ? p[1] : undefined; } });
+  const idBase = useId();
+  const toggle = (key: string) => {
+    const next = new Set(folded);
+    if (!next.delete(key)) next.add(key);
+    setFolded(next);
+    writeFolded(wid, uid, next);
+  };
+  return groupViews(views).map((e, i) => {
+    if (e.kind === "view") return <Fragment key={e.view.id}>{row(e.view, false)}</Fragment>;
+    const shut = folded.has(e.key) && !rail;
+    const nums = e.views.map(count).filter((n): n is number => n !== undefined);
+    const sum = nums.length ? nums.reduce((a, b) => a + b, 0) : undefined;
+    const current = shut && e.views.some((v) => v.id === openView);
+    const listId = `${idBase}-section-${i}`;
+    return (
+      <div key={`section:${e.key}`} role="group" aria-label={t("nav.viewSection", { name: e.name })} className="flex flex-col gap-px">
+        {rail ? (
+          i > 0 && <div aria-hidden className="mx-4 my-1 h-px bg-chrome-line" />
+        ) : (
+          <button
+            type="button"
+            aria-expanded={!shut}
+            aria-controls={listId}
+            onClick={() => toggle(e.key)}
+            title={e.name}
+            className={cn(rowBase, rowShape(rail), rowIdle, current && "font-medium text-fg")}
+          >
+            <ChevronRight className={cn("transition-transform duration-150 motion-reduce:transition-none", !shut && "rotate-90")} />
+            <Label rail={rail}>{e.name}</Label>
+            {current && <span className="sr-only">{t("nav.viewSectionCurrent")}</span>}
+            {/* Folded away: what its views would show, here. */}
+            {shut && <WaitingBadge n={e.views.reduce((a, v) => a + waiting(v), 0)} rail={rail} />}
+            {shut && <Count n={sum} rail={rail} />}
+          </button>
+        )}
+        <div id={listId} className="flex flex-col gap-px">
+          {!shut && e.views.map((v) => <Fragment key={v.id}>{row(v, !rail)}</Fragment>)}
+        </div>
+      </div>
+    );
+  });
+}
+
 const NONE: ReadonlySet<string> = new Set();
 
 /** One built-in section of the open workspace: the sidebar's own rows, live counts and menus. */
@@ -379,13 +449,15 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
           }
         >
           {views?.length ? (
-            views
-              .filter((v) => !hidden.has(hid.view(v.id)))
-              .sort((a, b) => a.position - b.position)
-              .map((v) => {
+            <ViewList
+              views={views.filter((v) => !hidden.has(hid.view(v.id)))}
+              rail={rail}
+              count={(v) => shown(hid.view(v.id), "views", ticketRowNumbers(counts, hid.view(v.id)))}
+              waiting={(v) => waitingFor({ kind: "view", id: v.id })}
+              row={(v, nested) => {
                 const nums = ticketRowNumbers(counts, hid.view(v.id));
                 return (
-                <NavTip key={v.id} rail={rail} label={v.name}>
+                <NavTip rail={rail} label={v.name}>
                   <RowMenu
                     enabled
                     prefs={prefs}
@@ -398,7 +470,7 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
                   <Link
                     to="/views/$viewId/{-$ticketId}"
                     params={{ viewId: v.id, ticketId: undefined }}
-                    className={cn(rowBase, rowShape(rail), rowIdle)}
+                    className={cn(rowBase, rowShape(rail), rowIdle, nested && "pl-[22px]")}
                     activeProps={{ className: rowActive, "data-status": "active" } as Record<string, string>}
                     aria-label={rail ? v.name : undefined}
                   >{withPill(<>
@@ -410,7 +482,8 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
                   </RowMenu>
                 </NavTip>
                 );
-              })
+              }}
+            />
           ) : (
             <NavTip rail={rail} label={t("nav.createView")}>
               <Link to="/settings/views" className={cn(rowBase, rowShape(rail), rowIdle, "text-fg-3")}>

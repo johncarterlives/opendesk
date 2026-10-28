@@ -102,6 +102,7 @@ Text fields compare with **contains**, **doesn't contain**, **contains any of**,
 | --- | --- |
 | **Set status to**, **Set priority to**, **Set severity to** | Changes the value. Severity can be cleared. |
 | **Assign to** | Assigns a member. |
+| **Assign to the agent who replied** | Assigns the agent whose reply started the run, on **An agent replies**. With the condition Assignee is Unassigned, whoever answers a ticket first takes it. Skipped when no agent wrote the message: a customer's message, an automation's, the API's or the AI agent's reply. |
 | **Assign to team** | Moves the ticket to a team, recorded as routed by an automation. An unassigned ticket is then assigned within that team. |
 | **Set reply address** | Picks the address replies go out from. It must be an address of the ticket's brand; otherwise, or when the address was removed, the action is skipped. |
 | **Add tag**, **Remove tag** | Adds or removes a label. In a group of one label at a time, adding one replaces the group's other label. |
@@ -168,6 +169,7 @@ Put it at the top of the list, so the automations above it do not act on a ticke
 - **Chat follow up.** When a ticket is created, if Chat widget is "Pricing page", set priority to High.
 - **Major incidents.** When a ticket is updated, if Severity is Sev 1, assign to team On call and add an internal note.
 - **Churn risk.** When the customer replies, if Ollie thinks the customer is at risk of churning with a probability above 70%, add tag Churn risk.
+- **First to reply takes it.** When an agent replies, if Assignee is Unassigned, assign to the agent who replied.
 - **Reopen on reply.** When the customer replies, if Status is Pending, set status to Open.
 - **Follow-ups.** When a ticket is created, merge into the contact's open ticket within 7 days, same subject only.
 

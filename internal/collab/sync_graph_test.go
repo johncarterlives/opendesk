@@ -313,6 +313,40 @@ func TestGraphSyncResumesWhenDeltaBudgetIsExhausted(t *testing.T) {
 	}
 }
 
+// TestGraphSyncMailGoneBeforeItIsRead: new mail deleted at Microsoft before the sync reads
+// it frees its place for the next new message, so a burst larger than a pass's budget still
+// comes in whole over the next passes.
+func TestGraphSyncMailGoneBeforeItIsRead(t *testing.T) {
+	w := newWorld(t)
+	g := newFakeGraph(t)
+	g.pageSize = 50
+	w.s.graphBase = g.srv.URL
+	a := w.account(w.agent, ProviderMicrosoft, VisibilityShared, Audience{Everyone: true})
+	if err := w.s.syncAccount(w.ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	// More than two passes' worth: the first pass stops at the budget, the second goes on
+	// from where it stopped.
+	g.burst("b", "f-inbox", 2*initialMax+200, time.Now(), a.Email)
+	if err := w.s.syncAccount(w.ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	// Gone before the second pass reads them: the delta still lists them, reading one answers
+	// 404. One on the page where that pass's budget would end, one first on the next.
+	g.mu.Lock()
+	delete(g.msgs, "b-960")
+	delete(g.msgs, "b-1000")
+	g.mu.Unlock()
+	for range 4 {
+		if err := w.s.syncAccount(w.ctx, a.ID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := w.count(`SELECT count(*) FROM collab_messages WHERE account_id = $1`, a.ID); n != 2*initialMax+198 {
+		t.Fatalf("%d messages, want %d", n, 2*initialMax+198)
+	}
+}
+
 func TestGraphSyncTouchedOldMailStaysOut(t *testing.T) {
 	w := newWorld(t)
 	g := newFakeGraph(t)

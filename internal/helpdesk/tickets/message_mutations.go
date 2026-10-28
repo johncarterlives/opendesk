@@ -423,8 +423,12 @@ func purgeMessage(ctx context.Context, tx pgx.Tx, d *deps.Deps, wid, tid, mid uu
 // hideMessage takes what a message said out of what was made from it when it is deleted or
 // a note is sent as a reply: its mention notifications go (before their emails quote it),
 // other notifications lose their preview, an action card waiting on the visitor expires,
-// and the ticket's search index is rebuilt without it.
+// the ticket's search index is rebuilt without it, and the ticket's updated_at moves, so what
+// is kept per version of the ticket (a ticket panel's references) is read again without it.
 func hideMessage(ctx context.Context, tx pgx.Tx, d *deps.Deps, wid, tid, mid uuid.UUID) error {
+	if _, err := tx.Exec(ctx, `UPDATE tickets SET updated_at = now() WHERE workspace_id = $1 AND id = $2`, wid, tid); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(ctx, `DELETE FROM notifications WHERE workspace_id = $1 AND ticket_id = $2 AND type = $3 AND data->>'message_id' = $4`,
 		wid, tid, hd.NotifyMentioned, mid.String()); err != nil {
 		return err

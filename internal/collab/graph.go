@@ -179,6 +179,14 @@ func (g *graphProvider) DeleteFolder(ctx context.Context, f RemoteFolder) error 
 	return err
 }
 
+// fork is a client of the same account for a fetcher of its own (fetchEach).
+func (g *graphProvider) fork() *graphProvider { return &graphProvider{s: g.s, a: copyAccount(g.a)} }
+
+// fetchGraphRaw reads a message's MIME, for fetchEach.
+func fetchGraphRaw(ctx context.Context, g *graphProvider, id string) ([]byte, error) {
+	return g.FetchRaw(ctx, MessageRef{RemoteID: id})
+}
+
 func (g *graphProvider) FetchRaw(ctx context.Context, ref MessageRef) ([]byte, error) {
 	return g.s.call(ctx, g.a, "Microsoft", restRequest{method: http.MethodGet,
 		url: g.s.graphBase + "/me/messages/" + url.PathEscape(ref.RemoteID) + "/$value", headers: graphHeaders, limit: maxRawBytes})
@@ -503,29 +511,39 @@ func (s *service) applyGraphPage(ctx context.Context, p *pass, g *graphProvider,
 	if err != nil {
 		return 0, err
 	}
-	fetched := map[string]*newMessage{}
-	full := false
+	// The page's new mail, read a few at once until left are stored: one gone meanwhile or
+	// too large frees its place for the next. full: new mail was left unread.
+	var todo []graphMessage
 	for _, m := range list {
-		if m.Removed != nil || known[m.ID] != nil || (!m.ReceivedDateTime.IsZero() && m.ReceivedDateTime.Before(newSince)) {
-			continue
+		if m.Removed == nil && known[m.ID] == nil && (m.ReceivedDateTime.IsZero() || !m.ReceivedDateTime.Before(newSince)) {
+			todo = append(todo, m)
 		}
-		if len(fetched) >= left {
-			full = true
-			continue
-		}
-		raw, err := g.FetchRaw(ctx, MessageRef{RemoteID: m.ID})
-		if isNotFound(err) {
-			continue
-		}
-		if err == errTooLarge {
-			s.log.Info("collab skipping oversized message", "account_id", p.a.ID)
-			continue
-		}
-		if err != nil {
-			return 0, err
-		}
-		fetched[m.ID] = &newMessage{RemoteID: m.ID, ThreadRemoteID: m.ConversationID, Raw: raw, Date: m.ReceivedDateTime}
 	}
+	fetched := map[string]*newMessage{}
+	next := 0
+	for next < len(todo) && len(fetched) < left {
+		round := todo[next:min(len(todo), next+left-len(fetched))]
+		next += len(round)
+		ids := make([]string, 0, len(round))
+		for _, m := range round {
+			ids = append(ids, m.ID)
+		}
+		raws, errs := fetchEach(ctx, graphFetchers, ids, g.fork, fetchGraphRaw)
+		for i, err := range errs {
+			m := round[i]
+			switch {
+			case isNotFound(err):
+				continue
+			case err == errTooLarge:
+				s.log.Info("collab skipping oversized message", "account_id", p.a.ID)
+				continue
+			case err != nil:
+				return 0, err
+			}
+			fetched[m.ID] = &newMessage{RemoteID: m.ID, ThreadRemoteID: m.ConversationID, Raw: raws[i], Date: m.ReceivedDateTime}
+		}
+	}
+	full := next < len(todo)
 	at := place(full, len(fetched))
 	err = p.batch(ctx, func(tx pgx.Tx) error {
 		for _, m := range list {

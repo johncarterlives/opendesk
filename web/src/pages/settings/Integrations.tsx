@@ -15,7 +15,8 @@ import { useConfirm } from "@/components/ui/confirm";
 import { toast } from "@/components/ui/toast";
 import { ListSkeleton, StatePill } from "@/components/settings2/bits";
 import { MotionList, MotionRow } from "@/components/settings2/motion";
-import { ConnectDialog, ProviderMark, ToolList } from "@/components/settings2/integrations";
+import { CatalogTile, ConnectDialog, ProviderMark, ToolList } from "@/components/settings2/integrations";
+import { OwnDataPanelCard, ShopifyPanelCard, TicketPanelsSection, type PanelKind } from "@/components/settings2/ticketPanels";
 import { api } from "@/lib/api/endpoints";
 import type { Integration, IntegrationCategory, IntegrationProvider } from "@/lib/api/types";
 import { relShort } from "@/lib/format";
@@ -197,33 +198,22 @@ function ConnectedRow({ x, admin }: { x: Integration; admin: boolean }) {
 function CatalogCard({ p, connected, admin, onConnect }: { p: IntegrationProvider; connected: boolean; admin: boolean; onConnect: () => void }) {
   const { t } = useTranslation("settingsDev");
   return (
-    <motion.div
-      layout="position"
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
-      className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3.5 shadow-xs transition-colors hover:border-line-strong"
-    >
-      <div className="flex items-center gap-2.5">
-        <ProviderMark provider={p.key} name={p.name} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[13px] font-medium text-fg">{p.name}</div>
-          <div className="text-[11.5px] text-fg-4">{t(`integrations.category.${p.category}`)}</div>
-        </div>
-      </div>
-      <p className="line-clamp-2 min-h-[36px] text-[12px] leading-[18px] text-fg-3">{p.description}</p>
-      <div className="flex items-center justify-between">
-        <span className="text-[11.5px] text-fg-4">{t(`integrations.via.${p.auth}`)}</span>
-        {connected ? (
+    <CatalogTile
+      mark={<ProviderMark provider={p.key} name={p.name} />}
+      name={p.name}
+      kind={t(`integrations.category.${p.category}`)}
+      description={p.description}
+      via={t(`integrations.via.${p.auth}`)}
+      action={
+        connected ? (
           <span className="text-[12px] font-medium text-tone-green">{t("integrations.state.connected")}</span>
         ) : admin ? (
           <Button size="xs" onClick={onConnect}>
             {t("integrations.connect.connect")}
           </Button>
-        ) : null}
-      </div>
-    </motion.div>
+        ) : null
+      }
+    />
   );
 }
 
@@ -236,6 +226,8 @@ export default function Integrations() {
   const { data: catalog } = useQuery(q.integrationCatalog());
   const [filter, setFilter] = useState<Filter>("all");
   const [connecting, setConnecting] = useState<IntegrationProvider | "custom" | null>(null);
+  // Ticket panels are their own rows, not MCP servers; the catalog opens their dialog.
+  const [addingPanel, setAddingPanel] = useState<PanelKind | null>(null);
   const handled = useRef(false);
 
   useEffect(() => {
@@ -282,6 +274,8 @@ export default function Integrations() {
         </Section>
       )}
 
+      <TicketPanelsSection admin={admin} adding={addingPanel} onAdding={setAddingPanel} />
+
       <section className="animate-rise-in">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
@@ -297,6 +291,7 @@ export default function Integrations() {
         </div>
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence initial={false} mode="popLayout">
+            {filter === "all" && <ShopifyPanelCard key="panel-shopify" admin={admin} onAdd={() => setAddingPanel("shopify")} />}
             {cards.map((p) => (
               <CatalogCard key={p.key} p={p} admin={admin} connected={have.has(p.key)} onConnect={() => setConnecting(p)} />
             ))}
@@ -311,6 +306,7 @@ export default function Integrations() {
               <span className="text-[12px] leading-[18px] text-fg-3">{t("integrations.custom.cardBody")}</span>
             </button>
           )}
+          {admin && <OwnDataPanelCard onAdd={() => setAddingPanel("http")} />}
         </div>
       </section>
 

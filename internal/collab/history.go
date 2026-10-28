@@ -35,7 +35,6 @@ const (
 const (
 	historyPassTime = 50 * time.Second // the most one pass spends on history
 	historyPassMax  = 1000             // and the most messages it reads
-	historyFetchers = 4                // messages read at once (Gmail, Microsoft)
 	historyPage     = syncBatch        // messages stored in one transaction
 )
 
@@ -303,15 +302,22 @@ func accountManagers(ctx context.Context, q db.Querier, a *accountRow) ([]uuid.U
 	return pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
 }
 
-// fetchEach runs fetch for each id, at most historyFetchers at once, each with a provider
+// Messages read at once by the sync and history imports: Microsoft allows 4 calls at once
+// per mailbox, and one is left for people's own actions.
+const (
+	gmailFetchers = 4
+	graphFetchers = 3
+)
+
+// fetchEach runs fetch for each id, at most n at once, each with a provider
 // of its own (a token refresh writes to its account copy). It returns the results and the
 // errors in the order of ids.
-func fetchEach[P any, T any](ctx context.Context, ids []string, open func() P, fetch func(context.Context, P, string) (T, error)) ([]T, []error) {
+func fetchEach[P any, T any](ctx context.Context, n int, ids []string, open func() P, fetch func(context.Context, P, string) (T, error)) ([]T, []error) {
 	out := make([]T, len(ids))
 	errs := make([]error, len(ids))
 	next := make(chan int)
 	var wg sync.WaitGroup
-	for range min(historyFetchers, len(ids)) {
+	for range min(n, len(ids)) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

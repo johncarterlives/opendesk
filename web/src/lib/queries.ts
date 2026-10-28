@@ -155,6 +155,11 @@ export const qk = {
   get integrationCatalog() {
     return w(["integrations", "catalog"] as const);
   },
+  get ticketPanels() {
+    return w(["ticket-panels"] as const);
+  },
+  /** One panel's data for one ticket; every panel's under qk.of("tickets", "panels"). */
+  ticketPanel: (ticketId: string, panelId: string) => w(["tickets", "panels", ticketId, panelId] as const),
   get supportChannelProviders() {
     return w(["support-channels", "providers"] as const);
   },
@@ -166,6 +171,9 @@ export const qk = {
   },
   get supportChannelDeliveries() {
     return w(["support-channels", "deliveries"] as const);
+  },
+  get supportChannelOperations() {
+    return w(["support-channels", "operations"] as const);
   },
   supportChannelAvailableDestinations: (id: string) => w(["support-channels", "connections", id, "destinations"] as const),
   get imports() {
@@ -215,6 +223,7 @@ export const qk = {
   wikiRevision: (id: string, rid: string) => w(["wiki", "revision", id, rid] as const),
   wikiSearch: (q: string) => w(["wiki", "search", q] as const),
   reports: (r: ReportsQuery) => w(["reports", r] as const),
+  reportAgents: (r: ReportsQuery) => w(["reports", "agents", r] as const),
   get widgetSettings() {
     return w(["widget-settings"] as const);
   },
@@ -417,10 +426,15 @@ export const q = {
       initialPageParam: null as string | null,
       getNextPageParam: (page) => page.next_cursor,
     }),
+  supportChannelOperations: () => queryOptions({ queryKey: qk.supportChannelOperations, queryFn: api.supportChannels.operations }),
   supportChannelAvailableDestinations: (id: string) =>
     list(qk.supportChannelAvailableDestinations(id), () => api.supportChannels.availableDestinations(id), { staleTime: 30_000 }),
   imports: () => list(qk.imports, () => api.imports.list()),
   ticketLinks: (id: string) => list(qk.ticketLinks(id), () => api.tickets.links(id)),
+  ticketPanels: () => list(qk.ticketPanels, () => api.ticketPanels.list()),
+  // The server keeps an answer for a minute too; reopening a ticket shows it at once.
+  ticketPanel: (ticketId: string, panelId: string) =>
+    queryOptions({ queryKey: qk.ticketPanel(ticketId, panelId), queryFn: () => api.tickets.panel(ticketId, panelId), staleTime: 60_000 }),
   auditLogs: () =>
     infiniteQueryOptions({
       queryKey: qk.auditLogs,
@@ -460,6 +474,7 @@ export const q = {
   search: (term: string) =>
     queryOptions({ queryKey: qk.search(term), queryFn: () => api.search(term), enabled: term.trim().length > 1, staleTime: 10_000 }),
   reports: (r: ReportsQuery) => queryOptions({ queryKey: qk.reports(r), queryFn: () => api.reports.overview(r) }),
+  reportAgents: (r: ReportsQuery) => queryOptions({ queryKey: qk.reportAgents(r), queryFn: () => api.reports.agents(r) }),
   billing: () => queryOptions({ queryKey: qk.billing, queryFn: api.billing.get, staleTime: 60_000 }),
   billingUsage: (r: { from: string; to: string }) => queryOptions({ queryKey: qk.billingUsage(r), queryFn: () => api.billing.usage(r) }),
   billingInvoices: () => queryOptions({ queryKey: qk.billingInvoices, queryFn: async () => (await api.billing.invoices()).data, staleTime: 30_000 }),

@@ -11,11 +11,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 // Provider HTTPS calls (Gmail and Microsoft Graph): the account's access token, one
-// refresh on 401, a short wait and another try while the provider is busy, and provider
-// errors reduced to safe, classified messages.
+// refresh on 401, each account's calls paced within the provider's limits, a short wait
+// and another try while the provider is busy, and provider errors reduced to safe,
+// classified messages.
 
 // restRequest is one provider call.
 type restRequest struct {
@@ -61,8 +64,16 @@ func (s *service) call(ctx context.Context, a *accountRow, label string, r restR
 		for k, v := range r.headers {
 			req.Header.Add(k, v)
 		}
+		release, err := s.pace(a).wait(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			return nil, errProviderUnavailable // the job's time would run out waiting
+		}
 		resp, err := s.http.Do(req)
 		if err != nil {
+			release()
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
@@ -70,6 +81,7 @@ func (s *service) call(ctx context.Context, a *accountRow, label string, r restR
 		}
 		body, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
 		resp.Body.Close()
+		release()
 		if err != nil {
 			return nil, errProviderUnavailable
 		}
@@ -107,6 +119,64 @@ func (s *service) call(ctx context.Context, a *accountRow, label string, r restR
 		}
 		return body, nil
 	}
+}
+
+// paceLimit is how fast and how many at once one account's provider is asked.
+type paceLimit struct {
+	perSecond rate.Limit
+	burst     int
+	atOnce    int
+}
+
+// providerPaces keep each account inside its provider's limits: Gmail allows 250 quota
+// units a second per user (reading a message costs 5, so 40 calls a second leave room),
+// Microsoft 10,000 requests in 10 minutes and 4 at once per mailbox. The sync reads
+// gmailFetchers or graphFetchers messages at once and leaves the other places to people's
+// own actions.
+var providerPaces = map[string]paceLimit{
+	ProviderGoogle:    {perSecond: 40, burst: 20, atOnce: 8},
+	ProviderMicrosoft: {perSecond: 15, burst: 15, atOnce: 4},
+}
+
+// pace is one account's turns at its provider, shared by every call this process makes
+// for it: the sync's fetchers, actions and people's own reads.
+type pace struct {
+	rate  *rate.Limiter
+	slots chan struct{}
+}
+
+// pace returns the account's pace, nil for a provider without one.
+func (s *service) pace(a *accountRow) *pace {
+	s.paceMu.Lock()
+	defer s.paceMu.Unlock()
+	if p := s.paced[a.ID]; p != nil {
+		return p
+	}
+	l, ok := s.paceLimits[a.Provider]
+	if !ok {
+		return nil
+	}
+	p := &pace{rate: rate.NewLimiter(l.perSecond, l.burst), slots: make(chan struct{}, l.atOnce)}
+	s.paced[a.ID] = p
+	return p
+}
+
+// wait takes one of the account's places and its next turn; release gives the place back.
+func (p *pace) wait(ctx context.Context) (release func(), err error) {
+	if p == nil {
+		return func() {}, nil
+	}
+	select {
+	case p.slots <- struct{}{}:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	release = func() { <-p.slots }
+	if err := p.rate.Wait(ctx); err != nil {
+		release()
+		return nil, err
+	}
+	return release, nil
 }
 
 // maxBusyWait is the longest Retry-After a call waits out; a longer one is left to the

@@ -57,6 +57,7 @@ func TestRegisterAll(t *testing.T) {
 		"/v1/wiki/search":                  {"get"},
 		"/v1/search":                       {"get"},
 		"/v1/reports/overview":             {"get"},
+		"/v1/reports/agents":               {"get"},
 		"/v1/attachments":                  {"post"},
 		"/v1/public/help/{workspace_slug}": {"get"},
 		"/v1/public/help/{workspace_slug}/collections/{slug}": {"get"},

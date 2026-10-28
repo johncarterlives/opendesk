@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/ui/empty";
 import type { SidebarSectionId, Space, SpaceItem, SpaceSection } from "@/lib/api/types";
 import { hid, livePins } from "@/lib/collab/sidebarPrefs";
 import { cn } from "@/lib/cn";
+import { orderViews } from "@/lib/viewSections";
 import { folders as ticketFolders } from "@/lib/folders";
 import { useSession } from "@/lib/session";
 import { canSeeTeam, useOverview, useWorkspacesData, type WorkspaceData } from "@/lib/spaces/hooks";
@@ -89,10 +90,8 @@ function RemoteSection({ d, id, first, rail, mark, ctx }: { d: WorkspaceData; id
       break;
     }
     case "views":
-      list = [...(d.views ?? [])]
-        .filter((v) => !hidden.has(hid.view(v.id)))
-        .sort((a, b) => a.position - b.position)
-        .map((v) => row("view", v.id));
+      // In that workspace's sidebar order, a section's views together (lib/viewSections).
+      list = orderViews((d.views ?? []).filter((v) => !hidden.has(hid.view(v.id)))).map((v) => row("view", v.id));
       break;
     case "workspace":
       list = SPACE_PAGES.map((pg) => row("page", pg));

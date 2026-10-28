@@ -104,13 +104,21 @@ after a connect, a reconnect, `POST .../sync` or an action. One runs per account
   - IMAP: new UIDs, the oldest first; the stored UID goes on from the last one imported.
 - Changes made at the provider (read elsewhere, moved on the phone, deleted) arrive with the next
   sync. A message gone from every folder is removed from opendesk.
+- New messages are read a few at a time (Gmail 4, Microsoft 3, as in a history import), then stored
+  a batch of 25 in one transaction. One that is gone by then, or too large, frees its place for the
+  next new message.
+- Each account's calls are paced within its provider's limits, across the sync, actions and people's
+  own reads in the process: Gmail 40 calls a second and 8 at once (its limit is 250 quota units a
+  second per user; reading a message costs 5), Microsoft 15 a second and 4 at once (10,000 requests in
+  10 minutes and 4 at once per mailbox; the sync takes 3 of them, so a person's own action never waits
+  for a place).
 - A provider that is busy (a rate limit, or a 5xx to a read) is asked again within the call after
   1 and 4 seconds, or after its `Retry-After` when that is at most 15 seconds. A request that
   changes something is asked again only after a rate limit, which refused it before it ran.
 - Failures are stored on the account (`status: "error"`, a safe `last_error`), retried with
   backoff (1 minute doubling to 1 hour). A passing failure (a busy or unreachable provider) waits
-  with the backoff without changing the status for the first two in a row, so a short outage never
-  shows; the third shows. A refused grant (`invalid_grant`, an IMAP login refused) needs a reconnect
+  with the backoff without changing the status for the first three in a row (about seven minutes), so a
+  short outage never shows; the fourth shows. A refused grant (`invalid_grant`, an IMAP login refused) needs a reconnect
   at once: `status: "error"`, `reconnect: true`.
 - Each message is parsed with the email area's parser. Its HTML is sanitized with bluemonday before
   storage (the same policy as inbound email), and it renders in the sandboxed frame without scripts
@@ -136,7 +144,7 @@ settings (`PUT /v1/collab/accounts/{id}/history`, also while one runs); `MailAcc
     newest first, from its saved page token; a token Gmail refuses lists again from the oldest date it
     reached. Up to four messages are read at once.
   - Microsoft: per mail folder, special ones first, a delta round of its own (`receivedDateTime ge`
-    `since`, or no filter for all mail) from its saved page, up to four messages read at once. When a
+    `since`, or no filter for all mail) from its saved page, up to three messages read at once. When a
     folder's round ends, its delta link becomes the folder's live one, so later changes to older mail
     (read elsewhere, moved, deleted) arrive like any other.
   - IMAP: per folder the sync reads (at most 30, "Sync"), `UID SEARCH SINCE` (or every UID), the newest

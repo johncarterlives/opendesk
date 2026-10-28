@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowUpRight, AtSign, Building2, Globe, Inbox, Layers, Lock, MoreHorizontal, Pencil, Plus, Search, Tag, Trash2, UserRound, Users, UsersRound, X } from "lucide-react";
+import { ArrowUpRight, AtSign, Building2, FolderClosed, Globe, Inbox, Layers, Lock, MoreHorizontal, Pencil, Plus, Search, Tag, Trash2, UserRound, Users, UsersRound, X } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsPage, Section, ListRow } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Drawer } from "@/components/ui/dialog";
 import { Field, TextInput } from "@/components/ui/input";
+import { Picker } from "@/components/ui/picker";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SettingsEmpty } from "@/components/settings2/SettingsEmpty";
@@ -28,6 +29,7 @@ import {
   ContactsPick,
   MultiPick,
   SinglePick,
+  ValueButton,
   channelItems,
   priorityItems,
   severityFilterItems,
@@ -46,6 +48,7 @@ import type { Channel, Priority, Severity, TicketFilters, TicketStatus, View } f
 import { q, qk, upsertInList } from "@/lib/queries";
 import { atLeast, useRole } from "@/lib/session";
 import { cn } from "@/lib/cn";
+import { cleanSection, clipSection, groupViews, matchSection, orderViews, sectionKey, sectionProblem, viewSections, type ViewEntry } from "@/lib/viewSections";
 
 const chip =
   "inline-flex h-5 max-w-[220px] shrink-0 items-center gap-1 rounded-sm bg-sunken px-1.5 text-[11px] text-fg-2 ring-1 ring-inset ring-line-soft [&_svg]:size-3 [&_svg]:shrink-0";
@@ -217,7 +220,11 @@ export default function Views() {
   const [editing, setEditing] = useState<View | "new" | null>(null);
   const navigate = useNavigate();
 
-  const sorted = useMemo(() => [...(views ?? [])].sort((a, b) => a.position - b.position), [views]);
+  // In the sidebar's order: a section's views together, at its first view's place.
+  const sorted = useMemo(() => orderViews(views ?? []), [views]);
+  // What drags: a view on its own or a whole section; a section's views drag inside it.
+  const entries = useMemo(() => groupViews(views ?? []).map((e) => ({ id: e.kind === "view" ? e.view.id : `section:${e.key}`, entry: e })), [views]);
+  const idsOf = (e: ViewEntry) => (e.kind === "view" ? [e.view.id] : e.views.map((v) => v.id));
   const { teams } = useTeams();
   const teamById = new Map(teams.map((x) => [x.id, x]));
 
@@ -271,11 +278,41 @@ export default function Views() {
           />
         ) : (
           <SortableList
-            items={sorted}
+            items={entries}
             disabled={!canEdit}
-            onReorder={(ids) => reorder.mutate(ids)}
-            handleLabel={(v) => t("views.reorderAria", { name: v.name })}
-            renderRow={(v, handle) => (
+            onReorder={(ids) => reorder.mutate(ids.flatMap((id) => idsOf(entries.find((x) => x.id === id)!.entry)))}
+            handleLabel={({ entry: e }) => (e.kind === "view" ? t("views.reorderAria", { name: e.view.name }) : t("views.reorderSectionAria", { name: e.name }))}
+            renderRow={({ entry: e }, handle) =>
+              e.kind === "view" ? (
+                viewRow(e.view, handle)
+              ) : (
+                <div role="group" aria-label={t("views.inSection", { name: e.name })}>
+                  <div className="group relative flex h-9 items-center gap-2 border-b border-line-soft bg-sunken/60 px-4 text-[12.5px] font-medium text-fg-2">
+                    {handle}
+                    <FolderClosed className="size-3.5 shrink-0 text-fg-3" />
+                    <span className="min-w-0 truncate">{e.name}</span>
+                    <span className="mono text-[11px] font-normal text-fg-4">{e.views.length}</span>
+                  </div>
+                  <SortableList
+                    items={e.views}
+                    disabled={!canEdit}
+                    // Inside a section only: the section keeps its place among the others.
+                    onReorder={(ids) => reorder.mutate(entries.flatMap((x) => (x.entry === e ? ids : idsOf(x.entry))))}
+                    handleLabel={(v) => t("views.reorderAria", { name: v.name })}
+                    renderRow={(v, h) => viewRow(v, h)}
+                  />
+                </div>
+              )
+            }
+          />
+        )}
+      </Section>
+      {editing && <ViewDrawer view={editing === "new" ? null : editing} nextPosition={sorted.length} onClose={() => setEditing(null)} />}
+    </SettingsPage>
+  );
+
+  function viewRow(v: View, handle: ReactNode) {
+    return (
                 <ListRow onClick={canEdit ? () => setEditing(v) : undefined} className="items-start py-3">
                   {handle}
                   <IconTile tone={v.shared ? "blue" : "gray"} className="mt-0.5">
@@ -361,13 +398,8 @@ export default function Views() {
                     </div>
                   )}
                 </ListRow>
-            )}
-          />
-        )}
-      </Section>
-      {editing && <ViewDrawer view={editing === "new" ? null : editing} nextPosition={sorted.length} onClose={() => setEditing(null)} />}
-    </SettingsPage>
-  );
+    );
+  }
 }
 
 function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPosition: number; onClose: () => void }) {
@@ -378,6 +410,10 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
   const [name, setName] = useState(view?.name ?? "");
   const [shared, setShared] = useState(view?.shared ?? true);
   const [teamId, setTeamId] = useState<string | null>(view?.team_id ?? null);
+  const [section, setSection] = useState(cleanSection(view?.section));
+  const inUse = viewSections(useQuery(q.views()).data ?? []);
+  // The sections offered: those in use, and one just typed until it is saved.
+  const sections = section && !inUse.some((s) => sectionKey(s) === sectionKey(section)) ? [...inUse, section] : inUse;
   const { teams: allTeams } = useTeams();
   const { t: tt } = useTranslation("settingsTeams");
   const [f, setF] = useState<TicketFilters>(view?.filters ?? { status: ["open"] });
@@ -404,9 +440,10 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
     name: view?.name ?? "",
     shared: view?.shared ?? true,
     teamId: view?.team_id ?? null,
+    section: cleanSection(view?.section),
     f: view?.filters ?? { status: ["open"] },
   });
-  const dirty = JSON.stringify({ name, shared, teamId, f }) !== initial;
+  const dirty = JSON.stringify({ name, shared, teamId, section, f }) !== initial;
   const audience = viewAudience({ shared, team_id: teamId });
 
   const requestClose = () => {
@@ -422,11 +459,12 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
     mutationFn: () => {
       const filters = cleanFilters(f);
       return view
-        ? api.views.update(view.id, { name: name.trim(), shared: teamId ? false : shared, team_id: teamId, filters })
+        ? api.views.update(view.id, { name: name.trim(), shared: teamId ? false : shared, team_id: teamId, section: section || null, filters })
         : api.views.create({
             name: name.trim(),
             shared: teamId ? false : shared,
             team_id: teamId,
+            section: section || null,
             filters,
             position: nextPosition,
           });
@@ -491,6 +529,34 @@ function ViewDrawer({ view, nextPosition, onClose }: { view: View | null; nextPo
           <Field label={t("views.nameLabel")}>
             {(p) => (
               <TextInput {...p} autoFocus value={name} maxLength={60} placeholder={t("views.namePlaceholder")} onChange={(e) => setName(e.target.value)} />
+            )}
+          </Field>
+          <Field label={t("views.sectionLabel")} hint={t("views.sectionHint")} optional>
+            {(p) => (
+              <Picker
+                items={[
+                  { value: "", label: t("views.noSection"), icon: <X /> },
+                  ...sections.map((s) => ({ value: s, label: s, icon: <FolderClosed /> })),
+                ]}
+                value={section}
+                onSelect={setSection}
+                // A typed name joins the section it names in any case.
+                onCreate={(typed) => {
+                  // The API's rule for names: no angle brackets or control characters, at most 60 characters.
+                  if (sectionProblem(typed)) return setError(t("views.sectionChars"));
+                  setError(null);
+                  setSection(matchSection(clipSection(typed), inUse));
+                }}
+                createLabel={t("views.newSection")}
+                placeholder={t("views.sectionSearch")}
+                emptyText={t("views.sectionEmpty")}
+                width={300}
+                trigger={
+                  <ValueButton id={p.id} aria-describedby={p["aria-describedby"]} size="md" placeholder={t("views.noSection")} icon={section ? <FolderClosed /> : undefined} className="w-full">
+                    {section || undefined}
+                  </ValueButton>
+                }
+              />
             )}
           </Field>
           {allTeams.length > 0 || teamId ? (

@@ -425,6 +425,41 @@ export const api = {
       http.patch<T.Integration>(`/v1/integrations/${id}`, b),
     remove: (id: string) => http.del(`/v1/integrations/${id}`),
   },
+  ticketPanels: {
+    list: () => http.get<{ data: T.TicketPanel[] }>("/v1/ticket-panels"),
+    /** An http panel answers its signing `secret`, shown once. */
+    create: (b: {
+      kind: "shopify" | "http";
+      name?: string;
+      shop?: string;
+      client_id?: string;
+      client_secret?: string;
+      token?: string;
+      url?: string;
+      fields?: T.ShopifyField[];
+      orders_shown?: number;
+      reference_pattern?: string;
+    }) =>
+      http.create<{ panel: T.TicketPanel; secret?: string }>("/v1/ticket-panels", b),
+    update: (
+      id: string,
+      b: {
+        name?: string;
+        enabled?: boolean;
+        position?: number;
+        client_id?: string;
+        client_secret?: string;
+        token?: string;
+        url?: string;
+        fields?: T.ShopifyField[];
+        orders_shown?: number;
+        reference_pattern?: string;
+      },
+    ) =>
+      http.patch<T.TicketPanel>(`/v1/ticket-panels/${id}`, b),
+    rotateSecret: (id: string) => http.post<{ panel: T.TicketPanel; secret: string }>(`/v1/ticket-panels/${id}/rotate-secret`),
+    remove: (id: string) => http.del(`/v1/ticket-panels/${id}`),
+  },
   supportChannels: {
     providers: () => http.get<{ data: T.SupportChannelProvider[] }>("/v1/support-channels/providers"),
     accounts: (provider: string, credentials: Record<string, string>) =>
@@ -440,6 +475,7 @@ export const api = {
       http.get<{ data: T.SupportChannelAvailableDestination[] }>(`/v1/support-channels/connections/${id}/destinations`),
     destinations: () => http.get<{ data: T.SupportChannelDestination[] }>("/v1/support-channels/destinations"),
     deliveries: (q?: ListQuery) => http.get<T.Page<T.SupportChannelDelivery>>("/v1/support-channels/deliveries", { query: q }),
+    operations: () => http.get<T.SupportChannelOperations>("/v1/support-channels/operations"),
     retryDelivery: (eventSeq: number) => http.post<{ event_seq: number; status: "queued" }>(`/v1/support-channels/deliveries/${eventSeq}/retry`),
     addDestination: (b: { connection_id: string; team_id?: string; external_channel_id: string; external_channel_name?: string; include_notes?: boolean; message_limit?: number }) =>
       http.create<T.SupportChannelDestination>("/v1/support-channels/destinations", b),
@@ -534,6 +570,9 @@ export const api = {
     render: (id: string, body_html: string, thread?: boolean) =>
       http.post<{ body_html: string }>(`/v1/tickets/${id}/render`, { body_html, thread: thread || undefined }),
     links: (id: string) => http.get<{ data: T.TicketLink[] }>(`/v1/tickets/${id}/links`),
+    /** What a ticket panel's product knows about the ticket's contact; `refresh` asks it again. */
+    panel: (id: string, panelId: string, refresh = false) =>
+      http.get<T.TicketPanelData>(`/v1/tickets/${id}/panels/${panelId}${refresh ? "?refresh=true" : ""}`),
     addLink: (id: string, b: { url: string; title?: string; integration_id?: string }) => http.create<T.TicketLink>(`/v1/tickets/${id}/links`, b),
     removeLink: (id: string, linkId: string) => http.del(`/v1/tickets/${id}/links/${linkId}`),
   },
@@ -572,7 +611,7 @@ export const api = {
     reorder: (entity: T.FieldEntity, ids: string[]) => http.post<T.Page<T.CustomField>>("/v1/custom-fields/reorder", { entity, ids }),
   },
   savedReplies: crud<T.SavedReply, { title: string; shortcut: string; body_html: string; team_id?: string | null }>("/v1/saved-replies"),
-  views: crud<T.View, { name: string; filters: T.TicketFilters; shared: boolean; position?: number; team_id?: string | null }>("/v1/views"),
+  views: crud<T.View, { name: string; filters: T.TicketFilters; shared: boolean; position?: number; team_id?: string | null; section?: string | null }>("/v1/views"),
   slaPolicies: crud<T.SlaPolicy, Omit<T.SlaPolicy, "id" | "business_hours"> & { business_hours?: boolean }>("/v1/sla-policies"),
   automations: crud<T.Automation, Omit<T.Automation, "id" | "run_count">>("/v1/automations"),
   kb: {
@@ -607,6 +646,7 @@ export const api = {
   search: (q: string) => http.get<T.SearchResults>("/v1/search", { query: { q } }),
   reports: {
     overview: (r: T.ReportsQuery) => http.get<T.ReportsOverview>("/v1/reports/overview", { query: r }),
+    agents: (r: T.ReportsQuery) => http.get<T.ReportsAgents>("/v1/reports/agents", { query: r }),
   },
   attachments: {
     upload: (file: File) => {

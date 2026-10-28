@@ -24,7 +24,7 @@ type Automation = {
                 op: "contains" | "not_contains" | "equals" | "not_equals" | "any" | "none" | FieldOp;
                 value: string /* up to 500 characters; any / none: phrases, one per line */;
                 question?: string /* ai_decide only: 3..300 characters of plain text */ }[];
-  actions: { type: "set_status" | "set_priority" | "set_severity" | "assign_user" | "assign_team" | "add_tag" | "remove_tag"
+  actions: { type: "set_status" | "set_priority" | "set_severity" | "assign_user" | "assign_replier" | "assign_team" | "add_tag" | "remove_tag"
                  | "send_reply" | "add_note" | "mark_spam" | "delete_ticket" | "merge_into_open_ticket" | "ai_triage" | "set_field";
                  value: string;
                  field?: string /* set_field: the ticket field key */;
@@ -36,6 +36,8 @@ type Automation = {
 // any / none on subject, body, from_email, received_at and tag: the text contains any, or none, of the
 // phrases in value, one per line (1..100 phrases of up to 500 characters, 5000 in all; case-insensitive).
 // severity: equals / not_equals with sev1..sev4 or "none". set_severity: sev1..sev4, or "" to clear.
+// assign_replier (value ""): assigns the agent who wrote the reply the run is about, as on agent_replied;
+// skipped when no agent wrote it (a customer's message, an automation, API or AI reply, or no message).
 // ai_decide: gt / lt with value a probability 0.01..0.99; at most 3 per automation; all of one
 // trigger run are asked in one call (charged once to the AI balance). It does not hold when no decision engine answers.
 

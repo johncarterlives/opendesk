@@ -10,6 +10,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -64,17 +65,24 @@ type service struct {
 
 	// busyWaits are the waits before asking a busy provider again (rest.go); tests shorten them.
 	busyWaits []time.Duration
+
+	// paceLimits pace each account's provider calls (rest.go); paced holds each account's.
+	paceLimits map[string]paceLimit
+	paceMu     sync.Mutex
+	paced      map[uuid.UUID]*pace
 }
 
 func newService(d *deps.Deps) *service {
 	s := &service{
-		d:         d,
-		log:       d.Log.With("area", "collab"),
-		guard:     email.NewGuard(d.Cfg.Env == "development"),
-		http:      &http.Client{Timeout: providerTimeout},
-		gmailBase: "https://gmail.googleapis.com",
-		graphBase: "https://graph.microsoft.com/v1.0",
-		busyWaits: []time.Duration{time.Second, 4 * time.Second},
+		d:          d,
+		log:        d.Log.With("area", "collab"),
+		guard:      email.NewGuard(d.Cfg.Env == "development"),
+		http:       &http.Client{Timeout: providerTimeout},
+		gmailBase:  "https://gmail.googleapis.com",
+		graphBase:  "https://graph.microsoft.com/v1.0",
+		busyWaits:  []time.Duration{time.Second, 4 * time.Second},
+		paceLimits: providerPaces,
+		paced:      map[uuid.UUID]*pace{},
 	}
 	s.oauth = oauthClients(d.Cfg)
 	s.newProvider = s.defaultProvider

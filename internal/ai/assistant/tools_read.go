@@ -400,6 +400,7 @@ func listViews(ctx context.Context, rc *runCtx, _ json.RawMessage) (output, erro
 		Name    string         `json:"name"`
 		Shared  bool           `json:"shared"`
 		Filters map[string]any `json:"filters"`
+		Section *string        `json:"section"`
 	}]
 	if err := rc.read.get(ctx, "/v1/views", nil, &views); err != nil {
 		return output{}, err
@@ -426,6 +427,9 @@ func listViews(ctx context.Context, rc *runCtx, _ json.RawMessage) (output, erro
 		scope := "personal"
 		if v.Shared {
 			scope = "shared"
+		}
+		if v.Section != nil {
+			scope += fmt.Sprintf(", in section %q", *v.Section)
 		}
 		fmt.Fprintf(&b, "view %q (%s, %d tickets): filters %s; id %s\n", v.Name, scope, counts.Views[v.ID], raw, v.ID)
 		out.Refs = append(out.Refs, Ref{Kind: "view", ID: v.ID, Label: v.Name})

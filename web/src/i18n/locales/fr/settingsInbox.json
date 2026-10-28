@@ -80,6 +80,15 @@
     "editTitle": "Modifier la vue",
     "nameLabel": "Nom",
     "namePlaceholder": "File de facturation",
+    "sectionLabel": "Section",
+    "sectionHint": "Les vues d’une même section s’affichent ensemble dans la barre latérale, sous un titre qui se replie.",
+    "noSection": "Aucune section",
+    "newSection": "Nouvelle section",
+    "sectionSearch": "Chercher ou nommer une section",
+    "sectionEmpty": "Aucune section ne correspond",
+    "inSection": "Dans la section {{name}}",
+    "reorderSectionAria": "Réorganiser la section {{name}}. Maintenez Alt et appuyez sur les touches fléchées pour la déplacer avec ses vues.",
+    "sectionChars": "Un nom de section ne peut pas contenir < ou >.",
     "needName": "Donnez un nom à la vue.",
     "visibleTitle": "Visible par tout le monde",
     "audience": {
@@ -309,6 +318,7 @@
     "chooseTag": "Choisir une étiquette",
     "chooseTeammate": "Choisir un collègue",
     "chooseTeam": "Choisir une équipe",
+    "assignReplierHint": "Attribue le ticket à qui a écrit la réponse. Ajoutez la condition Responsable est Non attribué pour laisser les tickets déjà pris à leur responsable.",
     "markSpamHint": "Déplace le ticket dans les indésirables. Aucune réponse n’est envoyée.",
     "deleteTicketHint": "Supprime le ticket : il quitte toutes les vues et plus rien ne s’exécute dessus.",
     "mergeHint": "Fusionne un nouveau ticket dans le dernier ticket ouvert, en attente ou en pause du même contact. Plus rien ne s’exécute ensuite dessus.",
@@ -357,7 +367,8 @@
     "received_at": "Adresse destinataire",
     "team_id": "Équipe",
     "brand_id": "Marque",
-    "widget_id": "Widget de chat"
+    "widget_id": "Widget de chat",
+    "assignee_id": "Responsable"
   },
   "ops": {
     "contains": "contient",
@@ -375,6 +386,7 @@
     "set_priority": "Définir la priorité sur",
     "set_severity": "Définir la gravité sur",
     "assign_user": "Attribuer à",
+    "assign_replier": "Attribuer à l’agent qui a répondu",
     "assign_team": "Attribuer à l’équipe",
     "add_tag": "Ajouter une étiquette",
     "remove_tag": "Retirer une étiquette",

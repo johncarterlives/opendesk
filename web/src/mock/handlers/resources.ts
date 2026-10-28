@@ -200,10 +200,11 @@ export function registerResources() {
     filter: (ctx, rows) => rows.filter((v) => !v.team_id || isAdmin(ctx.ws, db.meId) || !!teamOfId(ctx.ws, v.team_id, db.meId)),
     create: (ctx, id) => {
       const team_id = teamRef(ctx, ctx.body.team_id);
-      return { id, name: required(ctx, "name").slice(0, 60), shared: team_id ? false : ctx.body.shared === true, team_id, filters: isRecord(ctx.body.filters) ? (ctx.body.filters as TicketFilters) : {}, position: typeof ctx.body.position === "number" ? ctx.body.position : ctx.ws.views.length };
+      return { id, name: required(ctx, "name").slice(0, 60), shared: team_id ? false : ctx.body.shared === true, team_id, section: viewSection(ctx.body.section), filters: isRecord(ctx.body.filters) ? (ctx.body.filters as TicketFilters) : {}, position: typeof ctx.body.position === "number" ? ctx.body.position : ctx.ws.views.length };
     },
     update: (ctx, row) => {
       assign(row, ctx.body, ["name", "shared", "position"]);
+      if ("section" in ctx.body) row.section = viewSection(ctx.body.section);
       if ("team_id" in ctx.body) row.team_id = teamRef(ctx, ctx.body.team_id);
       if (row.team_id) row.shared = false;
       if (isRecord(ctx.body.filters)) row.filters = ctx.body.filters as TicketFilters;
@@ -588,6 +589,17 @@ export function registerResources() {
     publishTicketUpdated(ws, t, ["csat"]);
     return respond(204);
   });
+}
+
+/** A view's section as the API keeps it: spaces collapsed, at most 60 characters, no angle brackets or control characters, blank for none. */
+function viewSection(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v !== "string") throw invalid("section must be a string");
+  const name = v.split(/\s+/).filter(Boolean).join(" ");
+  if ([...name].length > 60) throw invalid("section is too long");
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f-\u009f<>]/.test(name)) throw invalid("section contains characters that are not allowed");
+  return name || null;
 }
 
 function positive(v: unknown, name: string): number {

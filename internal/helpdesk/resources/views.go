@@ -28,9 +28,13 @@ type View struct {
 	Filters  hd.TicketFilters `json:"filters"`
 	Position int              `json:"position"`
 	TeamID   *uuid.UUID       `json:"team_id" doc:"Shared with this team's members; shared is then false"`
+	Section  *string          `json:"section" doc:"The sidebar heading the view shows under, with the other views of that name; null for none"`
 
 	owner *uuid.UUID
 }
+
+// maxViewSection bounds a section's name.
+const maxViewSection = 60
 
 type viewWriteBody struct {
 	Name     *string           `json:"name,omitempty" maxLength:"100"`
@@ -38,6 +42,7 @@ type viewWriteBody struct {
 	Shared   *bool             `json:"shared,omitempty"`
 	Position *int              `json:"position,omitempty" minimum:"0" maximum:"100000"`
 	TeamID   Nullable[string]  `json:"team_id,omitempty" doc:"Share with a team's members (admins and the team's leads); null makes it a personal or shared view again"`
+	Section  Nullable[string]  `json:"section,omitempty" doc:"The sidebar heading to show the view under; null or blank for none"`
 }
 
 type viewOut struct{ Body View }
@@ -45,7 +50,7 @@ type viewOut struct{ Body View }
 func scanView(r pgx.Row) (View, error) {
 	var v View
 	var raw []byte
-	if err := r.Scan(&v.ID, &v.Name, &v.owner, &raw, &v.Position, &v.TeamID); err != nil {
+	if err := r.Scan(&v.ID, &v.Name, &v.owner, &raw, &v.Position, &v.TeamID, &v.Section); err != nil {
 		return v, err
 	}
 	v.Shared = v.owner == nil && v.TeamID == nil
@@ -53,7 +58,25 @@ func scanView(r pgx.Row) (View, error) {
 	return v, nil
 }
 
-const viewSelect = `SELECT v.id, v.name, v.user_id, v.filters, v.position, v.team_id FROM views v`
+const viewSelect = `SELECT v.id, v.name, v.user_id, v.filters, v.position, v.team_id, v.section FROM views v`
+
+// applyViewSection sets the view's section from the body: spaces collapse, and null or
+// blank leaves the view without one.
+func applyViewSection(b viewWriteBody, v *View) error {
+	if !b.Section.Set {
+		return nil
+	}
+	if b.Section.Null || strings.TrimSpace(b.Section.Value) == "" {
+		v.Section = nil
+		return nil
+	}
+	s, err := cleanName("section", b.Section.Value, maxViewSection)
+	if err != nil {
+		return err
+	}
+	v.Section = &s
+	return nil
+}
 
 // visibleView loads a view the caller can see: shared, their own personal view, a view of
 // their team, or (for admins and the team's leads, who manage them) any team view.
@@ -245,6 +268,9 @@ func registerViews(d *deps.Deps, api huma.API) {
 			if !shared && !team {
 				v.owner = &p.UserID
 			}
+			if err := applyViewSection(in.Body, &v); err != nil {
+				return nil, err
+			}
 			if in.Body.Filters != nil {
 				v.Filters = *in.Body.Filters
 			}
@@ -261,8 +287,8 @@ func registerViews(d *deps.Deps, api huma.API) {
 					p.WorkspaceID, viewer(p)).Scan(&v.Position); err != nil {
 					return err
 				}
-				if _, err := tx.Exec(ctx, `INSERT INTO views (id, workspace_id, user_id, name, filters, position, team_id) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-					v.ID, p.WorkspaceID, v.owner, v.Name, v.Filters, v.Position, v.TeamID); err != nil {
+				if _, err := tx.Exec(ctx, `INSERT INTO views (id, workspace_id, user_id, name, filters, position, team_id, section) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+					v.ID, p.WorkspaceID, v.owner, v.Name, v.Filters, v.Position, v.TeamID, v.Section); err != nil {
 					return err
 				}
 				return publishView(ctx, tx, p.WorkspaceID, "view.created", v, map[string]any{"view": v})
@@ -346,8 +372,11 @@ func registerViews(d *deps.Deps, api huma.API) {
 				if in.Body.Position != nil {
 					v.Position = *in.Body.Position
 				}
-				if _, err := tx.Exec(ctx, `UPDATE views SET name = $3, filters = $4, position = $5, user_id = $6, team_id = $7, updated_at = now()
-					WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id, v.Name, v.Filters, v.Position, v.owner, v.TeamID); err != nil {
+				if err := applyViewSection(in.Body, &v); err != nil {
+					return err
+				}
+				if _, err := tx.Exec(ctx, `UPDATE views SET name = $3, filters = $4, position = $5, user_id = $6, team_id = $7, section = $8, updated_at = now()
+					WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id, v.Name, v.Filters, v.Position, v.owner, v.TeamID, v.Section); err != nil {
 					return err
 				}
 				return publishView(ctx, tx, p.WorkspaceID, "view.updated", v, map[string]any{"view": v})

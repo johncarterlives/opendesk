@@ -25,7 +25,7 @@ var (
 	ConditionOps = []string{"contains", "not_contains", "equals", "not_equals", "any", "none"}
 	// PhraseFields take the phrase ops any and none: a list of phrases, one per line.
 	PhraseFields = []string{"subject", "body", "from_email", "received_at", "tag"}
-	ActionTypes  = []string{"set_status", "set_priority", "set_severity", "assign_user", "assign_team", "add_tag", "remove_tag", "send_reply", "add_note", "mark_spam", "delete_ticket", "merge_into_open_ticket", "ai_triage", "set_field", "set_reply_address"}
+	ActionTypes  = []string{"set_status", "set_priority", "set_severity", "assign_user", "assign_replier", "assign_team", "add_tag", "remove_tag", "send_reply", "add_note", "mark_spam", "delete_ticket", "merge_into_open_ticket", "ai_triage", "set_field", "set_reply_address"}
 	// Sentiments are the values triage writes to custom.ai_sentiment (contracts/ai.md).
 	Sentiments = []string{"positive", "neutral", "negative", "frustrated"}
 )
@@ -55,7 +55,7 @@ type Condition struct {
 }
 
 type Action struct {
-	Type  string `json:"type" enum:"set_status,set_priority,set_severity,assign_user,assign_team,add_tag,remove_tag,send_reply,add_note,mark_spam,delete_ticket,merge_into_open_ticket,ai_triage,set_field,set_reply_address"`
+	Type  string `json:"type" enum:"set_status,set_priority,set_severity,assign_user,assign_replier,assign_team,add_tag,remove_tag,send_reply,add_note,mark_spam,delete_ticket,merge_into_open_ticket,ai_triage,set_field,set_reply_address"`
 	Value string `json:"value" maxLength:"20000"`
 	// Field is the ticket custom field key of set_field.
 	Field string `json:"field,omitempty" maxLength:"40"`
@@ -314,7 +314,7 @@ func ValidateActions(ctx context.Context, q db.Querier, wid uuid.UUID, as []Acti
 			if HTMLToText(a.Value) == "" {
 				return nil, httpx.Validation(a.Type + " needs a message")
 			}
-		case "ai_triage", "delete_ticket":
+		case "ai_triage", "delete_ticket", "assign_replier":
 			a.Value = ""
 		case "set_reply_address":
 			// An address the ticket replies from; skipped on tickets of another brand.

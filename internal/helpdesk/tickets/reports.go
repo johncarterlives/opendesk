@@ -128,6 +128,37 @@ func round1(v *float64) *float64 {
 	return &r
 }
 
+// reportPeriod reads a report's from and to in the workspace's timezone: the last 30 days
+// by default, at most 366 days.
+func reportPeriod(ctx context.Context, q db.Querier, wid uuid.UUID, fromS, toS string) (from, to time.Time, loc *time.Location, err error) {
+	s, err := hd.LoadSettings(ctx, q, wid)
+	if err != nil {
+		return from, to, nil, err
+	}
+	loc = s.Location()
+	to, ok, err := parseBound(toS, loc, true)
+	if err != nil {
+		return from, to, loc, err
+	}
+	if !ok {
+		to = time.Now()
+	}
+	from, ok, err = parseBound(fromS, loc, false)
+	if err != nil {
+		return from, to, loc, err
+	}
+	if !ok {
+		from = to.AddDate(0, 0, -30)
+	}
+	if !from.Before(to) {
+		return from, to, loc, httpx.Validation("from must be before to")
+	}
+	if to.Sub(from) > 366*24*time.Hour {
+		return from, to, loc, httpx.Validation("the range can be at most 366 days")
+	}
+	return from, to, loc, nil
+}
+
 func overview(ctx context.Context, q db.Querier, wid uuid.UUID, fromS, toS string, rf reportFilter) (ReportOverview, error) {
 	o := ReportOverview{ByDay: []ReportDay{}, ByAgent: []ReportAgent{}, ByChannel: map[string]int{}, BySeverity: map[string]int{},
 		ByTeam: []ReportTeam{}, ByBrand: []ReportBrand{}}
@@ -135,30 +166,9 @@ func overview(ctx context.Context, q db.Querier, wid uuid.UUID, fromS, toS strin
 	if err != nil {
 		return o, err
 	}
-	s, err := hd.LoadSettings(ctx, q, wid)
+	from, to, loc, err := reportPeriod(ctx, q, wid, fromS, toS)
 	if err != nil {
 		return o, err
-	}
-	loc := s.Location()
-	to, ok, err := parseBound(toS, loc, true)
-	if err != nil {
-		return o, err
-	}
-	if !ok {
-		to = time.Now()
-	}
-	from, ok, err := parseBound(fromS, loc, false)
-	if err != nil {
-		return o, err
-	}
-	if !ok {
-		from = to.AddDate(0, 0, -30)
-	}
-	if !from.Before(to) {
-		return o, httpx.Validation("from must be before to")
-	}
-	if to.Sub(from) > 366*24*time.Hour {
-		return o, httpx.Validation("the range can be at most 366 days")
 	}
 	tz := loc.String()
 

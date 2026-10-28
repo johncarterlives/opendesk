@@ -32,6 +32,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/deps"
 	"github.com/useopendesk/opendesk/internal/domain"
 	"github.com/useopendesk/opendesk/internal/images"
+	"github.com/useopendesk/opendesk/internal/integrations/panels"
 	"github.com/useopendesk/opendesk/internal/netsafe"
 )
 
@@ -83,11 +84,12 @@ func guardedClient(dev bool) *http.Client {
 	}
 }
 
-// Register adds the integration and ticket link routes.
+// Register adds the integration, ticket link and ticket panel routes.
 func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	s := For(d)
 	s.registerRoutes(api, r)
 	s.registerLinks(api)
+	panels.Register(d, api, r)
 }
 
 // RegisterWorkers adds the icon lookup of custom servers.

@@ -34,6 +34,7 @@ var Columns = []Column{
 	{"imports", "id", "credentials_enc"},                     // import source credentials
 	{"support_channel_connections", "id", "credentials_enc"}, // Slack, Discord and Telegram credentials
 	{"collab_accounts", "id", "credentials_enc"},             // Collab mail account credentials
+	{"ticket_panels", "id", "secret_enc"},                    // ticket panel Shopify tokens and signing secrets
 }
 
 // NotSealed are the bytea columns that hold no d.Box output: hashes, public keys and

@@ -7,7 +7,7 @@ import { continueInBrowser, InBrowserNote } from "@/components/desktop/InBrowser
 import { isDesktop } from "@/lib/desktop";
 import { ArrowUpRight } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AppMark } from "@/components/appmark";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ const markTone: Record<string, Tone> = {
   square: "gray",
   box: "blue",
   zapier: "orange",
+  shopify: "green",
 };
 
 /** A product's logo; a custom server's own icon; else its initial in its tone. */
@@ -55,6 +56,33 @@ export function ProviderMark({
   className?: string;
 }) {
   return <AppMark app={provider} name={name} icon={icon} tint={markTone[provider] ?? "teal"} size={size} className={className} />;
+}
+
+/** A card of the "Add an integration" catalog: the product's mark, what it does, how it connects, and its action. */
+export function CatalogTile({ mark, name, kind, description, via, action }: { mark: ReactNode; name: string; kind: string; description: string; via: string; action?: ReactNode }) {
+  return (
+    <motion.div
+      layout="position"
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-3.5 shadow-xs transition-colors hover:border-line-strong"
+    >
+      <div className="flex items-center gap-2.5">
+        {mark}
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[13px] font-medium text-fg">{name}</div>
+          <div className="text-[11.5px] text-fg-4">{kind}</div>
+        </div>
+      </div>
+      <p className="line-clamp-2 min-h-[36px] text-[12px] leading-[18px] text-fg-3">{description}</p>
+      <div className="flex items-center justify-between">
+        <span className="text-[11.5px] text-fg-4">{via}</span>
+        {action}
+      </div>
+    </motion.div>
+  );
 }
 
 function validServer(v: string): string | null {

@@ -916,6 +916,43 @@ func TestGmailBusy(t *testing.T) {
 	}
 }
 
+// TestPace: an account's calls wait for a place while its provider's are taken, and for
+// their turn at its rate.
+func TestPace(t *testing.T) {
+	s := &service{paceLimits: map[string]paceLimit{ProviderMicrosoft: {perSecond: 20, burst: 1, atOnce: 2}}, paced: map[uuid.UUID]*pace{}}
+	a := &accountRow{ID: uuid.New(), Provider: ProviderMicrosoft}
+	if s.pace(a) != s.pace(a) || s.pace(&accountRow{ID: uuid.New(), Provider: ProviderIMAP}) != nil {
+		t.Fatal("one pace per account, none for IMAP")
+	}
+	ctx := context.Background()
+	r1, err1 := s.pace(a).wait(ctx)
+	r2, err2 := s.pace(a).wait(ctx)
+	if err1 != nil || err2 != nil {
+		t.Fatal(err1, err2)
+	}
+	short, cancel := context.WithTimeout(ctx, 50*time.Millisecond)
+	defer cancel()
+	if _, err := s.pace(a).wait(short); err == nil {
+		t.Fatal("a third call at once did not wait for a place")
+	}
+	r1()
+	r2()
+	start := time.Now()
+	for range 3 {
+		r, err := s.pace(a).wait(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		r()
+	}
+	if d := time.Since(start); d < 80*time.Millisecond {
+		t.Fatalf("three calls at 20 a second took %s", d)
+	}
+	if r, err := (*pace)(nil).wait(ctx); err != nil || r == nil {
+		t.Fatal("no pace")
+	}
+}
+
 func TestSyncDue(t *testing.T) {
 	w := newWorld(t)
 	idle := w.account(w.agent, ProviderGoogle, VisibilityPrivate, Audience{})

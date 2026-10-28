@@ -22,6 +22,7 @@ import { LabelPicker } from "./LabelPicker";
 import { SetByOllie, useAISet, useOllieNote } from "../ollie";
 import { FieldsSection } from "./FieldsSection";
 import { TicketLinks } from "./TicketLinks";
+import { TicketPanels } from "./TicketPanels";
 import { SideConversations } from "./SideConversations";
 import { importedFrom } from "@/components/imports/sources";
 import { useDisplay, type FieldPatch, type TicketWithFields } from "../fields";
@@ -480,6 +481,9 @@ export function TicketProperties({
           {t.contact ? <ContactCard contactId={t.contact.id} compact excludeTicketId={t.id} /> : <p className="text-xs text-fg-4">{tr("props.noContact")}</p>}
         </div>
       </section>
+
+      {/* What Shopify or the workspace's own systems know about the contact. */}
+      <TicketPanels ticketId={t.id} />
 
       <section className="flex flex-col gap-1.5 px-4 py-3.5 text-[12px]">
         <h3 className="label-caps mb-1">{tr("props.details")}</h3>

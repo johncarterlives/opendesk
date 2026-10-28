@@ -350,6 +350,80 @@ type view struct {
 	Shared   bool           `json:"shared"`
 	Filters  map[string]any `json:"filters"`
 	Position int            `json:"position"`
+	Section  *string        `json:"section"`
+}
+
+func TestViewSections(t *testing.T) {
+	e := hdtest.New(t, resources.Register)
+	ws := e.NewWorkspace()
+
+	// A shared view and a personal one carry a section; spaces collapse.
+	var claims, mine view
+	e.Do("POST", "/v1/views", ws.Admin.As(ws), map[string]any{"name": "Damaged & claims", "shared": true, "section": "  After   sales "}).
+		Want(t, 201).JSON(t, &claims)
+	if claims.Section == nil || *claims.Section != "After sales" {
+		t.Fatalf("created %+v", claims)
+	}
+	e.Do("POST", "/v1/views", ws.Agent.As(ws), map[string]any{"name": "My returns", "section": "After sales"}).Want(t, 201).JSON(t, &mine)
+	if mine.Shared || mine.Section == nil || *mine.Section != "After sales" {
+		t.Fatalf("personal %+v", mine)
+	}
+
+	// Without one, and blank, the view has none.
+	var plain, blank view
+	e.Do("POST", "/v1/views", ws.Admin.As(ws), map[string]any{"name": "Urgent", "shared": true}).Want(t, 201).JSON(t, &plain)
+	e.Do("POST", "/v1/views", ws.Admin.As(ws), map[string]any{"name": "Blank", "shared": true, "section": "   "}).Want(t, 201).JSON(t, &blank)
+	if plain.Section != nil || blank.Section != nil {
+		t.Fatalf("no section %+v %+v", plain, blank)
+	}
+
+	// Too long or with markup is refused; 60 characters fit.
+	e.Do("POST", "/v1/views", ws.Admin.As(ws), map[string]any{"name": "Long", "shared": true, "section": strings.Repeat("a", 61)}).Want(t, 422)
+	e.Do("POST", "/v1/views", ws.Admin.As(ws), map[string]any{"name": "Tag", "shared": true, "section": "<b>x</b>"}).Want(t, 422)
+	e.Do("PATCH", "/v1/views/"+plain.ID, ws.Admin.As(ws), map[string]any{"section": strings.Repeat("é", 61)}).Want(t, 422)
+	var fits view
+	e.Do("PATCH", "/v1/views/"+plain.ID, ws.Admin.As(ws), map[string]any{"section": strings.Repeat("é", 60)}).Want(t, 200).JSON(t, &fits)
+	if fits.Section == nil || *fits.Section != strings.Repeat("é", 60) {
+		t.Fatalf("60 runes %+v", fits)
+	}
+
+	// A patch that leaves section out keeps it; null and blank clear it.
+	var got view
+	e.Do("PATCH", "/v1/views/"+claims.ID, ws.Admin.As(ws), map[string]any{"name": "Damaged and claims"}).Want(t, 200).JSON(t, &got)
+	if got.Section == nil || *got.Section != "After sales" {
+		t.Fatalf("kept %+v", got)
+	}
+	e.Do("GET", "/v1/views/"+claims.ID, ws.Agent.As(ws), nil).Want(t, 200).JSON(t, &got)
+	if got.Section == nil || *got.Section != "After sales" {
+		t.Fatalf("read back %+v", got)
+	}
+	e.Do("PATCH", "/v1/views/"+claims.ID, ws.Admin.As(ws), map[string]any{"section": nil}).Want(t, 200).JSON(t, &got)
+	if got.Section != nil {
+		t.Fatalf("null %+v", got)
+	}
+	e.Do("PATCH", "/v1/views/"+mine.ID, ws.Agent.As(ws), map[string]any{"section": ""}).Want(t, 200).JSON(t, &got)
+	if got.Section != nil {
+		t.Fatalf("blank %+v", got)
+	}
+	e.Do("PATCH", "/v1/views/"+mine.ID, ws.Agent.As(ws), map[string]any{"section": "Delivery"}).Want(t, 200)
+
+	// The list carries each view's section.
+	var p page[view]
+	e.Do("GET", "/v1/views", ws.Agent.As(ws), nil).Want(t, 200).JSON(t, &p)
+	sections := map[string]string{}
+	for _, v := range p.Data {
+		if v.Section != nil {
+			sections[v.Name] = *v.Section
+		}
+	}
+	if len(sections) != 2 || sections["My returns"] != "Delivery" || sections["Urgent"] != strings.Repeat("é", 60) {
+		t.Fatalf("list %+v", sections)
+	}
+	var stored *string
+	e.Scalar(`SELECT section FROM views WHERE id = $1`, &stored, claims.ID)
+	if stored != nil {
+		t.Fatalf("stored %v", *stored)
+	}
 }
 
 func TestViews(t *testing.T) {

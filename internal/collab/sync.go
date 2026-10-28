@@ -203,9 +203,10 @@ func syncBackoff(failures int) time.Duration {
 	return min(d, time.Hour)
 }
 
-// quietFailures is how many passing failures in a row (a busy or unreachable provider) wait
-// with the backoff before the account shows the error: about seven minutes of them.
-const quietFailures = 3
+// quietFailures is how many passing failures in a row (a busy or unreachable provider) it
+// takes for the account to show the error: the backoff after the first three is 1, 2 and 4
+// minutes, so about seven minutes of them.
+const quietFailures = 4
 
 func (s *service) recordSyncError(ctx context.Context, a *accountRow, cause error) error {
 	msg := safeError(cause)
