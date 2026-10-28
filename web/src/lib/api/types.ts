@@ -2496,6 +2496,8 @@ export type MailAccount = {
   unread: number;
   /** Shared accounts can track work separately from provider read state. */
   handling_enabled: boolean;
+  /** Reply answers everyone on the message by default, for everyone answering from this account. */
+  reply_all: boolean;
   /** IMAP accounts, can_manage only. */
   imap?: MailImapSettings;
   created_at: string;

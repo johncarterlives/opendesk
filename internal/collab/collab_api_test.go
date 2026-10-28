@@ -582,6 +582,29 @@ func TestAPIActions(t *testing.T) {
 	}
 }
 
+func TestAPIReplyAllDefault(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	srv := w.api(w.agent)
+
+	var account MailAccount
+	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"reply_all": true}, &account); st != 200 || !account.ReplyAll {
+		t.Fatalf("enable reply all: %d %+v", st, account)
+	}
+	// Everyone the account is shared with sees the same default.
+	var list []MailAccount
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/accounts", nil, &list); st != 200 || len(list) != 1 || !list[0].ReplyAll {
+		t.Fatalf("list after enable: %d %+v", st, list)
+	}
+	// Another change leaves it as it is.
+	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"color": "teal"}, &account); st != 200 || !account.ReplyAll {
+		t.Fatalf("other change: %d %+v", st, account)
+	}
+	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"reply_all": false}, &account); st != 200 || account.ReplyAll {
+		t.Fatalf("disable reply all: %d %+v", st, account)
+	}
+}
+
 func TestAPIHandlingState(t *testing.T) {
 	w := newWorld(t)
 	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})

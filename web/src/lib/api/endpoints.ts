@@ -972,6 +972,7 @@ export type CollabAccountPatch = {
   signature_html?: string;
   visibility?: "private" | "shared";
   handling_enabled?: boolean;
+  reply_all?: boolean;
   shared_with?: T.MailAudience;
   imap?: Partial<T.MailImapSettings> & { password?: string; smtp_password?: string };
   /** The address new mail goes out from. */

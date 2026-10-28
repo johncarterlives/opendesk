@@ -115,6 +115,7 @@ type MailAccount struct {
 	CanManage       bool            `json:"can_manage"`
 	Unread          int             `json:"unread"`
 	HandlingEnabled bool            `json:"handling_enabled"`
+	ReplyAll        bool            `json:"reply_all" doc:"Reply answers everyone on the message by default"`
 	IMAP            *IMAPSettings   `json:"imap,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
 

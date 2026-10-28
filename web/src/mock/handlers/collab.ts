@@ -192,6 +192,7 @@ function seedState(ws: WsData): State {
     can_manage: true,
     unread: 0,
     handling_enabled: false,
+    reply_all: false,
     created_at: new Date(now - 40 * DAY).toISOString(),
     signature_sync: "none",
     signature_synced_at: null,
@@ -1261,6 +1262,7 @@ export function registerCollab() {
       visibility: b.visibility === "shared" ? "shared" : "private",
       shared_with: b.visibility === "shared" ? audienceFrom(b.shared_with) : emptyAudience(),
       handling_enabled: false,
+      reply_all: false,
       signature_html: "",
       status: "syncing",
       reconnect: false,
@@ -1336,6 +1338,7 @@ export function registerCollab() {
       if (a.visibility !== "shared") throw invalid("Handling state is available on shared accounts.");
       a.handling_enabled = b.handling_enabled;
     }
+    if (typeof b.reply_all === "boolean") a.reply_all = b.reply_all;
     if (b.shared_with !== undefined) a.shared_with = audienceFrom(b.shared_with);
     if (a.visibility === "private") {
       a.shared_with = emptyAudience();

@@ -456,6 +456,12 @@
       "enabled": "Track conversations needing action",
       "enabledHint": "New incoming mail needs action until someone marks it done. This does not change mail at your provider."
     },
+    "replying": {
+      "title": "Replying",
+      "hint": "How everyone answers mail from this account",
+      "replyAll": "Reply all by default",
+      "replyAllHint": "Reply all comes first for everyone answering from this account. r still replies to the sender and a to everyone."
+    },
     "server": "Server settings",
     "serverHint": "New settings are tried before they are saved",
     "passwordUnchanged": "Leave empty to keep the current password. A new server needs the password again.",
