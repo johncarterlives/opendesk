@@ -309,6 +309,9 @@ func (s *service) checkCategories(ctx context.Context, a *accountRow) {
 		return
 	}
 	res := cs.resolve(a)
+	if res.Engine == modeGmail {
+		return
+	}
 	due := categorySig(res, s.sortsWithAI(ctx, a.WorkspaceID)) != a.CategorySig || !slices.Equal(categoryKeys(res), a.CategoryKeys)
 	if !due && res.Enabled {
 		err = s.d.DB.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM collab_threads WHERE account_id = $1 AND category_pending)`, a.ID).Scan(&due)
@@ -339,6 +342,9 @@ func (s *service) categorize(ctx context.Context, id uuid.UUID, attempt int) err
 		return err
 	}
 	res := cs.resolve(a)
+	if res.Engine == modeGmail {
+		return nil
+	}
 	withAI := res.AI && s.sortsWithAI(ctx, a.WorkspaceID)
 	keys := categoryKeys(res)
 	if err := s.applyCategoryKeys(ctx, a, keys, categorySig(res, withAI)); err != nil {
@@ -371,6 +377,17 @@ func (s *service) applyCategoryKeys(ctx context.Context, a *accountRow, keys []s
 		return nil
 	}
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+		current, err := loadAccountForUpdate(ctx, tx, a.ID)
+		if err != nil {
+			return err
+		}
+		cs, err := loadAccountCategorySets(ctx, tx, current)
+		if err != nil {
+			return err
+		}
+		if current.CategoryEpoch != a.CategoryEpoch || cs.resolve(current).Engine == modeGmail {
+			return nil
+		}
 		if _, err := tx.Exec(ctx, `UPDATE collab_accounts SET category_keys = $2, category_sig = $3 WHERE id = $1`, a.ID, keys, sig); err != nil {
 			return err
 		}
@@ -551,6 +568,17 @@ func (s *service) askOllie(ctx context.Context, wid uuid.UUID, cats []MailCatego
 // tells who sees the account.
 func (s *service) storeSorted(ctx context.Context, a *accountRow, results []sortResult) error {
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+		current, err := loadAccountForUpdate(ctx, tx, a.ID)
+		if err != nil {
+			return err
+		}
+		cs, err := loadAccountCategorySets(ctx, tx, current)
+		if err != nil {
+			return err
+		}
+		if current.CategoryEpoch != a.CategoryEpoch || cs.resolve(current).Engine != "local" {
+			return nil
+		}
 		changed := []uuid.UUID{}
 		for _, r := range results {
 			tag, err := tx.Exec(ctx, `UPDATE collab_threads SET category = $2, category_source = $3, category_pending = false

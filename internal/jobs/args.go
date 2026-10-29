@@ -409,11 +409,12 @@ func (CollabSyncArgs) Kind() string { return "collab.sync_account" }
 // CollabApplyArgs makes an action already applied in opendesk at the provider
 // (contracts/collab.md "Actions"). Owner: collab.
 type CollabApplyArgs struct {
-	WorkspaceID uuid.UUID   `json:"workspace_id"`
-	AccountID   uuid.UUID   `json:"account_id"`
-	ThreadIDs   []uuid.UUID `json:"thread_ids"`
-	Action      string      `json:"action"`
-	FolderID    *uuid.UUID  `json:"folder_id,omitempty"`
+	WorkspaceID      uuid.UUID   `json:"workspace_id"`
+	AccountID        uuid.UUID   `json:"account_id"`
+	ThreadIDs        []uuid.UUID `json:"thread_ids"`
+	Action           string      `json:"action"`
+	FolderID         *uuid.UUID  `json:"folder_id,omitempty"`
+	CategoryIntentID *uuid.UUID  `json:"category_intent_id,omitempty"`
 }
 
 func (CollabApplyArgs) Kind() string { return "collab.apply" }

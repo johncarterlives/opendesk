@@ -240,7 +240,7 @@ export default function MailPage() {
       const senders = new Set(items.map((x) => ruleSender(x.participants, ownEmails)));
       const sender = senders.size === 1 ? [...senders][0] : null;
       const msg = t("categories.moved", { count: ids.length, name });
-      if (!acc?.can_manage || !sender || items.some((x) => x.account_id !== acc.id)) {
+      if (!acc?.can_manage || acc.categories.engine === "gmail" || !sender || items.some((x) => x.account_id !== acc.id)) {
         if (undo) toast.undo(msg, undo, t("toast.undo"));
         else toast.success(msg);
         return;

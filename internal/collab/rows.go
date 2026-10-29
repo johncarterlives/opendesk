@@ -75,19 +75,21 @@ type accountRow struct {
 	NextSyncAt      *time.Time
 	CreatedAt       time.Time
 	// CategoryKeys and CategorySig are what its inbox was last sorted with ("Categories").
-	CategoryKeys []string
-	CategorySig  string
+	CategoryKeys   []string
+	CategorySig    string
+	CategoryEngine string
+	CategoryEpoch  int64
 }
 
 const accountColumns = `id, workspace_id, owner_id, provider, email, name, display_name, color, visibility, handling_enabled, reply_all, signature_html,
 	config, credentials_enc, sync_state, status, reconnect, last_error, last_synced_at, sync_failures, next_sync_at, created_at,
-	category_keys, category_sig`
+	category_keys, category_sig, category_engine, category_epoch`
 
 func scanAccount(row pgx.Row) (*accountRow, error) {
 	var a accountRow
 	err := row.Scan(&a.ID, &a.WorkspaceID, &a.OwnerID, &a.Provider, &a.Email, &a.Name, &a.DisplayName, &a.Color, &a.Visibility,
 		&a.HandlingEnabled, &a.ReplyAll, &a.SignatureHTML, &a.Config, &a.CredentialsEnc, &a.SyncState, &a.Status, &a.Reconnect, &a.LastError, &a.LastSyncedAt,
-		&a.SyncFailures, &a.NextSyncAt, &a.CreatedAt, &a.CategoryKeys, &a.CategorySig)
+		&a.SyncFailures, &a.NextSyncAt, &a.CreatedAt, &a.CategoryKeys, &a.CategorySig, &a.CategoryEngine, &a.CategoryEpoch)
 	if err != nil {
 		return nil, err
 	}

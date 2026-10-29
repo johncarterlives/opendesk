@@ -225,7 +225,7 @@ brings back the provider's state.
 | `move` (`folder_id`) | add the label, remove `INBOX` when the target is a label | move | move |
 | `label` / `unlabel` (`folder_id`, a label) | add / remove the label | add / remove the category (the message's `categories` PATCHed) | `422 labels_unsupported` |
 | `done` / `needs_action` | local handling state | local handling state | local handling state |
-| `categorize` (`category`, a key of the account's) | opendesk only ("Categories") | opendesk only | opendesk only |
+| `categorize` (`category`, a key of the account's) | Gmail category labels in `gmail` mode; otherwise opendesk only ("Categories") | opendesk only | opendesk only |
 
 A `move` to an Outlook category is `422 validation_error` (a category is a label: add it with
 `label`). Moving a Microsoft or IMAP conversation keeps its categories.
@@ -295,21 +295,22 @@ a reply in its conversation, a new message or a forward in a conversation of its
 ## Categories
 
 An inbox can be split into tabs, like Gmail's: **Primary** for mail from people, and categories such
-as Updates, Newsletters and Promotions for the rest. New mail is sorted as it arrives. Categories are
-opendesk's own (never written to the provider), are on every provider, and change only where mail
-shows in opendesk: a conversation in Updates is still in the inbox, unread and counted as before.
+as Updates, Newsletters and Promotions for the rest. New mail is sorted as it arrives. Local categories
+are available on every provider and change only where mail shows in opendesk. A Google account may
+instead opt into **Sync with Gmail**, which reads and writes Gmail's category labels. Category changes
+preserve inbox membership, unread state, stars and ordinary labels.
 
 **Who decides.** A workspace's admins set the default for everyone, so nobody has to set up each
 person's inbox, and may give a team its own; a member may choose their own for an account they
 manage. An account follows the first of these that applies to it:
 
-1. its own choice (`custom` or `off`), unless the workspace locks categories (`locked`) and the
+1. its own choice (`custom`, `gmail` or `off`), unless the workspace locks categories (`locked`) and the
    choice was not made by an admin;
 2. the categories of its owner's teams, the first in the workspace's team order (`position`) that has
    any (`on` or `off`);
 3. the workspace's (`on` or `off`);
 4. none: the inbox is not split. The mail page offers a guided set-up to whoever manages the account,
-   with presets and Ollie's suggestions from that account's own mail.
+   with Gmail sync for Google accounts, local presets and Ollie's suggestions from that account's own mail.
 
 It is worked out again whenever any of these changes, when someone joins or leaves a team, and on
 every sync, so a new member's accounts sort the way the workspace's do from their first sync. A shared
@@ -333,7 +334,8 @@ interface MailCategorySet {
 interface MailCategorySettings {   // GET /v1/collab/categories
   workspace: (MailCategorySet & { locked: boolean }) | null   // null: no default
   teams: (MailCategorySet & { team_id: string; team_name: string; position: number })[]   // admins: every team with a set; others: their own teams'
-  presets: MailCategory[]      // the built-in categories: primary, updates, newsletters, promotions, social
+  presets: MailCategory[]      // local presets: primary, updates, newsletters, promotions, social
+  gmail_categories: MailCategory[] // fixed Gmail catalog: primary, social, promotions, updates, forums
   sorting: "ai" | "rules"      // ai: Ollie sorts (a decision engine or AI provider is on); rules: sender rules and mail headers only
   suggest: boolean             // POST …/categories/suggest is available (an AI provider is on)
 }
@@ -343,14 +345,54 @@ interface MailAccountCategories {  // MailAccount.categories
   categories: MailCategory[]   // what its inbox shows; [] when not enabled
   source: "account" | "team" | "workspace" | "none"
   team: { id: string; name: string } | null   // source "team"
-  mode: "follow" | "custom" | "off"           // the account's own choice
+  mode: "follow" | "custom" | "off" | "gmail" // the account's own choice
+  engine: "off" | "local" | "gmail"          // effective authority after workspace policy
   own: MailCategory[]          // its custom categories, kept while it follows ([] when never set)
   ai: boolean                  // Ollie may sort its new mail (default true); false: sender rules and headers only
   locked: boolean              // the caller cannot change mode or categories (the workspace locks them)
 }
 ```
 
-**How mail is sorted.** When the sync stores a new message in an account's inbox that the account did not
+**Sync with Gmail.** `PUT /v1/collab/accounts/{id}/categories` with `{mode: "gmail"}`
+selects Gmail as the category authority for a connected Google account. The same account-management
+and workspace-lock rules apply. The five fixed categories are Primary (`CATEGORY_PERSONAL`), Social,
+Promotions, Updates and Forums. Newsletters remains a local preset. The response supplies the catalog
+as `gmail_categories`; the web does not invent a second set. Gmail's API does not expose which tabs a
+person enabled in Gmail, so opendesk shows all five and does not change Gmail's inbox layout.
+
+Selecting Gmail sync refreshes category metadata for all already stored messages, including older
+history imports and archived mail. This refresh keeps a durable cursor and a Gmail history baseline,
+then replays changes since that baseline. It resumes after interruption. Expired history starts a new
+refresh of all stored mail. It does not import additional bodies outside the normal import policy.
+Category-only changes update conversation lists and unread counts through the same scoped events as
+other mail changes. Sender rules, Ollie, known correspondents and reply-to-Primary do not override Gmail.
+
+Gmail account category settings expose `sync_status` (`refreshing`, `pending`, `failed`, or `ready`).
+Failed delivery includes blocked work awaiting reconnection; a new move retries the desired category.
+Status is omitted for local and disabled categories.
+
+Gmail assigns labels to messages; opendesk shows one category per conversation. The conversation uses
+the newest non-draft inbox message, with Gmail's internal date and remote id as the ordering. Outside
+the inbox, it uses received mail rather than sent-only replies. A message without a category displays
+Primary. Multiple category labels use the fixed catalog order, with Primary first. This is the
+conversation rule in opendesk; Gmail's API does not specify its own display rule for mixed threads.
+
+Moving a conversation commits a temporary desired category and a `collab.apply` job in the same
+transaction. The worker replaces category labels on the current non-draft messages of the remote
+conversation, including messages whose bodies were not imported. It preserves all unrelated labels.
+The worker reads Gmail back before settling the action. Jobs refer to the current durable intent;
+superseded jobs cannot replay an old choice or acknowledge a newer move. Transient failures retry,
+revoked access waits for reconnect, and permanent refusals restore the observed category. Inbound
+changes update observations without creating outbound writes. A later Gmail edit wins after the local
+action settles. Gmail has no conditional label mutation, so edits made concurrently in different
+clients converge to the final state observed at Gmail rather than a global last-click ordering.
+
+A move applies to existing messages. It does not train Gmail or classify future messages from the
+sender. Existing local category definitions, sender rules and AI preferences are retained while Gmail
+sync is selected. Returning to a local mode resumes local sorting. Existing accounts are never
+silently opted into provider writes.
+
+**Local sorting.** For the `local` engine, when the sync stores a new message in an account's inbox that the account did not
 send, and its conversation has no category yet, the conversation is sorted by the job
 `collab.categorize` (`jobs.CollabCategorizeArgs`, a few seconds later, so a burst is one job), in this
 order:
@@ -838,7 +880,7 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | DELETE | `/v1/collab/categories/teams/{team_id}` | admin | → `MailCategorySettings`: the team follows the workspace |
 | PUT | `/v1/collab/categories/team-order` | admin | `{team_ids: string[]}` (every team with a set, once) → `MailCategorySettings` |
 | POST | `/v1/collab/categories/suggest` | agent+ | `{account_id?, about?: string (0..500)}` → `{categories: MailCategory[]}`, not saved: Ollie's proposal (feature `mail_categories`, contracts/ai.md), from the sender and subject of the account's latest 60 inbox conversations (an account the caller sees) and what `about` says. `404 ai_disabled` without an AI provider; the AI errors of contracts/ai.md |
-| PUT | `/v1/collab/accounts/{id}/categories` | manage | `{mode: "follow" \| "custom" \| "off", categories? (custom: as for the workspace), ai?: boolean}` → `MailAccount`. `422 categories_locked` for a change of mode or categories while the workspace locks them and the caller is not an admin (`ai` always changes) |
+| PUT | `/v1/collab/accounts/{id}/categories` | manage | `{mode: "follow" \| "custom" \| "off" \| "gmail", categories? (custom: as for the workspace), ai?: boolean}` → `MailAccount`. `422 categories_locked` for a change of mode or categories while the workspace locks them and the caller is not an admin (`ai` changes local sorting only; `gmail` rejects editable categories and `ai: true`) |
 | GET | `/v1/collab/accounts/{id}/category-rules` | manage | `{rules: {id, sender, category, created_at}[]}` |
 | POST | `/v1/collab/accounts/{id}/category-rules` | manage | `{sender: an address or "@domain", category}` → the rule (one per sender: a second replaces the first; at most 500). Moves the sender's inbox conversations to the category now |
 | DELETE | `/v1/collab/accounts/{id}/category-rules/{rule_id}` | manage | → 204 |

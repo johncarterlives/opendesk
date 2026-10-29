@@ -22,11 +22,12 @@ import (
 
 // restRequest is one provider call.
 type restRequest struct {
-	method      string
-	url         string
-	body        []byte
-	contentType string
-	headers     map[string]string
+	beforeRequest func(context.Context) error
+	method        string
+	url           string
+	body          []byte
+	contentType   string
+	headers       map[string]string
 	// limit bounds the response body read; 1 MB when zero.
 	limit int64
 }
@@ -56,6 +57,11 @@ func (s *service) call(ctx context.Context, a *accountRow, label string, r restR
 		if err != nil {
 			return nil, err
 		}
+		if r.beforeRequest != nil {
+			if err := r.beforeRequest(ctx); err != nil {
+				return nil, err
+			}
+		}
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Accept", "application/json")
 		if r.contentType != "" {
@@ -70,6 +76,12 @@ func (s *service) call(ctx context.Context, a *accountRow, label string, r restR
 				return nil, ctx.Err()
 			}
 			return nil, errProviderUnavailable // the job's time would run out waiting
+		}
+		if r.beforeRequest != nil {
+			if err := r.beforeRequest(ctx); err != nil {
+				release()
+				return nil, err
+			}
 		}
 		resp, err := s.http.Do(req)
 		if err != nil {

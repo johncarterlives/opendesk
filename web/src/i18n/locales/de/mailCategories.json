@@ -116,9 +116,15 @@
     "team": "Folgt {{team}}",
     "workspace": "Folgt dem Workspace",
     "workspaceOff": "Der Workspace hat sie ausgeschaltet",
-    "none": "Noch kein Standard"
+    "none": "Noch kein Standard",
+    "gmail": "Mit Gmail synchronisieren"
   },
   "section": {
+    "sync": {
+          "refreshing": "Kategorien werden aus Gmail aktualisiert. Ältere Konversationen können etwas länger dauern.",
+          "pending": "Kategorieänderungen warten auf die Bestätigung von Gmail.",
+          "failed": "Einige Kategorieänderungen konnten Gmail nicht erreichen. Prüfe die Kontoverbindung und verschiebe die Konversation erneut."
+    },
     "title": "Posteingangskategorien",
     "description": "Teile diesen Posteingang in Tabs wie Allgemein, Updates und Newsletter auf. Neue E-Mails werden beim Eintreffen einsortiert, und nichts verlässt den Posteingang.",
     "locked": "Die Admins deines Workspace legen die Kategorien fest. Du kannst trotzdem wählen, ob Ollie die E-Mails dieses Kontos sortiert.",
@@ -153,11 +159,11 @@
   },
   "setup": {
     "title": "Deinen Posteingang aufteilen",
-    "description": "Tabs für {{account}}: E-Mails von Menschen bleiben in Allgemein, und Updates, Newsletter und der Rest bekommen beim Eintreffen eigene Tabs.",
+    "description": "Wähle, wie E-Mails für {{account}} sortiert werden: Gmail-Kategorien synchronisieren oder eigene Tabs einrichten.",
     "steps": "Schritte",
     "step1": "Einen Start wählen",
     "step2": "Anpassen",
-    "gmail": "Wie Gmail",
+    "gmail": "Mit Gmail synchronisieren",
     "ollie": "Ollie fragen",
     "ollieHint": "Ollie sieht sich Absender und Betreffzeilen der neuesten E-Mails in diesem Posteingang an und schlägt Tabs vor.",
     "ollieAbout": "Sollte Ollie etwas wissen? (optional)",
@@ -170,6 +176,9 @@
     "save": "Meinen Posteingang aufteilen",
     "saved": "Dein Posteingang ist aufgeteilt. Neue E-Mails werden beim Eintreffen einsortiert.",
     "everyone": "Stattdessen für alle einrichten",
-    "locked": "Die Admins deines Workspace legen die Kategorien für alle fest. Bitte einen Admin, sie zu ändern."
+    "locked": "Die Admins deines Workspace legen die Kategorien für alle fest. Bitte einen Admin, sie zu ändern.",
+    "gmailHint": "Gmail-Kategorien verwenden. Verschieben in opendesk ändert die Kategorie in Gmail. Änderungen in Gmail erscheinen hier. Ollie und Absenderregeln sortieren diesen Posteingang nicht.",
+    "gmailSaved": "Die Gmail-Kategorien werden synchronisiert. Vorhandene E-Mails werden aktualisiert.",
+    "preset": "Vorgeschlagene Kategorien"
   }
 }

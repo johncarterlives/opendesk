@@ -123,6 +123,15 @@ func (s *service) accountsOut(ctx context.Context, q db.Querier, p *auth.Princip
 		}
 		applySettings(&m, a)
 		m.Categories = cats.resolve(a).forCaller(p, cats)
+		if m.Categories.Engine == modeGmail {
+			if err := q.QueryRow(ctx, `SELECT CASE
+                WHEN EXISTS (SELECT 1 FROM collab_category_intents i WHERE i.account_id = a.id AND i.epoch = a.category_epoch AND i.state IN ('blocked','failed')) THEN 'failed'
+                WHEN a.category_refresh IS NOT NULL THEN 'refreshing'
+                WHEN EXISTS (SELECT 1 FROM collab_category_intents i WHERE i.account_id = a.id AND i.epoch = a.category_epoch AND i.state IN ('pending','confirming')) THEN 'pending'
+                ELSE 'ready' END FROM collab_accounts a WHERE a.workspace_id = $1 AND a.id = $2`, p.WorkspaceID, a.ID).Scan(&m.Categories.SyncStatus); err != nil {
+				return nil, err
+			}
+		}
 		if m.Identities, m.DefaultFrom, err = identitiesOut(ctx, fill, a, identities[a.ID]); err != nil {
 			return nil, err
 		}

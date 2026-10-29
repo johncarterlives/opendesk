@@ -113,6 +113,11 @@ func (p *pass) touch(threadID uuid.UUID) {
 func (p *pass) batch(ctx context.Context, fn func(tx pgx.Tx) error) error {
 	err := p.s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
 		p.stored = nil
+		a, err := loadAccountForUpdate(ctx, tx, p.a.ID)
+		if err != nil {
+			return err
+		}
+		p.a = a
 		if err := fn(tx); err != nil {
 			return err
 		}
@@ -135,6 +140,9 @@ func (p *pass) commit(ctx context.Context, tx pgx.Tx) error {
 		return nil
 	}
 	if err := recomputeThreads(ctx, tx, p.a, p.touched); err != nil {
+		return err
+	}
+	if err := projectGmailCategories(ctx, tx, p.a, p.touched); err != nil {
 		return err
 	}
 	threads := p.touched
@@ -221,6 +229,7 @@ func (p *pass) lookupMany(ctx context.Context, q db.Querier, remoteIDs []string)
 
 // state is a message's flags and folders at the provider.
 type state struct {
+	Gmail                  *gmailCategoryObservation
 	Unread, Starred, Draft bool
 	FolderIDs              []uuid.UUID
 	// Location replaces the stored one when not nil.
@@ -229,6 +238,9 @@ type state struct {
 
 // update writes a known message's state when it changed.
 func (p *pass) update(ctx context.Context, tx pgx.Tx, m *storedMsg, st state) error {
+	if ok, err := p.observeGmailCategory(ctx, tx, m, st.Gmail); err != nil || !ok {
+		return err
+	}
 	if st.FolderIDs == nil {
 		st.FolderIDs = []uuid.UUID{}
 	}
@@ -354,6 +366,19 @@ type aiDrafter struct {
 // insert parses, sanitizes and stores a new message and returns its id. A message that
 // cannot be parsed is skipped (uuid.Nil, nil).
 func (p *pass) insert(ctx context.Context, tx pgx.Tx, in *newMessage) (uuid.UUID, error) {
+	id, err := p.insertMessage(ctx, tx, in)
+	if err != nil || id == uuid.Nil || in.State.Gmail == nil {
+		return id, err
+	}
+	m, err := p.lookup(ctx, tx, in.RemoteID)
+	if err != nil || m == nil {
+		return id, err
+	}
+	_, err = p.observeGmailCategory(ctx, tx, m, in.State.Gmail)
+	return id, err
+}
+
+func (p *pass) insertMessage(ctx context.Context, tx pgx.Tx, in *newMessage) (uuid.UUID, error) {
 	if len(in.Raw) == 0 || len(in.Raw) > maxRawBytes {
 		return uuid.Nil, nil
 	}
@@ -520,7 +545,11 @@ func (p *pass) insert(ctx context.Context, tx pgx.Tx, in *newMessage) (uuid.UUID
 // inbox of an account whose inbox is split, and moves one the account answered to Primary
 // ("Categories"). History imports are not sorted.
 func (p *pass) sortLater(ctx context.Context, tx pgx.Tx, threadID uuid.UUID, in *newMessage) error {
-	if len(p.a.CategoryKeys) == 0 || p.quiet {
+	cs, err := loadAccountCategorySets(ctx, tx, p.a)
+	if err != nil {
+		return err
+	}
+	if cs.resolve(p.a).Engine == modeGmail || len(p.a.CategoryKeys) == 0 || p.quiet {
 		return nil
 	}
 	has := func(role string) bool {

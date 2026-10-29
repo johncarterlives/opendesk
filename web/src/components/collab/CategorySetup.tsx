@@ -1,7 +1,6 @@
 // The guided set-up the mail page offers whoever manages an account whose inbox is not split
-// (contracts/collab.md "Categories"): pick a start (Gmail's tabs, Ollie's proposal from this
-// inbox, or nearly nothing), adjust it in the editor, and split the inbox. An admin may set it
-// up for everyone instead.
+// (contracts/collab.md "Categories"): sync Gmail categories, or choose local tabs from
+// presets, Ollie's proposal, or an empty set. An admin may set local tabs for everyone.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -9,7 +8,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Inbox, PenLine, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CategoryEditor, CategoryPills, likeGmail, useCategoriesSaved, useCategoryProblem } from "@/components/collab/CategoryEditor";
+import { CategoryEditor, CategoryPills, defaultCategories, useCategoriesSaved, useCategoryProblem } from "@/components/collab/CategoryEditor";
 import { ChoiceCard } from "@/components/collab/pickers";
 import { Note } from "@/components/settings2/teams";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,7 @@ import { dur, ease } from "@/lib/motion";
 import { q } from "@/lib/queries";
 import { atLeast, useRole } from "@/lib/session";
 
-type Start = "gmail" | "ollie" | "scratch";
+type Start = "gmail" | "preset" | "ollie" | "scratch";
 
 export function CategorySetupDialog({ account, open, onOpenChange }: { account: MailAccount; open: boolean; onOpenChange: (o: boolean) => void }) {
   // Each opening starts at the first step; closing keeps what is shown while it fades.
@@ -45,11 +44,12 @@ function Setup({ account, open, onOpenChange }: { account: MailAccount; open: bo
   const admin = atLeast(useRole(), "admin");
   const { data: settings } = useQuery(q.mailCategories());
   const [step, setStep] = useState<1 | 2>(1);
-  const [start, setStart] = useState<Start>("gmail");
+  const [start, setStart] = useState<Start>(account.provider === "google" ? "gmail" : "preset");
   const [about, setAbout] = useState("");
   const [list, setList] = useState<MailCategory[]>([]);
   const problem = useCategoryProblem(list);
-  const gmail = likeGmail(settings?.presets);
+  const preset = defaultCategories(settings?.presets);
+  const gmail = settings?.gmail_categories ?? [];
   const primary = settings?.presets.find((p) => p.key === PRIMARY);
   const close = () => onOpenChange(false);
 
@@ -62,19 +62,20 @@ function Setup({ account, open, onOpenChange }: { account: MailAccount; open: bo
     onError: (e) => toast.error(e, t("editor.suggest.failed")),
   });
   const split = useMutation({
-    mutationFn: () => api.collab.categories.setAccount(account.id, { mode: "custom", categories: withKeys(list), ai: account.categories.ai }),
+    mutationFn: () => api.collab.categories.setAccount(account.id, start === "gmail" ? { mode: "gmail" } : { mode: "custom", categories: withKeys(list), ai: account.categories.ai }),
     onSuccess: (a) => {
       storeAccount(qc, a);
       saved();
-      toast.success(t("setup.saved"));
+      toast.success(t(start === "gmail" ? "setup.gmailSaved" : "setup.saved"));
       close();
     },
     onError: (e) => toast.error(e, t("section.failed")),
   });
 
   const next = () => {
+    if (start === "gmail") return split.mutate();
     if (start === "ollie") return suggest.mutate();
-    if (start === "gmail") setList(gmail.map((c) => ({ ...c })));
+    if (start === "preset") setList(preset.map((c) => ({ ...c })));
     else if (primary) setList([{ ...primary }, { key: "", name: "", description: "", color: "green" }]);
     setStep(2);
   };
@@ -98,8 +99,8 @@ function Setup({ account, open, onOpenChange }: { account: MailAccount; open: bo
           <Button variant="ghost" onClick={close}>
             {t("common.cancel")}
           </Button>
-          <Button variant="primary" disabled={!settings || account.categories.locked} loading={suggest.isPending} onClick={next}>
-            {suggest.isPending ? t("setup.thinking") : t("setup.next")}
+          <Button variant="primary" disabled={!settings || account.categories.locked} loading={suggest.isPending || split.isPending} onClick={next}>
+            {suggest.isPending ? t("setup.thinking") : t(start === "gmail" ? "setup.gmail" : "setup.next")}
           </Button>
         </>
       ) : (
@@ -135,7 +136,12 @@ function Setup({ account, open, onOpenChange }: { account: MailAccount; open: bo
           <AnimatePresence mode="wait" initial={false}>
             {step === 1 ? (
               <motion.div key="start" {...slide(-1)} role="radiogroup" aria-label={t("setup.step1")} className="flex flex-col gap-2">
-                <ChoiceCard checked={start === "gmail"} onSelect={() => setStart("gmail")} icon={<Inbox />} title={t("setup.gmail")} hint={<CategoryPills categories={gmail} className="mt-1" />} />
+                {account.provider === "google" && (
+                  <ChoiceCard checked={start === "gmail"} onSelect={() => setStart("gmail")} icon={<Inbox />} title={t("setup.gmail")} hint={t("setup.gmailHint")}>
+                    <CategoryPills categories={gmail} />
+                  </ChoiceCard>
+                )}
+                <ChoiceCard checked={start === "preset"} onSelect={() => setStart("preset")} icon={<Inbox />} title={t("setup.preset")} hint={<CategoryPills categories={preset} className="mt-1" />} />
                 {settings?.suggest && (
                   <ChoiceCard checked={start === "ollie"} onSelect={() => setStart("ollie")} icon={<Sparkles />} title={t("setup.ollie")} hint={t("setup.ollieHint")}>
                     <label htmlFor="setup-about" className="mb-1.5 block text-[12px] font-medium text-fg-2">

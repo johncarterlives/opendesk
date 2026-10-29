@@ -30,10 +30,10 @@ const DESCRIPTION_MAX = 300;
 /** Colours a new category takes, in turn, so two new ones never look alike. */
 const NEW_TONES: MailColor[] = ["blue", "green", "amber", "pink", "teal", "indigo", "orange", "red"];
 
-/** The set Gmail's tabs make: Primary, Updates, Newsletters and Promotions, from the presets. */
-export const GMAIL_KEYS = [PRIMARY, "updates", "newsletters", "promotions"];
-export function likeGmail(presets: MailCategory[] | undefined): MailCategory[] {
-  return GMAIL_KEYS.map((k) => presets?.find((p) => p.key === k)).filter((c): c is MailCategory => !!c);
+/** The default local set: Primary, Updates, Newsletters and Promotions. */
+export const DEFAULT_KEYS = [PRIMARY, "updates", "newsletters", "promotions"];
+export function defaultCategories(presets: MailCategory[] | undefined): MailCategory[] {
+  return DEFAULT_KEYS.map((k) => presets?.find((p) => p.key === k)).filter((c): c is MailCategory => !!c);
 }
 
 /**

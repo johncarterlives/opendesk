@@ -7,7 +7,7 @@ import Steps from '../../../components/Steps.astro';
 import Step from '../../../components/Step.astro';
 import Callout from '../../../components/Callout.astro';
 
-With Collab, an inbox can be split into tabs, like Gmail's: **Primary** for mail from people, and categories such as **Updates**, **Newsletters** and **Promotions** for the rest. New mail is sorted as it arrives. Categories only change where mail shows in opendesk: a conversation in Updates is still in the inbox, still unread, and nothing is written back to Gmail, Outlook or your IMAP server.
+With Collab, an inbox can be split into tabs, like Gmail's: **Primary** for mail from people, and categories such as **Updates**, **Newsletters** and **Promotions** for the rest. New mail is sorted as it arrives. Local categories only change where mail shows in opendesk. For Google accounts, you can also choose **Sync with Gmail** to keep category changes in both places. Changing a category preserves inbox membership, unread state and labels.
 
 The tabs sit above the inbox while an account in view is split. In **All inboxes**, the tabs of every split account are joined, each with its unread count.
 
@@ -27,7 +27,7 @@ A new member's accounts follow the workspace or their team from their first sync
 <Steps>
 <Step title="Open Inbox categories">
 
-Open **Settings**, **Inbox categories** (under **Channels**, next to **Mail accounts**) and choose **Turn on categories**. You start from Gmail's tabs: Primary, Updates, Newsletters and Promotions.
+Open **Settings**, **Inbox categories** (under **Channels**, next to **Mail accounts**) and choose **Turn on categories**. You start from suggested local tabs: Primary, Updates, Newsletters and Promotions.
 
 </Step>
 <Step title="Make them yours">
@@ -56,12 +56,25 @@ To give a team its own categories, choose **Add a team** under **Teams**. Drag t
 Open **Settings**, **Mail accounts**, the account, then **Inbox categories**:
 
 - **Follow** the team's or the workspace's categories.
+- **Sync with Gmail** for a Google account.
 - **Choose my own** for this account.
 - **Don't split this inbox**.
 
 If your admins set the categories for everyone, these are locked, and you can still turn Ollie's sorting on or off for the account.
 
-## How mail is sorted
+## Sync Gmail categories
+
+Choose **Sync with Gmail** in an account's category settings or inbox setup. This uses Gmail's five categories: **Primary**, **Social**, **Promotions**, **Updates** and **Forums**. Moving a conversation here changes its category in Gmail. Changes made in Gmail appear here after sync.
+
+Ollie and sender rules do not sort this account while Gmail sync is on. Existing local categories and rules are kept for when you switch back. **Newsletters** is a local category and is not part of Gmail sync.
+
+When you turn sync on, opendesk refreshes all mail already stored here, including old imports. Large inboxes can take several sync passes. A failed category move returns to Gmail's observed category. If the connection needs attention, reconnect the account.
+
+Gmail labels individual messages. For a conversation with different categories, opendesk uses the newest non-draft inbox message. Moving a conversation updates its existing non-draft messages, including those that have not been imported. Future messages keep the category Gmail assigns them.
+
+Gmail's API does not expose which tabs you have enabled in Gmail. opendesk shows all five categories and leaves Gmail's inbox layout as you set it.
+
+## How local mail is sorted
 
 New mail in an inbox is sorted in this order:
 

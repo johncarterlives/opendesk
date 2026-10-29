@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Row, Section } from "@/components/layout";
-import { CategoryEditor, CategoryPill, CategoryPills, likeGmail, useCategoriesSaved, useCategoryProblem } from "@/components/collab/CategoryEditor";
+import { CategoryEditor, CategoryPill, CategoryPills, defaultCategories, useCategoriesSaved, useCategoryProblem } from "@/components/collab/CategoryEditor";
 import { ChoiceCard } from "@/components/collab/pickers";
 import { Note } from "@/components/settings2/teams";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ type Form = { mode: MailAccountCategories["mode"]; categories: MailCategory[]; a
 
 /** Where an account's tabs come from, in a few words. */
 export function sourceText(t: TFunction<"mailCategories">, c: MailAccountCategories): string {
+  if (c.engine === "gmail") return t("source.gmail");
   if (c.source === "account") return c.enabled ? t("source.account") : t("source.off");
   if (c.source === "team") return t("source.team", { team: c.team?.name ?? "" });
   if (c.source === "workspace") return c.enabled ? t("source.workspace") : t("source.workspaceOff");
@@ -46,7 +47,7 @@ export function CategoriesSection({ account }: { account: MailAccount }) {
   const { data: settings } = useQuery(q.mailCategories());
   const c = account.categories;
   const base: Form = useMemo(
-    () => ({ mode: c.mode, categories: c.own.length ? c.own : c.enabled ? c.categories : likeGmail(settings?.presets), ai: c.ai }),
+    () => ({ mode: c.mode, categories: c.own.length ? c.own : c.enabled ? c.categories : defaultCategories(settings?.presets), ai: c.ai }),
     [c, settings?.presets],
   );
   const [form, setForm] = useState(base);
@@ -59,13 +60,14 @@ export function CategoriesSection({ account }: { account: MailAccount }) {
   const dirty = !sameForm(form, base);
   const problem = useCategoryProblem(form.categories);
   const locked = c.locked;
+  const gmailSelected = form.mode === "gmail";
 
   const save = useMutation({
     mutationFn: () =>
       api.collab.categories.setAccount(
         account.id,
         // Locked: only Ollie's switch is the manager's, so the mode goes back as it is.
-        locked ? { mode: c.mode, ai: form.ai } : { mode: form.mode, categories: form.mode === "custom" ? withKeys(form.categories) : undefined, ai: form.ai },
+        locked ? { mode: c.mode, ai: c.engine === "gmail" ? undefined : form.ai } : form.mode === "gmail" ? { mode: "gmail" } : { mode: form.mode, categories: form.mode === "custom" ? withKeys(form.categories) : undefined, ai: form.ai !== base.ai ? form.ai : undefined },
       ),
     onSuccess: (a) => {
       storeAccount(qc, a);
@@ -101,16 +103,24 @@ export function CategoriesSection({ account }: { account: MailAccount }) {
             <Note icon={<Lock className="mt-0.5 size-3 shrink-0 text-fg-4" />}>{t("section.locked")}</Note>
           </div>
         )}
+        {c.engine === "gmail" && c.sync_status && c.sync_status !== "ready" && (
+          <div className="pt-3.5" role="status"><Note>{t(`section.sync.${c.sync_status}`)}</Note></div>
+        )}
         <div role="radiogroup" aria-label={t("section.title")} className="flex flex-col gap-2 py-3.5">
           <ChoiceCard checked={form.mode === "follow"} disabled={locked} onSelect={() => set({ mode: "follow" })} icon={<Inbox />} title={followTitle} hint={followHint} />
+          {account.provider === "google" && (
+            <ChoiceCard checked={form.mode === "gmail"} disabled={locked} onSelect={() => set({ mode: "gmail" })} icon={<Inbox />} title={t("setup.gmail")} hint={t("setup.gmailHint")}>
+              <CategoryPills categories={settings?.gmail_categories ?? []} />
+            </ChoiceCard>
+          )}
           <ChoiceCard checked={form.mode === "custom"} disabled={locked} onSelect={() => set({ mode: "custom" })} icon={<SlidersHorizontal />} title={t("section.custom")} hint={t("section.customHint")}>
             <CategoryEditor value={form.categories} onChange={(categories) => set({ categories })} accountId={account.id} disabled={locked} />
           </ChoiceCard>
           <ChoiceCard checked={form.mode === "off"} disabled={locked} onSelect={() => set({ mode: "off" })} icon={<Ban />} title={t("section.off")} hint={t("section.offHint")} />
         </div>
-        <Row label={t("section.ai")} description={settings?.sorting === "rules" ? `${t("section.aiHint")} ${t("section.aiUnavailable")}` : t("section.aiHint")} htmlFor={`cat-ai-${account.id}`}>
+        {!gmailSelected && <Row label={t("section.ai")} description={settings?.sorting === "rules" ? `${t("section.aiHint")} ${t("section.aiUnavailable")}` : t("section.aiHint")} htmlFor={`cat-ai-${account.id}`}>
           <Switch id={`cat-ai-${account.id}`} checked={form.ai} onCheckedChange={(ai) => set({ ai })} aria-label={t("section.ai")} />
-        </Row>
+        </Row>}
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line-soft py-3">
           {dirty && form.mode === "custom" && problem && (
             <p role="alert" className="mr-auto min-w-0 text-[12px] text-danger-fg">
@@ -127,7 +137,7 @@ export function CategoriesSection({ account }: { account: MailAccount }) {
           </Button>
         </div>
       </Section>
-      {c.enabled && <RulesSection account={account} />}
+      {c.enabled && c.engine !== "gmail" && <RulesSection account={account} />}
     </>
   );
 }

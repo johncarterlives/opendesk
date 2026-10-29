@@ -19,7 +19,16 @@ export const PRESETS: MailCategory[] = [
   { key: "social", name: "Social", color: "teal", description: "Notifications from social networks, communities and forums." },
 ];
 
-/** An account's own choice, kept on the mock account; `byAdmin`: an admin made it, so a lock leaves it. */
+/** Fixture of the server's fixed Gmail category catalog. */
+export const GMAIL_CATEGORIES: MailCategory[] = [
+  { key: "primary", name: "Primary", description: "", color: "gray" },
+  { key: "social", name: "Social", description: "", color: "teal" },
+  { key: "promotions", name: "Promotions", description: "", color: "amber" },
+  { key: "updates", name: "Updates", description: "", color: "blue" },
+  { key: "forums", name: "Forums", description: "", color: "violet" },
+];
+
+/** An account's choice, including the local settings kept while Gmail sync is on. */
 export type AccountChoice = { mode: MailAccountCategories["mode"]; own: MailCategory[]; ai: boolean; byAdmin: boolean };
 export const defaultChoice = (): AccountChoice => ({ mode: "follow", own: [], ai: true, byAdmin: false });
 
@@ -53,14 +62,15 @@ const inTeam = (ws: WsData, teamId: string, uid: string | null) => !!uid && !!ws
 export function resolveCategories(ws: WsData, choice: AccountChoice, ownerId: string | null): MailAccountCategories {
   const s = state(ws);
   const locked = !!s.workspace?.locked;
-  const base = { mode: choice.mode, own: choice.own, ai: choice.ai, locked: locked && !isAdmin(ws) };
+  const base = { engine: "off" as const, mode: choice.mode, own: choice.own, ai: choice.ai, locked: locked && !isAdmin(ws) };
   if (choice.mode !== "follow" && (!locked || choice.byAdmin)) {
+    if (choice.mode === "gmail") return { ...base, engine: "gmail", enabled: true, categories: GMAIL_CATEGORIES, source: "account", team: null, ai: false };
     const on = choice.mode === "custom" && choice.own.length >= MIN_CATEGORIES;
-    return { ...base, enabled: on, categories: on ? choice.own : [], source: "account", team: null };
+    return { ...base, engine: on ? "local" : "off", enabled: on, categories: on ? choice.own : [], source: "account", team: null };
   }
   const team = s.teams.find((t) => inTeam(ws, t.team_id, ownerId));
-  if (team) return { ...base, enabled: team.enabled, categories: team.categories, source: "team", team: { id: team.team_id, name: ws.teams.find((x) => x.id === team.team_id)?.name ?? "" } };
-  if (s.workspace) return { ...base, enabled: s.workspace.enabled, categories: s.workspace.categories, source: "workspace", team: null };
+  if (team) return { ...base, engine: team.enabled ? "local" : "off", enabled: team.enabled, categories: team.categories, source: "team", team: { id: team.team_id, name: ws.teams.find((x) => x.id === team.team_id)?.name ?? "" } };
+  if (s.workspace) return { ...base, engine: s.workspace.enabled ? "local" : "off", enabled: s.workspace.enabled, categories: s.workspace.categories, source: "workspace", team: null };
   return { ...base, enabled: false, categories: [], source: "none", team: null };
 }
 
@@ -126,6 +136,7 @@ function settingsOut(ws: WsData): MailCategorySettings {
       .map((t, position) => ({ ...t, team_name: ws.teams.find((x) => x.id === t.team_id)?.name ?? "", position }))
       .filter((t) => admin || inTeam(ws, t.team_id, db.meId)),
     presets: PRESETS,
+    gmail_categories: GMAIL_CATEGORIES,
     sorting: ws.ai.enabled ? "ai" : "rules",
     suggest: ws.ai.enabled,
   };

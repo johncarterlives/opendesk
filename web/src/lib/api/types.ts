@@ -2534,6 +2534,8 @@ export type MailCategorySettings = {
   /** Admins: every team with its own; others: their own teams'. The first in position order the owner is in decides. */
   teams: (MailCategorySet & { team_id: string; team_name: string; position: number })[];
   presets: MailCategory[];
+  /** The fixed categories available when syncing a Google account. */
+  gmail_categories: MailCategory[];
   /** ai: Ollie sorts new mail; rules: sender rules and headers only. */
   sorting: "ai" | "rules";
   /** Ollie can suggest categories. */
@@ -2547,7 +2549,10 @@ export type MailAccountCategories = {
   source: "account" | "team" | "workspace" | "none";
   team: { id: string; name: string } | null;
   /** The account's own choice. */
-  mode: "follow" | "custom" | "off";
+  mode: "follow" | "custom" | "off" | "gmail";
+  /** The effective category authority after workspace policy. */
+  engine: "off" | "local" | "gmail";
+  sync_status?: "refreshing" | "pending" | "failed" | "ready";
   /** Its own categories, kept while it follows. */
   own: MailCategory[];
   /** Ollie may sort its new mail. */

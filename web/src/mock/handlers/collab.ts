@@ -1587,8 +1587,9 @@ export function registerCollab() {
     const a = accountOr404(ctx.ws, ctx.params.id);
     requireManage(ctx.ws, a);
     const b = ctx.body;
-    const mode = b.mode === "custom" || b.mode === "off" || b.mode === "follow" ? b.mode : null;
-    if (!mode) throw invalid("mode must be follow, custom or off");
+    const mode = b.mode === "custom" || b.mode === "off" || b.mode === "follow" || b.mode === "gmail" ? b.mode : null;
+    if (!mode) throw invalid("mode must be follow, custom, gmail or off");
+    if (mode === "gmail" && (a.provider !== "google" || b.ai === true || b.categories !== undefined)) throw invalid("Gmail sync requires a Google account and fixed Gmail categories");
     const admin = isAdmin(ctx.ws, db.meId);
     const before = resolveCategories(ctx.ws, a.catChoice, a.ownerId);
     const own = mode === "custom" ? parseCategories(b.categories) : a.catChoice.own;
@@ -1610,6 +1611,7 @@ export function registerCollab() {
     requireCollab(ctx.ws);
     const a = accountOr404(ctx.ws, ctx.params.id);
     requireManage(ctx.ws, a);
+    if (resolveCategories(ctx.ws, a.catChoice, a.ownerId).engine === "gmail") throw invalid("Sender rules are not used while syncing Gmail categories");
     const sender = parseSender(ctx.body.sender);
     const category = String(ctx.body.category ?? "");
     if (!resolveCategories(ctx.ws, a.catChoice, a.ownerId).categories.some((c) => c.key === category)) throw invalid("category must be one of the account's");

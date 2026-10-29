@@ -11,7 +11,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ListRow, Row, Section, SettingsPage } from "@/components/layout";
 import { AccountDot } from "@/components/collab/bits";
-import { CategoryEditor, CategoryPills, likeGmail, useCategoriesSaved, useCategoryProblem } from "@/components/collab/CategoryEditor";
+import { CategoryEditor, CategoryPills, defaultCategories, useCategoriesSaved, useCategoryProblem } from "@/components/collab/CategoryEditor";
 import { sourceText } from "@/components/collab/CategoriesSection";
 import { ListSkeleton } from "@/components/settings2/bits";
 import { SettingsEmpty } from "@/components/settings2/SettingsEmpty";
@@ -116,7 +116,7 @@ function WorkspaceCard({ settings }: { settings: MailCategorySettings }) {
   const confirm = useConfirm();
   const saved = useCategoriesSaved();
   const ws = settings.workspace;
-  const base = useMemo(() => (ws ? { enabled: ws.enabled, categories: ws.enabled ? ws.categories : likeGmail(settings.presets), locked: ws.locked } : null), [ws, settings.presets]);
+  const base = useMemo(() => (ws ? { enabled: ws.enabled, categories: ws.enabled ? ws.categories : defaultCategories(settings.presets), locked: ws.locked } : null), [ws, settings.presets]);
   const [draft, setDraft] = useState(base);
   // The saved set changed (here or by another admin): it replaces the form while it is not being edited.
   const [prevBase, setPrevBase] = useState(base);
@@ -125,14 +125,14 @@ function WorkspaceCard({ settings }: { settings: MailCategorySettings }) {
     if (same(draft, prevBase)) setDraft(base);
   }
   const dirty = !same(draft, base);
-  const problem = useCategoryProblem(draft?.enabled ? draft.categories : likeGmail(settings.presets));
+  const problem = useCategoryProblem(draft?.enabled ? draft.categories : defaultCategories(settings.presets));
 
   const save = useMutation({
     mutationFn: (d: NonNullable<typeof draft>) => api.collab.categories.setWorkspace({ enabled: d.enabled, categories: d.enabled ? withKeys(d.categories) : undefined, locked: d.locked }),
     onSuccess: (s) => {
       saved(s);
       const w = s.workspace;
-      setDraft(w ? { enabled: w.enabled, categories: w.enabled ? w.categories : likeGmail(s.presets), locked: w.locked } : null);
+      setDraft(w ? { enabled: w.enabled, categories: w.enabled ? w.categories : defaultCategories(s.presets), locked: w.locked } : null);
       toast.success(t("workspace.saved"));
     },
     onError: (e) => toast.error(e, t("workspace.failed")),
@@ -159,7 +159,7 @@ function WorkspaceCard({ settings }: { settings: MailCategorySettings }) {
           title={t("empty.title")}
           description={t("empty.description")}
           action={
-            <Button variant="primary" onClick={() => setDraft({ enabled: true, categories: likeGmail(settings.presets), locked: false })}>
+            <Button variant="primary" onClick={() => setDraft({ enabled: true, categories: defaultCategories(settings.presets), locked: false })}>
               {t("empty.action")}
             </Button>
           }
@@ -169,7 +169,7 @@ function WorkspaceCard({ settings }: { settings: MailCategorySettings }) {
           ]}
           className="min-h-[320px]"
         >
-          <CategoryPills categories={likeGmail(settings.presets)} className="justify-center" />
+          <CategoryPills categories={defaultCategories(settings.presets)} className="justify-center" />
         </SettingsEmpty>
       </Section>
     );
@@ -240,7 +240,7 @@ function TeamsCard({ settings }: { settings: MailCategorySettings }) {
   const byId = new Map(teams.map((x) => [x.id, x]));
   const sets = settings.teams.filter((s) => s.team_id !== adding?.team_id);
   const free = teams.filter((x) => !settings.teams.some((s) => s.team_id === x.id) && x.id !== adding?.team_id);
-  const start = (settings.workspace?.enabled && settings.workspace.categories.length ? settings.workspace.categories : likeGmail(settings.presets)).map((c) => ({ ...c }));
+  const start = (settings.workspace?.enabled && settings.workspace.categories.length ? settings.workspace.categories : defaultCategories(settings.presets)).map((c) => ({ ...c }));
 
   const order = useMutation({
     mutationFn: (ids: string[]) => api.collab.categories.orderTeams(ids),

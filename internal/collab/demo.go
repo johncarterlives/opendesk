@@ -303,7 +303,12 @@ func (p *demoProvider) Folders(ctx context.Context) ([]RemoteFolder, error) {
 }
 
 // Apply has nothing to change: opendesk already applied the action to what it keeps.
-func (p *demoProvider) Apply(context.Context, ApplyOp) error { return nil }
+func (p *demoProvider) Apply(_ context.Context, op ApplyOp) error {
+	if op.category != nil {
+		return &providerError{msg: "Sample accounts cannot sync Gmail categories.", permanent: true}
+	}
+	return nil
+}
 
 // Send sends nothing; the caller stores the message in Sent.
 func (p *demoProvider) Send(context.Context, []byte, SendInfo) (SentRef, error) {

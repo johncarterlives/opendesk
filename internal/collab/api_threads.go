@@ -357,7 +357,7 @@ func (s *service) registerThreadRoutes(api huma.API) {
 			}
 			for _, aid := range order {
 				if b.Action == ActionCategorize {
-					break // done above, in opendesk only
+					break // admitted atomically above, including any durable Gmail intent
 				}
 				a, err := loadAccount(ctx, s.d.DB.Pool, p.WorkspaceID, aid)
 				if err != nil {

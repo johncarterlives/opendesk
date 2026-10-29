@@ -256,6 +256,9 @@ func sortFolders(list []RemoteFolder) { slices.SortStableFunc(list, compareFolde
 // minutes, never before its backoff ends, and not while it waits for a reconnect or its
 // workspace lacks Collab.
 func (s *service) enqueueDue(ctx context.Context) error {
+	if err := s.recoverCategoryIntents(ctx); err != nil {
+		return err
+	}
 	rows, err := s.d.DB.Pool.Query(ctx, `SELECT a.id, a.workspace_id FROM collab_accounts a
 		WHERE NOT a.reconnect AND NOT COALESCE((a.config->>'demo')::boolean, false)
 		AND (a.next_sync_at IS NULL OR a.next_sync_at <= now())
@@ -264,7 +267,7 @@ func (s *service) enqueueDue(ctx context.Context) error {
 				SELECT 1 FROM members m JOIN users u ON u.id = m.user_id
 				WHERE m.workspace_id = a.workspace_id AND u.last_seen_at > now() - make_interval(secs => $3)
 				AND `+accountVisibleSQL("a", "m.user_id")+`)
-				OR EXISTS (SELECT 1 FROM collab_history h WHERE h.account_id = a.id AND h.status = 'running'))))`,
+				OR a.category_refresh IS NOT NULL OR EXISTS (SELECT 1 FROM collab_history h WHERE h.account_id = a.id AND h.status = 'running'))))`,
 		idleInterval.Seconds(), (activeInterval - 10*time.Second).Seconds(), activeWindow.Seconds())
 	if err != nil {
 		return err

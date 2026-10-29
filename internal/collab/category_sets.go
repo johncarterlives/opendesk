@@ -43,6 +43,7 @@ const (
 	scopeTeam      = "team"
 	scopeAccount   = "account"
 
+	modeGmail  = "gmail"
 	modeOn     = "on"
 	modeOff    = "off"
 	modeFollow = "follow"
@@ -103,11 +104,12 @@ type TeamCategorySet struct {
 
 // MailCategorySettings answers GET /v1/collab/categories.
 type MailCategorySettings struct {
-	Workspace *WorkspaceCategorySet `json:"workspace"`
-	Teams     []TeamCategorySet     `json:"teams"`
-	Presets   []MailCategory        `json:"presets"`
-	Sorting   string                `json:"sorting" enum:"ai,rules"`
-	Suggest   bool                  `json:"suggest"`
+	Workspace       *WorkspaceCategorySet `json:"workspace"`
+	Teams           []TeamCategorySet     `json:"teams"`
+	Presets         []MailCategory        `json:"presets"`
+	GmailCategories []MailCategory        `json:"gmail_categories"`
+	Sorting         string                `json:"sorting" enum:"ai,rules"`
+	Suggest         bool                  `json:"suggest"`
 }
 
 // CategoryTeam names the team an account's categories come from.
@@ -119,10 +121,12 @@ type CategoryTeam struct {
 // MailAccountCategories is how an account's inbox is split (MailAccount.categories).
 type MailAccountCategories struct {
 	Enabled    bool           `json:"enabled"`
+	SyncStatus string         `json:"sync_status,omitempty" enum:"refreshing,pending,failed,ready"`
+	Engine     string         `json:"engine" enum:"off,local,gmail"`
 	Categories []MailCategory `json:"categories"`
 	Source     string         `json:"source" enum:"account,team,workspace,none"`
 	Team       *CategoryTeam  `json:"team"`
-	Mode       string         `json:"mode" enum:"follow,custom,off"`
+	Mode       string         `json:"mode" enum:"follow,custom,off,gmail"`
 	Own        []MailCategory `json:"own"`
 	AI         bool           `json:"ai"`
 	Locked     bool           `json:"locked"`
@@ -244,7 +248,7 @@ func (cs *categorySets) locked() bool { return cs.workspace != nil && cs.workspa
 
 // resolve is the categories the account follows ("Who decides").
 func (cs *categorySets) resolve(a *accountRow) MailAccountCategories {
-	out := MailAccountCategories{Categories: []MailCategory{}, Source: sourceNone, Mode: modeFollow, Own: []MailCategory{}, AI: true}
+	out := MailAccountCategories{Categories: []MailCategory{}, Engine: "off", Source: sourceNone, Mode: modeFollow, Own: []MailCategory{}, AI: true}
 	own := cs.accounts[a.ID]
 	if own != nil {
 		out.AI = own.AI
@@ -252,6 +256,8 @@ func (cs *categorySets) resolve(a *accountRow) MailAccountCategories {
 		switch own.Mode {
 		case modeOn:
 			out.Mode = modeCustom
+		case modeGmail:
+			out.Mode = modeGmail
 		case modeOff:
 			out.Mode = modeOff
 		}
@@ -261,10 +267,15 @@ func (cs *categorySets) resolve(a *accountRow) MailAccountCategories {
 		out.Enabled = r.Mode == modeOn && len(r.Categories) >= minCategories
 		if out.Enabled {
 			out.Categories = r.Categories
+			out.Engine = "local"
 		}
 	}
 	if own != nil && own.Mode != modeFollow && (!cs.locked() || own.ByAdmin) {
 		set(own, sourceAccount)
+		if own.Mode == modeGmail && a.Provider == ProviderGoogle && !a.Config.Demo {
+			out.Engine, out.Enabled, out.AI = modeGmail, true, false
+			out.Categories = gmailCategories()
+		}
 		return out
 	}
 	if a.OwnerID != nil {
