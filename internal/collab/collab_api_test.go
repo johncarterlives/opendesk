@@ -588,6 +588,15 @@ func TestAPIReplyAllDefault(t *testing.T) {
 	srv := w.api(w.agent)
 
 	var account MailAccount
+	var initial []MailAccount
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/accounts", nil, &initial); st != 200 || len(initial) != 1 || initial[0].ReplyAll {
+		t.Fatalf("new account reply default: %d %+v", st, initial)
+	}
+	for _, p := range []*auth.Principal{w.agent2, w.viewer} {
+		if st := doJSON(t, "PATCH", w.api(p).URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"reply_all": true}, nil); st != 403 {
+			t.Fatalf("non-manager changed reply default: %d", st)
+		}
+	}
 	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"reply_all": true}, &account); st != 200 || !account.ReplyAll {
 		t.Fatalf("enable reply all: %d %+v", st, account)
 	}

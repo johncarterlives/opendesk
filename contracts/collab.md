@@ -701,7 +701,7 @@ interface MailComment {
 
 interface MailThreadDetail {
   thread: MailThread
-  account: { id: string; email: string; name: string; display_name: string; color: string; provider: string; signature_html: string;
+  account: { id: string; email: string; name: string; display_name: string; color: string; provider: string; signature_html: string; reply_all: boolean;
              identities: MailIdentity[]; default_from: string }
   messages: MailMessage[]      // oldest first
   comments: MailComment[]      // oldest first
@@ -1010,9 +1010,11 @@ The composer: From lists every account the person can send from with each of its
 send (`Name <email>`). New mail starts from the default, a reply, reply all or forward from the
 address the answered message was written to. The signature follows the chosen address: it is the
 composer's signature block, swapped for the new address's on a change of From (left out when the
-person removed it). Reply all leaves out every one of the account's addresses. A `collab.accounts`
-event refreshes the account's open conversations too, so an open reply picks up a changed address
-or signature.
+person removed it). Reply all leaves out every one of the account's addresses. A change to
+`reply_all` also publishes `collab.changed` for each shared or assigned conversation, to its own
+audience, so its open reply buttons follow the preference without access to the whole account.
+A `collab.accounts` event refreshes the account's open conversations too, so an open reply picks up
+a changed address or signature.
 
 ### Who sends
 
@@ -1111,7 +1113,7 @@ webhooks.
 
 | type | data | to |
 | --- | --- | --- |
-| `collab.changed` | `{account_id: string \| null, thread_ids: string[], folders: boolean}`: conversations changed (synced, acted on, sent, shared, assigned, commented); `folders` when folders or counts changed. Refetch what is shown | who sees the account, plus who sees the conversations |
+| `collab.changed` | `{account_id: string \| null, thread_ids: string[], folders: boolean}`: conversations changed (synced, acted on, sent, shared, assigned, commented, or their account's `reply_all` changed); `folders` when folders or counts changed. Refetch what is shown | who sees the account, plus who sees the conversations |
 | `collab.accounts` | `{account_id}`: an account was connected, changed, removed, or changed status | its owner and audience, before and after |
 
 ## Audit

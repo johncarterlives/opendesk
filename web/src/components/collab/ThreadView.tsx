@@ -425,7 +425,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   const account = accounts?.find((a) => a.id === detail.account.id);
   // Reply all comes first when the account answers everyone by default; r and a keep their meaning.
   const canReplyAll = !!target && hasReplyAll(target, ownEmail);
-  const replyModes: ("reply" | "reply_all")[] = !canReplyAll ? ["reply"] : account?.reply_all ? ["reply_all", "reply"] : ["reply", "reply_all"];
+  const replyModes: ("reply" | "reply_all")[] = !canReplyAll ? ["reply"] : (account?.reply_all ?? detail.account.reply_all) ? ["reply_all", "reply"] : ["reply", "reply_all"];
   const replyKind = {
     reply: { icon: <Reply />, label: t("action.reply"), shortcut: "r" },
     reply_all: { icon: <ReplyAll />, label: t("action.replyAll"), shortcut: "a" },

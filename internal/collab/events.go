@@ -56,6 +56,28 @@ func (s *service) publishChanged(ctx context.Context, tx pgx.Tx, wid uuid.UUID, 
 	return err
 }
 
+// publishSharedThreadsChanged refreshes account preferences in conversations shared on
+// their own. Each event names one conversation and reaches only its audience.
+func (s *service) publishSharedThreadsChanged(ctx context.Context, tx pgx.Tx, wid, accountID uuid.UUID) error {
+	rows, err := tx.Query(ctx, `SELECT t.id FROM collab_threads t
+		WHERE t.workspace_id = $1 AND t.account_id = $2 AND (
+			EXISTS (SELECT 1 FROM collab_shares sh WHERE sh.thread_id = t.id)
+			OR EXISTS (SELECT 1 FROM collab_assignees ca WHERE ca.thread_id = t.id))`, wid, accountID)
+	if err != nil {
+		return err
+	}
+	ids, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if err := s.publishChanged(ctx, tx, wid, &accountID, []uuid.UUID{id}, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // publishAccounts tells who sees an account that it changed, plus extra people (the
 // audience before a change of sharing), in tx.
 func (s *service) publishAccounts(ctx context.Context, tx pgx.Tx, wid, accountID uuid.UUID, extra []uuid.UUID) error {

@@ -276,6 +276,11 @@ func (s *service) registerAccountRoutes(api huma.API) {
 						return err
 					}
 				}
+				if slices.Contains(changed, "reply_all") {
+					if err := s.publishSharedThreadsChanged(ctx, tx, p.WorkspaceID, a.ID); err != nil {
+						return err
+					}
+				}
 				return s.publishAccounts(ctx, tx, p.WorkspaceID, a.ID, before)
 			})
 			if err != nil {

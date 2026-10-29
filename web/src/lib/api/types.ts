@@ -2802,6 +2802,8 @@ export type MailThreadAccount = {
   display_name: string;
   color: string;
   provider: string;
+  /** The account's reply default; older servers omit it. */
+  reply_all?: boolean;
   signature_html: string;
   /** The addresses it sends from, its own first. */
   identities?: MailIdentity[];

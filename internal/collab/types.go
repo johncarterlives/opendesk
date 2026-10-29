@@ -305,6 +305,7 @@ type ThreadAccount struct {
 	DisplayName   string    `json:"display_name"`
 	Color         string    `json:"color"`
 	Provider      string    `json:"provider"`
+	ReplyAll      bool      `json:"reply_all"`
 	SignatureHTML string    `json:"signature_html"`
 	// Identities are the addresses it sends from, its own first; DefaultFrom new mail's.
 	Identities  []MailIdentity `json:"identities"`

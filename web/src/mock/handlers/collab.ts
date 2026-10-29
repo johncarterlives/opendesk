@@ -924,7 +924,7 @@ function detailOut(ws: WsData, t: ThreadMeta): MailThreadDetail {
   const a = s.accounts.find((x) => x.id === t.account_id)!;
   return {
     thread: threadOut(ws, t),
-    account: { id: a.id, email: a.email, name: a.name, display_name: a.display_name, color: a.color, provider: a.provider, signature_html: a.signature_html, identities: identitiesOut(ws, a), default_from: defaultOf(a) },
+    account: { id: a.id, email: a.email, name: a.name, display_name: a.display_name, color: a.color, provider: a.provider, signature_html: a.signature_html, reply_all: a.reply_all ?? false, identities: identitiesOut(ws, a), default_from: defaultOf(a) },
     messages: msgsOf(s, t.id).map((m) => ({ ...m, own_address: ownAddressOf(a, m) })),
     comments: t.comments,
     shares: t.shares,
