@@ -19,6 +19,7 @@ import { isSeverity, pct } from "@/lib/decisions";
 import { MessageItem, type ThreadActions } from "./MessageItem";
 import { LiveAgentReply } from "./AgentReply";
 import { CallEntry } from "./CallEntry";
+import { stickToBottom, type Stick } from "./stickToBottom";
 import { BotFace } from "@/components/bots/BotFace";
 import { isAIActor, OllieAvatar, useAssistantName } from "../ollie";
 import { fieldText, useDisplay, useTicketFields, type CustomField } from "../fields";
@@ -425,11 +426,14 @@ export function Timeline({
   }, [messages, activities]);
 
   const scroller = useRef<HTMLDivElement>(null);
-  const atBottom = useRef(true);
+  const content = useRef<HTMLDivElement>(null);
+  const stick = useRef<Stick | null>(null);
   const reduced = useReducedMotion();
   const pointed = usePointedAt();
   useEffect(() => {
     if (!pointed.id) return;
+    // A message further up was asked for: the timeline no longer holds the latest one.
+    stick.current?.release();
     scroller.current?.querySelector(`[id="m-${pointed.id}"]`)?.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
     const id = setTimeout(() => usePointedAt.setState({ id: null }), 1400);
     return () => clearTimeout(id);
@@ -449,28 +453,26 @@ export function Timeline({
     return () => clearTimeout(id);
   });
 
-  // Open at the latest message; follow new ones only if already at the bottom.
+  // Open at the latest message and stay there while emails, images and the reply box
+  // settle; follow new ones only if already at the bottom (stickToBottom).
   const liveLen = useRealtime((s) => {
     const l = s.live[ticketId];
     return l ? l.text.length + l.tools.length : 0;
   });
   useLayoutEffect(() => {
-    const el = scroller.current;
-    if (el && atBottom.current) el.scrollTop = el.scrollHeight;
-  }, [count, loading, liveLen]);
-
-  useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    const on = () => (atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80);
-    el.addEventListener("scroll", on, { passive: true });
-    return () => el.removeEventListener("scroll", on);
+    const s = stickToBottom(scroller.current!, content.current!);
+    stick.current = s;
+    return () => {
+      s.stop();
+      stick.current = null;
+    };
   }, []);
+  useLayoutEffect(() => stick.current?.follow(), [count, loading, liveLen]);
 
   let lastDay = "";
   return (
     <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto" aria-label={t("tickets.conversation")} role="log">
-      <div className={cn("mx-auto flex w-full max-w-[820px] flex-col gap-2 px-5 py-5", conversation && "@container")}>
+      <div ref={content} className={cn("mx-auto flex w-full max-w-[820px] flex-col gap-2 px-5 py-5", conversation && "@container")}>
         {loading ? (
           <div className="flex flex-col gap-3">
             {[0, 1].map((i) => (
