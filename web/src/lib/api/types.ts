@@ -1251,7 +1251,7 @@ export type PanelListItem = { title: string; subtitle?: string; value?: PanelVal
 export type PanelLink = { label: string; url: string; icon?: string };
 /** A block of an http panel's version 2 answer (contracts/integrations.md "The http answer"). */
 export type PanelBlock =
-  | { type: "card"; title: string; url?: string; subtitle?: string; badges?: PanelBadge[]; links?: PanelLink[]; collapsed?: boolean; fields?: PanelField[]; lines?: PanelLine[]; footer?: PanelField[] }
+  | { type: "card"; id?: string; title: string; url?: string; subtitle?: string; badges?: PanelBadge[]; links?: PanelLink[]; collapsed?: boolean; fields?: PanelField[]; lines?: PanelLine[]; footer?: PanelField[] }
   | { type: "fields"; title?: string; items: PanelField[] }
   | { type: "list"; title?: string; items: PanelListItem[] }
   | { type: "note"; text: string; tone: PanelTone };
