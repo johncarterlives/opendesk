@@ -22,6 +22,7 @@ import { stripWorkspaceParam, workspaceParam } from "./lib/workspaceParam";
 import { queryClient } from "./lib/queryClient";
 import { q } from "./lib/queries";
 import { folderById, listQuery, parseInboxSearch, teamQuery } from "./lib/folders";
+import { withRememberedSort } from "./lib/listSort";
 import { isMailRouteBox, mailListQuery, parseMailSearch } from "./lib/collab/boxes";
 
 export type RouterContext = { queryClient: QueryClient };
@@ -265,6 +266,11 @@ const inboxRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/inbox/$folder/{-$ticketId}",
   validateSearch: parseInboxSearch,
+  // A list opened without a sort comes back in the order this member last chose for it (lib/listSort.ts).
+  beforeLoad: ({ params, search }) => {
+    const s = withRememberedSort({ folder: params.folder }, search);
+    if (s) throw redirect({ to: "/inbox/$folder/{-$ticketId}", params, search: s, replace: true });
+  },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const f = folderById(params.folder);
@@ -296,6 +302,10 @@ const viewRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/views/$viewId/{-$ticketId}",
   validateSearch: parseInboxSearch,
+  beforeLoad: ({ params, search }) => {
+    const s = withRememberedSort({ viewId: params.viewId }, search);
+    if (s) throw redirect({ to: "/views/$viewId/{-$ticketId}", params, search: s, replace: true });
+  },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const qc = context.queryClient;
@@ -312,6 +322,10 @@ const teamRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/teams/$teamId/{-$ticketId}",
   validateSearch: parseInboxSearch,
+  beforeLoad: ({ params, search }) => {
+    const s = withRememberedSort({ teamId: params.teamId }, search);
+    if (s) throw redirect({ to: "/teams/$teamId/{-$ticketId}", params, search: s, replace: true });
+  },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const qc = context.queryClient;

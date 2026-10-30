@@ -32,6 +32,7 @@ import { intent } from "@/components/tickets/motion";
 import { focusField, missingForSolve, useDisplay, useTicketFields } from "@/components/tickets/fields";
 import { atLeast, useRole, useSession } from "@/lib/session";
 import { paneCss, setLiveWidth, usePaneWidth } from "@/lib/panes";
+import { rememberSort } from "@/lib/listSort";
 import { useDocumentTitle } from "@/app/RootLayout";
 import { TeamDot, useTeamsCtx } from "@/components/tickets/teams";
 import { ViewIcon, viewName } from "@/components/tickets/ViewIcon";
@@ -329,6 +330,8 @@ export default function InboxPage() {
     const clean = Object.fromEntries(Object.entries(s).filter(([, v]) => v !== undefined && v !== "")) as InboxSearch;
     // Filters keep the team inbox's tab.
     if (params.teamId && search.tab && !("tab" in s)) clean.tab = search.tab;
+    // A sort chosen here is the one the list opens with next time (lib/listSort.ts).
+    if (clean.sort !== search.sort || clean.order !== search.order) rememberSort(params, { sort: clean.sort, order: clean.order });
     go(params.ticketId, clean, true);
   };
 
