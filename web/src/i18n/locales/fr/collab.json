@@ -195,6 +195,7 @@
     "notSpam_other": "{{count}} conversations déplacées vers la boîte de réception",
     "snoozed_one": "Conversation mise en pause",
     "snoozed_other": "{{count}} conversations mises en pause",
+    "snoozed_many": "{{count}} conversations mises en pause",
     "notSpam_many": "{{count}} conversations déplacées vers la boîte de réception",
     "undo": "Annuler",
     "failed": "L’action a échoué. Rien n’a changé.",
