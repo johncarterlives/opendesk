@@ -207,8 +207,8 @@ struct ContactsListView: View {
                 Button { DirectoryActions.open("mailto:" + email) } label: { Label("Send email", systemImage: "envelope") }
                 Button { DirectoryActions.copy(email, what: "Email", toasts: env.toasts) } label: { Label("Copy email", systemImage: "doc.on.doc") }
             }
-            if !contact.phone.isEmpty {
-                Button { DirectoryActions.open(DirectoryActions.telURL(contact.phone)) } label: { Label("Call", systemImage: "phone") }
+            if let tel = DirectoryActions.telURL(contact.phone) {
+                Button { DirectoryActions.open(tel) } label: { Label("Call", systemImage: "phone") }
             }
             if let company = contact.company {
                 Button { env.router.push(.company(company.id)) } label: { Label("Open \(company.name)", systemImage: "building.2") }

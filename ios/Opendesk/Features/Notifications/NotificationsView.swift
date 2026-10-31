@@ -213,6 +213,10 @@ private struct NotificationsList: View {
         switch NotificationStyle.target(of: item) {
         case let .ticket(id): env.router.push(.ticket(TicketRoute(id: id)))
         case let .mailThread(id): env.router.push(.mailThread(id))
+        case .mail:
+            env.router.area = .mail
+            env.router.inboxPath = []
+            env.router.tab = .inbox
         case let .web(path): web = env.session.instance.webURL(path: path).map(AccountWebPage.init)
         case .none: break
         }
