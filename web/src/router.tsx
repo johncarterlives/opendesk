@@ -821,6 +821,7 @@ const sAutomationEdit = createRoute({
     const qc = context.queryClient;
     void qc.prefetchQuery(q.mailboxes());
     void qc.prefetchQuery(q.teams());
+    void qc.prefetchQuery(q.procedures());
     return qc.ensureQueryData(q.automations());
   },
   component: page(() => import("./pages/settings/AutomationEdit")),
@@ -915,6 +916,12 @@ const sAgentBot = createRoute({
 const sAgentKnowledge = settingsPage("/ai/knowledge", "knowledge", () => import("./pages/settings/agent/AgentKnowledge"), (qc) =>
   qc.ensureQueryData(q.knowledge()),
 );
+// Scoped instructions the agent picks by their "use this when" line (contracts/agent.md "Procedures").
+const sAgentProcedures = settingsPage("/ai/procedures", "agentProcedures", () => import("./pages/settings/agent/AgentProcedures"), (qc) => {
+  void qc.prefetchQuery(q.bots());
+  void qc.prefetchQuery(q.aiConfig());
+  return qc.ensureQueryData(q.procedures());
+});
 const sAgentTools = createRoute({
   getParentRoute: () => settingsLayout,
   path: "/ai/tools",
@@ -1045,6 +1052,7 @@ const routeTree = rootRoute.addChildren([
       sAgentBots,
       sAgentBot,
       sAgentKnowledge,
+      sAgentProcedures,
       sAgentTools,
       sAgentPlayground,
       sAgentTests,

@@ -24,6 +24,7 @@ import { registerCollab } from "./handlers/collab";
 import { registerWorkspaces } from "./handlers/workspaces";
 import { registerDrafts, stageDraft } from "./handlers/drafts";
 import { registerKnowledge } from "./handlers/knowledge";
+import { registerProcedures } from "./handlers/procedures";
 import { registerImports } from "./handlers/imports";
 import { registerIntegrations } from "./handlers/integrations";
 import { registerTicketPanels } from "./handlers/ticketPanels";
@@ -105,6 +106,7 @@ export function installMock(): void {
   registerDrafts();
   registerMcp();
   registerKnowledge();
+  registerProcedures();
   registerIntegrations();
   registerTicketPanels();
   registerImports();
