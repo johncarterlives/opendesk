@@ -269,6 +269,11 @@ function describe(a: Activity, t: TFunction<"inbox">, { teams, members, tags, fi
       };
     case "ai_answered":
       return { icon: <Sparkles />, hue: "ai", text: line(d.channel === "email" ? "activity.aiAnsweredEmail" : "activity.aiAnswered") };
+    case "ai_procedure_ran": {
+      const name = String(d.name ?? "");
+      const key = d.outcome === "failed" ? "activity.procedureFailed" : d.outcome === "nothing_to_do" ? "activity.procedureNothing" : "activity.procedureRan";
+      return { icon: <Sparkles />, hue: "ai", text: line(key, { name }) };
+    }
     case "ai_suggested_reply":
       return { icon: <Sparkles />, hue: "ai", text: line("activity.aiSuggested") };
     case "ai_suggested_reply_sent":

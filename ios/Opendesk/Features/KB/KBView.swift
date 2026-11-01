@@ -135,8 +135,7 @@ struct KBListView: View {
         if !store.loadedOnce && store.loading {
             ScrollView { SkeletonRows() }
                 .scrollDisabled(true)
-                .background(Theme.surface)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+                .panelSurface()
         } else if let error = store.error, !store.loadedOnce {
             ErrorState(title: "Couldn't load the knowledge base", message: error) { store.reload() }
                 .frame(maxHeight: .infinity)
@@ -228,8 +227,7 @@ struct KBListView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Theme.surface)
-            .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+            .panelSurface()
             .refreshable { await store.refresh() }
             .motion(Motion.snappy, value: store.articles.map(\.id))
         }
@@ -348,8 +346,7 @@ struct KBListView: View {
         if !changelog.loadedOnce && changelog.loading {
             ScrollView { SkeletonRows() }
                 .scrollDisabled(true)
-                .background(Theme.surface)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+                .panelSurface()
         } else if let error = changelog.error, !changelog.loadedOnce {
             ErrorState(title: "Updates couldn't load", message: error) { changelog.reload() }
                 .frame(maxHeight: .infinity)
@@ -402,8 +399,7 @@ struct KBListView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Theme.surface)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+        .panelSurface()
         .refreshable { await changelog.refresh() }
         .motion(Motion.snappy, value: entries.map(\.id))
     }

@@ -317,7 +317,7 @@ type UpdateState =
 
 - The web app, when `window.opendeskDesktop` exists, sets `<html data-desktop="darwin|win32|linux">`
   and: shows OS notifications through `notify` when the window is not focused (the toasts
-  stay for the focused window) and the type's `desktop` channel is on and notifications are not paused, keeps the badge equal to the unread notification count,
+  stay for the focused window) and the type's `desktop` channel is on and notifications are not paused, keeps the badge equal to the unread notification count (reads and removals elsewhere arrive as `notification.read` and `notification.deleted`, contracts/events.md),
   runs OAuth sign-in through `oauth`, opens mailbox and integration connect flows with
   `openExternal`, and lays itself out for the window chrome (translucent sidebar, inset
   content panel, drag regions, room for the macOS traffic lights).
