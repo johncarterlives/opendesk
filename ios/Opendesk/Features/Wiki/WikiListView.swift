@@ -75,15 +75,13 @@ struct WikiListView: View {
         if !store.loadedOnce && store.loading {
             ScrollView { SkeletonRows() }
                 .scrollDisabled(true)
-                .background(Theme.surface)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+                .panelSurface()
         } else if let error = store.error, !store.loadedOnce {
             ErrorState(title: "Couldn't load the wiki", message: error) { store.reload() }
                 .frame(maxHeight: .infinity)
         } else if store.nodes.isEmpty && term.isEmpty {
             ScrollView { firstRun }
-                .background(Theme.surface)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+                .panelSurface()
                 .refreshable { await store.refresh() }
         } else {
             List {
@@ -94,8 +92,7 @@ struct WikiListView: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Theme.surface)
-            .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+            .panelSurface()
             .refreshable { await store.refresh() }
         }
     }

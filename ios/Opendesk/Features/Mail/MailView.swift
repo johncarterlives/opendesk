@@ -115,8 +115,7 @@ struct MailListView: View {
         } else if !mail.accountsLoaded || (!mail.loadedOnce && mail.loading) {
             ScrollView { SkeletonRows() }
                 .scrollDisabled(true)
-                .background(Theme.surface)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+                .panelSurface()
                 .ignoresSafeArea(.container, edges: .bottom)
         } else if mail.accounts.isEmpty {
             EmptyState(
@@ -203,8 +202,7 @@ struct MailListView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .scrollDismissesKeyboard(.immediately)
-        .background(Theme.surface)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+        .panelSurface()
         .ignoresSafeArea(.container, edges: .bottom)
         .refreshable { await mail.refreshEverything(syncing: true) }
         .motion(Motion.snappy, value: mail.threads.map(\.id))

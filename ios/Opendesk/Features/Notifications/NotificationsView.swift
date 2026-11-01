@@ -91,8 +91,7 @@ private struct NotificationsList: View {
         if !store.loadedOnce {
             ScrollView { SkeletonRows(count: 8) }
                 .scrollDisabled(true)
-                .background(Theme.surface)
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+                .panelSurface()
         } else if let error = store.error, store.items.isEmpty {
             ErrorState(title: "Couldn't load notifications", message: error) { Task { await store.load() } }
                 .frame(maxHeight: .infinity)
@@ -131,8 +130,7 @@ private struct NotificationsList: View {
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .background(Theme.surface)
-            .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+            .panelSurface()
             .refreshable {
                 await store.load()
                 await store.refreshBadge()

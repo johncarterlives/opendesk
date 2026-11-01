@@ -254,8 +254,7 @@ struct InboxListView: View {
             InboxActiveFilters()
             list
         }
-        .background(Theme.surface)
-        .clipShape(UnevenRoundedRectangle(topLeadingRadius: Theme.Radius.card, topTrailingRadius: Theme.Radius.card, style: .continuous))
+        .panelSurface()
     }
 
     @ViewBuilder
