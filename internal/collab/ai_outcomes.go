@@ -43,6 +43,15 @@ const (
 
 var errOutcomesKeysOnly = httpx.E(403, "ai_outcomes_keys_only", "AI draft outcomes are read by the API key that wrote the drafts.")
 
+// lockOutcomeCursor orders allocations of visible feed sequences by commit. Hold it
+// until tx ends, before locking outcome rows or publishing events. Account locks come
+// first; provider calls finish before this transaction starts. New, unsettled drafts
+// may allocate sequences without this lock because they are absent from the feed.
+func lockOutcomeCursor(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('collab_outcome_cursor', 0))`)
+	return err
+}
+
 // AIDraftRef is, on a message, the AI draft it is or came from.
 type AIDraftRef struct {
 	ID uuid.UUID `json:"id"`
@@ -105,6 +114,9 @@ func markTakenOver(ctx context.Context, tx pgx.Tx, id, by uuid.UUID) error {
 // AI's; any other AI draft of the conversation still open is replaced. A draft already
 // replaced or abandoned that is then sent takes its final outcome.
 func settleSent(ctx context.Context, tx pgx.Tx, draft *uuid.UUID, sent, by uuid.UUID) error {
+	if err := lockOutcomeCursor(ctx, tx); err != nil {
+		return err
+	}
 	var thread uuid.UUID
 	var sentHTML string
 	if err := tx.QueryRow(ctx, `SELECT thread_id, body_html FROM collab_messages WHERE id = $1`, sent).Scan(&thread, &sentHTML); err != nil {
@@ -140,6 +152,9 @@ func settleSent(ctx context.Context, tx pgx.Tx, draft *uuid.UUID, sent, by uuid.
 
 // settleDiscarded records a person discarding an AI draft (message id), in tx.
 func settleDiscarded(ctx context.Context, tx pgx.Tx, id, by uuid.UUID) error {
+	if err := lockOutcomeCursor(ctx, tx); err != nil {
+		return err
+	}
 	_, err := tx.Exec(ctx, `UPDATE collab_ai_drafts SET outcome = 'discarded', outcome_at = now(), outcome_by = $2,
 		seq = nextval('collab_ai_drafts_seq')
 		WHERE draft_message_id = $1 AND (outcome IS NULL OR outcome IN ('replaced', 'abandoned'))`, id, by)
@@ -149,6 +164,9 @@ func settleDiscarded(ctx context.Context, tx pgx.Tx, id, by uuid.UUID) error {
 // settleDone records, in tx, conversations a person marked done: their AI drafts still
 // open were abandoned (sending or discarding one later still records that).
 func settleDone(ctx context.Context, tx pgx.Tx, threads []uuid.UUID, by uuid.UUID) error {
+	if err := lockOutcomeCursor(ctx, tx); err != nil {
+		return err
+	}
 	_, err := tx.Exec(ctx, `UPDATE collab_ai_drafts SET outcome = 'abandoned', outcome_at = now(), outcome_by = $2,
 		seq = nextval('collab_ai_drafts_seq')
 		WHERE thread_id = ANY($1) AND outcome IS NULL`, threads, by)
@@ -351,6 +369,9 @@ func (s *service) registerOutcomeRoutes(api huma.API) {
 				}
 			}
 			err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				if err := lockOutcomeCursor(ctx, tx); err != nil {
+					return err
+				}
 				if _, err := tx.Exec(ctx, `UPDATE collab_ai_drafts SET feedback_reason = $2, feedback_note = $3, better_answer_html = $4,
 					feedback_by = $5, feedback_at = now(), seq = nextval('collab_ai_drafts_seq') WHERE id = $1`,
 					id, b.Reason, clipRunes(strings.TrimSpace(b.Note), maxFeedbackNote), better, p.UserID); err != nil {
