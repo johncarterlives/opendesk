@@ -73,6 +73,7 @@ function randomNewTicket() {
     const page_url = `https://${slug}.app${any(CHAT_PAGES) ?? "/"}`;
     const route = evaluateRouting(w, { channel: "chat", from: contact.email ?? "", subject, body, widget_id: widget.id, topic: topic?.id, page_url });
     t = newTicket(w, { subject, contact: contactRef(contact), channel: "chat", priority: "normal", mailbox_id: null, team_id: route.team_id, brand_id: route.brand_id, widget_id: widget.id, page_url, routed: route.routed });
+    t.required_skills = route.required_skills.map(({ id, name }) => ({ id, name }));
     countRuleRun(w, route.routed);
   } else {
     const box = any(w.mailboxes.filter((m) => m.status === "active"));
@@ -80,6 +81,7 @@ function randomNewTicket() {
     const to = Math.random() < 0.3 && box.aliases.length ? (any(box.aliases) ?? box.email) : box.email;
     const route = evaluateRouting(w, { channel: "email", to, from: contact.email ?? "", subject, body });
     t = newTicket(w, { subject, contact: contactRef(contact), channel: "email", priority: Math.random() < 0.2 ? "high" : "normal", mailbox_id: route.mailbox_id ?? box.id, team_id: route.team_id, brand_id: route.brand_id, received_at: to, routed: route.routed });
+    t.required_skills = route.required_skills.map(({ id, name }) => ({ id, name }));
     t.origin_mailbox_id = box.id;
     countRuleRun(w, route.routed);
   }

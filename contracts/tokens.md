@@ -18,6 +18,7 @@ and a consumer accepts exactly one purpose. `exp` is required.
 | `notification_unsubscribe` | notification emails (`contracts/api.md` "Notification preferences and emails") | 90 days | `POST /v1/notifications/unsubscribe` and `/unsubscribe/one-click` |
 | `admin_mfa` | `POST /v1/admin/auth/login` (contracts/admin.md) | 5 min | `POST /v1/admin/auth/mfa` |
 | `admin`      | `POST /v1/admin/auth/mfa` and `/refresh` | 10 min | `/v1/admin/*` only (Bearer); the admin session (`sid`) is checked on every request |
+| `customer_access` | customer portal login and refresh | 15 min | `/v1/customer/portal/*` only; the customer session (`sid`) is checked on every request |
 
 ## Claims
 
@@ -150,3 +151,35 @@ Passwords: Argon2id only (`m=64MiB, t=3, p=2`, 16-byte salt, 32-byte key), PHC s
   for workspace-scoped routes. The API checks membership and resolves the role.
 - API keys are bound to one workspace; `OD-Workspace` is ignored for them.
 - Widget requests: `Authorization: Visitor <token>`; the workspace comes from the session.
+
+## Customer portal
+
+Customer access JWTs have purpose `customer_access`, `sub` = contact id, `wid` = workspace
+id and `sid` = customer session id. They last at most 15 minutes and are accepted only
+by customer portal operations. They grant no member, API key, visitor or realtime
+permissions. Every resolution joins the live customer session, credential, contact and
+workspace: expiry, revocation, email snapshots, block state and workspace suspension
+are checked for each request. `OD-Workspace` does not select a customer's workspace.
+Login returns `access_token` and `expires_at`. When an existing password no longer meets
+the current password policy, login also returns `change_password: true`; the portal asks
+the customer to choose a new password through its password-link flow.
+
+Customer refresh credentials are random opaque values, stored hashed in
+`customer_sessions` and rotated under a lock on each use. Sessions end at most 30 days
+after sign-in. Browsers receive the credential only in the host-only HttpOnly,
+SameSite=Lax `__Host-od_customer_refresh` cookie on HTTPS (`od_customer_refresh` for
+HTTP development). It is never included in a response body. Only an allowed app
+origin, or a request without Origin, can present this cookie. The customer cookie is
+separate from all member cookies; signing in switches the current customer account.
+Refresh requires `{workspace_slug}` in its body and rotates only when that enabled
+help-center slug belongs to the session's workspace. The slug constrains the portal
+context; workspace and contact identity always come from the live session.
+
+Customer setup/reset links contain a random 256-bit token, stored hashed with the
+workspace, contact, email snapshot and one-hour expiry in `customer_password_resets`.
+Consumption is single use and ends all the contact's other sessions and reset links.
+Only an existing, unblocked email-bearing contact can receive a link. The forgot
+response is uniform and defers contact lookup to its worker. Contact creation sends
+no portal invitation. Changing the contact's email or blocking it invalidates the
+customer credentials, sessions and reset links in the same transaction for every
+contact writer; deleting a contact cascades to these records.

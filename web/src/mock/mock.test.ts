@@ -89,6 +89,31 @@ describe("mock backend", () => {
     }
   });
 
+  it("shows nobody's online time once the workspace turns it off, keeping each member's rows", async () => {
+    const range = "from=2026-09-12&to=2026-10-11";
+    const ws = db.workspaces[0];
+    const before = ws.workspace.settings;
+    try {
+      expect((await call("PATCH", "/v1/workspace", { settings: { agent_online_time: false } })).status).toBe(200);
+      const all = (await call("GET", `/v1/reports/agents?${range}`)).body;
+      expect(all.online_time).toBe("off");
+      expect(all.data.length).toBe(ws.members.filter((m) => m.role !== "viewer").length);
+      expect(all.data.every((r: { online_minutes: number | null }) => r.online_minutes === null)).toBe(true);
+      const me = db.meId;
+      const agent = ws.members.find((m) => m.role === "agent")!.user_id;
+      db.meId = agent;
+      try {
+        const mine = (await call("GET", `/v1/reports/agents?${range}`)).body;
+        expect(mine.online_time).toBe("off");
+        expect(mine.data.map((r: { user: { id: string } }) => r.user.id)).toEqual([agent]);
+      } finally {
+        db.meId = me;
+      }
+    } finally {
+      ws.workspace.settings = before;
+    }
+  });
+
   it("gives collections and articles a brand, and scopes help centers by it", async () => {
     const brands = (await call("GET", "/v1/brands")).body.data as { id: string; slug: string; is_default: boolean }[];
     const press = brands.find((b) => b.slug === "pressroom")!;

@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
-import { BellOff, CircleSlash, Crown, Inbox, Lock, Moon, Plus, Repeat, Scale, Shuffle, Sparkles, UsersRound, Wand2, X } from "lucide-react";
+import { Archive, ArchiveRestore, BellOff, CircleSlash, Crown, Inbox, Lock, Moon, Plus, Repeat, Scale, Shuffle, Sparkles, UsersRound, Wand2, X } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { ListRow, Row, Section, SettingsPage } from "@/components/layout";
@@ -15,6 +15,7 @@ import { MotionList, MotionRow } from "@/components/settings2/motion";
 import { SettingsEmpty } from "@/components/settings2/SettingsEmpty";
 import { Stepper } from "@/components/settings2/Stepper";
 import { Avatar } from "@/components/ui/avatar";
+import { TagChip } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Menu, MenuContent, MenuTrigger } from "@/components/ui/menu";
 import { Picker } from "@/components/ui/picker";
@@ -27,11 +28,11 @@ import { TeamDot, useTeams } from "@/components/settings2/teams";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { api } from "@/lib/api/endpoints";
-import type { Assignment as A, AssignMode, AssignmentRule, Member, NewTicketNotify } from "@/lib/api/types";
+import type { Assignment as A, AssignMode, AssignmentRule, Member, NewTicketNotify, Skill } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
 import { springs } from "@/lib/motion";
 import { useSetAvailability } from "@/lib/pictures";
-import { q, qk } from "@/lib/queries";
+import { q, qk, upsertInList } from "@/lib/queries";
 import { atLeast, useRole } from "@/lib/session";
 import { tone, type Tone } from "@/lib/tones";
 
@@ -71,6 +72,7 @@ export default function Assignment() {
   const canEdit = atLeast(useRole(), "admin");
   const { data: a, isLoading } = useQuery(q.assignment());
   const { data: members, isLoading: membersLoading } = useQuery(q.members());
+  const { data: skills } = useQuery({ ...q.skills(), enabled: canEdit });
   const write = useAssignmentWrite();
   const { teams } = useTeams();
   const { t: tt } = useTranslation("settingsTeams");
@@ -108,6 +110,8 @@ export default function Assignment() {
       </Section>
 
       {teams.length > 0 && <Precedence />}
+
+      {canEdit && <SkillsSection skills={skills ?? []} members={assignable} loading={!skills} />}
 
       <RulesSection a={a} loading={isLoading} canEdit={canEdit} onRules={(rules) => write.mutate({ rules })} />
 
@@ -168,12 +172,12 @@ export default function Assignment() {
             ]}
           />
         ) : teams.length && byTeam ? (
-          <TeamGroups assignable={assignable} canEdit={canEdit} mode={a?.mode ?? "none"} />
+          <TeamGroups assignable={assignable} canEdit={canEdit} mode={a?.mode ?? "none"} skills={skills} />
         ) : (
           <MotionList>
             {assignable.map((m) => (
               <MotionRow key={m.user.id}>
-                <MemberLoad m={m} canEdit={canEdit} />
+            <MemberLoad m={m} canEdit={canEdit} skills={skills} />
               </MotionRow>
             ))}
           </MotionList>
@@ -400,8 +404,103 @@ function Precedence() {
   );
 }
 
+/** Workspace expertise catalog. Skills are assigned here because they constrain automatic, not manual, assignment. */
+function SkillsSection({ skills, members, loading }: { skills: Skill[]; members: Member[]; loading: boolean }) {
+  const { t } = useTranslation("settingsInbox");
+  const qc = useQueryClient();
+  const write = (skill: Skill) => upsertInList(qc, qk.skills, skill);
+  const create = useMutation({
+    mutationFn: (name: string) => api.skills.create({ name }),
+    onSuccess: (skill) => {
+      write(skill);
+      toast.success(t("assignment.skills.created", { name: skill.name }));
+    },
+    onError: (error) => toast.error(error, t("assignment.skills.saveFailed")),
+  });
+  const update = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: { archived: boolean } }) => api.skills.update(id, body),
+    onSuccess: write,
+    onError: (error) => toast.error(error, t("assignment.skills.saveFailed")),
+  });
+  const replaceMembers = useMutation({
+    mutationFn: ({ id, member_ids }: { id: string; member_ids: string[] }) => api.skills.replaceMembers(id, member_ids),
+    onSuccess: write,
+    onError: (error) => toast.error(error, t("assignment.skills.saveFailed")),
+  });
+  const memberItems = members.map((member) => ({ value: member.user.id, label: member.user.name, keywords: [member.user.email], icon: <Avatar name={member.user.name} src={member.user.avatar_url} size="xs" /> }));
+  const active = skills.filter((skill) => !skill.archived);
+
+  return (
+    <Section
+      flush
+      title={t("assignment.skills.title")}
+      description={t("assignment.skills.hint")}
+      actions={
+        <Picker
+          value={null}
+          items={[]}
+          placeholder={t("assignment.skills.namePlaceholder")}
+          emptyText={t("assignment.skills.createHint")}
+          onSelect={() => {}}
+          onCreate={(name) => create.mutate(name)}
+          createLabel={t("assignment.skills.create")}
+          trigger={<Button size="sm" variant="secondary" icon={<Plus className="size-3.5" />} loading={create.isPending}>{t("assignment.skills.add")}</Button>}
+        />
+      }
+    >
+      {loading ? (
+        <ListSkeleton rows={2} />
+      ) : !skills.length ? (
+        <SettingsEmpty className="min-h-[220px]" art="settings" title={t("assignment.skills.emptyTitle")} description={t("assignment.skills.emptyHint")} />
+      ) : (
+        <MotionList>
+          {skills.map((skill) => (
+            <MotionRow key={skill.id}>
+              <ListRow className={cn(skill.archived && "opacity-65")}>
+                <span className={cn("flex size-7 shrink-0 items-center justify-center rounded-md", skill.archived ? tone.gray.chip : tone.violet.chip)}>
+                  {skill.archived ? <Archive className="size-3.5" /> : <Sparkles className="size-3.5" />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 text-[13px] font-medium">
+                    <span className="truncate">{skill.name}</span>
+                    {skill.archived && <span className="rounded-sm bg-hover px-1.5 py-0.5 text-[10.5px] font-medium text-fg-3">{t("assignment.skills.archived")}</span>}
+                  </div>
+                  <div className="mt-0.5 text-[12px] text-fg-3">{t("assignment.skills.memberCount", { count: skill.member_ids.length })}</div>
+                </div>
+                {!skill.archived && (
+                  <Picker
+                    multi
+                    values={skill.member_ids}
+                    items={memberItems}
+                    placeholder={t("assignment.skills.members")}
+                    onChange={(member_ids) => replaceMembers.mutate({ id: skill.id, member_ids })}
+                    trigger={<Button size="sm" variant="ghost" className="w-[140px] justify-start">{skill.member_ids.length ? t("assignment.skills.memberCount", { count: skill.member_ids.length }) : t("assignment.skills.members")}</Button>}
+                  />
+                )}
+                <Tooltip content={skill.archived ? t("assignment.skills.restore") : t("assignment.skills.archive")}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    square
+                    aria-label={skill.archived ? t("assignment.skills.restoreNamed", { name: skill.name }) : t("assignment.skills.archiveNamed", { name: skill.name })}
+                    loading={update.isPending && update.variables?.id === skill.id}
+                    onClick={() => update.mutate({ id: skill.id, body: { archived: !skill.archived } })}
+                  >
+                    {skill.archived ? <ArchiveRestore className="size-3.5" /> : <Archive className="size-3.5" />}
+                  </Button>
+                </Tooltip>
+              </ListRow>
+            </MotionRow>
+          ))}
+        </MotionList>
+      )}
+      {active.length > 0 && <p className="border-t border-line-soft px-4 py-2 text-[11.5px] text-fg-4">{t("assignment.skills.note")}</p>}
+    </Section>
+  );
+}
+
 /** Member load grouped by team (leads and members; observers are never assigned), then everyone not on a team. */
-function TeamGroups({ assignable, canEdit, mode }: { assignable: Member[]; canEdit: boolean; mode: AssignMode }) {
+function TeamGroups({ assignable, canEdit, mode, skills }: { assignable: Member[]; canEdit: boolean; mode: AssignMode; skills?: Skill[] }) {
   const { t } = useTranslation("settingsTeams");
   const { t: ti } = useTranslation("settingsInbox");
   const { teams } = useTeams();
@@ -433,7 +532,7 @@ function TeamGroups({ assignable, canEdit, mode }: { assignable: Member[]; canEd
               <MotionList>
                 {people.map((m) => (
                   <MotionRow key={m.user.id}>
-                    <MemberLoad m={m} canEdit={canEdit} />
+                    <MemberLoad m={m} canEdit={canEdit} skills={skills} />
                   </MotionRow>
                 ))}
               </MotionList>
@@ -453,7 +552,7 @@ function TeamGroups({ assignable, canEdit, mode }: { assignable: Member[]; canEd
           <MotionList>
             {loose.map((m) => (
               <MotionRow key={m.user.id}>
-                <MemberLoad m={m} canEdit={canEdit} />
+                <MemberLoad m={m} canEdit={canEdit} skills={skills} />
               </MotionRow>
             ))}
           </MotionList>
@@ -524,7 +623,7 @@ function loadTone(open: number, max: number | null): Tone {
   return r >= 1 ? "red" : r >= 0.75 ? "amber" : "green";
 }
 
-function MemberLoad({ m, canEdit }: { m: Member; canEdit: boolean }) {
+function MemberLoad({ m, canEdit, skills }: { m: Member; canEdit: boolean; skills?: Skill[] }) {
   const { t } = useTranslation("settingsInbox");
   const setAvail = useSetAvailability();
   const reduce = useReducedMotion();
@@ -532,6 +631,7 @@ function MemberLoad({ m, canEdit }: { m: Member; canEdit: boolean }) {
   const cap = m.max_open_tickets;
   const pct = cap ? Math.min(1, m.open_tickets / Math.max(1, cap)) : 0;
   const lt = loadTone(m.open_tickets, cap);
+  const memberSkills = (skills ?? []).filter((skill) => skill.member_ids.includes(m.user.id));
   const save = (v: { availability?: Member["availability"]; max_open_tickets?: number | null }) =>
     setAvail.mutate({ userId: m.user.id, ...v }, { onError: (e) => toast.error(e, t("assignment.member.saveFailed")) });
 
@@ -551,6 +651,7 @@ function MemberLoad({ m, canEdit }: { m: Member; canEdit: boolean }) {
           <RolePill role={m.role} />
         </div>
         <div className="mt-0.5 truncate text-[12px] text-fg-3">{m.user.email}</div>
+        {memberSkills.length > 0 && <div className="mt-1 flex flex-wrap gap-1">{memberSkills.map((skill) => <TagChip key={skill.id} name={skill.name} color={skill.archived ? "gray" : "violet"} />)}</div>}
       </div>
       <div className="hidden w-[120px] shrink-0 sm:block">
         {canEdit ? (

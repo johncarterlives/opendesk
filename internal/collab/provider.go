@@ -48,6 +48,7 @@ type MessageRef struct {
 
 // ApplyOp is one action on messages at the provider (contracts/collab.md "Actions").
 type ApplyOp struct {
+	category *gmailCategoryChange
 	Action   string
 	Messages []MessageRef
 	// Target is the folder or label of move, label and unlabel.

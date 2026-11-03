@@ -477,6 +477,9 @@ func fetchBody(c *imapclient.Client, uid uint32) ([]byte, error) {
 
 // Apply makes an action at the IMAP server (contracts/collab.md "Actions").
 func (p *imapProvider) Apply(ctx context.Context, op ApplyOp) error {
+	if op.category != nil {
+		return &providerError{msg: "Gmail categories require a Google account.", permanent: true}
+	}
 	if op.Action == ActionLabel || op.Action == ActionUnlabel {
 		return errLabels
 	}

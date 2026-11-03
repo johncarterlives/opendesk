@@ -627,6 +627,62 @@
       "lastHours": "Last 24 hours",
       "window": "Delivery totals from the last 24 hours"
     },
+    "ollie": {
+      "title": "Ollie in support channels",
+      "description": "Ollie summarizes each new ticket thread, suggests replies, answers questions and warns about SLAs and unhappy customers. Choose which changes it may make when it decides to.",
+      "error": "Couldn't save what Ollie may do.",
+      "commands": "Typed commands such as reply, note and status are the agent's own and always work. Changes Ollie suggests to a customer reply, a new ticket or a close still ask for confirmation.",
+      "actions": {
+        "reply": {
+          "title": "Send replies",
+          "hint": "Ollie may prepare a reply to the customer. It's sent only after the agent confirms."
+        },
+        "note": {
+          "title": "Add internal notes",
+          "hint": "Ollie may add a note the customer can't see."
+        },
+        "assign_self": {
+          "title": "Assign tickets",
+          "hint": "Ollie may assign the ticket to the agent talking to it."
+        },
+        "status": {
+          "title": "Change status",
+          "hint": "Ollie may change the ticket's status. Closing asks for confirmation."
+        },
+        "priority": {
+          "title": "Change priority",
+          "hint": "Ollie may raise or lower the ticket's priority."
+        },
+        "create_ticket": {
+          "title": "Create tickets",
+          "hint": "Ollie may create a ticket from a channel message after confirmation."
+        }
+      },
+      "channel": {
+        "label": "Ollie settings for {{name}}",
+        "title": "Ollie in #{{name}}",
+        "description": "How Ollie works in this channel's ticket threads.",
+        "summary": "Summarize new threads",
+        "summaryHint": "Ollie posts what the customer needs, what they've tried, their sentiment and urgency when a ticket's thread opens. Uses AI credits.",
+        "warnings": "SLA and sentiment warnings",
+        "warningsHint": "Ollie warns in the thread when an SLA target is near or missed, and when the customer sounds unhappy.",
+        "length": "Response length",
+        "lengthHint": "How long Ollie's answers and suggestions are in this channel.",
+        "lengthValues": {
+          "brief": "Brief",
+          "standard": "Standard",
+          "detailed": "Detailed"
+        },
+        "personality": "Personality",
+        "personalityHint": "How Ollie sounds here. It shapes tone only and never changes what Ollie may do.",
+        "personalityPlaceholder": "Friendly and upbeat, plain words, no jargon",
+        "personalityInvalid": "The personality can't contain < or >.",
+        "submit": "Save",
+        "cancel": "Cancel",
+        "saved": "Ollie settings saved.",
+        "error": "Couldn't save Ollie's settings."
+      }
+    },
     "empty": {
       "title": "No support channels yet",
       "body": "Connect a bot, then choose where each team's email tickets appear.",
@@ -829,7 +885,7 @@
     },
     "empty": {
       "title": "No phone system yet",
-      "body": "Connect Aircall and every call is documented on the caller's ticket.",
+      "body": "Connect Aircall or Voys and every call is documented on the caller's ticket.",
       "tipTimeline": "Calls in the ticket timeline",
       "tipMissed": "Missed calls never go unanswered",
       "tipAutomations": "Automations when a call ends"
@@ -842,13 +898,15 @@
       "test": "Test",
       "tested": "The connection works.",
       "testedAttention": "The connection needs attention.",
-      "testError": "Couldn't test the connection."
+      "testError": "Couldn't test the connection.",
+      "waiting": "Waiting for the first call"
     },
     "healthCode": {
       "receiving": "Calls are sent to opendesk.",
       "webhook_missing": "The phone system is not sending calls to opendesk. Test the connection to set it up again.",
       "credentials_refused": "The phone system refused the credentials. Replace them with working ones.",
-      "provider_unreachable": "Couldn't reach the phone system. Try again in a moment."
+      "provider_unreachable": "Couldn't reach the phone system. Try again in a moment.",
+      "webhookManual": "No call has come in yet. Add the webhook address below in {{name}}, then make a test call."
     },
     "lastEvent": "Last call event {{when}}",
     "noEventYet": "No call yet. Calls show up on tickets as soon as they ring.",
@@ -880,7 +938,7 @@
       "cards": "Show the caller in Aircall",
       "cardsHint": "While a call rings, Aircall shows the caller, the ticket the call goes on and their latest tickets.",
       "dial": "Call from opendesk",
-      "dialHint": "Phone numbers on contacts and tickets open your phone app. Set Aircall as the default app for phone links to call with it."
+      "dialHint": "Phone numbers on contacts and tickets open your phone app. Set {{name}} as the default app for phone links to call with it."
     },
     "automations": {
       "title": "Automations",
@@ -903,7 +961,8 @@
       "description": "An admin can connect a phone system."
     },
     "provider": {
-      "aircall": "Cloud phone system. Calls, recordings and AI summaries land on tickets."
+      "aircall": "Cloud phone system. Calls, recordings and AI summaries land on tickets.",
+      "voys": "Dutch cloud phone system. Calls, Voys Intelligence transcripts and summaries land on tickets."
     },
     "field": {
       "api_id": "API ID",
@@ -915,7 +974,27 @@
       "cancel": "Cancel",
       "submit": "Connect",
       "connected": "{{name}} connected.",
-      "error": "Couldn't connect {{name}}."
+      "error": "Couldn't connect {{name}}.",
+      "voysSetup": "In Voys Freedom, open your personal settings and copy your API token. Use an admin's token with access to call recordings, so transcripts and summaries come along. Next, you add opendesk's webhook address in Voys."
+    },
+    "webhookManual": "Webhook address, to add in {{name}} as a call notification",
+    "disconnectBodyManual": "opendesk stops documenting new calls from {{name}}. Remove the call notification in {{name}} as well. Calls already on tickets stay.",
+    "hook": {
+      "title": "Add opendesk in {{name}}",
+      "description": "{{name}} sends calls to this address once you add it as a call notification.",
+      "done": "Done",
+      "rotate": "Make a new address",
+      "rotateLabel": "Make a new webhook address for {{name}}",
+      "rotateTitle": "Make a new webhook address?",
+      "rotateBody": "The current address stops working at once. Paste the new one in {{name}} to keep receiving calls.",
+      "rotateError": "Couldn't make a new webhook address."
+    },
+    "voys": {
+      "step1": "In Voys Freedom, open Integratie, then Gespreksnotificaties, and click Toevoegen.",
+      "step2": "Enter a description such as opendesk, and choose Custom as the service.",
+      "step3": "Paste the webhook address as the Web hook URL.",
+      "step4": "Tick the summary and transcription events (they need Voys Intelligence), then click Opslaan.",
+      "step5": "Make a test call: the connection says Receiving calls as soon as it comes in."
     }
   }
 }

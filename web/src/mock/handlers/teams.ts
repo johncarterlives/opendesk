@@ -7,6 +7,7 @@ import {
   type LabelColor,
   type RoutingCondition,
   type RoutingRule,
+  type Skill,
   type Team,
   type TeamRole,
   type Widget,
@@ -631,7 +632,72 @@ function writeRule(ctx: Ctx, r: RoutingRule, creating: boolean) {
     if (!t) throw invalid("Choose the team this rule sends tickets to");
     r.team_id = t;
   }
+  if ("skill_ids" in b) {
+    const ids = strArr(b.skill_ids);
+    if (!ids || new Set(ids).size !== ids.length) throw invalid("skill_ids must be unique skill IDs");
+    for (const id of ids) {
+      const skill = ctx.ws.skills.find((x) => x.id === id);
+      if (!skill) throw invalid("Unknown skill");
+      if (skill.archived) throw invalid("Archived skills cannot be required by a rule");
+    }
+    r.skill_ids = ids;
+  }
   r.updated_at = nowIso();
+}
+
+function findSkill(ctx: Ctx): Skill {
+  const skill = ctx.ws.skills.find((x) => x.id === ctx.params.id);
+  if (!skill) throw notFound("Skill");
+  return skill;
+}
+
+function writeSkillName(ctx: Ctx, skill: Skill, requiredName: boolean) {
+  if (!requiredName && !("name" in ctx.body)) return;
+  const name = required(ctx, "name").replace(/\s+/g, " ");
+  if (name.length > 64) throw invalid("Keep the skill under 64 characters");
+  if (ctx.ws.skills.some((x) => x !== skill && x.name.toLowerCase() === name.toLowerCase())) throw new HttpError(409, "conflict", "A skill with this name already exists");
+  skill.name = name;
+}
+
+function registerSkillRoutes() {
+  get("/v1/skills", (ctx) => {
+    requireAdmin(ctx.ws, "Only admins can view skills");
+    return paginate(ctx, ctx.ws.skills.slice().sort((a, b) => a.name.localeCompare(b.name)), 100);
+  });
+  post("/v1/skills", (ctx) => {
+    requireAdmin(ctx.ws);
+    const skill: Skill = { id: uuid(), name: "", archived: false, member_ids: [] };
+    writeSkillName(ctx, skill, true);
+    ctx.ws.skills.push(skill);
+    publish(ctx.ws, "skill.created", { skill });
+    audit(ctx.ws, "skill.created", "skill", skill.id, { name: skill.name });
+    return respond(201, skill);
+  });
+  patch("/v1/skills/:id", (ctx) => {
+    requireAdmin(ctx.ws);
+    const skill = findSkill(ctx);
+    writeSkillName(ctx, skill, false);
+    if ("archived" in ctx.body) {
+      if (typeof ctx.body.archived !== "boolean") throw invalid("archived must be true or false");
+      if (ctx.body.archived && ctx.ws.routingRules.some((r) => r.enabled && r.skill_ids.includes(skill.id))) throw new HttpError(409, "skill_in_use", "Edit enabled routing rules before archiving this skill");
+      skill.archived = ctx.body.archived;
+    }
+    publish(ctx.ws, "skill.updated", { skill });
+    audit(ctx.ws, "skill.updated", "skill", skill.id, { fields: Object.keys(ctx.body) });
+    return skill;
+  });
+  put("/v1/skills/:id/members", (ctx) => {
+    requireAdmin(ctx.ws);
+    const skill = findSkill(ctx);
+    if (skill.archived) throw new HttpError(409, "skill_archived", "Restore this skill before changing its members");
+    const ids = strArr(ctx.body.member_ids);
+    if (!ids || new Set(ids).size !== ids.length) throw invalid("member_ids must be unique member IDs");
+    if (ids.some((id) => !ctx.ws.members.some((m) => m.user_id === id && m.role !== "viewer"))) throw invalid("Members must be assignable workspace members");
+    skill.member_ids = ids;
+    publish(ctx.ws, "skill.members_updated", { skill });
+    audit(ctx.ws, "skill.members_updated", "skill", skill.id, { member_count: ids.length });
+    return skill;
+  });
 }
 
 function registerRoutingRoutes() {
@@ -647,7 +713,7 @@ function registerRoutingRoutes() {
     requireAdmin(ctx.ws);
     limit(ctx.ws.routingRules.length, 200, "routing rules");
     const now = nowIso();
-    const r: RoutingRule = { id: uuid(), name: "", enabled: true, position: ctx.ws.routingRules.length, run_count: 0, match: "all", conditions: [], team_id: "", created_at: now, updated_at: now };
+    const r: RoutingRule = { id: uuid(), name: "", enabled: true, position: ctx.ws.routingRules.length, run_count: 0, match: "all", conditions: [], team_id: "", skill_ids: [], created_at: now, updated_at: now };
     writeRule(ctx, r, true);
     ctx.ws.routingRules.push(r);
     publish(ctx.ws, "routing_rule.created", { routing_rule: r });
@@ -706,11 +772,12 @@ function registerRoutingRoutes() {
     const from = input.from?.toLowerCase();
     const contact = from ? ctx.ws.contacts.find((c) => (c.email ?? "").toLowerCase() === from) : undefined;
     const r = evaluateRouting(ctx.ws, { ...input, contact_fields: contact ? { ...contact.custom, ...contact.fields } : {} });
-    return respond(200, { team_id: r.team_id, brand_id: r.brand_id, mailbox_id: r.mailbox_id, routed: r.routed, steps: r.steps, assign_mode: r.assign_mode });
+    return respond(200, { team_id: r.team_id, brand_id: r.brand_id, mailbox_id: r.mailbox_id, routed: r.routed, steps: r.steps, required_skills: r.required_skills, assign_mode: r.assign_mode });
   });
 }
 
 export function registerTeams() {
+  registerSkillRoutes();
   registerTeamRoutes();
   registerBrandRoutes();
   registerWidgetRoutes();

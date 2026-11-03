@@ -43,6 +43,7 @@ import type {
   AssignmentRule,
   Brand,
   RoutingRule,
+  Skill,
   Widget,
   Availability,
   BusinessHours,
@@ -147,6 +148,7 @@ export type WsData = {
   /** Each widget's identity verification secret, never answered after create or rotate. */
   widgetSecrets: Record<string, string>;
   routingRules: RoutingRule[];
+  skills: Skill[];
   /** The AI agent's bots (contracts/bots.md; mock/bots.ts makes the default on first use). */
   bots?: Bot[];
   /** Notification channels each member set here, by user id then type; unset ones follow the defaults (handlers/notificationPrefs.ts). */

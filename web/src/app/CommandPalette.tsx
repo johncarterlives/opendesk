@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useNavigate, useRouterState, type NavigateOptions } from "@tanstack/react-router";
 import { Command } from "cmdk";
 import { Dialog as D } from "radix-ui";
 import {
@@ -26,7 +26,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useDeferredValue, useEffect, useState, type ReactNode } from "react";
+import { useDeferredValue, useEffect, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty";
 import { Kbd } from "@/components/ui/kbd";
@@ -58,18 +58,32 @@ import { AccountDot } from "@/components/collab/bits";
 import { WorkspaceBadge } from "@/components/workspaces/WorkspaceBadge";
 import { useWorkspaces } from "@/lib/workspaces";
 import { cleanSection } from "@/lib/viewSections";
+import { useHref } from "@/lib/links";
+import { LinkItem, openSelectedInNewTab } from "./paletteLink";
 
 const itemCls =
   "flex h-9 cursor-default select-none items-center gap-2.5 rounded-md px-2.5 text-[13px] text-fg transition-colors duration-100 animate-item-in motion-reduce:animate-none data-[selected=true]:bg-hover [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-fg-3";
 const groupCls =
   "[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-[11.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-3";
 
-function Item({ children, onSelect, icon, hint, value, keywords, forceMount }: { children: ReactNode; onSelect: () => void; icon?: ReactNode; hint?: ReactNode; value: string; keywords?: string[]; forceMount?: boolean }) {
-  return (
-    <Command.Item value={value} keywords={keywords} onSelect={onSelect} forceMount={forceMount} className={itemCls}>
+function Item({ children, onSelect, icon, hint, value, keywords, forceMount, href }: { children: ReactNode; onSelect: () => void; icon?: ReactNode; hint?: ReactNode; value: string; keywords?: string[]; forceMount?: boolean; href?: string }) {
+  const body = (
+    <>
       {icon}
       <span className="flex min-w-0 flex-1 items-center gap-2 truncate">{children}</span>
       {hint && <span className="shrink-0 text-xs text-fg-4">{hint}</span>}
+    </>
+  );
+  // An item that goes to a page is a real link, which the browser can open in a new tab.
+  if (href)
+    return (
+      <LinkItem href={href} value={value} keywords={keywords} onSelect={onSelect} forceMount={forceMount} className={itemCls}>
+        {body}
+      </LinkItem>
+    );
+  return (
+    <Command.Item value={value} keywords={keywords} onSelect={onSelect} forceMount={forceMount} className={itemCls}>
+      {body}
     </Command.Item>
   );
 }
@@ -129,6 +143,10 @@ export function CommandPalette() {
     shell.palette(false);
     fn();
   };
+  // A page as a link: its href for the browser, and the navigation in place.
+  const toHref = useHref();
+  const link = (to: NavigateOptions) => ({ href: toHref(to), onSelect: () => go(() => void navigate(to)) });
+  const root = useRef<HTMLDivElement>(null);
 
   const results = search.data;
   const wikiPages = results?.wiki_pages ?? [];
@@ -144,7 +162,7 @@ export function CommandPalette() {
           className="fixed left-1/2 top-[14vh] z-50 w-[calc(100vw-32px)] max-w-[620px] -translate-x-1/2 overflow-hidden rounded-xl border border-line bg-raised shadow-float origin-top outline-none data-[state=open]:animate-palette-in data-[state=closed]:animate-palette-out motion-reduce:animate-none"
         >
           <D.Title className="sr-only">{tNav("command.menu")}</D.Title>
-          <Command loop shouldFilter={!aiMode} className="flex flex-col">
+          <Command ref={root} loop shouldFilter={!aiMode} className="flex flex-col">
             <div className="relative flex h-12 items-center gap-2.5 border-b border-line px-4">
               {aiMode ? (
                 <button
@@ -170,6 +188,9 @@ export function CommandPalette() {
                   } else if (e.key === "Backspace" && aiMode && !query) {
                     e.preventDefault();
                     setAiMode(false);
+                  } else {
+                    // Ctrl/Cmd+Enter: the selected link in a new tab.
+                    openSelectedInNewTab(e, root.current);
                   }
                 }}
                 placeholder={aiMode ? t("palette.placeholder") : tNav("command.search")}
@@ -187,8 +208,8 @@ export function CommandPalette() {
                   data={aiSearch.data}
                   error={!!aiSearch.error}
                   onExample={setQuery}
-                  onTicket={(id) => go(() => void navigate({ to: "/inbox/$folder/{-$ticketId}", params: { folder: "open", ticketId: id } }))}
-                  onArticle={(id) => go(() => void navigate({ to: "/kb/articles/$articleId", params: { articleId: id }, search: { collection: undefined } }))}
+                  ticket={(id) => link({ to: "/inbox/$folder/{-$ticketId}", params: { folder: "open", ticketId: id } })}
+                  article={(id) => link({ to: "/kb/articles/$articleId", params: { articleId: id }, search: { collection: undefined } })}
                 />
               ) : (
               <>
@@ -218,9 +239,7 @@ export function CommandPalette() {
                       value={`ticket ${t.number} ${t.subject} ${t.contact?.name ?? ""} ${t.id}`}
                       icon={<StatusIcon status={t.status} />}
                       hint={<span className="mono">{relShort(t.last_message_at)}</span>}
-                      onSelect={() =>
-                        go(() => void navigate({ to: "/inbox/$folder/{-$ticketId}", params: { folder: "open", ticketId: t.id } }))
-                      }
+                      {...link({ to: "/inbox/$folder/{-$ticketId}", params: { folder: "open", ticketId: t.id } })}
                     >
                       <span className="mono shrink-0 text-xs text-fg-3">#{t.number}</span>
                       <span className="truncate" data-ph-mask>
@@ -240,7 +259,7 @@ export function CommandPalette() {
                       value={`contact ${c.name} ${c.email ?? ""} ${c.id}`}
                       icon={<Avatar name={c.name || c.email || "?"} src={c.avatar_url} size="sm" />}
                       hint={c.company?.name}
-                      onSelect={() => go(() => void navigate({ to: "/contacts/{-$contactId}", params: { contactId: c.id } }))}
+                      {...link({ to: "/contacts/{-$contactId}", params: { contactId: c.id } })}
                     >
                       <span className="truncate" data-ph-mask>
                         {c.name}
@@ -261,7 +280,7 @@ export function CommandPalette() {
                       value={`article ${a.title} ${a.id}`}
                       icon={<FileText />}
                       hint={a.status === "draft" ? tKb("status.draft") : undefined}
-                      onSelect={() => go(() => void navigate({ to: "/kb/articles/$articleId", params: { articleId: a.id }, search: { collection: undefined } }))}
+                      {...link({ to: "/kb/articles/$articleId", params: { articleId: a.id }, search: { collection: undefined } })}
                     >
                       {a.title}
                     </Item>
@@ -278,7 +297,7 @@ export function CommandPalette() {
                       value={`wiki page ${p.title} ${p.id}`}
                       icon={p.icon ? <span className="flex size-4 shrink-0 items-center justify-center text-[13px] leading-none">{p.icon}</span> : <NotebookText />}
                       hint={p.path.length ? p.path.map((x) => x.title || tWiki("untitled")).join(" / ") : undefined}
-                      onSelect={() => go(() => void navigate({ to: "/wiki/$pageId", params: { pageId: p.id } }))}
+                      {...link({ to: "/wiki/$pageId", params: { pageId: p.id } })}
                     >
                       {p.title || tWiki("untitled")}
                     </Item>
@@ -303,7 +322,7 @@ export function CommandPalette() {
                     value={`go inbox ${f.id}`}
                     keywords={[tNav(f.labelKey)]}
                     icon={f.id === "unassigned" ? <CircleDashed /> : f.id === "mine" ? <User /> : <Inbox />}
-                    onSelect={() => go(() => void navigate({ to: "/inbox/$folder/{-$ticketId}", params: { folder: f.id, ticketId: undefined } }))}
+                    {...link({ to: "/inbox/$folder/{-$ticketId}", params: { folder: f.id, ticketId: undefined } })}
                   >
                     {tNav(f.labelKey)}
                   </Item>
@@ -312,7 +331,7 @@ export function CommandPalette() {
                   <Item
                     value="go mail inbox email" keywords={[tCollab("palette.goMail")]}
                     icon={<Mail />}
-                    onSelect={() => go(() => void navigate({ to: "/mail/$box/{-$threadId}", params: { box: "inbox", threadId: undefined }, search: {} }))}
+                    {...link({ to: "/mail/$box/{-$threadId}", params: { box: "inbox", threadId: undefined }, search: {} })}
                   >
                     {tCollab("palette.goMail")}
                   </Item>
@@ -324,7 +343,7 @@ export function CommandPalette() {
                       value={`go mail account ${a.name} ${a.email}`}
                       icon={<span className="flex size-4 shrink-0 items-center justify-center"><AccountDot color={a.color} /></span>}
                       hint={tCollab("palette.account")}
-                      onSelect={() => go(() => void navigate({ to: "/mail/$box/{-$threadId}", params: { box: "inbox", threadId: undefined }, search: { account: a.id } }))}
+                      {...link({ to: "/mail/$box/{-$threadId}", params: { box: "inbox", threadId: undefined }, search: { account: a.id } })}
                     >
                       {a.name || a.email}
                     </Item>
@@ -334,7 +353,7 @@ export function CommandPalette() {
                     value="go team my teams" keywords={[tShell("nav.myTeams")]}
                     icon={<Users />}
                     hint={tShell("nav.teamHint")}
-                    onSelect={() => go(() => void navigate({ to: "/teams/$teamId/{-$ticketId}", params: { teamId: "mine", ticketId: undefined } }))}
+                    {...link({ to: "/teams/$teamId/{-$ticketId}", params: { teamId: "mine", ticketId: undefined } })}
                   >
                     {tShell("nav.myTeams")}
                   </Item>
@@ -345,7 +364,7 @@ export function CommandPalette() {
                     value={`go team ${x.name} ${x.id}`}
                     icon={<span className="flex size-4 shrink-0 items-center justify-center"><TeamDot team={x} /></span>}
                     hint={tShell("nav.teamHint")}
-                    onSelect={() => go(() => void navigate({ to: "/teams/$teamId/{-$ticketId}", params: { teamId: x.id, ticketId: undefined } }))}
+                    {...link({ to: "/teams/$teamId/{-$ticketId}", params: { teamId: x.id, ticketId: undefined } })}
                   >
                     {x.name}
                   </Item>
@@ -357,27 +376,27 @@ export function CommandPalette() {
                     value={`go view ${v.name} ${cleanSection(v.section)}`}
                     icon={<ViewIcon icon={v.icon} size={16} />}
                     hint={cleanSection(v.section) || tNav("titles.view")}
-                    onSelect={() => go(() => void navigate({ to: "/views/$viewId/{-$ticketId}", params: { viewId: v.id, ticketId: undefined } }))}
+                    {...link({ to: "/views/$viewId/{-$ticketId}", params: { viewId: v.id, ticketId: undefined } })}
                   >
                     {viewName(v)}
                   </Item>
                 ))}
-                <Item value="go contacts" keywords={[tNav("titles.contacts")]} icon={<Users />} onSelect={() => go(() => void navigate({ to: "/contacts/{-$contactId}", params: { contactId: undefined } }))}>
+                <Item value="go contacts" keywords={[tNav("titles.contacts")]} icon={<Users />} {...link({ to: "/contacts/{-$contactId}", params: { contactId: undefined } })}>
                   {tNav("titles.contacts")}
                 </Item>
-                <Item value="go companies" keywords={[tNav("titles.companies")]} icon={<Building2 />} onSelect={() => go(() => void navigate({ to: "/companies/{-$companyId}", params: { companyId: undefined } }))}>
+                <Item value="go companies" keywords={[tNav("titles.companies")]} icon={<Building2 />} {...link({ to: "/companies/{-$companyId}", params: { companyId: undefined } })}>
                   {tNav("titles.companies")}
                 </Item>
-                <Item value="go knowledge base kb articles" keywords={[tNav("titles.knowledgeBase")]} icon={<BookOpen />} onSelect={() => go(() => void navigate({ to: "/kb" }))}>
+                <Item value="go knowledge base kb articles" keywords={[tNav("titles.knowledgeBase")]} icon={<BookOpen />} {...link({ to: "/kb" })}>
                   {tNav("titles.knowledgeBase")}
                 </Item>
-                <Item value="go changelog product updates release notes" keywords={[tNav("titles.changelog")]} icon={<Newspaper />} onSelect={() => go(() => void navigate({ to: "/kb/changelog" }))}>
+                <Item value="go changelog product updates release notes" keywords={[tNav("titles.changelog")]} icon={<Newspaper />} {...link({ to: "/kb/changelog" })}>
                   {tNav("titles.changelog")}
                 </Item>
-                <Item value="go wiki internal docs runbooks policies" keywords={[tNav("titles.wiki")]} icon={<NotebookText />} hint={<Kbd>g w</Kbd>} onSelect={() => go(() => void navigate({ to: "/wiki" }))}>
+                <Item value="go wiki internal docs runbooks policies" keywords={[tNav("titles.wiki")]} icon={<NotebookText />} hint={<Kbd>g w</Kbd>} {...link({ to: "/wiki" })}>
                   {tNav("titles.wiki")}
                 </Item>
-                <Item value="go reports analytics" keywords={[tNav("titles.reports")]} icon={<BarChart3 />} onSelect={() => go(() => void navigate({ to: "/reports" }))}>
+                <Item value="go reports analytics" keywords={[tNav("titles.reports")]} icon={<BarChart3 />} {...link({ to: "/reports" })}>
                   {tNav("titles.reports")}
                 </Item>
                 {(
@@ -410,7 +429,7 @@ export function CommandPalette() {
                     ["/settings/import", "command.importHistory"],
                   ] as const
                 ).map(([to, labelKey]) => (
-                  <Item key={to} value={`settings ${to}`} keywords={[tNav(labelKey)]} icon={<Settings />} hint={tNav("titles.settings")} onSelect={() => go(() => void navigate({ to }))}>
+                  <Item key={to} value={`settings ${to}`} keywords={[tNav(labelKey)]} icon={<Settings />} hint={tNav("titles.settings")} {...link({ to })}>
                     {tNav(labelKey)}
                   </Item>
                 ))}
@@ -423,7 +442,7 @@ export function CommandPalette() {
                   </Item>
                 )}
                 {!onNewTicket && atLeast(role, "agent") && (
-                  <Item value="new ticket full page compose create" keywords={[tNav("command.newTicketPage")]} icon={<SquarePen />} onSelect={() => go(() => void navigate({ to: NEW_TICKET_PATH }))}>
+                  <Item value="new ticket full page compose create" keywords={[tNav("command.newTicketPage")]} icon={<SquarePen />} {...link({ to: NEW_TICKET_PATH })}>
                     {tNav("command.newTicketPage")}
                   </Item>
                 )}
@@ -465,13 +484,13 @@ export function CommandPalette() {
                   })}
                 {several && (
                   <>
-                    <Item value="everywhere assigned to me all workspaces" icon={<User />} onSelect={() => go(() => void navigate({ to: "/everywhere/$list", params: { list: "mine" } }))}>
+                    <Item value="everywhere assigned to me all workspaces" icon={<User />} {...link({ to: "/everywhere/$list", params: { list: "mine" } })}>
                       {tw("everywhere.mineTitle")}
                     </Item>
-                    <Item value="everywhere all mail all workspaces" icon={<Mail />} onSelect={() => go(() => void navigate({ to: "/everywhere/$list", params: { list: "mail" } }))}>
+                    <Item value="everywhere all mail all workspaces" icon={<Mail />} {...link({ to: "/everywhere/$list", params: { list: "mail" } })}>
                       {tw("everywhere.mailTitle")}
                     </Item>
-                    <Item value="arrange workspaces order hide switcher" icon={<Layers />} onSelect={() => go(() => void navigate({ to: "/settings/workspaces" }))}>
+                    <Item value="arrange workspaces order hide switcher" icon={<Layers />} {...link({ to: "/settings/workspaces" })}>
                       {tw("customize.arrange")}
                     </Item>
                   </>
@@ -498,6 +517,9 @@ export function CommandPalette() {
               <span className="flex items-center gap-1.5">
                 <Kbd>enter</Kbd> {tNav("command.open")}
               </span>
+              <span className="hidden items-center gap-1.5 sm:flex">
+                <Kbd>mod enter</Kbd> {tNav("command.newTab")}
+              </span>
               {ai.enabled && (
                 <span className="ml-auto flex items-center gap-1.5">
                   <Kbd>tab</Kbd> {aiMode ? t("palette.exit") : t("palette.ask")}
@@ -517,8 +539,8 @@ function AiResults({
   pending,
   data,
   error,
-  onTicket,
-  onArticle,
+  ticket,
+  article,
   onExample,
 }: {
   query: string;
@@ -526,8 +548,9 @@ function AiResults({
   pending: boolean;
   data: SearchResults | undefined;
   error: boolean;
-  onTicket: (id: string) => void;
-  onArticle: (id: string) => void;
+  /** A ticket's and an article's link (CommandPalette's link()). */
+  ticket: (id: string) => { href: string; onSelect: () => void };
+  article: (id: string) => { href: string; onSelect: () => void };
 }) {
   const { t } = useTranslation("ai");
   const { t: tKb } = useTranslation("kb");
@@ -581,7 +604,7 @@ function AiResults({
               value={`ai ticket ${x.id}`}
               icon={<StatusIcon status={x.status} />}
               hint={<span className="mono">{relShort(x.last_message_at)}</span>}
-              onSelect={() => onTicket(x.id)}
+              {...ticket(x.id)}
             >
               <span className="mono shrink-0 text-xs text-fg-3">#{x.number}</span>
               <span className="truncate" data-ph-mask>
@@ -595,7 +618,7 @@ function AiResults({
       {articles.length > 0 && (
         <Command.Group heading={heading(t("palette.articles"))} className={groupCls}>
           {articles.map((a) => (
-            <Item key={a.id} value={`ai article ${a.id}`} icon={<FileText />} hint={a.status === "draft" ? tKb("status.draft") : undefined} onSelect={() => onArticle(a.id)}>
+            <Item key={a.id} value={`ai article ${a.id}`} icon={<FileText />} hint={a.status === "draft" ? tKb("status.draft") : undefined} {...article(a.id)}>
               <span className="truncate">{a.title}</span>
               {a.excerpt && <span className="hidden min-w-0 truncate text-xs text-fg-3 sm:inline">{a.excerpt}</span>}
             </Item>

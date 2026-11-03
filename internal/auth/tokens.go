@@ -10,11 +10,13 @@ import (
 
 // Token purposes. A consumer accepts exactly one; see contracts/tokens.md.
 const (
-	PurposeAccess     = "access"
-	PurposeWS         = "ws"
-	PurposeWidgetWS   = "widget_ws"
-	PurposeMFA        = "mfa"
-	PurposeOAuthState = "oauth_state"
+	PurposeAccess = "access"
+	// PurposeCustomerAccess identifies a contact session, accepted only by customer routes.
+	PurposeCustomerAccess = "customer_access"
+	PurposeWS             = "ws"
+	PurposeWidgetWS       = "widget_ws"
+	PurposeMFA            = "mfa"
+	PurposeOAuthState     = "oauth_state"
 	// PurposePasskeyLogin and PurposePasskeyRegister reference a pending WebAuthn
 	// ceremony by jti; each ceremony is finished at most once.
 	PurposePasskeyLogin    = "passkey_login"

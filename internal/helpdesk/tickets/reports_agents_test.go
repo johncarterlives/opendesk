@@ -279,3 +279,34 @@ func TestAgentsReportOwnRow(t *testing.T) {
 		t.Fatalf("key rows %+v", r.Data)
 	}
 }
+
+// A workspace can turn online time off: the report then answers off and no online time to
+// anyone, while every ticket figure and each role's rows stay.
+func TestAgentsReportOnlineTimeOff(t *testing.T) {
+	e, _ := newEnv(t)
+	f := seedAgents(t, e)
+	ws := f.ws
+	e.SetSettings(ws, map[string]any{"agent_online_time": false})
+	for _, a := range []hdtest.Auth{ws.Owner.As(ws), ws.Admin.As(ws), {Bearer: e.APIKey(ws, auth.ScopeTicketsRead, auth.ScopeSettingsRead)}} {
+		r := agentsReport(t, e, a, march)
+		anna := rowOf(t, r, ws.Agent.ID)
+		if r.OnlineTime != "off" || len(r.Data) != 5 || anna.OnlineMinutes != nil || anna.Solved != 3 || anna.Replies != 4 {
+			t.Fatalf("online time off: %+v", r)
+		}
+		for _, row := range r.Data {
+			if row.OnlineMinutes != nil {
+				t.Fatalf("online time off, %s: %v", row.User.Name, *row.OnlineMinutes)
+			}
+		}
+	}
+	// A member still gets their own row alone.
+	r := agentsReport(t, e, f.bea.As(ws), march)
+	if r.OnlineTime != "off" || len(r.Data) != 1 || r.Data[0].User.ID != f.bea.ID || r.Data[0].OnlineMinutes != nil || r.Data[0].Replies != 1 {
+		t.Fatalf("member, online time off: %+v", r)
+	}
+	// Set on, the report reads it again.
+	e.SetSettings(ws, map[string]any{"agent_online_time": true})
+	if r := agentsReport(t, e, ws.Admin.As(ws), march); r.OnlineTime != "all" || !eq(rowOf(t, r, ws.Agent.ID).OnlineMinutes, 180) {
+		t.Fatalf("online time on: %+v", r)
+	}
+}

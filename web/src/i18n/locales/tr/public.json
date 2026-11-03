@@ -74,5 +74,45 @@
   "footer": {
     "powered_by": "Altyapı:",
     "language": "Dil"
+  },
+  "portal": {
+    "title": "İstekleriniz",
+    "login": "Oturum aç",
+    "forgot": "Parola bağlantısı alın",
+    "reset": "Bir parola seçin",
+    "login_action": "Oturum aç",
+    "forgot_action": "Bağlantı gönder",
+    "reset_action": "Parolayı kaydet",
+    "email": "E - posta",
+    "password": "Parola",
+    "forgot_link": "Parola mı gerekiyor?",
+    "back_login": "Oturum açmaya geri dön",
+    "sign_out": "Çıkış yap",
+    "loading": "Yükleniyor...",
+    "unavailable": "Bu yardım merkezi kullanılamıyor.",
+    "error": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "weak_password": "Daha güçlü bir parola seçin.",
+    "invalid_link": "Bu bağlantının süresi dolmuş veya geçersiz. Yeni bir bağlantı isteyin.",
+    "password_change": "Oturum açmadan önce yeni bir şifre seçin.",
+    "get_link": "Parola bağlantısı alın",
+    "email_sent": "Bu adres oturum açabiliyorsa bir bağlantı gönderiliyordur.",
+    "reset_done": "Şifreniz kaydedildi.",
+    "requests": "İstekleriniz",
+    "empty": "Henüz bir talebiniz yok.",
+    "next": "Sonraki",
+    "back_requests": "Tüm istekler",
+    "you": "Siz",
+    "team": "Destek ekibi",
+    "reply": "Yanıtla",
+    "send": "Yanıt gönder",
+    "no_messages": "Henüz mesaj yok.",
+    "help_center": "Yardım merkezini ziyaret edin",
+    "status": {
+      "open": "Açık",
+      "pending": "Beklemede",
+      "on_hold": "Beklemede",
+      "solved": "Çözüldü",
+      "closed": "Kapalı"
+    }
   }
 }

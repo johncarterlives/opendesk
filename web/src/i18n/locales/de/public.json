@@ -74,5 +74,45 @@
   "footer": {
     "powered_by": "Bereitgestellt von",
     "language": "Sprache"
+  },
+  "portal": {
+    "title": "Ihre Anfragen",
+    "login": "Anmelden",
+    "forgot": "Link zum Passwort anfordern",
+    "reset": "Wählen Sie ein Passwort",
+    "login_action": "Anmelden",
+    "forgot_action": "Link senden",
+    "reset_action": "Passwort speichern",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "forgot_link": "Benötigen Sie ein Passwort?",
+    "back_login": "Zurück zur Anmeldung",
+    "sign_out": "Abmelden",
+    "loading": "Wird geladen…",
+    "unavailable": "Dieses Hilfe-Center ist nicht verfügbar.",
+    "error": "Etwas ist schief gelaufen. Bitte versuchen Sie es erneut.",
+    "weak_password": "Wählen Sie ein stärkeres Passwort.",
+    "invalid_link": "Dieser Link ist abgelaufen oder ungültig. Fordern Sie einen neuen Link an.",
+    "password_change": "Wählen Sie ein neues Passwort, bevor Sie sich anmelden.",
+    "get_link": "Link zum Passwort anfordern",
+    "email_sent": "Wenn sich diese Adresse anmelden kann, ist ein Link unterwegs.",
+    "reset_done": "Ihr Passwort wurde gespeichert.",
+    "requests": "Ihre Anfragen",
+    "empty": "Sie haben noch keine Anfragen.",
+    "next": "Weiter",
+    "back_requests": "Alle Anfragen",
+    "you": "Sie",
+    "team": "Support-Team",
+    "reply": "Antworten",
+    "send": "Antwort senden",
+    "no_messages": "Noch keine Nachrichten.",
+    "help_center": "Besuche das Hilfe-Center",
+    "status": {
+      "open": "Offen",
+      "pending": "Ausstehend",
+      "on_hold": "In der Warteschleife",
+      "solved": "Gelöst",
+      "closed": "Geschlossen"
+    }
   }
 }

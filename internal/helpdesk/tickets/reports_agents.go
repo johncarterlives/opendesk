@@ -26,22 +26,23 @@ type ReportAgentRow struct {
 	RepliesPerSolved        *float64       `json:"replies_per_solved" doc:"Their public replies on the tickets they solved, per ticket; null without solved tickets"`
 	FirstResponseP50Minutes *float64       `json:"first_response_p50_minutes" doc:"Median first response of their tickets created in the range"`
 	HandleP50Minutes        *float64       `json:"handle_p50_minutes" doc:"Median time from the last assignment to them until solved, over their solved tickets"`
-	OnlineMinutes           *float64       `json:"online_minutes" doc:"Time in the app with availability online in the range; null when online_time is none"`
+	OnlineMinutes           *float64       `json:"online_minutes" doc:"Time in the app with availability online in the range; null when online_time is none or off"`
 }
 
 // ReportAgents is GET /v1/reports/agents.
 type ReportAgents struct {
 	Data       []ReportAgentRow `json:"data"`
-	OnlineTime string           `json:"online_time" enum:"all,self,none" doc:"Whose rows and online time the caller sees: everyone's (admins), their own row only, or every row without online time (API keys without settings:read)"`
+	OnlineTime string           `json:"online_time" enum:"all,self,none,off" doc:"Whose rows and online time the caller sees: everyone's (admins), their own row only, or every row without online time (API keys without settings:read); off when the workspace turned online time off (settings agent_online_time), rows then as for the caller's role and no online time"`
 }
 
 // A member's work and online time are personal: admins (and API keys with settings:read) see
 // everyone's rows, other members their own row only, and other API keys every row without
-// online time.
+// online time. A workspace that turns online time off gets none, whoever asks.
 const (
 	onlineAll  = "all"
 	onlineSelf = "self"
 	onlineNone = "none"
+	onlineOff  = "off"
 )
 
 func onlineScope(ctx context.Context, p *auth.Principal) (string, *uuid.UUID) {
@@ -60,11 +61,20 @@ func onlineScope(ctx context.Context, p *auth.Principal) (string, *uuid.UUID) {
 // the member's whole time in the app. onlineFor nil reads everyone's online time; with
 // scope self only onlineFor's row is answered.
 func agentsReport(ctx context.Context, q db.Querier, wid uuid.UUID, fromS, toS string, rf reportFilter, scope string, onlineFor *uuid.UUID) (ReportAgents, error) {
-	out := ReportAgents{Data: []ReportAgentRow{}, OnlineTime: scope}
 	var rowsFor *uuid.UUID
 	if scope == onlineSelf {
 		rowsFor = onlineFor
 	}
+	var on bool
+	if err := q.QueryRow(ctx, `SELECT `+domain.OnlineTimeSQL+` FROM workspaces w WHERE w.id = $1`, wid).Scan(&on); err != nil {
+		return ReportAgents{Data: []ReportAgentRow{}, OnlineTime: scope}, err
+	}
+	if !on {
+		// The rows stay the caller's; nobody's online time is read.
+		nobody := uuid.Nil
+		scope, onlineFor = onlineOff, &nobody
+	}
+	out := ReportAgents{Data: []ReportAgentRow{}, OnlineTime: scope}
 	rf, err := rf.validate()
 	if err != nil {
 		return out, err
@@ -190,7 +200,8 @@ func registerAgentsReport(d *deps.Deps, api huma.API) {
 		Description: "One row per member for the range: tickets assigned and solved, replies and notes, replies per solved ticket, " +
 			"median first response and handle time, and online time. from, to, team_id and brand_id as in /v1/reports/overview; " +
 			"online time is not narrowed by team or brand. Admins (and API keys with settings:read) see every member's row with online time, " +
-			"other members only their own row, other API keys every row without online time."},
+			"other members only their own row, other API keys every row without online time. A workspace with online time off " +
+			"(settings agent_online_time false) answers online_time off and no online time to anyone."},
 		func(ctx context.Context, in *struct {
 			From    string `query:"from"`
 			To      string `query:"to"`

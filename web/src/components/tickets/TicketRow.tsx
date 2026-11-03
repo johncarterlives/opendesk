@@ -18,6 +18,7 @@ import { rowMotion } from "./motion";
 import { Labels } from "@/components/contacts/bits";
 import { LiveChatBadge, NewCount, UrgentEdge, WaitPill, urgentWash, useChatWait, useHandoffBot } from "./waiting";
 import { TicketTeamChips, useTeamsCtx } from "./teams";
+import { browserClick } from "@/lib/links";
 
 export type QuickAction = "assign" | "snooze" | "solve";
 
@@ -32,6 +33,8 @@ export type RowProps = {
   hideAssignee?: boolean;
   /** Arrived live after the list was shown: tint it briefly. */
   fresh?: boolean;
+  /** The ticket in this list, as a link: a right click, a Ctrl/Cmd or middle click open it in a new tab. */
+  href: string;
   onOpen: (t: Ticket) => void;
   onToggle: (t: Ticket, shift: boolean) => void;
   onHover?: (t: Ticket) => void;
@@ -62,6 +65,8 @@ function QuickButton({ label, shortcut, onClick, children }: { label: string; sh
         type="button"
         aria-label={label}
         onClick={(e) => {
+          // Inside the row's link: the click neither opens the ticket nor follows the link.
+          e.preventDefault();
           e.stopPropagation();
           onClick();
         }}
@@ -73,8 +78,8 @@ function QuickButton({ label, shortcut, onClick, children }: { label: string; sh
   );
 }
 
-const Row = forwardRef<HTMLDivElement, RowProps>(function TicketRow(
-  { ticket: t, active, focused, selected, selecting, compact, hideAssignee, fresh, onOpen, onToggle, onHover, onQuick },
+const Row = forwardRef<HTMLAnchorElement, RowProps>(function TicketRow(
+  { ticket: t, active, focused, selected, selecting, compact, hideAssignee, fresh, href, onOpen, onToggle, onHover, onQuick },
   ref,
 ) {
   const { t: tr } = useTranslation("inbox");
@@ -112,18 +117,27 @@ const Row = forwardRef<HTMLDivElement, RowProps>(function TicketRow(
   const animate = fresh && !reduced ? { ...motionProps.animate, backgroundColor: "rgba(0,0,0,0)" } : motionProps.animate;
 
   const check = (
-    <Checkbox
-      checked={selected}
-      aria-label={tr("row.select", { number: t.number })}
+    // Inside the row's link: a click on the checkbox selects the row, it neither opens the
+    // ticket nor follows the link (prevented here, once the checkbox has toggled).
+    <span
+      className="flex"
       onClick={(e) => {
         e.stopPropagation();
-        if (e.shiftKey) {
-          e.preventDefault();
-          onToggle(t, true);
-        }
+        e.preventDefault();
       }}
-      onCheckedChange={() => onToggle(t, false)}
-    />
+    >
+      <Checkbox
+        checked={selected}
+        aria-label={tr("row.select", { number: t.number })}
+        onClick={(e) => {
+          if (e.shiftKey) {
+            e.preventDefault();
+            onToggle(t, true);
+          }
+        }}
+        onCheckedChange={() => onToggle(t, false)}
+      />
+    </span>
   );
 
   // Status, swapped for a checkbox on hover or while selecting.
@@ -218,20 +232,27 @@ const Row = forwardRef<HTMLDivElement, RowProps>(function TicketRow(
   );
 
   return (
-    <motion.div
+    // A real link, so the browser opens the ticket in a new tab on a right, Ctrl/Cmd or middle
+    // click; a plain click opens it here. The option keeps the listbox's own keyboard focus.
+    <motion.a
       ref={ref}
+      href={href}
       role="option"
       aria-selected={active}
       data-ticket-id={t.id}
       data-focused={focused || undefined}
       tabIndex={-1}
-      onClick={() => onOpen(t)}
+      onClick={(e) => {
+        if (browserClick(e)) return;
+        e.preventDefault();
+        onOpen(t);
+      }}
       onMouseEnter={() => onHover?.(t)}
       {...motionProps}
       initial={initial}
       animate={animate}
       transition={fresh ? { ...motionProps.transition, backgroundColor: { duration: 1.4, ease: ease.out } } : motionProps.transition}
-      className="relative z-[1] shrink-0 overflow-hidden outline-none"
+      className="relative z-[1] block shrink-0 overflow-hidden outline-none"
     >
       {compact ? (
         <div
@@ -309,7 +330,7 @@ const Row = forwardRef<HTMLDivElement, RowProps>(function TicketRow(
           {end}
         </div>
       )}
-    </motion.div>
+    </motion.a>
   );
 });
 

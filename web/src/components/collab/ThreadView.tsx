@@ -423,6 +423,13 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   const hiddenCount = fold ? messages.slice(1, -2).filter((m, i) => !isOpen(m.id, i + 1)).length : 0;
 
   const account = accounts?.find((a) => a.id === detail.account.id);
+  // Reply all comes first when the account answers everyone by default; r and a keep their meaning.
+  const canReplyAll = !!target && hasReplyAll(target, ownEmail);
+  const replyModes: ("reply" | "reply_all")[] = !canReplyAll ? ["reply"] : (account?.reply_all ?? detail.account.reply_all) ? ["reply_all", "reply"] : ["reply", "reply_all"];
+  const replyKind = {
+    reply: { icon: <Reply />, label: t("action.reply"), shortcut: "r" },
+    reply_all: { icon: <ReplyAll />, label: t("action.replyAll"), shortcut: "a" },
+  };
   const composerAccounts = [detail.account];
   const participants = th.participants;
 
@@ -544,14 +551,11 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
             <MenuContent>
               {canAct && (
                 <>
-                  <MenuItem icon={<Reply />} shortcut="r" onSelect={() => openComposer("reply")}>
-                    {t("action.reply")}
-                  </MenuItem>
-                  {target && hasReplyAll(target, ownEmail) && (
-                    <MenuItem icon={<ReplyAll />} shortcut="a" onSelect={() => openComposer("reply_all")}>
-                      {t("action.replyAll")}
+                  {replyModes.map((mode) => (
+                    <MenuItem key={mode} icon={replyKind[mode].icon} shortcut={replyKind[mode].shortcut} onSelect={() => openComposer(mode)}>
+                      {replyKind[mode].label}
                     </MenuItem>
-                  )}
+                  ))}
                   <MenuItem icon={<Forward />} shortcut="f" onSelect={() => openComposer("forward")}>
                     {t("action.forward")}
                   </MenuItem>
@@ -756,18 +760,13 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
               )}
               {!editing && !composer && (
                 <>
-                  <Tooltip content={t("action.reply")} shortcut="r">
-                    <Button size="md" icon={<Reply />} aria-label={t("action.reply")} onClick={() => openComposer("reply")}>
-                      <span className="hidden @[36rem]:inline">{t("action.reply")}</span>
-                    </Button>
-                  </Tooltip>
-                  {target && hasReplyAll(target, ownEmail) && (
-                    <Tooltip content={t("action.replyAll")} shortcut="a">
-                      <Button size="md" icon={<ReplyAll />} aria-label={t("action.replyAll")} onClick={() => openComposer("reply_all")}>
-                        <span className="hidden @[36rem]:inline">{t("action.replyAll")}</span>
+                  {replyModes.map((mode) => (
+                    <Tooltip key={mode} content={replyKind[mode].label} shortcut={replyKind[mode].shortcut}>
+                      <Button size="md" icon={replyKind[mode].icon} aria-label={replyKind[mode].label} onClick={() => openComposer(mode)}>
+                        <span className="hidden @[36rem]:inline">{replyKind[mode].label}</span>
                       </Button>
                     </Tooltip>
-                  )}
+                  ))}
                   <Tooltip content={t("action.forward")} shortcut="f">
                     <Button size="md" icon={<Forward />} aria-label={t("action.forward")} onClick={() => openComposer("forward")}>
                       <span className="hidden @[36rem]:inline">{t("action.forward")}</span>

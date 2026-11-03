@@ -27,6 +27,9 @@ import { q } from "@/lib/queries";
 import { updateUser, useRole, useSession } from "@/lib/session";
 import { useTheme, type ThemePref } from "@/lib/theme";
 import { setConversationLayout, useConversationLayout } from "@/lib/conversationLayout";
+import { setTicketPropertiesPlace, useTicketPropertiesPlace, type TicketPropertiesPlace } from "@/lib/ticketPropertiesPlace";
+import { setNextTicketAfterSend, useNextTicketAfterSend } from "@/lib/nextTicket";
+import { useDisplay } from "@/components/tickets/fields";
 
 export default function Profile() {
   const { t } = useTranslation("settings");
@@ -177,6 +180,8 @@ export default function Profile() {
         </div>
         <AssigneeSetting />
         <ConversationLayout />
+        <TicketPropertiesSetting />
+        <NextTicketSetting />
       </Section>
 
       <Section title={t("profile.clock.title")} description={t("profile.clock.hint")}>
@@ -217,6 +222,19 @@ function Sounds() {
   );
 }
 
+/** After a send that takes a ticket out of its list, the next one opens. On until switched off, per browser. */
+function NextTicketSetting() {
+  const { t } = useTranslation("settings");
+  const on = useNextTicketAfterSend();
+  // Named after the workspace's finish action: "Send and solve", "Send and close".
+  const label = t("profile.nextTicket.label", { action: useDisplay().finishWords.sendTip() });
+  return (
+    <Row label={label} description={t("profile.nextTicket.hint")}>
+      <Switch checked={on} onCheckedChange={setNextTicketAfterSend} aria-label={label} />
+    </Row>
+  );
+}
+
 /** How the ticket list shows the assignee. Stored per browser, like the theme. */
 function AssigneeSetting() {
   const { t } = useTranslation("settings");
@@ -246,6 +264,27 @@ function ConversationLayout() {
   return (
     <Row label={t("profile.conversation.label")} description={t("profile.conversation.hint")}>
       <Switch checked={on} onCheckedChange={setConversationLayout} aria-label={t("profile.conversation.label")} />
+    </Row>
+  );
+}
+
+/** Where an open ticket's properties sit: in the details column, or in a bar above the conversation. */
+function TicketPropertiesSetting() {
+  const { t } = useTranslation("settings");
+  const place = useTicketPropertiesPlace();
+  return (
+    <Row label={t("profile.properties.label")} description={t("profile.properties.hint")} htmlFor="ticket-properties">
+      <Select<TicketPropertiesPlace>
+        id="ticket-properties"
+        aria-label={t("profile.properties.label")}
+        value={place}
+        onChange={setTicketPropertiesPlace}
+        className="w-60"
+        options={[
+          { value: "column", label: t("profile.properties.column") },
+          { value: "bar", label: t("profile.properties.bar") },
+        ]}
+      />
     </Row>
   );
 }

@@ -104,6 +104,11 @@ func normalizeAction(action string, folder *folderRow) string {
 // It refuses label and unlabel on a provider without labels (errLabels). It publishes
 // nothing; the caller publishes collab.changed.
 func (s *service) applyLocal(ctx context.Context, tx pgx.Tx, a *accountRow, threadIDs []uuid.UUID, action string, folder *folderRow) error {
+	current, err := loadAccountForUpdate(ctx, tx, a.ID)
+	if err != nil {
+		return err
+	}
+	a = current
 	if action == ActionDone || action == ActionNeedsAction {
 		_, err := tx.Exec(ctx, `UPDATE collab_threads SET needs_action = $3, updated_at = now()
 			WHERE workspace_id = $1 AND id = ANY($2)`, a.WorkspaceID, threadIDs, action == ActionNeedsAction)
@@ -197,6 +202,9 @@ func (s *service) applyLocal(ctx context.Context, tx pgx.Tx, a *accountRow, thre
 		}
 	}
 	if err := recomputeThreads(ctx, tx, a, threadIDs); err != nil {
+		return err
+	}
+	if err := projectGmailCategories(ctx, tx, a, threadIDs); err != nil {
 		return err
 	}
 	if s.d.Jobs == nil || a.Config.Demo {
@@ -302,6 +310,9 @@ func removeID(list []uuid.UUID, id uuid.UUID) []uuid.UUID {
 // sync follows, so opendesk shows what the provider has.
 func (s *service) applyRemote(ctx context.Context, job *river.Job[jobs.CollabApplyArgs]) error {
 	args := job.Args
+	if args.CategoryIntentID != nil || args.Action == ActionCategorize {
+		return s.deliverCategoryIntent(ctx, job)
+	}
 	a, err := loadAccount(ctx, s.d.DB.Pool, args.WorkspaceID, args.AccountID)
 	if db.IsNotFound(err) {
 		return nil

@@ -115,6 +115,7 @@ type MailAccount struct {
 	CanManage       bool            `json:"can_manage"`
 	Unread          int             `json:"unread"`
 	HandlingEnabled bool            `json:"handling_enabled"`
+	ReplyAll        bool            `json:"reply_all" doc:"Reply answers everyone on the message by default"`
 	IMAP            *IMAPSettings   `json:"imap,omitempty"`
 	CreatedAt       time.Time       `json:"created_at"`
 
@@ -304,6 +305,7 @@ type ThreadAccount struct {
 	DisplayName   string    `json:"display_name"`
 	Color         string    `json:"color"`
 	Provider      string    `json:"provider"`
+	ReplyAll      bool      `json:"reply_all"`
 	SignatureHTML string    `json:"signature_html"`
 	// Identities are the addresses it sends from, its own first; DefaultFrom new mail's.
 	Identities  []MailIdentity `json:"identities"`

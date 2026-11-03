@@ -602,6 +602,62 @@
       "lastHours": "Letzte 24 Stunden",
       "window": "Zustellungen der letzten 24 Stunden"
     },
+    "ollie": {
+      "title": "Ollie in Support-Kanälen",
+      "description": "Ollie fasst jeden neuen Ticket-Thread zusammen, schlägt Antworten vor, beantwortet Fragen und warnt vor SLAs und unzufriedenen Kunden. Lege fest, welche Änderungen er selbst vornehmen darf.",
+      "error": "Die Einstellungen für Ollie konnten nicht gespeichert werden.",
+      "commands": "Getippte Befehle wie reply, note und status sind die eigenen des Agenten und funktionieren immer. Von Ollie vorgeschlagene Kundenantworten, neue Tickets oder das Schließen werden weiterhin erst nach Bestätigung ausgeführt.",
+      "actions": {
+        "reply": {
+          "title": "Antworten senden",
+          "hint": "Ollie darf eine Antwort an den Kunden vorbereiten. Sie wird erst nach Bestätigung durch den Agenten gesendet."
+        },
+        "note": {
+          "title": "Interne Notizen hinzufügen",
+          "hint": "Ollie darf eine Notiz hinzufügen, die der Kunde nicht sieht."
+        },
+        "assign_self": {
+          "title": "Tickets zuweisen",
+          "hint": "Ollie darf das Ticket dem Agenten zuweisen, der mit ihm spricht."
+        },
+        "status": {
+          "title": "Status ändern",
+          "hint": "Ollie darf den Status des Tickets ändern. Das Schließen wird bestätigt."
+        },
+        "priority": {
+          "title": "Priorität ändern",
+          "hint": "Ollie darf die Priorität des Tickets erhöhen oder senken."
+        },
+        "create_ticket": {
+          "title": "Tickets erstellen",
+          "hint": "Ollie darf nach Bestätigung ein Ticket aus einer Kanalnachricht erstellen."
+        }
+      },
+      "channel": {
+        "label": "Ollie-Einstellungen für {{name}}",
+        "title": "Ollie in #{{name}}",
+        "description": "Wie Ollie in den Ticket-Threads dieses Kanals arbeitet.",
+        "summary": "Neue Threads zusammenfassen",
+        "summaryHint": "Wenn ein Ticket-Thread geöffnet wird, schreibt Ollie, was der Kunde braucht, was er schon versucht hat, seine Stimmung und die Dringlichkeit. Verbraucht KI-Guthaben.",
+        "warnings": "SLA- und Stimmungswarnungen",
+        "warningsHint": "Ollie warnt im Thread, wenn ein SLA-Ziel naht oder verpasst ist und wenn der Kunde unzufrieden klingt.",
+        "length": "Antwortlänge",
+        "lengthHint": "Wie lang Ollies Antworten und Vorschläge in diesem Kanal sind.",
+        "lengthValues": {
+          "brief": "Kurz",
+          "standard": "Standard",
+          "detailed": "Ausführlich"
+        },
+        "personality": "Persönlichkeit",
+        "personalityHint": "Wie Ollie hier klingt. Sie prägt nur den Ton und ändert nie, was Ollie tun darf.",
+        "personalityPlaceholder": "Freundlich und positiv, einfache Worte, kein Fachjargon",
+        "personalityInvalid": "Die Persönlichkeit darf weder < noch > enthalten.",
+        "submit": "Speichern",
+        "cancel": "Abbrechen",
+        "saved": "Ollie-Einstellungen gespeichert.",
+        "error": "Ollies Einstellungen konnten nicht gespeichert werden."
+      }
+    },
     "empty": {
       "title": "Noch keine Support-Kanäle",
       "body": "Verbinde einen Bot und wähle dann, wo die E-Mail-Tickets jedes Teams erscheinen.",
@@ -801,7 +857,7 @@
     },
     "empty": {
       "title": "Noch keine Telefonanlage",
-      "body": "Verbinde Aircall, und jeder Anruf wird im Ticket der anrufenden Person festgehalten.",
+      "body": "Verbinde Aircall oder Voys, und jeder Anruf wird im Ticket der anrufenden Person festgehalten.",
       "tipTimeline": "Anrufe im Verlauf des Tickets",
       "tipMissed": "Kein verpasster Anruf bleibt liegen",
       "tipAutomations": "Automatisierungen, wenn ein Anruf endet"
@@ -814,13 +870,15 @@
       "test": "Testen",
       "tested": "Die Verbindung funktioniert.",
       "testedAttention": "Die Verbindung braucht deine Aufmerksamkeit.",
-      "testError": "Die Verbindung konnte nicht getestet werden."
+      "testError": "Die Verbindung konnte nicht getestet werden.",
+      "waiting": "Wartet auf den ersten Anruf"
     },
     "healthCode": {
       "receiving": "Anrufe werden an opendesk gesendet.",
       "webhook_missing": "Die Telefonanlage sendet keine Anrufe an opendesk. Teste die Verbindung, um sie neu einzurichten.",
       "credentials_refused": "Die Telefonanlage hat die Zugangsdaten abgelehnt. Ersetze sie durch gültige.",
-      "provider_unreachable": "Die Telefonanlage ist nicht erreichbar. Versuche es gleich noch einmal."
+      "provider_unreachable": "Die Telefonanlage ist nicht erreichbar. Versuche es gleich noch einmal.",
+      "webhookManual": "Noch kein Anruf eingegangen. Trage die Webhook-Adresse unten in {{name}} ein und mache dann einen Testanruf."
     },
     "lastEvent": "Letztes Anrufereignis {{when}}",
     "noEventYet": "Noch kein Anruf. Anrufe erscheinen in Tickets, sobald sie klingeln.",
@@ -852,7 +910,7 @@
       "cards": "Anrufende in Aircall zeigen",
       "cardsHint": "Während ein Anruf klingelt, zeigt Aircall die anrufende Person, das Ticket des Anrufs und ihre letzten Tickets.",
       "dial": "Aus opendesk anrufen",
-      "dialHint": "Telefonnummern bei Kontakten und Tickets öffnen deine Telefon-App. Lege Aircall als Standard-App für Telefonlinks fest, um damit anzurufen."
+      "dialHint": "Telefonnummern bei Kontakten und Tickets öffnen deine Telefon-App. Lege {{name}} als Standard-App für Telefonlinks fest, um damit anzurufen."
     },
     "automations": {
       "title": "Automatisierungen",
@@ -875,7 +933,8 @@
       "description": "Eine Person mit Adminrechten kann eine Telefonanlage verbinden."
     },
     "provider": {
-      "aircall": "Cloud-Telefonanlage. Anrufe, Aufnahmen und KI-Zusammenfassungen landen in Tickets."
+      "aircall": "Cloud-Telefonanlage. Anrufe, Aufnahmen und KI-Zusammenfassungen landen in Tickets.",
+      "voys": "Niederländische Cloud-Telefonanlage. Anrufe, Transkripte und Zusammenfassungen von Voys Intelligence landen in Tickets."
     },
     "field": {
       "api_id": "API-ID",
@@ -887,7 +946,27 @@
       "cancel": "Abbrechen",
       "submit": "Verbinden",
       "connected": "{{name}} verbunden.",
-      "error": "{{name}} konnte nicht verbunden werden."
+      "error": "{{name}} konnte nicht verbunden werden.",
+      "voysSetup": "Öffne in Voys Freedom deine persönlichen Einstellungen und kopiere dein API-Token. Nutze das Token eines Admins mit Zugriff auf Gesprächsaufnahmen, damit Transkripte und Zusammenfassungen mitkommen. Danach trägst du die Webhook-Adresse von opendesk in Voys ein."
+    },
+    "webhookManual": "Webhook-Adresse, in {{name}} als Anrufbenachrichtigung einzutragen",
+    "disconnectBodyManual": "opendesk hält keine neuen Anrufe aus {{name}} mehr fest. Entferne auch die Anrufbenachrichtigung in {{name}}. Anrufe, die schon in Tickets stehen, bleiben.",
+    "hook": {
+      "title": "opendesk in {{name}} eintragen",
+      "description": "{{name}} sendet Anrufe an diese Adresse, sobald du sie als Anrufbenachrichtigung einträgst.",
+      "done": "Fertig",
+      "rotate": "Neue Adresse erstellen",
+      "rotateLabel": "Neue Webhook-Adresse für {{name}} erstellen",
+      "rotateTitle": "Neue Webhook-Adresse erstellen?",
+      "rotateBody": "Die aktuelle Adresse funktioniert sofort nicht mehr. Trage die neue in {{name}} ein, damit weiter Anrufe ankommen.",
+      "rotateError": "Die neue Webhook-Adresse konnte nicht erstellt werden."
+    },
+    "voys": {
+      "step1": "Öffne in Voys Freedom Integratie, dann Gespreksnotificaties, und klicke auf Toevoegen.",
+      "step2": "Gib eine Beschreibung wie opendesk ein und wähle Custom als Service.",
+      "step3": "Füge die Webhook-Adresse als Web hook URL ein.",
+      "step4": "Hake die Ereignisse für Zusammenfassungen und Transkripte an (sie brauchen Voys Intelligence) und klicke auf Opslaan.",
+      "step5": "Mache einen Testanruf: Die Verbindung zeigt Empfängt Anrufe, sobald er ankommt."
     }
   }
 }

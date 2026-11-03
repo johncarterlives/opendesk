@@ -192,6 +192,7 @@ function seedState(ws: WsData): State {
     can_manage: true,
     unread: 0,
     handling_enabled: false,
+    reply_all: false,
     created_at: new Date(now - 40 * DAY).toISOString(),
     signature_sync: "none",
     signature_synced_at: null,
@@ -923,7 +924,7 @@ function detailOut(ws: WsData, t: ThreadMeta): MailThreadDetail {
   const a = s.accounts.find((x) => x.id === t.account_id)!;
   return {
     thread: threadOut(ws, t),
-    account: { id: a.id, email: a.email, name: a.name, display_name: a.display_name, color: a.color, provider: a.provider, signature_html: a.signature_html, identities: identitiesOut(ws, a), default_from: defaultOf(a) },
+    account: { id: a.id, email: a.email, name: a.name, display_name: a.display_name, color: a.color, provider: a.provider, signature_html: a.signature_html, reply_all: a.reply_all ?? false, identities: identitiesOut(ws, a), default_from: defaultOf(a) },
     messages: msgsOf(s, t.id).map((m) => ({ ...m, own_address: ownAddressOf(a, m) })),
     comments: t.comments,
     shares: t.shares,
@@ -1261,6 +1262,7 @@ export function registerCollab() {
       visibility: b.visibility === "shared" ? "shared" : "private",
       shared_with: b.visibility === "shared" ? audienceFrom(b.shared_with) : emptyAudience(),
       handling_enabled: false,
+      reply_all: false,
       signature_html: "",
       status: "syncing",
       reconnect: false,
@@ -1336,6 +1338,7 @@ export function registerCollab() {
       if (a.visibility !== "shared") throw invalid("Handling state is available on shared accounts.");
       a.handling_enabled = b.handling_enabled;
     }
+    if (typeof b.reply_all === "boolean") a.reply_all = b.reply_all;
     if (b.shared_with !== undefined) a.shared_with = audienceFrom(b.shared_with);
     if (a.visibility === "private") {
       a.shared_with = emptyAudience();
@@ -1584,8 +1587,9 @@ export function registerCollab() {
     const a = accountOr404(ctx.ws, ctx.params.id);
     requireManage(ctx.ws, a);
     const b = ctx.body;
-    const mode = b.mode === "custom" || b.mode === "off" || b.mode === "follow" ? b.mode : null;
-    if (!mode) throw invalid("mode must be follow, custom or off");
+    const mode = b.mode === "custom" || b.mode === "off" || b.mode === "follow" || b.mode === "gmail" ? b.mode : null;
+    if (!mode) throw invalid("mode must be follow, custom, gmail or off");
+    if (mode === "gmail" && (a.provider !== "google" || b.ai === true || b.categories !== undefined)) throw invalid("Gmail sync requires a Google account and fixed Gmail categories");
     const admin = isAdmin(ctx.ws, db.meId);
     const before = resolveCategories(ctx.ws, a.catChoice, a.ownerId);
     const own = mode === "custom" ? parseCategories(b.categories) : a.catChoice.own;
@@ -1607,6 +1611,7 @@ export function registerCollab() {
     requireCollab(ctx.ws);
     const a = accountOr404(ctx.ws, ctx.params.id);
     requireManage(ctx.ws, a);
+    if (resolveCategories(ctx.ws, a.catChoice, a.ownerId).engine === "gmail") throw invalid("Sender rules are not used while syncing Gmail categories");
     const sender = parseSender(ctx.body.sender);
     const category = String(ctx.body.category ?? "");
     if (!resolveCategories(ctx.ws, a.catChoice, a.ownerId).categories.some((c) => c.key === category)) throw invalid("category must be one of the account's");

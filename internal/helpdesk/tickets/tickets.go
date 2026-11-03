@@ -806,7 +806,7 @@ func createTicket(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principa
 	if err != nil {
 		return domain.Ticket{}, err
 	}
-	nt.TeamID, nt.Routed = routed.TeamID, routed.Routed
+	nt.TeamID, nt.Routed, nt.RequiredSkillIDs = routed.TeamID, routed.Routed, routed.RequiredSkillIDs
 	if nt.TeamID != nil && nt.Routed == nil {
 		nt.Routed = &domain.TicketRouted{Via: "api"}
 	}

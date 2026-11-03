@@ -150,3 +150,92 @@ func TestPresenceStretches(t *testing.T) {
 		t.Fatalf("removed member keeps %d stretches", n)
 	}
 }
+
+// TestPresenceOff checks that a workspace turning online time off deletes its stretches, its
+// alone, and keeps nothing while it is off, and that turning it on again records from the
+// next heartbeat.
+func TestPresenceOff(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	owner, _ := e.signup("presence-off-boss")
+	wid := owner.newWorkspace("Presence Off Co")
+	agent, _ := e.signup("presence-off-agent")
+	me := agent.do("GET", "/v1/me", nil)
+	uid := me.Body["user"].(map[string]any)["id"].(string)
+	if _, err := e.d.DB.Pool.Exec(ctx, `INSERT INTO members (workspace_id, user_id, role, availability) VALUES ($1, $2, 'agent', 'online')`, wid, uid); err != nil {
+		t.Fatal(err)
+	}
+	agent.workspace = wid
+	// Another workspace's online time is not touched.
+	other := owner.newWorkspace("Presence Elsewhere Co")
+	owner.workspace = wid
+	if _, err := e.d.DB.Pool.Exec(ctx, `INSERT INTO agent_presence (workspace_id, user_id, started_at, ended_at, open)
+		SELECT $1, user_id, now() - interval '2 hours', now() - interval '1 hour', false FROM members WHERE workspace_id = $1`, other); err != nil {
+		t.Fatal(err)
+	}
+	stretches := func() []stretch {
+		t.Helper()
+		rows, err := e.d.DB.Pool.Query(ctx, `SELECT started_at, ended_at, open FROM agent_presence
+			WHERE workspace_id = $1 AND user_id = $2 ORDER BY started_at`, wid, uid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rows.Close()
+		var out []stretch
+		for rows.Next() {
+			var s stretch
+			if err := rows.Scan(&s.Started, &s.Ended, &s.Open); err != nil {
+				t.Fatal(err)
+			}
+			out = append(out, s)
+		}
+		return out
+	}
+	beat := func() {
+		t.Helper()
+		if r := agent.do("POST", "/v1/me/heartbeat", nil); r.Status != 204 {
+			t.Fatalf("heartbeat: %d %s", r.Status, r.Raw)
+		}
+	}
+	setting := func(on bool) {
+		t.Helper()
+		r := owner.do("PATCH", "/v1/workspace", map[string]any{"settings": map[string]any{"agent_online_time": on}})
+		if r.Status != 200 || r.Body["settings"].(map[string]any)["agent_online_time"] != on {
+			t.Fatalf("agent_online_time %v: %d %s", on, r.Status, r.Raw)
+		}
+	}
+
+	beat()
+	if s := stretches(); len(s) != 1 || !s[0].Open {
+		t.Fatalf("on: %+v", s)
+	}
+	// Turned off, the workspace's stretches are deleted, and heartbeats keep nothing.
+	setting(false)
+	if s := stretches(); len(s) != 0 {
+		t.Fatalf("turned off: %+v", s)
+	}
+	beat()
+	// Going away and back online while off starts nothing either.
+	for _, a := range []string{"away", "online"} {
+		if r := agent.do("PATCH", "/v1/members/me/availability", map[string]any{"availability": a}); r.Status != 200 {
+			t.Fatalf("%s: %d %s", a, r.Status, r.Raw)
+		}
+	}
+	beat()
+	if s := stretches(); len(s) != 0 {
+		t.Fatalf("recorded while off: %+v", s)
+	}
+	var elsewhere int
+	if err := e.d.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM agent_presence WHERE workspace_id = $1`, other).Scan(&elsewhere); err != nil {
+		t.Fatal(err)
+	}
+	if elsewhere != 1 {
+		t.Fatalf("another workspace keeps %d stretches", elsewhere)
+	}
+	// Turned on again, the next heartbeat starts a stretch.
+	setting(true)
+	beat()
+	if s := stretches(); len(s) != 1 || !s[0].Open {
+		t.Fatalf("on again: %+v", s)
+	}
+}

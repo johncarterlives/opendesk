@@ -6,6 +6,7 @@ const cat = (key: string, name = key[0].toUpperCase() + key.slice(1), color: Mai
 
 function account(id: string, categories: MailCategory[] | null): MailAccount {
   const c: MailAccountCategories = {
+    engine: "local",
     enabled: !!categories,
     categories: categories ?? [],
     source: categories ? "workspace" : "none",

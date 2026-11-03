@@ -663,6 +663,7 @@ export function newTicket(
     page_url: init.page_url ?? "",
     routed: init.routed ?? null,
     tags: init.tags ?? [],
+    required_skills: [],
     sla: null,
     first_responded_at: null,
     solved_at: null,

@@ -157,6 +157,7 @@
     "onlineHint": "Temps passé dans opendesk avec le statut En ligne",
     "onlineNote": "Le temps en ligne compte le temps où chaque membre avait opendesk ouvert avec le statut En ligne, quel que soit le filtre d’équipe ou de marque.",
     "onlineSelf": "Vous voyez votre propre travail et votre temps en ligne. Les admins voient ceux de tout le monde.",
+    "onlineOff": "Le temps en ligne est désactivé pour cet espace de travail : aucun n’est enregistré ni affiché. Les admins peuvent l’activer dans Paramètres → Espace de travail.",
     "emptyTitle": "Aucun agent à afficher",
     "emptyDescription": "Les agents apparaissent ici dès qu’ils traitent des tickets sur cette période.",
     "emptySelf": "Votre travail apparaît ici dès que vous traitez des tickets sur cette période. Les admins voient celui de tout le monde.",

@@ -34,3 +34,8 @@
 /.well-known/apple-app-site-association
   Content-Type: application/json
   Cache-Control: public, max-age=3600
+
+/portal/*
+  ! Referrer-Policy
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: no-referrer

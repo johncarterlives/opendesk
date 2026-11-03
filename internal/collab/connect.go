@@ -498,6 +498,11 @@ func (s *service) saveConnection(ctx context.Context, p *auth.Principal, req con
 		if err := s.publishAccounts(ctx, tx, wid, id, nil); err != nil {
 			return err
 		}
+		if existing != nil {
+			if err := s.resumeCategoryIntents(ctx, tx, wid, id); err != nil {
+				return err
+			}
+		}
 		return s.queueSync(ctx, tx, id)
 	})
 	return id, err

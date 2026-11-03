@@ -78,5 +78,45 @@
   "footer": {
     "powered_by": "Obsługiwane przez",
     "language": "Język"
+  },
+  "portal": {
+    "title": "Twoje prośby",
+    "login": "Zaloguj się",
+    "forgot": "Uzyskaj link do hasła",
+    "reset": "Wybierz hasło",
+    "login_action": "Zaloguj się",
+    "forgot_action": "Wyślij link",
+    "reset_action": "Zapisz hasło",
+    "email": "E-mail",
+    "password": "Hasło",
+    "forgot_link": "Potrzebujesz hasła?",
+    "back_login": "Powrót do logowania",
+    "sign_out": "Wyloguj się",
+    "loading": "Ładowanie…",
+    "unavailable": "To centrum pomocy jest niedostępne.",
+    "error": "Coś poszło nie tak. Spróbuj ponownie.",
+    "weak_password": "Wybierz silniejsze hasło.",
+    "invalid_link": "Ten link wygasł lub jest nieprawidłowy. Poproś o nowy link.",
+    "password_change": "Wybierz nowe hasło przed zalogowaniem.",
+    "get_link": "Uzyskaj link do hasła",
+    "email_sent": "Jeśli ten adres może się zalogować, link jest już w drodze.",
+    "reset_done": "Twoje hasło zostało zapisane.",
+    "requests": "Twoje prośby",
+    "empty": "Nie masz jeszcze żadnych próśb.",
+    "next": "Dalej",
+    "back_requests": "Wszystkie prośby",
+    "you": "Ty",
+    "team": "Zespół wsparcia",
+    "reply": "Odpowiedz",
+    "send": "Wyślij odpowiedź",
+    "no_messages": "Nie ma jeszcze wiadomości.",
+    "help_center": "Odwiedź Centrum pomocy",
+    "status": {
+      "open": "Otwórz",
+      "pending": "Oczekujące",
+      "on_hold": "Wstrzymane",
+      "solved": "Rozwiązane",
+      "closed": "Zamknięte"
+    }
   }
 }

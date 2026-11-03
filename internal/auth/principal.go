@@ -53,20 +53,21 @@ var AllScopes = []string{ScopeTicketsRead, ScopeTicketsWrite, ScopeContactsRead,
 type Kind string
 
 const (
-	KindUser    Kind = "user"
-	KindAPIKey  Kind = "api_key"
-	KindVisitor Kind = "visitor"
+	KindUser     Kind = "user"
+	KindAPIKey   Kind = "api_key"
+	KindVisitor  Kind = "visitor"
+	KindCustomer Kind = "customer"
 )
 
 // Principal is the authenticated caller of a request.
 type Principal struct {
 	Kind        Kind
 	UserID      uuid.UUID // users
-	SessionID   uuid.UUID // users
+	SessionID   uuid.UUID // users or customers
 	MFAVerified bool
 	APIKeyID    uuid.UUID // api keys
 	Scopes      []string  // api keys
-	ContactID   uuid.UUID // visitors
+	ContactID   uuid.UUID // visitors or customers
 	VisitorID   uuid.UUID // visitors: widget_sessions.id
 	WidgetID    uuid.UUID // visitors: the widget the session started in
 	WorkspaceID uuid.UUID // zero until resolved from OD-Workspace or the credential

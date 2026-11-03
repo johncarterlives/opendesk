@@ -260,6 +260,16 @@
       "label": "Disposition en conversation",
       "hint": "Les messages du client à gauche, les réponses et notes de votre équipe à droite, comme dans un chat. Pleine largeur sur un écran étroit."
     },
+    "properties": {
+      "label": "Propriétés du ticket",
+      "hint": "Statut, priorité, responsable, équipe et étiquettes dans la colonne des détails, ou dans une barre au-dessus de la conversation, modifiables sur place. Avec la barre, la colonne des détails commence par le client et ce que vos applications savent de lui.",
+      "column": "Dans la colonne des détails",
+      "bar": "Dans une barre au-dessus de la conversation"
+    },
+    "nextTicket": {
+      "label": "Après « {{action}} », ouvrir le ticket suivant",
+      "hint": "Aussi après un envoi avec un statut qui retire le ticket de la liste. Le ticket suivant de la liste ou de la vue d’où vous venez s’ouvre, avec ses filtres et son tri ; après le dernier, vous revenez à la liste. Annuler l’envoi vous ramène au ticket."
+    },
     "sounds": {
       "title": "Sons",
       "hint": "S’applique à ce navigateur. Le chat en direct utilise un son plus marqué ; les autres sons sont discrets.",
@@ -346,7 +356,11 @@
     "gravatar": "Images Gravatar",
     "gravatarHint": "Envoie à Gravatar une empreinte des adresses e-mail des contacts pour rechercher leurs images.",
     "domainLogos": "Logos des entreprises",
-    "domainLogosHint": "Récupère le logo de chaque entreprise sur son site web."
+    "domainLogosHint": "Récupère le logo de chaque entreprise sur son site web.",
+    "reports": "Rapports",
+    "onlineTime": "Temps en ligne des agents",
+    "onlineTimeOn": "Enregistre le temps où chaque membre a opendesk ouvert avec le statut En ligne, pour Rapports → Agents. Désactivez-le là où son enregistrement demande le consentement de l’équipe ou l’accord d’un conseil d’entreprise.",
+    "onlineTimeOff": "Aucun temps en ligne n’est enregistré ni affiché dans les rapports. Enregistrer avec ce réglage désactivé supprime le temps en ligne enregistré jusqu’ici."
   },
   "display": {
     "title": "Statuts et priorités",

@@ -165,6 +165,19 @@ describe("outbox", () => {
     expect(error).toHaveBeenCalledTimes(1);
   });
 
+  it("warns when a reply held on the way to the next ticket fails, and only then", async () => {
+    send.mockImplementation(() => Promise.reject(new Error("gone")));
+    hold(temp("tmp-m"), body, unsent, "u1", 10);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(error).not.toHaveBeenCalled();
+    hold(temp("tmp-n"), body, unsent, "u1", 10, { warn: true });
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(error).toHaveBeenCalledTimes(1);
+    hold(temp("tmp-o"), body, unsent, "u1", 0, { warn: true });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(error).toHaveBeenCalledTimes(2);
+  });
+
   it("sends at once a reply too long to carry out of a closing tab", () => {
     const long = { ...body, body_html: `<p>${"x".repeat(70_000)}</p>` };
     hold(temp("tmp-l"), long, unsent, "u1", 10);

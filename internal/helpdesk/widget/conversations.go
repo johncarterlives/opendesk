@@ -228,7 +228,7 @@ func (h *handler) registerConversations(api huma.API) {
 				brandID := g.BrandID
 				t, err := domain.CreateTicket(ctx, tx, domain.NewTicket{WorkspaceID: p.WorkspaceID, Subject: subject,
 					Channel: domain.ChannelChat, ContactID: &p.ContactID, TeamID: res.TeamID, Routed: res.Routed,
-					BrandID: &brandID, WidgetID: &widgetID, PageURL: pageURL})
+					BrandID: &brandID, WidgetID: &widgetID, PageURL: pageURL, RequiredSkillIDs: res.RequiredSkillIDs})
 				if err != nil {
 					return err
 				}

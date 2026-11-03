@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import { BackLink, NoAccess, Row, Section, SettingsPage } from "@/components/layout";
 import { SaveBar } from "@/components/settings/SaveBar";
 import { ConditionValue, fieldMeta, newCondition, useFieldItems, useRoutingData } from "@/components/settings2/routing";
-import { SinglePick } from "@/components/settings2/pickers";
+import { MultiPick, SinglePick } from "@/components/settings2/pickers";
 import { Note, TeamPick } from "@/components/settings2/teams";
 import { UnsavedGuard } from "@/components/settings2/UnsavedGuard";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import { Segmented } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { api } from "@/lib/api/endpoints";
-import type { RoutingCondition, RoutingField, RoutingRule } from "@/lib/api/types";
+import type { RoutingCondition, RoutingField, RoutingRule, Skill } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
 import { dur, springs } from "@/lib/motion";
 import { q, qk, removeFromList, upsertInList } from "@/lib/queries";
@@ -34,9 +34,18 @@ import { atLeast, useRole } from "@/lib/session";
 const MAX_CONDITIONS = 20;
 const MAX_AI = 3;
 
-type Draft = Pick<RoutingRule, "name" | "enabled" | "match" | "conditions"> & { team_id: string | null };
-const blank: Draft = { name: "", enabled: true, match: "any", conditions: [{ field: "subject", op: "contains", value: "" }], team_id: null };
-const toDraft = (r: RoutingRule): Draft => ({ name: r.name, enabled: r.enabled, match: r.match, conditions: r.conditions.map((c) => ({ ...c })), team_id: r.team_id });
+type Draft = Pick<RoutingRule, "name" | "enabled" | "match" | "conditions" | "skill_ids"> & { team_id: string | null };
+const blank: Draft = { name: "", enabled: true, match: "any", conditions: [{ field: "subject", op: "contains", value: "" }], team_id: null, skill_ids: [] };
+const toDraft = (r: RoutingRule, skills?: Skill[]): Draft => ({
+  name: r.name,
+  enabled: r.enabled,
+  match: r.match,
+  conditions: r.conditions.map((c) => ({ ...c })),
+  team_id: r.team_id,
+  // Archived skill requirements cannot be selected in the editor and are
+  // omitted from the draft so unrelated edits do not submit stale IDs.
+  skill_ids: skills ? r.skill_ids.filter((id) => skills.some((skill) => skill.id === id && !skill.archived)) : r.skill_ids,
+});
 
 export default function RoutingRuleEdit() {
   const { t } = useTranslation("settingsTeams");
@@ -87,8 +96,9 @@ function RuleEditor({ rule, back }: { rule: RoutingRule | null; back: React.Reac
   const confirm = useConfirm();
   const reduce = useReducedMotion();
   const data = useRoutingData();
+  const { data: skills } = useQuery(q.skills());
   const fieldItems = useFieldItems(data.multiBrand, data.contactFields);
-  const base = useMemo(() => (rule ? toDraft(rule) : blank), [rule]);
+  const base = useMemo(() => (rule ? toDraft(rule, skills) : blank), [rule, skills]);
   const [draft, setDraft] = useState<Draft>(base);
   const [prevBase, setPrevBase] = useState(base);
   const [tried, setTried] = useState(false);
@@ -112,6 +122,7 @@ function RuleEditor({ rule, back }: { rule: RoutingRule | null; back: React.Reac
         enabled: draft.enabled,
         match: draft.match,
         team_id: draft.team_id!,
+        skill_ids: draft.skill_ids.filter((id) => skills?.some((skill) => skill.id === id && !skill.archived)),
         conditions: draft.conditions.map((c) => ({ ...c, value: c.value.trim(), ...(c.field === "ai_decide" ? { question: (c.question ?? "").trim() } : {}) })),
       };
       return rule ? api.routingRules.update(rule.id, body) : api.routingRules.create(body);
@@ -271,6 +282,16 @@ function RuleEditor({ rule, back }: { rule: RoutingRule | null; back: React.Reac
         >
           <TeamPick className="w-[240px]" value={draft.team_id} invalid={tried && problems.team} onChange={(team_id) => setDraft((d) => ({ ...d, team_id }))} />
         </Row>
+        <Row label={t("routing.skills.label")} description={t("routing.skills.hint")}>
+          <MultiPick
+            className="w-[240px]"
+            items={(skills ?? []).filter((skill) => !skill.archived).map((skill) => ({ value: skill.id, label: skill.name, icon: <Sparkles className="size-3.5 text-tone-violet" /> }))}
+            values={draft.skill_ids.filter((id) => skills?.some((skill) => skill.id === id && !skill.archived) ?? false)}
+            onChange={(skill_ids) => setDraft((d) => ({ ...d, skill_ids }))}
+            placeholder={t("routing.skills.placeholder")}
+            searchPlaceholder={t("routing.skills.search")}
+          />
+        </Row>
       </Section>
 
       {rule && (
@@ -289,6 +310,7 @@ function RuleEditor({ rule, back }: { rule: RoutingRule | null; back: React.Reac
         onSave={() => {
           setTried(true);
           if (invalid) return toast.error(problems.team ? t("routing.needTeam") : problems.name ? t("routing.needName") : t("routing.needValues"));
+          if (!skills) return toast.error(t("routing.saveFailed"));
           save.mutate();
         }}
         onDiscard={() => (rule ? setDraft(base) : void navigate({ to: "/settings/routing" }))}

@@ -344,6 +344,7 @@
       "actionValue": "Jede Aktion braucht einen Wert.",
       "phrases": "Eine Liste enthält 1 bis 100 Begriffe, einen pro Zeile, mit je höchstens 500 Zeichen.",
       "mergeTrigger": "Das Zusammenführen mit dem offenen Ticket des Kontakts läuft nur, wenn ein Ticket erstellt wird.",
+      "procedureTrigger": "Ollie kann keinen Ablauf ausführen, wenn ein Ticket aktualisiert wird. Wähle einen anderen Auslöser.",
       "callTrigger": "Anrufbedingungen brauchen den Auslöser Ein Anruf endet."
     },
     "chooseSeverity": "Schweregrad wählen",
@@ -587,6 +588,27 @@
       "tickets": "Tickets",
       "saveCap": "Speichern",
       "saveFailed": "Teammitglied konnte nicht aktualisiert werden"
+    },
+    "skills": {
+      "title": "Routing-Fähigkeiten",
+      "hint": "Lege fest, welches Fachwissen Tickets benötigen, und weise Fähigkeiten Teammitgliedern zu.",
+      "add": "Fähigkeit hinzufügen",
+      "namePlaceholder": "Name der Fähigkeit",
+      "createHint": "Gib einen Namen ein, um diese Fähigkeit zu erstellen.",
+      "create": "Fähigkeit erstellen",
+      "created": "{{name}} erstellt",
+      "saveFailed": "Fähigkeit konnte nicht gespeichert werden",
+      "emptyTitle": "Noch keine Fähigkeiten",
+      "emptyHint": "Füge Fähigkeiten wie Abrechnung oder technischen Support hinzu.",
+      "memberCount_one": "{{count}} Teammitglied",
+      "memberCount_other": "{{count}} Teammitglieder",
+      "members": "Teammitglieder zuweisen",
+      "archived": "Archiviert",
+      "archive": "Fähigkeit archivieren",
+      "restore": "Fähigkeit wiederherstellen",
+      "archiveNamed": "{{name}} archivieren",
+      "restoreNamed": "{{name}} wiederherstellen",
+      "note": "Passende Routing-Regeln verlangen diese Fähigkeiten vor der automatischen Zuweisung."
     }
   },
   "triage": {
@@ -768,7 +790,12 @@
       "abandoned_in_ivr": "Im Menü aufgelegt",
       "abandoned_in_classic": "In der Warteschleife aufgelegt",
       "no_available_agent": "Niemand verfügbar",
-      "agents_did_not_answer": "Niemand hat abgenommen"
+      "agents_did_not_answer": "Niemand hat abgenommen",
+      "busy": "Besetzt",
+      "no_answer": "Nicht angenommen",
+      "failed": "Anruf fehlgeschlagen",
+      "cancelled": "Vor der Annahme aufgelegt",
+      "abandon": "In der Warteschlange aufgelegt"
     }
   }
 }

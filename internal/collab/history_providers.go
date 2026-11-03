@@ -134,23 +134,41 @@ func (s *service) gmailHistory(ctx context.Context, r *historyRun, g *gmailProvi
 			if m := known[id]; m != nil {
 				pc.present++
 				pc.saw(m.SentAt)
-				continue
 			}
 			todo = append(todo, id)
 		}
 		res, errs := fetchEach(ctx, gmailFetchers, todo, g.fork, func(ctx context.Context, gp *gmailProvider, id string) (gmailFetched, error) {
+			if known[id] != nil {
+				var m gmailMessage
+				err := gp.do(ctx, http.MethodGet, "/messages/"+url.PathEscape(id)+"?format=minimal", nil, &m)
+				return gmailFetched{m: &m}, err
+			}
 			m, raw, err := gp.getRaw(ctx, id)
 			return gmailFetched{m: m, raw: raw}, err
 		})
 		fetched := []*newMessage{}
+		observed := map[string]*gmailMessage{}
+		removed := []*storedMsg{}
 		for i, err := range errs {
 			switch {
 			case err == nil:
 				m := res[i].m
+				if known[todo[i]] != nil {
+					observed[todo[i]] = m
+					continue
+				}
+				ob, err := gmailObservation(m)
+				if err != nil {
+					return err
+				}
+				st := r.p.gmailState(m.LabelIDs)
+				st.Gmail = ob
 				fetched = append(fetched, &newMessage{RemoteID: todo[i], ThreadRemoteID: m.ThreadID, Raw: res[i].raw, Date: m.date(),
-					State: r.p.gmailState(m.LabelIDs), Signals: gmailSignals(m.LabelIDs)})
+					State: st, Signals: gmailSignals(m.LabelIDs)})
 			case isNotFound(err):
-				// Deleted since it was listed.
+				if m := known[todo[i]]; m != nil {
+					removed = append(removed, m)
+				} // Deleted since it was listed.
 			case err == errTooLarge:
 				s.log.Info("collab skipping oversized message", "account_id", r.p.a.ID)
 				pc.tooLarge++
@@ -160,6 +178,22 @@ func (s *service) gmailHistory(ctx context.Context, r *historyRun, g *gmailProvi
 		}
 		cur.Started, cur.PageToken = true, next
 		err = r.store(ctx, pc, cur, func(tx pgx.Tx) error {
+			for _, m := range removed {
+				if err := r.p.remove(ctx, tx, m); err != nil {
+					return err
+				}
+			}
+			for id, metadata := range observed {
+				ob, err := gmailObservation(metadata)
+				if err != nil {
+					return err
+				}
+				st := r.p.gmailState(metadata.LabelIDs)
+				st.Gmail = ob
+				if err := r.p.update(ctx, tx, known[id], st); err != nil {
+					return err
+				}
+			}
 			for _, in := range fetched {
 				if _, err := r.p.insert(ctx, tx, in); err != nil {
 					return err

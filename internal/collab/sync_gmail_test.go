@@ -71,20 +71,28 @@ type fakeGmail struct {
 	gone            bool // history answers 404
 	status          int  // every call answers this when set
 	busy            int  // the next calls answer 429 rateLimitExceeded
+	categoryModify  []map[string]any
+	categoryStatus  int // refuse only category mutations
+	minimalGets     int
+	expireBefore    int // history baseline older than this is expired
 	modify          []map[string]any
 	trashed         []string
 	sent            []string // multipart bodies
 	gets            int
 	// failRawAfter makes raw reads past this many answer 503 (history_test.go); 0 never.
-	failRawAfter int
+	failRawAfter     int
+	failMinimalAfter int
+	threadGets       int
+	failThreadAfter  int
 	// settings is the account's sendAs and vacation (settings_test.go).
 	settings fakeGmailSettings
 	// drafts are the drafts API and label colours (drafts_test.go).
 	drafts fakeGmailDrafts
 	// beforeDraftUpload, when set, runs as a draft upload arrives, before the fake takes
 	// its lock: a test pauses a save there (ai_drafts_test.go).
-	beforeDraftUpload func()
-	hookMu            sync.Mutex // guards beforeDraftUpload
+	beforeDraftUpload    func()
+	beforeCategoryModify func()
+	hookMu               sync.Mutex // guards beforeDraftUpload
 }
 
 // onDraftUpload sets (or, with nil, clears) beforeDraftUpload.
@@ -137,9 +145,13 @@ func (g *fakeGmail) record(kind string, id string) {
 func (g *fakeGmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	g.hookMu.Lock()
 	hook := g.beforeDraftUpload
+	categoryHook := g.beforeCategoryModify
 	g.hookMu.Unlock()
 	if hook != nil && strings.Contains(r.URL.Path, "/upload/gmail/v1/users/me/drafts") {
 		hook()
+	}
+	if categoryHook != nil && strings.HasSuffix(r.URL.Path, "/messages/batchModify") {
+		categoryHook()
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -220,6 +232,13 @@ func (g *fakeGmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reply(map[string]any{"messages": list[offset:end], "nextPageToken": next, "resultSizeEstimate": total})
 	case r.Method == "GET" && strings.HasPrefix(path, "/messages/"):
 		m := g.msgs[strings.TrimPrefix(path, "/messages/")]
+		if q.Get("format") == "minimal" {
+			g.minimalGets++
+			if g.failMinimalAfter > 0 && g.minimalGets > g.failMinimalAfter {
+				w.WriteHeader(503)
+				return
+			}
+		}
 		if q.Get("format") == "raw" {
 			g.gets++
 			if g.failRawAfter > 0 && g.gets > g.failRawAfter {
@@ -235,7 +254,8 @@ func (g *fakeGmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reply(map[string]any{"id": m.id, "threadId": m.thread, "labelIds": m.labels, "historyId": strconv.Itoa(g.history),
 			"internalDate": strconv.FormatInt(m.date.UnixMilli(), 10), "raw": base64.URLEncoding.EncodeToString(m.raw)})
 	case r.Method == "GET" && path == "/history":
-		if g.gone {
+		sinceVersion, _ := strconv.Atoi(q.Get("startHistoryId"))
+		if g.gone || sinceVersion < g.expireBefore {
 			w.WriteHeader(404)
 			return
 		}
@@ -270,10 +290,71 @@ func (g *fakeGmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			next = strconv.Itoa(end) + ":" + strconv.Itoa(bound)
 		}
 		reply(map[string]any{"history": list[offset:end], "historyId": strconv.Itoa(g.history), "nextPageToken": next})
+	case r.Method == "GET" && strings.HasPrefix(path, "/threads/"):
+		g.threadGets++
+		if g.failThreadAfter > 0 && g.threadGets >= g.failThreadAfter {
+			w.WriteHeader(503)
+			return
+		}
+		thread := strings.TrimPrefix(path, "/threads/")
+		msgs := []map[string]any{}
+		for _, id := range g.order {
+			m := g.msgs[id]
+			if m == nil || m.thread != thread {
+				continue
+			}
+			msgs = append(msgs, map[string]any{"id": m.id, "threadId": m.thread, "labelIds": m.labels, "historyId": strconv.Itoa(g.history), "internalDate": strconv.FormatInt(m.date.UnixMilli(), 10)})
+		}
+		if len(msgs) == 0 {
+			w.WriteHeader(404)
+			return
+		}
+		reply(map[string]any{"id": thread, "messages": msgs})
 	case r.Method == "POST" && path == "/messages/batchModify":
 		var in map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&in)
-		g.modify = append(g.modify, in)
+		category := false
+		labels, _ := in["addLabelIds"].([]any)
+		for _, label := range labels {
+			category = category || strings.HasPrefix(label.(string), "CATEGORY_")
+		}
+		if !category {
+			g.modify = append(g.modify, in)
+			w.WriteHeader(204)
+			return
+		}
+		g.categoryModify = append(g.categoryModify, in)
+		if g.categoryStatus != 0 {
+			w.WriteHeader(g.categoryStatus)
+			return
+		}
+		found := false
+		for _, id := range in["ids"].([]any) {
+			m := g.msgs[id.(string)]
+			if m == nil {
+				continue
+			}
+			found = true
+			if slices.Contains(m.labels, "DRAFT") {
+				g.t.Error("category mutation included a draft")
+				w.WriteHeader(400)
+				return
+			}
+			for _, l := range in["removeLabelIds"].([]any) {
+				m.labels = slices.DeleteFunc(m.labels, func(s string) bool { return s == l.(string) })
+			}
+			for _, l := range in["addLabelIds"].([]any) {
+				if !slices.Contains(m.labels, l.(string)) {
+					m.labels = append(m.labels, l.(string))
+				}
+			}
+			g.history++
+			g.changes = append(g.changes, map[string]any{"id": strconv.Itoa(g.history), "labelsAdded": []map[string]any{{"message": map[string]any{"id": m.id, "threadId": m.thread, "labelIds": slices.Clone(m.labels)}}}})
+		}
+		if !found {
+			w.WriteHeader(404)
+			return
+		}
 		w.WriteHeader(204)
 	case r.Method == "POST" && strings.HasPrefix(path, "/threads/") && strings.HasSuffix(path, "/trash"):
 		g.trashed = append(g.trashed, strings.TrimSuffix(strings.TrimPrefix(path, "/threads/"), "/trash"))

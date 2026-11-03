@@ -67,3 +67,12 @@ func TestMissingAssetIs404(t *testing.T) {
 		t.Fatalf("client route: %d %v", page.Code, page.Header())
 	}
 }
+
+func TestPortalHeaders(t *testing.T) {
+	h := Handler(RuntimeConfig{}, "default-src 'self'")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/portal/example/reset?token=secret", nil))
+	if w.Header().Get("X-Robots-Tag") != "noindex, nofollow" || w.Header().Get("Referrer-Policy") != "no-referrer" {
+		t.Fatalf("portal headers: %v", w.Header())
+	}
+}

@@ -84,6 +84,10 @@ func Handler(rc RuntimeConfig, csp string) http.Handler {
 				return
 			}
 		}
+		if r.URL.Path == "/portal" || strings.HasPrefix(r.URL.Path, "/portal/") {
+			w.Header().Set("X-Robots-Tag", "noindex, nofollow")
+			w.Header().Set("Referrer-Policy", "no-referrer")
+		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-cache")
 		_, _ = w.Write(index)

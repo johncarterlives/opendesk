@@ -366,6 +366,7 @@
       "actionValue": "Chaque action doit avoir une valeur.",
       "phrases": "Une liste compte de 1 à 100 expressions, une par ligne, de 500 caractères au plus chacune.",
       "mergeTrigger": "La fusion dans le ticket ouvert du contact ne s’exécute qu’à la création d’un ticket.",
+      "procedureTrigger": "Ollie ne peut pas exécuter de procédure quand un ticket est mis à jour. Choisissez un autre déclencheur.",
       "callTrigger": "Les conditions d'appel demandent le déclencheur Un appel se termine."
     },
     "chooseSeverity": "Choisir une gravité",
@@ -612,6 +613,28 @@
       "tickets": "tickets",
       "saveCap": "Enregistrer",
       "saveFailed": "Impossible de mettre à jour ce collègue"
+    },
+    "skills": {
+      "title": "Compétences de routage",
+      "hint": "Définissez l’expertise nécessaire pour les tickets et attribuez chaque compétence aux membres de l’équipe.",
+      "add": "Ajouter une compétence",
+      "namePlaceholder": "Nom de la compétence",
+      "createHint": "Saisissez un nom pour créer cette compétence.",
+      "create": "Créer la compétence",
+      "created": "{{name}} créée",
+      "saveFailed": "Impossible d’enregistrer la compétence",
+      "emptyTitle": "Aucune compétence",
+      "emptyHint": "Ajoutez des compétences comme Facturation ou Assistance technique.",
+      "memberCount_one": "{{count}} membre",
+      "memberCount_many": "{{count}} membres",
+      "memberCount_other": "{{count}} membres",
+      "members": "Attribuer aux membres",
+      "archived": "Archivée",
+      "archive": "Archiver la compétence",
+      "restore": "Restaurer la compétence",
+      "archiveNamed": "Archiver {{name}}",
+      "restoreNamed": "Restaurer {{name}}",
+      "note": "Les règles de routage correspondantes exigent ces compétences avant l’attribution automatique."
     }
   },
   "triage": {
@@ -795,7 +818,12 @@
       "abandoned_in_ivr": "Raccroché dans le menu",
       "abandoned_in_classic": "Raccroché pendant l'attente",
       "no_available_agent": "Aucun collègue disponible",
-      "agents_did_not_answer": "Personne n'a répondu"
+      "agents_did_not_answer": "Personne n'a répondu",
+      "busy": "Ligne occupée",
+      "no_answer": "Sans réponse",
+      "failed": "Échec de l'appel",
+      "cancelled": "Raccroché avant la réponse",
+      "abandon": "Raccroché dans la file d'attente"
     }
   }
 }

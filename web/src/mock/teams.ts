@@ -13,6 +13,7 @@ import type {
   RoutingCondition,
   RoutingRule,
   RoutingTest,
+  Skill,
   Team,
   TeamRole,
   Ticket,
@@ -292,6 +293,7 @@ export function evaluateRouting(ws: WsData, input: RoutingInput): RoutingTest & 
   };
   const steps: RoutingTest["steps"] = [];
   let decided = false;
+  let requiredSkills: Skill[] = [];
   for (const r of ws.routingRules.filter((x) => x.enabled).sort((a, b) => a.position - b.position)) {
     if (decided) {
       steps.push({ rule_id: r.id, name: r.name, matched: false });
@@ -303,6 +305,7 @@ export function evaluateRouting(ws: WsData, input: RoutingInput): RoutingTest & 
       decided = true;
       team = r.team_id;
       routed = { via: "rule", rule_id: r.id, rule_name: r.name };
+      requiredSkills = r.skill_ids.map((id) => ws.skills.find((skill) => skill.id === id)).filter((skill): skill is Skill => !!skill);
     }
   }
 
@@ -316,6 +319,7 @@ export function evaluateRouting(ws: WsData, input: RoutingInput): RoutingTest & 
     mailbox_id: replyBox?.id ?? null,
     routed,
     steps,
+    required_skills: requiredSkills,
     assign_mode: assign,
     widget_id: widget?.id ?? null,
     received_at: input.channel === "email" ? lc(input.to) : "",

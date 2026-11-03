@@ -35,8 +35,9 @@ type Input struct {
 
 // Result is the team the ticket goes to and why. TeamID nil means no team.
 type Result struct {
-	TeamID *uuid.UUID
-	Routed *domain.TicketRouted
+	TeamID           *uuid.UUID
+	Routed           *domain.TicketRouted
+	RequiredSkillIDs []uuid.UUID
 	// Steps lists the rules that were tried, for POST /v1/routing/test.
 	Steps []Step
 }
@@ -69,7 +70,7 @@ const (
 // here: a rule that holds only if one of them does is not matched, and its step reads
 // "unknown". Automations answer ai_decide once the ticket exists.
 func Resolve(ctx context.Context, q db.Querier, in Input) (Result, error) {
-	var res Result
+	res := Result{RequiredSkillIDs: []uuid.UUID{}}
 	team, via, topicLabel, err := firstStep(ctx, q, in)
 	if err != nil {
 		return res, err
@@ -103,6 +104,7 @@ func Resolve(ctx context.Context, q db.Querier, in Input) (Result, error) {
 			id, ruleID := r.TeamID, r.ID
 			res.TeamID = &id
 			res.Routed = &domain.TicketRouted{Via: ViaRule, RuleID: &ruleID, RuleName: r.Name}
+			res.RequiredSkillIDs = append([]uuid.UUID{}, r.SkillIDs...)
 			break
 		}
 	}
@@ -389,7 +391,7 @@ func emailDomain(addr string) string {
 
 // loadRules lists the workspace's rules in evaluation order.
 func loadRules(ctx context.Context, q db.Querier, wid uuid.UUID, enabledOnly bool) ([]RoutingRule, error) {
-	rows, err := q.Query(ctx, ruleSelect+` WHERE workspace_id = $1 AND (NOT $2 OR enabled) ORDER BY position, created_at, id`, wid, enabledOnly)
+	rows, err := q.Query(ctx, ruleSelect+` WHERE r.workspace_id = $1 AND (NOT $2 OR r.enabled) ORDER BY r.position, r.created_at, r.id`, wid, enabledOnly)
 	if err != nil {
 		return nil, err
 	}

@@ -141,7 +141,12 @@ func reportPeriod(ctx context.Context, q db.Querier, wid uuid.UUID, fromS, toS s
 		return from, to, loc, err
 	}
 	if !ok {
-		to = time.Now()
+		// Database-created events use the database clock. Use it for the default
+		// report boundary too, so a small host/database clock skew cannot omit a
+		// just-written event.
+		if err := q.QueryRow(ctx, `SELECT now()`).Scan(&to); err != nil {
+			return from, to, loc, err
+		}
 	}
 	from, ok, err = parseBound(fromS, loc, false)
 	if err != nil {

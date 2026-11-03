@@ -72,5 +72,45 @@
   "footer": {
     "powered_by": "技术支持",
     "language": "语言"
+  },
+  "portal": {
+    "title": "您的申请",
+    "login": "登录",
+    "forgot": "获取密码链接",
+    "reset": "选择密码",
+    "login_action": "登录",
+    "forgot_action": "发送链接",
+    "reset_action": "保存密码",
+    "email": "电子邮箱",
+    "password": "密码",
+    "forgot_link": "需要密码？",
+    "back_login": "返回登录",
+    "sign_out": "退出",
+    "loading": "正在加载…",
+    "unavailable": "此帮助中心不可用。",
+    "error": "出错了。请重试。",
+    "weak_password": "选择一个更强的密码。",
+    "invalid_link": "此链接已过期或无效。 申请新链接。",
+    "password_change": "登录前请选择新密码。",
+    "get_link": "获取密码链接",
+    "email_sent": "如果此地址可以登录，则表示正在发送链接。",
+    "reset_done": "您的密码已保存。",
+    "requests": "您的申请",
+    "empty": "您还没有申请。",
+    "next": "下一步",
+    "back_requests": "所有申请",
+    "you": "您",
+    "team": "客服团队",
+    "reply": "回覆",
+    "send": "发送回复",
+    "no_messages": "还没有消息。",
+    "help_center": "访问帮助中心",
+    "status": {
+      "open": "打开",
+      "pending": "待处理",
+      "on_hold": "保留",
+      "solved": "已解决",
+      "closed": "已关闭"
+    }
   }
 }

@@ -74,5 +74,45 @@
   "footer": {
     "powered_by": "Powered by",
     "language": "Language"
+  },
+  "portal": {
+    "title": "Your requests",
+    "login": "Sign in",
+    "forgot": "Get a password link",
+    "reset": "Choose a password",
+    "login_action": "Sign in",
+    "forgot_action": "Send link",
+    "reset_action": "Save password",
+    "email": "Email",
+    "password": "Password",
+    "forgot_link": "Need a password?",
+    "back_login": "Back to sign in",
+    "sign_out": "Sign out",
+    "loading": "Loading…",
+    "unavailable": "This help center is not available.",
+    "error": "Something went wrong. Please try again.",
+    "weak_password": "Choose a stronger password.",
+    "invalid_link": "This link has expired or is invalid. Request a new link.",
+    "password_change": "Choose a new password before signing in.",
+    "get_link": "Get a password link",
+    "email_sent": "If this address can sign in, a link is on its way.",
+    "reset_done": "Your password has been saved.",
+    "requests": "Your requests",
+    "empty": "You have no requests yet.",
+    "next": "Next",
+    "back_requests": "All requests",
+    "you": "You",
+    "team": "Support team",
+    "reply": "Reply",
+    "send": "Send reply",
+    "no_messages": "No messages yet.",
+    "help_center": "Visit the help center",
+    "status": {
+      "open": "Open",
+      "pending": "Pending",
+      "on_hold": "On hold",
+      "solved": "Solved",
+      "closed": "Closed"
+    }
   }
 }

@@ -604,7 +604,14 @@
       "assign": "Assignment",
       "why": "Decided by",
       "viaRule": "Rule: {{name}}",
-      "viaNone": "Nothing, it stays without a team"
+      "viaNone": "Nothing, it stays without a team",
+      "requiredSkills": "Required skills"
+    },
+    "skills": {
+      "label": "Required skills",
+      "hint": "Only teammates with every selected skill can receive this ticket automatically.",
+      "placeholder": "Choose skills",
+      "search": "Search skills"
     }
   },
   "scoped": {

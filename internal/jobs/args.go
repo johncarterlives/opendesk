@@ -175,6 +175,21 @@ type SupportChannelHealthAlertArgs struct{}
 
 func (SupportChannelHealthAlertArgs) Kind() string { return "support_channels.health_alert" }
 
+// SupportChannelSummaryArgs posts Ollie's summary in a ticket's new provider thread.
+// Owner: supportchannels.
+type SupportChannelSummaryArgs struct {
+	DestinationID uuid.UUID `json:"destination_id"`
+	TicketID      uuid.UUID `json:"ticket_id"`
+}
+
+func (SupportChannelSummaryArgs) Kind() string { return "support_channels.summary" }
+
+// SupportChannelSLAWarningArgs warns ticket threads whose SLA is due soon or breached.
+// Owner: supportchannels.
+type SupportChannelSLAWarningArgs struct{}
+
+func (SupportChannelSLAWarningArgs) Kind() string { return "support_channels.sla_warning" }
+
 // SystemEmailArgs sends platform email (verification, reset, invites, notifications)
 // through the system mailer. Owner: core.
 type SystemEmailArgs struct {
@@ -247,6 +262,21 @@ type AIWidgetAnswerArgs struct {
 	// PageURL is the host page the visitor wrote from, when the widget reported it.
 	PageURL string `json:"page_url,omitempty"`
 }
+
+// AIProcedureRunArgs has Ollie run a procedure on one ticket for an automation's
+// run_procedure action (contracts/ai.md "Automations"). Unique by its args: one run per
+// automation, ticket and the message or call the trigger was about. Owner: ai.
+type AIProcedureRunArgs struct {
+	WorkspaceID  uuid.UUID  `json:"workspace_id"`
+	TicketID     uuid.UUID  `json:"ticket_id"`
+	AutomationID uuid.UUID  `json:"automation_id"`
+	ProcedureID  uuid.UUID  `json:"procedure_id"`
+	MessageID    *uuid.UUID `json:"message_id,omitempty"`
+	// CallID is the call a call_ended trigger was about: the run waits a while for its transcript.
+	CallID *uuid.UUID `json:"call_id,omitempty"`
+}
+
+func (AIProcedureRunArgs) Kind() string { return "ai.procedure_run" }
 
 // AIWidgetActionArgs runs an action the visitor confirmed (or records a decline) and
 // lets the widget agent continue. Owner: ai.
@@ -409,11 +439,12 @@ func (CollabSyncArgs) Kind() string { return "collab.sync_account" }
 // CollabApplyArgs makes an action already applied in opendesk at the provider
 // (contracts/collab.md "Actions"). Owner: collab.
 type CollabApplyArgs struct {
-	WorkspaceID uuid.UUID   `json:"workspace_id"`
-	AccountID   uuid.UUID   `json:"account_id"`
-	ThreadIDs   []uuid.UUID `json:"thread_ids"`
-	Action      string      `json:"action"`
-	FolderID    *uuid.UUID  `json:"folder_id,omitempty"`
+	WorkspaceID      uuid.UUID   `json:"workspace_id"`
+	AccountID        uuid.UUID   `json:"account_id"`
+	ThreadIDs        []uuid.UUID `json:"thread_ids"`
+	Action           string      `json:"action"`
+	FolderID         *uuid.UUID  `json:"folder_id,omitempty"`
+	CategoryIntentID *uuid.UUID  `json:"category_intent_id,omitempty"`
 }
 
 func (CollabApplyArgs) Kind() string { return "collab.apply" }
@@ -472,3 +503,17 @@ func (SeedTestWorkspaceArgs) Kind() string { return "admin.seed_test_workspace" 
 type ResealArgs struct{}
 
 func (ResealArgs) Kind() string { return "sealed.reseal" }
+
+// CustomerPortalForgotArgs defers contact lookup so forgot responses are uniform.
+type CustomerPortalForgotArgs struct {
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	Slug        string    `json:"slug"`
+	Email       string    `json:"email"`
+}
+
+func (CustomerPortalForgotArgs) Kind() string { return "helpdesk.customer_portal_forgot" }
+
+// CustomerPortalCleanupArgs removes expired customer sessions and reset links.
+type CustomerPortalCleanupArgs struct{}
+
+func (CustomerPortalCleanupArgs) Kind() string { return "helpdesk.customer_portal_cleanup" }

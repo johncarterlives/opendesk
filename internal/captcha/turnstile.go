@@ -69,6 +69,18 @@ func NewTurnstileFromConfig(cfg TurnstileConfig) *Turnstile {
 }
 
 func (t *Turnstile) Verify(ctx context.Context, token, remoteIP string) error {
+	return t.verify(ctx, token, remoteIP, "")
+}
+
+// VerifyHostname checks a challenge for the particular page hosting the form.
+func (t *Turnstile) VerifyHostname(ctx context.Context, token, remoteIP, hostname string) error {
+	if IsTestSecret(t.cfg.Secret) {
+		hostname = ""
+	}
+	return t.verify(ctx, token, remoteIP, hostname)
+}
+
+func (t *Turnstile) verify(ctx context.Context, token, remoteIP, hostname string) error {
 	if t.cfg.Disabled {
 		return nil
 	}
@@ -129,7 +141,7 @@ func (t *Turnstile) Verify(ctx context.Context, token, remoteIP string) error {
 	}
 
 	// A token solved on another site is not one of ours.
-	if len(t.cfg.Hostnames) > 0 && !slices.Contains(t.cfg.Hostnames, r.Hostname) {
+	if (hostname != "" && r.Hostname != hostname) || (len(t.cfg.Hostnames) > 0 && !slices.Contains(t.cfg.Hostnames, r.Hostname)) {
 		return ErrCaptcha
 	}
 

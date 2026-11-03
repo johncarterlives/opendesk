@@ -21,7 +21,7 @@ const PRESETS = [preset("primary", "Primary"), preset("updates", "Updates"), pre
 
 async function render(initial: MailCategory[], suggest = false) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
-  qc.setQueryData<MailCategorySettings>(qk.mailCategories, { workspace: null, teams: [], presets: PRESETS, sorting: "rules", suggest });
+  qc.setQueryData<MailCategorySettings>(qk.mailCategories, { workspace: null, teams: [], presets: PRESETS, gmail_categories: [], sorting: "rules", suggest });
   const seen: MailCategory[][] = [];
   function Harness() {
     const [value, setValue] = useState(initial);

@@ -604,7 +604,14 @@
       "assign": "Zuweisung",
       "why": "Entschieden durch",
       "viaRule": "Regel: {{name}}",
-      "viaNone": "Nichts, es bleibt ohne Team"
+      "viaNone": "Nichts, es bleibt ohne Team",
+      "requiredSkills": "Erforderliche Fähigkeiten"
+    },
+    "skills": {
+      "label": "Erforderliche Fähigkeiten",
+      "hint": "Nur Teammitglieder mit allen ausgewählten Fähigkeiten können dieses Ticket automatisch erhalten.",
+      "placeholder": "Fähigkeiten auswählen",
+      "search": "Fähigkeiten suchen"
     }
   },
   "scoped": {

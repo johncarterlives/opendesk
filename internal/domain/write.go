@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -134,8 +135,10 @@ type NewTicket struct {
 	ContactID   *uuid.UUID
 	AssigneeID  *uuid.UUID
 	TeamID      *uuid.UUID
-	Custom      map[string]any
-	Fields      map[string]any // custom field values, validated by the caller
+	// RequiredSkillIDs is the route's workspace-scoped expertise requirements.
+	RequiredSkillIDs []uuid.UUID
+	Custom           map[string]any
+	Fields           map[string]any // custom field values, validated by the caller
 	// BrandID defaults to the brand of MailboxID, else of WidgetID, else the default brand.
 	BrandID  *uuid.UUID
 	WidgetID *uuid.UUID
@@ -208,6 +211,15 @@ func CreateTicket(ctx context.Context, tx pgx.Tx, nt NewTicket) (Ticket, error) 
 		brandID, nt.WidgetID, nt.OriginMailboxID, strings.ToLower(strings.TrimSpace(nt.ReceivedAt)), truncateRunes(nt.PageURL, 500), nt.Routed, created)
 	if err != nil {
 		return Ticket{}, fmt.Errorf("insert ticket: %w", err)
+	}
+	requiredSkills := slices.Clone(nt.RequiredSkillIDs)
+	slices.SortFunc(requiredSkills, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	requiredSkills = slices.Compact(requiredSkills)
+	if len(requiredSkills) > 0 {
+		if _, err := tx.Exec(ctx, `INSERT INTO ticket_skills (workspace_id, ticket_id, skill_id)
+			SELECT $1, $2, unnest($3::uuid[])`, nt.WorkspaceID, id, requiredSkills); err != nil {
+			return Ticket{}, fmt.Errorf("insert ticket skills: %w", err)
+		}
 	}
 	t, err := LoadTicket(ctx, tx, nt.WorkspaceID, id)
 	if err != nil {

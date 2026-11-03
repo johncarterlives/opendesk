@@ -37,7 +37,7 @@ import { useSession } from "@/lib/session";
 import type { Tone } from "@/lib/tones";
 import { AccountStatus, useReconnect } from "./MailAccounts";
 
-type Form = { name: string; display_name: string; color: string; signature_html: string; visibility: "private" | "shared"; handling_enabled: boolean; shared_with: MailAudience };
+type Form = { name: string; display_name: string; color: string; signature_html: string; visibility: "private" | "shared"; handling_enabled: boolean; reply_all: boolean; shared_with: MailAudience };
 
 const formOf = (a: MailAccount): Form => ({
   name: a.name,
@@ -46,6 +46,7 @@ const formOf = (a: MailAccount): Form => ({
   signature_html: a.signature_html,
   visibility: a.visibility,
   handling_enabled: a.handling_enabled,
+  reply_all: a.reply_all,
   shared_with: a.shared_with ?? { everyone: false, team_ids: [], user_ids: [] },
 });
 
@@ -117,6 +118,7 @@ export default function MailAccountDetail() {
     if (sigEdited && form.signature_html !== base.signature_html) p.signature_html = form.signature_html;
     if (form.visibility !== base.visibility) p.visibility = form.visibility;
     if (form.handling_enabled !== base.handling_enabled) p.handling_enabled = form.handling_enabled;
+    if (form.reply_all !== base.reply_all) p.reply_all = form.reply_all;
     const aud = form.visibility === "shared" ? (form.shared_with.everyone ? { everyone: true, team_ids: [], user_ids: [] } : form.shared_with) : { everyone: false, team_ids: [], user_ids: [] };
     if (form.visibility === "shared" && (p.visibility || !sameAudience(aud, base.shared_with))) p.shared_with = aud;
     if (account.provider === "imap" && imap && imapBase) {
@@ -329,6 +331,12 @@ export default function MailAccountDetail() {
           </ChoiceCard>
           {!audienceOk && <p className="text-[11.5px] text-danger-fg">{t("audience.needSomeone")}</p>}
         </div>
+      </Section>
+
+      <Section title={t("detail.replying.title")} description={t("detail.replying.hint")}>
+        <Row label={t("detail.replying.replyAll")} description={t("detail.replying.replyAllHint")} htmlFor="reply-all">
+          <Switch id="reply-all" checked={form.reply_all} disabled={!manage} onCheckedChange={(reply_all) => set({ reply_all })} />
+        </Row>
       </Section>
 
       {form.visibility === "shared" && (

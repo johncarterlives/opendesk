@@ -624,7 +624,14 @@
       "assign": "Attribution",
       "why": "Décision par",
       "viaRule": "Règle : {{name}}",
-      "viaNone": "Aucune règle, le ticket reste sans équipe"
+      "viaNone": "Aucune règle, le ticket reste sans équipe",
+      "requiredSkills": "Compétences requises"
+    },
+    "skills": {
+      "label": "Compétences requises",
+      "hint": "Seuls les membres qui possèdent toutes les compétences sélectionnées peuvent recevoir automatiquement ce ticket.",
+      "placeholder": "Choisir les compétences",
+      "search": "Rechercher des compétences"
     }
   },
   "scoped": {

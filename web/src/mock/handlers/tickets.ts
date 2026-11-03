@@ -720,7 +720,8 @@ const OPENISH_REPORT: TicketStatus[] = ["open", "pending", "on_hold"];
 /**
  * GET /v1/reports/agents: owners, admins and agents (with a team, its leads and members),
  * sharing the overview's volume. Online time is the member's own, whatever the filter. Only
- * admins see everyone's rows; other members get their own.
+ * admins see everyone's rows; other members get their own. A workspace with online time off
+ * (settings.agent_online_time false) gets none.
  */
 function agentReports(ctx: Ctx): ReportsAgents {
   const o = reports(ctx);
@@ -735,6 +736,7 @@ function agentReports(ctx: Ctx): ReportsAgents {
   const days = o.by_day.length;
   const key = `${o.by_day[0]?.date}-${days}-${teamF}-${ctx.query.get("brand_id") ?? ""}`;
   const all = isAdmin(ws, db.meId);
+  const off = ws.workspace.settings.agent_online_time === false;
   const data = roster.flatMap((m) => {
     const user = userRef(m.user_id);
     if (!user || (!all && m.user_id !== db.meId)) return [];
@@ -756,12 +758,12 @@ function agentReports(ctx: Ctx): ReportsAgents {
         replies_per_solved: solved ? perSolved : null,
         first_response_p50_minutes: assigned ? Math.round(18 + h("f") * 50) : null,
         handle_p50_minutes: solved ? Math.round(90 + h("h") * 420) : null,
-        online_minutes: online,
+        online_minutes: off ? null : online,
       },
     ];
   });
   data.sort((a, b) => b.solved - a.solved || b.replies - a.replies || a.user.name.localeCompare(b.user.name));
-  return { data, online_time: all ? "all" : "self" };
+  return { data, online_time: off ? "off" : all ? "all" : "self" };
 }
 
 /** Used by the live simulator. */

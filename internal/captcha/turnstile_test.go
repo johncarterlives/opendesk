@@ -141,3 +141,22 @@ func TestTurnstileIsTestSecret(t *testing.T) {
 		}
 	}
 }
+
+func TestTurnstileSpecificPageHostname(t *testing.T) {
+	for _, host := range []string{"app.opendesk.sh", "admin.opendesk.sh", "help.customer.example"} {
+		t.Run(host, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = w.Write([]byte(`{"success":true,"hostname":"` + host + `"}`))
+			}))
+			defer srv.Close()
+			turn := NewTurnstileFromConfig(TurnstileConfig{Secret: "s", SiteVerifyURL: srv.URL, Hostnames: []string{"app.opendesk.sh", "admin.opendesk.sh"}})
+			err := turn.VerifyHostname(context.Background(), "token", "", "app.opendesk.sh")
+			if host == "app.opendesk.sh" && err != nil {
+				t.Fatalf("app challenge: %v", err)
+			}
+			if host != "app.opendesk.sh" && err != ErrCaptcha {
+				t.Fatalf("accepted challenge from %s: %v", host, err)
+			}
+		})
+	}
+}

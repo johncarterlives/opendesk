@@ -74,5 +74,45 @@
   "footer": {
     "powered_by": "Mogelijk gemaakt door",
     "language": "Taal"
+  },
+  "portal": {
+    "title": "Uw verzoeken",
+    "login": "Aanmelden",
+    "forgot": "Vraag een wachtwoordlink aan",
+    "reset": "Kies een wachtwoord",
+    "login_action": "Aanmelden",
+    "forgot_action": "Link sturen",
+    "reset_action": "Wachtwoord opslaan",
+    "email": "E-mail",
+    "password": "Wachtwoord",
+    "forgot_link": "Wachtwoord nodig?",
+    "back_login": "Terug naar inloggen",
+    "sign_out": "Afmelden",
+    "loading": "Bezig met laden...",
+    "unavailable": "Dit Helpcentrum is niet beschikbaar.",
+    "error": "Er is iets misgegaan. Probeer het opnieuw.",
+    "weak_password": "Kies een sterker wachtwoord.",
+    "invalid_link": "Deze link is verlopen of ongeldig. Vraag een nieuwe link aan.",
+    "password_change": "Kies een nieuw wachtwoord voordat u zich aanmeldt.",
+    "get_link": "Vraag een wachtwoordlink aan",
+    "email_sent": "Als dit adres zich kan aanmelden, is er een link onderweg.",
+    "reset_done": "Uw wachtwoord is opgeslagen.",
+    "requests": "Uw verzoeken",
+    "empty": "Je hebt nog geen aanvragen.",
+    "next": "Volgende",
+    "back_requests": "Alle aanvragen",
+    "you": "Jij",
+    "team": "Supportteam",
+    "reply": "Beantwoorden",
+    "send": "Antwoord sturen",
+    "no_messages": "Nog geen berichten.",
+    "help_center": "Ga naar het Helpcentrum",
+    "status": {
+      "open": "Open",
+      "pending": "In behandeling",
+      "on_hold": "In de wacht",
+      "solved": "Opgelost",
+      "closed": "Gesloten"
+    }
   }
 }

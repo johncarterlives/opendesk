@@ -84,4 +84,10 @@ describe("AgentWorkTable", () => {
     expect([...container.querySelectorAll("th")].map((th) => th.textContent)).not.toContain("Online");
     expect(header("Handle time")).toBeTruthy();
   });
+
+  it("leaves online time out when the workspace turned it off", async () => {
+    await render({ data: rows.map((r) => ({ ...r, online_minutes: null })), online_time: "off" });
+    expect([...container.querySelectorAll("th")].map((th) => th.textContent)).not.toContain("Online");
+    expect(names()).toEqual(["Anna", "Bea", "Carl"]);
+  });
 });

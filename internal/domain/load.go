@@ -82,7 +82,10 @@ var TicketSelect = `SELECT t.id, t.number, t.alias, t.subject, t.status, t.prior
 	t.brand_id, t.widget_id, t.origin_mailbox_id, t.received_at, t.page_url, t.routed,
 	c.id, c.email, c.name, c.avatar_url,
 	u.id, u.name, u.email, u.avatar_url,
-	` + TagRefsSQL("ticket_tags", "lt.ticket_id = t.id") + `
+	` + TagRefsSQL("ticket_tags", "lt.ticket_id = t.id") + `,
+	COALESCE((SELECT json_agg(json_build_object('id', s.id, 'name', s.name) ORDER BY lower(s.name), s.id)
+		FROM ticket_skills ts JOIN skills s ON s.workspace_id = ts.workspace_id AND s.id = ts.skill_id
+		WHERE ts.workspace_id = t.workspace_id AND ts.ticket_id = t.id), '[]')
 FROM tickets t
 LEFT JOIN contacts c ON c.id = t.contact_id
 LEFT JOIN users u ON u.id = t.assignee_id`
@@ -98,13 +101,13 @@ func ScanTicket(row pgx.Row) (Ticket, error) {
 	var cEmail, cName, cAvatar *string
 	var uID *uuid.UUID
 	var uName, uEmail, uAvatar *string
-	var tags []byte
+	var tags, skills []byte
 	err := row.Scan(&t.ID, &t.Number, &t.Alias, &t.Subject, &t.Status, &t.Priority, &t.Severity, &t.Channel, &t.MailboxID, &t.TeamID,
 		&slaID, &frDue, &resDue, &t.FirstRespondedAt, &t.SolvedAt, &t.SnoozedUntil,
 		&t.LastMessageAt, &t.LastCustomerMessageAt, &t.WaitingSince, &t.UnansweredCount, &t.LastMessagePreview, &t.MessageCount, &t.Spam,
 		&csatScore, &csatComment, &t.Custom, &t.Fields, &t.CreatedAt, &t.UpdatedAt,
 		&t.BrandID, &t.WidgetID, &t.OriginMailboxID, &t.ReceivedAt, &t.PageURL, &t.Routed,
-		&cID, &cEmail, &cName, &cAvatar, &uID, &uName, &uEmail, &uAvatar, &tags)
+		&cID, &cEmail, &cName, &cAvatar, &uID, &uName, &uEmail, &uAvatar, &tags, &skills)
 	if err != nil {
 		return t, err
 	}
@@ -132,6 +135,10 @@ func ScanTicket(row pgx.Row) (Ticket, error) {
 	}
 	t.Tags = []TagRef{}
 	if err := json.Unmarshal(tags, &t.Tags); err != nil {
+		return t, err
+	}
+	t.RequiredSkills = []TicketSkill{}
+	if err := json.Unmarshal(skills, &t.RequiredSkills); err != nil {
 		return t, err
 	}
 	return t, nil

@@ -59,4 +59,4 @@ curl "https://api.opendesk.sh/v1/reports/agents?from=2026-09-01&to=2026-09-30"  
 }
 ```
 
-One row per owner, admin and agent, most solved first, narrowed like the overview by `team_id` and `brand_id`. Online time is personal: `online_minutes` is filled in for every row only for API keys with the `settings:read` scope (`online_time` is then `all`). Signed in, owners and admins get every row and members their own row only (`online_time` is then `self`). See [Agents](/guides/reports/#agents) for what each column counts.
+One row per owner, admin and agent, most solved first, narrowed like the overview by `team_id` and `brand_id`. Online time is personal: `online_minutes` is filled in for every row only for API keys with the `settings:read` scope (`online_time` is then `all`). Signed in, owners and admins get every row and members their own row only (`online_time` is then `self`). A workspace that turned online time off (`settings.agent_online_time: false`) answers `off` to everyone, with no online time on any row. See [Agents](/guides/reports/#agents) for what each column counts.

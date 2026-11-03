@@ -52,6 +52,7 @@ type CoreWorkspaceSettings struct {
 	UndoSendSeconds   *int    `json:"undo_send_seconds,omitempty" enum:"0,5,10,20,30" doc:"Seconds the app holds an agent's reply on an email (or any other non-chat) ticket, with a way to take it back or make it a note, before sending it. Default 5; 0 sends at once"`
 	UndoSendChatSecs  *int    `json:"undo_send_chat_seconds,omitempty" enum:"0,5,10,20,30" doc:"The same for replies on chat tickets. Default 0: a chat reply goes at once"`
 	SendAndFinish     *bool   `json:"send_and_finish_button,omitempty" doc:"Show a button that sends and solves, using the workspace's finish label next to Send in the reply composer, instead of only in its menu. Default false"`
+	AgentOnlineTime   *bool   `json:"agent_online_time,omitempty" doc:"Record each member's online time from the app's heartbeats and show it in the agents report. Default true; false records none, deletes what was recorded, and the report shows none"`
 	// StatusLabels and PriorityLabels rename and recolour the fixed values for display only;
 	// a status can also be hidden from the menus agents pick from.
 	StatusLabels   map[string]DisplayOverride `json:"status_labels,omitempty"`
@@ -279,6 +280,9 @@ func validateSettings(s *CoreWorkspaceSettings) (map[string]any, error) {
 	}
 	if s.SendAndFinish != nil {
 		out["send_and_finish_button"] = *s.SendAndFinish
+	}
+	if s.AgentOnlineTime != nil {
+		out["agent_online_time"] = *s.AgentOnlineTime
 	}
 	if s.CollabReplyTo != nil {
 		if !slices.Contains([]string{"address", "mailbox"}, *s.CollabReplyTo) {
@@ -555,7 +559,12 @@ func (s *svc) registerWorkspaces(api huma.API) {
 				}
 			}
 			var w CoreWorkspace
-			err = s.tx(ctx, func(tx pgx.Tx) error {
+			err = s.presenceSettingsTx(ctx, func(tx pgx.Tx) error {
+				if _, changes := patch["agent_online_time"]; changes {
+					if err := lockPresence(ctx, tx, p.WorkspaceID, true); err != nil {
+						return err
+					}
+				}
 				if _, err := tx.Exec(ctx, `UPDATE workspaces SET name = COALESCE($2, name), settings = settings || $3::jsonb, updated_at = now()
 					WHERE id = $1`, p.WorkspaceID, name, patch); err != nil {
 					return err
@@ -575,6 +584,11 @@ func (s *svc) registerWorkspaces(api huma.API) {
 				}
 				if err := requeuePictures(ctx, tx, p.WorkspaceID, patch); err != nil {
 					return err
+				}
+				if patch["agent_online_time"] == false {
+					if err := removePresence(ctx, tx, p.WorkspaceID); err != nil {
+						return err
+					}
 				}
 				if err := brands.SyncDefault(ctx, tx, s.d.Cfg, p.WorkspaceID, patch); err != nil {
 					return err

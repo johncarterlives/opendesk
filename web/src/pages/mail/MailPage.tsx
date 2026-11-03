@@ -240,7 +240,7 @@ export default function MailPage() {
       const senders = new Set(items.map((x) => ruleSender(x.participants, ownEmails)));
       const sender = senders.size === 1 ? [...senders][0] : null;
       const msg = t("categories.moved", { count: ids.length, name });
-      if (!acc?.can_manage || !sender || items.some((x) => x.account_id !== acc.id)) {
+      if (!acc?.can_manage || acc.categories.engine === "gmail" || !sender || items.some((x) => x.account_id !== acc.id)) {
         if (undo) toast.undo(msg, undo, t("toast.undo"));
         else toast.success(msg);
         return;
@@ -344,10 +344,15 @@ export default function MailPage() {
 
   useHotkeys({
     j: () => move(1),
-    arrowdown: () => !openId && move(1),
     k: () => move(-1),
-    arrowup: () => !openId && move(-1),
-    enter: () => !openId && open(threads[focusIdx]),
+    // With a conversation open, the arrows and Enter are its own: they scroll it and press its buttons.
+    ...(openId
+      ? {}
+      : {
+          arrowdown: () => move(1),
+          arrowup: () => move(-1),
+          enter: () => open(threads[focusIdx]),
+        }),
     o: () => open(threads[focusIdx]),
     x: () => threads[focusIdx] && toggle(threads[focusIdx], false),
     e: () => act(targets(), "archive"),

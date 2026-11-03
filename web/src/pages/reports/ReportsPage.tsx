@@ -27,6 +27,7 @@ import type { ReportsOverview, ReportsQuery, ReportsRange, Ticket } from "@/lib/
 import { cn } from "@/lib/cn";
 import { minutes } from "@/lib/format";
 import { q } from "@/lib/queries";
+import { atLeast, useRole } from "@/lib/session";
 import { isTone, priorityTone, SERIES, statusTone, tone, toneFor, toneVar, type Tone } from "@/lib/tones";
 import { reportsQuery } from "@/router";
 
@@ -477,8 +478,11 @@ function AgentWorkCard({ filter }: { filter: ReportsQuery }) {
   const { t } = useTranslation("reports");
   const report = useQuery({ ...q.reportAgents(filter), placeholderData: keepPreviousData });
   const d = report.data;
-  const self = d?.online_time === "self";
-  const note = d?.online_time === "all" ? t("work.onlineNote") : self ? t("work.onlineSelf") : null;
+  const role = useRole();
+  // With online time off (settings.agent_online_time), a member who is not an admin still sees their own row alone.
+  const off = d?.online_time === "off";
+  const self = d?.online_time === "self" || (off && !atLeast(role, "admin"));
+  const note = off ? t("work.onlineOff") : d?.online_time === "all" ? t("work.onlineNote") : self ? t("work.onlineSelf") : null;
   return (
     <Card title={t("work.title")} subtitle={self ? t("work.subtitleSelf") : t("work.subtitle")} flush className={cn("transition-opacity duration-150", report.isFetching && report.isPlaceholderData && "opacity-60")}>
       {report.isLoading ? (

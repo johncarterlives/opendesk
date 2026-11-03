@@ -183,7 +183,18 @@ function useSendThread(ticket: Ticket) {
   });
 }
 
-export const Composer = forwardRef<ComposerHandle, { ticket: Ticket; disabled?: boolean }>(function Composer({ ticket, disabled }, ref) {
+export const Composer = forwardRef<
+  ComposerHandle,
+  {
+    ticket: Ticket;
+    disabled?: boolean;
+    /**
+     * A reply or note sent with a status, `heldMs` the reply's undo window. True when the page
+     * moves on from the ticket: a reply that then fails says so in a toast.
+     */
+    onSent?: (status: TicketStatus, heldMs: number) => boolean;
+  }
+>(function Composer({ ticket, disabled, onSent }, ref) {
   const { t } = useTranslation("inbox");
   const display = useDisplay();
   useTranslation("indicators");
@@ -484,6 +495,7 @@ export const Composer = forwardRef<ComposerHandle, { ticket: Ticket; disabled?: 
     const tempId = `tmp-${Date.now().toString(36)}`;
     retries.current.set(tempId, body);
     const temp = tempMessage(body, tempId);
+    const warn = !!status && !!onSent?.(status, reply ? undoSeconds * 1000 : 0);
     if (reply)
       hold(
         temp,
@@ -491,10 +503,11 @@ export const Composer = forwardRef<ComposerHandle, { ticket: Ticket; disabled?: 
         { html: draft.html, cc: draft.cc, bcc: draft.bcc, mailboxId: draft.mailboxId, fromAccount: draft.fromAccount, uploads, fromNote: draft.fromNote },
         me,
         undoSeconds,
+        { warn },
       );
     else {
       uploads.forEach((u) => u.preview && URL.revokeObjectURL(u.preview));
-      void deliver(temp, body, me);
+      void deliver(temp, body, me, { warn });
     }
     setSentWith(status);
     setSent(true);

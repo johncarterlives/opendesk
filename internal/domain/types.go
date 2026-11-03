@@ -140,6 +140,7 @@ type Ticket struct {
 	PageURL               string         `json:"page_url"`
 	Routed                *TicketRouted  `json:"routed"`
 	Tags                  []TagRef       `json:"tags"`
+	RequiredSkills        []TicketSkill  `json:"required_skills"`
 	Fields                map[string]any `json:"fields"`
 	SLA                   *TicketSLA     `json:"sla"`
 	FirstRespondedAt      *time.Time     `json:"first_responded_at"`
@@ -158,6 +159,12 @@ type Ticket struct {
 	Custom             map[string]any `json:"custom"`
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
+}
+
+// TicketSkill is a required skill resolved from the workspace catalog.
+type TicketSkill struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
 }
 
 // TicketRouted records why a ticket is in its team (contracts/teams.md "Routing").

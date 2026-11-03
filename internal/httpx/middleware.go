@@ -66,13 +66,22 @@ func Logger(log *slog.Logger) func(http.Handler) http.Handler {
 }
 
 // LogPath is a request path as logs may keep it: a survey link of an earlier version
-// carried its token in the path (/csat/<token>), which is left out.
+// carried its token in the path (/csat/<token>), and a phone webhook an admin adds by hand
+// carries its secret after the connection (/v1/phone/hooks/<provider>/<id>/<secret>),
+// which are left out.
 func LogPath(p string) string {
 	if strings.HasPrefix(p, "/csat/") {
 		return "/csat/…"
 	}
+	if rest, ok := strings.CutPrefix(p, phoneHooks); ok {
+		if parts := strings.SplitN(rest, "/", 3); len(parts) == 3 {
+			return phoneHooks + parts[0] + "/" + parts[1] + "/…"
+		}
+	}
 	return p
 }
+
+const phoneHooks = "/v1/phone/hooks/"
 
 // SecurityHeaders sets HSTS, nosniff, frame denial, referrer policy and a default-deny CSP
 // on every API response. API responses (/v1/) are not stored by browsers or proxies unless
@@ -305,7 +314,7 @@ func (l *Limiter) Take(key string, limit int, period time.Duration) (ok bool, re
 }
 
 // Per-credential request limits (ASVS 11.1.4): every request an API key, a person or a
-// widget visitor makes counts, and writes also count on their own.
+// widget visitor or customer makes counts, and writes also count on their own.
 const (
 	credentialRequestsPerMinute = 1200
 	credentialWritesPerMinute   = 600
@@ -336,6 +345,8 @@ func CredentialLimit(l *Limiter, clientIP func(*http.Request) string) func(http.
 				id = "key:" + p.APIKeyID.String()
 			case auth.KindVisitor:
 				id = "visitor:" + p.VisitorID.String()
+			case auth.KindCustomer:
+				id = "customer:" + p.SessionID.String()
 			default:
 				id = "user:" + p.UserID.String()
 			}

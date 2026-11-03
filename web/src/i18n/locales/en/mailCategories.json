@@ -116,9 +116,15 @@
     "team": "Follows {{team}}",
     "workspace": "Follows the workspace",
     "workspaceOff": "The workspace turned them off",
-    "none": "No default yet"
+    "none": "No default yet",
+    "gmail": "Sync with Gmail"
   },
   "section": {
+    "sync": {
+          "refreshing": "Refreshing categories from Gmail. Older conversations may take a little longer.",
+          "pending": "Category changes are waiting for Gmail confirmation.",
+          "failed": "Some category changes could not reach Gmail. Check the account connection and try moving the conversation again."
+    },
     "title": "Inbox categories",
     "description": "Split this inbox into tabs like Primary, Updates and Newsletters. New mail is sorted as it arrives, and nothing leaves the inbox.",
     "locked": "Your workspace's admins set the categories. You can still choose whether Ollie sorts this account's mail.",
@@ -153,11 +159,11 @@
   },
   "setup": {
     "title": "Split your inbox",
-    "description": "Tabs for {{account}}: mail from people stays in Primary, and updates, newsletters and the rest get tabs of their own as they arrive.",
+    "description": "Choose how to organise mail for {{account}}: sync Gmail categories or set up your own tabs.",
     "steps": "Steps",
     "step1": "Pick a start",
     "step2": "Make it yours",
-    "gmail": "Like Gmail",
+    "gmail": "Sync with Gmail",
     "ollie": "Ask Ollie",
     "ollieHint": "Ollie looks at the senders and subjects of this inbox's latest mail and proposes tabs.",
     "ollieAbout": "Anything Ollie should know? (optional)",
@@ -170,6 +176,9 @@
     "save": "Split my inbox",
     "saved": "Your inbox is split. New mail is sorted as it arrives.",
     "everyone": "Set it up for everyone instead",
-    "locked": "Your workspace's admins set the categories for everyone. Ask an admin to change them."
+    "locked": "Your workspace's admins set the categories for everyone. Ask an admin to change them.",
+    "gmailHint": "Use Gmail’s categories. Moving a conversation here changes it in Gmail, and changes in Gmail appear here. Ollie and sender rules do not sort this inbox.",
+    "gmailSaved": "Gmail category sync is on. Existing mail is being refreshed.",
+    "preset": "Suggested categories"
   }
 }

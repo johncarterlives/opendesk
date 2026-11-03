@@ -357,7 +357,7 @@ func (s *service) registerThreadRoutes(api huma.API) {
 			}
 			for _, aid := range order {
 				if b.Action == ActionCategorize {
-					break // done above, in opendesk only
+					break // admitted atomically above, including any durable Gmail intent
 				}
 				a, err := loadAccount(ctx, s.d.DB.Pool, p.WorkspaceID, aid)
 				if err != nil {
@@ -606,7 +606,7 @@ func (s *service) threadDetail(ctx context.Context, q db.Querier, p *auth.Princi
 		return out, err
 	}
 	account := ThreadAccount{ID: a.ID, Email: a.Email, Name: name, DisplayName: a.DisplayName, Color: a.Color, Provider: a.Provider,
-		SignatureHTML: a.SignatureHTML}
+		SignatureHTML: a.SignatureHTML, ReplyAll: a.ReplyAll}
 	if account.Identities, account.DefaultFrom, err = identitiesOut(ctx, s.fillerFor(q, p.WorkspaceID, p.UserID), a, idents); err != nil {
 		return out, err
 	}

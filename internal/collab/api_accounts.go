@@ -49,6 +49,7 @@ type updateAccountInput struct {
 		SignatureHTML   *string    `json:"signature_html,omitempty"`
 		Visibility      *string    `json:"visibility,omitempty" enum:"private,shared"`
 		HandlingEnabled *bool      `json:"handling_enabled,omitempty" doc:"Track work separately from unread for this shared account"`
+		ReplyAll        *bool      `json:"reply_all,omitempty" doc:"Reply answers everyone on the message by default, for everyone who answers from this account"`
 		SharedWith      *Audience  `json:"shared_with,omitempty"`
 		IMAP            *imapPatch `json:"imap,omitempty"`
 		DefaultFrom     *string    `json:"default_from,omitempty" maxLength:"254" doc:"The address new mail goes out from: the account's own or one of its usable addresses"`
@@ -184,6 +185,9 @@ func (s *service) registerAccountRoutes(api huma.API) {
 			} else if visibility == VisibilityPrivate && a.HandlingEnabled {
 				a.HandlingEnabled, changed = false, append(changed, "handling_enabled")
 			}
+			if b.ReplyAll != nil && *b.ReplyAll != a.ReplyAll {
+				a.ReplyAll, changed = *b.ReplyAll, append(changed, "reply_all")
+			}
 
 			// IMAP servers: tried before anything is saved.
 			var sealed []byte
@@ -234,8 +238,8 @@ func (s *service) registerAccountRoutes(api huma.API) {
 					return err
 				}
 				if _, err := tx.Exec(ctx, `UPDATE collab_accounts SET name = $3, display_name = $4, color = $5, signature_html = $6,
-					visibility = $7, handling_enabled = $8, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
-					p.WorkspaceID, a.ID, a.Name, a.DisplayName, a.Color, a.SignatureHTML, a.Visibility, a.HandlingEnabled); err != nil {
+					visibility = $7, handling_enabled = $8, reply_all = $9, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
+					p.WorkspaceID, a.ID, a.Name, a.DisplayName, a.Color, a.SignatureHTML, a.Visibility, a.HandlingEnabled, a.ReplyAll); err != nil {
 					return err
 				}
 				if err := s.recordAccountPatch(ctx, tx, a.ID, pushed, changed); err != nil {
@@ -269,6 +273,11 @@ func (s *service) registerAccountRoutes(api huma.API) {
 				if len(changed) > 0 {
 					if err := audit.Log(ctx, tx, p, p.WorkspaceID, "collab.account_updated", "collab_account", &a.ID,
 						map[string]any{"fields": changed}); err != nil {
+						return err
+					}
+				}
+				if slices.Contains(changed, "reply_all") {
+					if err := s.publishSharedThreadsChanged(ctx, tx, p.WorkspaceID, a.ID); err != nil {
 						return err
 					}
 				}

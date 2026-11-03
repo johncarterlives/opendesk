@@ -1,3 +1,4 @@
+import { captureResetToken } from "@/lib/customerPortal/resetToken";
 // The route table. Every page is a lazy chunk preloaded on link intent, carries
 // its tab title in staticData.title, and prefetches its first queries in its
 // loader through the same queryOptions its components read.
@@ -21,6 +22,7 @@ import { stripWorkspaceParam, workspaceParam } from "./lib/workspaceParam";
 import { queryClient } from "./lib/queryClient";
 import { q } from "./lib/queries";
 import { folderById, listQuery, parseInboxSearch, teamQuery } from "./lib/folders";
+import { withRememberedSort } from "./lib/listSort";
 import { isMailRouteBox, mailListQuery, parseMailSearch } from "./lib/collab/boxes";
 
 export type RouterContext = { queryClient: QueryClient };
@@ -98,6 +100,21 @@ const csatLegacyRoute = createRoute({
   component: page(() => import("./pages/public/Csat")),
   staticData: { title: "rateYourConversation" },
 });
+
+// Capture before createRouter subscribes to browser history.
+const initialPortalResetPath = window.location.pathname;
+const initialPortalResetToken = captureResetToken();
+
+// Customer portal routes are public and never enter the agent app layout.
+const portalPage = page(() => import("./pages/public/CustomerPortal"));
+const portalRoute = createRoute({ getParentRoute: () => rootRoute, path: "/portal/$slug", component: portalPage });
+const portalForgotRoute = createRoute({ getParentRoute: () => rootRoute, path: "/portal/$slug/forgot", component: portalPage });
+const portalResetRoute = createRoute({
+  getParentRoute: () => rootRoute, path: "/portal/$slug/reset",
+  beforeLoad: ({ location }) => ({ portalResetToken: location.pathname === initialPortalResetPath ? initialPortalResetToken : "" }),
+  component: portalPage,
+});
+const portalTicketRoute = createRoute({ getParentRoute: () => rootRoute, path: "/portal/$slug/tickets/$ticketId", component: portalPage });
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
 
@@ -249,6 +266,11 @@ const inboxRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/inbox/$folder/{-$ticketId}",
   validateSearch: parseInboxSearch,
+  // A list opened without a sort comes back in the order this member last chose for it (lib/listSort.ts).
+  beforeLoad: ({ params, search }) => {
+    const s = withRememberedSort({ folder: params.folder }, search);
+    if (s) throw redirect({ to: "/inbox/$folder/{-$ticketId}", params, search: s, replace: true });
+  },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const f = folderById(params.folder);
@@ -280,6 +302,10 @@ const viewRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/views/$viewId/{-$ticketId}",
   validateSearch: parseInboxSearch,
+  beforeLoad: ({ params, search }) => {
+    const s = withRememberedSort({ viewId: params.viewId }, search);
+    if (s) throw redirect({ to: "/views/$viewId/{-$ticketId}", params, search: s, replace: true });
+  },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const qc = context.queryClient;
@@ -296,6 +322,10 @@ const teamRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/teams/$teamId/{-$ticketId}",
   validateSearch: parseInboxSearch,
+  beforeLoad: ({ params, search }) => {
+    const s = withRememberedSort({ teamId: params.teamId }, search);
+    if (s) throw redirect({ to: "/teams/$teamId/{-$ticketId}", params, search: s, replace: true });
+  },
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const qc = context.queryClient;
@@ -791,6 +821,7 @@ const sAutomationEdit = createRoute({
     const qc = context.queryClient;
     void qc.prefetchQuery(q.mailboxes());
     void qc.prefetchQuery(q.teams());
+    void qc.prefetchQuery(q.procedures());
     return qc.ensureQueryData(q.automations());
   },
   component: page(() => import("./pages/settings/AutomationEdit")),
@@ -885,6 +916,12 @@ const sAgentBot = createRoute({
 const sAgentKnowledge = settingsPage("/ai/knowledge", "knowledge", () => import("./pages/settings/agent/AgentKnowledge"), (qc) =>
   qc.ensureQueryData(q.knowledge()),
 );
+// Scoped instructions the agent picks by their "use this when" line (contracts/agent.md "Procedures").
+const sAgentProcedures = settingsPage("/ai/procedures", "agentProcedures", () => import("./pages/settings/agent/AgentProcedures"), (qc) => {
+  void qc.prefetchQuery(q.bots());
+  void qc.prefetchQuery(q.aiConfig());
+  return qc.ensureQueryData(q.procedures());
+});
 const sAgentTools = createRoute({
   getParentRoute: () => settingsLayout,
   path: "/ai/tools",
@@ -935,6 +972,7 @@ const routeTree = rootRoute.addChildren([
   helpRoute,
   csatRoute,
   csatLegacyRoute,
+  portalRoute, portalForgotRoute, portalResetRoute, portalTicketRoute,
   authLayout.addChildren([
     loginRoute,
     registerRoute,
@@ -1014,6 +1052,7 @@ const routeTree = rootRoute.addChildren([
       sAgentBots,
       sAgentBot,
       sAgentKnowledge,
+      sAgentProcedures,
       sAgentTools,
       sAgentPlayground,
       sAgentTests,

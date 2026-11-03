@@ -58,6 +58,10 @@ func (rv *Resolver) resolve(r *http.Request) *Principal {
 	case strings.EqualFold(scheme, "Bearer"):
 		c, err := rv.Tokens.Verify(cred, PurposeAccess)
 		if err != nil {
+			p := base
+			if rv.resolveCustomer(ctx, cred, &p) {
+				return &p
+			}
 			return nil
 		}
 		uid, err1 := uuid.Parse(c.Subject)
@@ -131,6 +135,47 @@ func (rv *Resolver) resolveVisitor(ctx context.Context, token string, p *Princip
 		_, _ = rv.Pool.Exec(context.WithoutCancel(ctx), `UPDATE widget_sessions SET last_seen_at = now() WHERE id = $1`, p.VisitorID)
 	}
 	return true
+}
+
+// CustomerSessionLive is the live identity condition shared by access and refresh.
+// Aliases: s customer_sessions, c contacts, a customer_credentials, w workspaces.
+const CustomerSessionLive = `s.revoked_at IS NULL AND s.expires_at > now()
+ AND c.email = s.email AND a.email = c.email AND NOT c.blocked AND w.suspended_at IS NULL`
+
+func (rv *Resolver) resolveCustomer(ctx context.Context, token string, p *Principal) bool {
+	c, err := rv.Tokens.Verify(token, PurposeCustomerAccess)
+	if err != nil {
+		return false
+	}
+	cid, e1 := uuid.Parse(c.Subject)
+	sid, e2 := uuid.Parse(c.SessionID)
+	wid, e3 := uuid.Parse(c.Workspace)
+	if e1 != nil || e2 != nil || e3 != nil {
+		return false
+	}
+	err = rv.Pool.QueryRow(ctx, `SELECT s.workspace_id, s.contact_id, s.id FROM customer_sessions s
+ JOIN contacts c ON c.workspace_id = s.workspace_id AND c.id = s.contact_id
+ JOIN customer_credentials a ON a.workspace_id = s.workspace_id AND a.contact_id = s.contact_id
+ JOIN workspaces w ON w.id = s.workspace_id
+ WHERE s.id = $1 AND s.contact_id = $2 AND s.workspace_id = $3 AND `+CustomerSessionLive, sid, cid, wid).
+		Scan(&p.WorkspaceID, &p.ContactID, &p.SessionID)
+	if err != nil {
+		return false
+	}
+	p.Kind = KindCustomer
+	return true
+}
+
+// RequireCustomer demands a live customer portal session, separate from members and visitors.
+func RequireCustomer(ctx context.Context) (*Principal, error) {
+	p := FromContext(ctx)
+	if p == nil || p.Kind != KindCustomer || p.WorkspaceID == uuid.Nil || p.ContactID == uuid.Nil || p.SessionID == uuid.Nil {
+		return nil, ErrUnauthenticated
+	}
+	if p.WorkspaceSuspended {
+		return nil, ErrWorkspaceSuspended
+	}
+	return p, nil
 }
 
 // shouldTouch rate-limits last-used writes to one per minute per credential.

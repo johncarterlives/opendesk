@@ -15,6 +15,7 @@ import { useRoutingData, useRuleSummary } from "@/components/settings2/routing";
 import { SettingsEmpty } from "@/components/settings2/SettingsEmpty";
 import { SortableList } from "@/components/settings2/Sortable";
 import { BrandMark, TeamChip, useTeams } from "@/components/settings2/teams";
+import { TagChip } from "@/components/ui/badge";
 import { SinglePick } from "@/components/settings2/pickers";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
@@ -382,6 +383,12 @@ function TestResult({ r }: { r: RoutingTest }) {
         <dd className="mono min-w-0 truncate text-[12px]">{mailbox?.email ?? <span className="font-sans text-fg-3">{t("routing.test.noAddress")}</span>}</dd>
         <dt className="text-fg-3">{t("routing.test.assign")}</dt>
         <dd>{ti(`assignment.modes.${r.assign_mode}.label`)}</dd>
+        {r.required_skills.length > 0 && (
+          <>
+            <dt className="text-fg-3">{t("routing.test.requiredSkills")}</dt>
+            <dd className="flex min-w-0 flex-wrap gap-1">{r.required_skills.map((skill) => <TagChip key={skill.id} name={skill.name} color="violet" />)}</dd>
+          </>
+        )}
         <dt className="text-fg-3">{t("routing.test.why")}</dt>
         <dd className="text-fg-2">{r.routed ? (r.routed.via === "rule" ? t("routing.test.viaRule", { name: r.routed.rule_name ?? "" }) : t(`routing.via.${r.routed.via}`)) : t("routing.test.viaNone")}</dd>
       </dl>

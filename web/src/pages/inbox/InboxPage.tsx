@@ -1,12 +1,15 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
+import { useNavigate, useParams, useRouter, useSearch, type NavigateOptions } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { CircleCheck, CircleDashed, Clock, Inbox, ShieldAlert, User, Users } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { Ticket } from "@/lib/api/types";
+import type { Team, Ticket, TicketStatus } from "@/lib/api/types";
 import { folderById, listQuery, teamQuery, type FolderId, type InboxSearch } from "@/lib/folders";
-import { q } from "@/lib/queries";
+import { q, qk } from "@/lib/queries";
+import { leavesList, nextInList, useNextTicketAfterSend } from "@/lib/nextTicket";
+import { teamsOf } from "@/lib/ticketCache";
+import { useUnsent } from "@/components/tickets/detail/outbox";
 import { useHotkeys } from "@/lib/hotkeys";
 import { realtime } from "@/lib/realtime/manager";
 import { cn } from "@/lib/cn";
@@ -29,10 +32,12 @@ import { intent } from "@/components/tickets/motion";
 import { focusField, missingForSolve, useDisplay, useTicketFields } from "@/components/tickets/fields";
 import { atLeast, useRole, useSession } from "@/lib/session";
 import { paneCss, setLiveWidth, usePaneWidth } from "@/lib/panes";
+import { rememberSort } from "@/lib/listSort";
 import { useDocumentTitle } from "@/app/RootLayout";
 import { TeamDot, useTeamsCtx } from "@/components/tickets/teams";
 import { ViewIcon, viewName } from "@/components/tickets/ViewIcon";
 import { TeamTabs } from "./TeamTabs";
+import { useHref } from "@/lib/links";
 
 const TicketDetail = lazy(() => import("@/components/tickets/detail/TicketDetail"));
 
@@ -129,6 +134,7 @@ export default function InboxPage() {
   const params = useParams({ strict: false }) as { folder?: string; viewId?: string; teamId?: string; ticketId?: string };
   const search = useSearch({ strict: false }) as InboxSearch;
   const navigate = useNavigate();
+  const router = useRouter();
   const qc = useQueryClient();
   const canEdit = atLeast(useRole(), "agent");
   const update = useUpdateTicket();
@@ -249,21 +255,83 @@ export default function InboxPage() {
   useEffect(() => () => realtime()?.setWatched([]), []);
 
   // The same list page serves folders, views and team inboxes.
-  const go = useCallback(
-    (ticketId: string | undefined, search: InboxSearch | true, replace?: boolean) => {
-      if (params.viewId) void navigate({ to: "/views/$viewId/{-$ticketId}", params: { viewId: params.viewId, ticketId }, search, replace });
-      else if (params.teamId) void navigate({ to: "/teams/$teamId/{-$ticketId}", params: { teamId: params.teamId, ticketId }, search, replace });
-      else void navigate({ to: "/inbox/$folder/{-$ticketId}", params: { folder: params.folder!, ticketId }, search, replace });
+  const dest = useCallback(
+    (ticketId: string | undefined, search: InboxSearch | true): NavigateOptions => {
+      if (params.viewId) return { to: "/views/$viewId/{-$ticketId}", params: { viewId: params.viewId, ticketId }, search };
+      if (params.teamId) return { to: "/teams/$teamId/{-$ticketId}", params: { teamId: params.teamId, ticketId }, search };
+      return { to: "/inbox/$folder/{-$ticketId}", params: { folder: params.folder!, ticketId }, search };
     },
-    [navigate, params.folder, params.viewId, params.teamId],
+    [params.folder, params.viewId, params.teamId],
   );
+  const go = useCallback(
+    (ticketId: string | undefined, search: InboxSearch | true, replace?: boolean) => void navigate({ ...dest(ticketId, search), replace }),
+    [navigate, dest],
+  );
+  // Each row's link: its ticket open in this list, with the list's filters and sort.
+  const toHref = useHref();
+  const rowHrefs = useMemo(() => new Map(tickets.map((t) => [t.id, toHref(dest(t.id, search))])), [tickets, toHref, dest, search]);
   const open = useCallback((t: Ticket | undefined) => t && go(t.id, true), [go]);
   const close = useCallback(() => go(undefined, true), [go]);
+
+  // After a send that takes the open ticket out of this list (Send and solve, or a status the
+  // list doesn't show), on to the next ticket, or back to the list after the last (Profile →
+  // Appearance). A reply still in its undo window that is undone brings its ticket back.
+  const nextAfterSend = useNextTicketAfterSend();
+  const leftHeld = useRef(new Set<string>());
+  const pendingAdvance = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const cancel = () => pendingAdvance.current?.abort();
+    const stopNavigation = router.subscribe("onBeforeNavigate", cancel);
+    const stopSession = useSession.subscribe((state, previous) => {
+      if (state.workspaceId !== previous.workspaceId || state.user?.id !== previous.user?.id) cancel();
+    });
+    return () => {
+      cancel();
+      stopNavigation();
+      stopSession();
+    };
+  }, [router, listKey]);
+  const onSent = (t: Ticket, status: TicketStatus, heldMs: number): boolean => {
+    if (!nextAfterSend || !me || !tickets.some((x) => x.id === t.id)) return false;
+    const teams = qc.getQueryData<Team[]>(qk.teams);
+    if (!leavesList(query, t, status, me.id, views, teams ? teamsOf(teams, me.id) : null)) return false;
+    if (heldMs > 0) {
+      leftHeld.current.add(t.id);
+      setTimeout(() => leftHeld.current.delete(t.id), heldMs + 1000);
+    }
+    pendingAdvance.current?.abort();
+    const advance = new AbortController();
+    pendingAdvance.current = advance;
+    const before = tickets;
+    const land = (next: Ticket | undefined) => {
+      if (advance.signal.aborted) return;
+      pendingAdvance.current = null;
+      if (next) open(next);
+      else close();
+    };
+    const next = nextInList(before, t.id);
+    // The last ticket loaded: the next one may be on the list's next page.
+    if (next || !list.hasNextPage) land(next);
+    else void list.fetchNextPage().then((r) => land(nextInList(before, t.id, r.data?.pages.flatMap((p) => p.data) ?? [])));
+    return true;
+  };
+  useEffect(
+    () =>
+      useUnsent.subscribe((s) => {
+        for (const id of Object.keys(s)) if (leftHeld.current.delete(id)) {
+          pendingAdvance.current?.abort();
+          go(id, true);
+        }
+      }),
+    [go],
+  );
 
   const setSearch = (s: InboxSearch) => {
     const clean = Object.fromEntries(Object.entries(s).filter(([, v]) => v !== undefined && v !== "")) as InboxSearch;
     // Filters keep the team inbox's tab.
     if (params.teamId && search.tab && !("tab" in s)) clean.tab = search.tab;
+    // A sort chosen here is the one the list opens with next time (lib/listSort.ts).
+    if (clean.sort !== search.sort || clean.order !== search.order) rememberSort(params, { sort: clean.sort, order: clean.order });
     go(params.ticketId, clean, true);
   };
 
@@ -360,15 +428,16 @@ export default function InboxPage() {
 
   useHotkeys({
     j: () => move(1),
-    arrowdown: () => !openId && move(1),
     k: () => move(-1),
-    arrowup: () => !openId && move(-1),
-    enter: () => !openId && open(tickets[focusIdx]),
     o: () => open(tickets[focusIdx]),
     x: () => tickets[focusIdx] && toggle(tickets[focusIdx], false),
+    // With a ticket open, the arrows and Enter are the ticket's: they scroll it and press its buttons.
     ...(openId
       ? {}
       : {
+          arrowdown: () => move(1),
+          arrowup: () => move(-1),
+          enter: () => open(tickets[focusIdx]),
           e: solveFocused,
           r: replyFocused,
           i: () => tickets[focusIdx] && !tickets[focusIdx].assignee && quick(tickets[focusIdx], "assign"),
@@ -494,6 +563,7 @@ export default function InboxPage() {
                     compact={compact}
                     hideAssignee={fid === "mine"}
                     fresh={Date.parse(t.last_message_at) > shownAt}
+                    href={rowHrefs.get(t.id) ?? ""}
                     onOpen={open}
                     onToggle={toggle}
                     onHover={prefetch}
@@ -545,6 +615,7 @@ export default function InboxPage() {
               onPrev={idx > 0 ? () => open(tickets[idx - 1]) : undefined}
               onNext={idx >= 0 && idx < tickets.length - 1 ? () => open(tickets[idx + 1]) : undefined}
               position={idx >= 0 ? { index: idx + 1, total: count ?? tickets.length } : undefined}
+              onSent={canEdit ? onSent : undefined}
             />
           </Suspense>
         </section>

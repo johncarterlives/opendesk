@@ -70,7 +70,7 @@ func categoryKeysOf(list []MailCategory) []string {
 
 // categorySettings answers GET /v1/collab/categories for the caller.
 func (s *service) categorySettings(ctx context.Context, q db.Querier, p *auth.Principal) (MailCategorySettings, error) {
-	out := MailCategorySettings{Teams: []TeamCategorySet{}, Presets: presetCategories, Sorting: "rules"}
+	out := MailCategorySettings{Teams: []TeamCategorySet{}, Presets: presetCategories, GmailCategories: gmailCategories(), Sorting: "rules"}
 	if s.sortsWithAI(ctx, p.WorkspaceID) {
 		out.Sorting = "ai"
 	}
@@ -177,6 +177,9 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 					"scope": scopeWorkspace, "enabled": in.Body.Enabled, "keys": categoryKeysOf(cats), "locked": in.Body.Locked}); err != nil {
 					return err
 				}
+				if err := s.refreshWorkspaceCategoryPolicies(ctx, tx, p.WorkspaceID); err != nil {
+					return err
+				}
 				return s.queueCategorizeWorkspace(ctx, tx, p.WorkspaceID)
 			})
 			if err != nil {
@@ -199,6 +202,9 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 				}
 				if err := audit.Log(ctx, tx, p, p.WorkspaceID, "collab.categories_updated", "workspace", &p.WorkspaceID, map[string]any{
 					"scope": scopeWorkspace, "removed": true}); err != nil {
+					return err
+				}
+				if err := s.refreshWorkspaceCategoryPolicies(ctx, tx, p.WorkspaceID); err != nil {
 					return err
 				}
 				return s.queueCategorizeWorkspace(ctx, tx, p.WorkspaceID)
@@ -240,6 +246,9 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 					"scope": scopeTeam, "team_id": team, "enabled": in.Body.Enabled, "keys": categoryKeysOf(cats)}); err != nil {
 					return err
 				}
+				if err := s.refreshWorkspaceCategoryPolicies(ctx, tx, p.WorkspaceID); err != nil {
+					return err
+				}
 				return s.queueCategorizeWorkspace(ctx, tx, p.WorkspaceID)
 			})
 			if err != nil {
@@ -268,6 +277,9 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 				}
 				if err := audit.Log(ctx, tx, p, p.WorkspaceID, "collab.categories_updated", "team", &team, map[string]any{
 					"scope": scopeTeam, "team_id": team, "removed": true}); err != nil {
+					return err
+				}
+				if err := s.refreshWorkspaceCategoryPolicies(ctx, tx, p.WorkspaceID); err != nil {
 					return err
 				}
 				return s.queueCategorizeWorkspace(ctx, tx, p.WorkspaceID)
@@ -307,6 +319,9 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 						p.WorkspaceID, id, i); err != nil {
 						return err
 					}
+				}
+				if err := s.refreshWorkspaceCategoryPolicies(ctx, tx, p.WorkspaceID); err != nil {
+					return err
 				}
 				return s.queueCategorizeWorkspace(ctx, tx, p.WorkspaceID)
 			})
@@ -367,7 +382,7 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 		func(ctx context.Context, in *struct {
 			ID   string `path:"id"`
 			Body struct {
-				Mode       string         `json:"mode" enum:"follow,custom,off"`
+				Mode       string         `json:"mode" enum:"follow,custom,off,gmail"`
 				Categories []MailCategory `json:"categories,omitempty" maxItems:"8" doc:"custom: 2..8, primary first; left out keeps its own, else the default set"`
 				AI         *bool          `json:"ai,omitempty" doc:"Ollie may sort its new mail"`
 			}
@@ -389,9 +404,17 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 				return nil, httpx.Wrap(err)
 			}
 			cur := cs.resolve(a)
-			mode := map[string]string{modeFollow: modeFollow, modeCustom: modeOn, modeOff: modeOff}[in.Body.Mode]
+			mode := map[string]string{modeFollow: modeFollow, modeCustom: modeOn, modeOff: modeOff, modeGmail: modeGmail}[in.Body.Mode]
 			if mode == "" {
-				return nil, httpx.Validation("Choose follow, custom or off.")
+				return nil, httpx.Validation("Choose follow, custom, off or Gmail.")
+			}
+			if mode == modeGmail {
+				if a.Provider != ProviderGoogle || a.Config.Demo {
+					return nil, httpx.Validation("Gmail sync requires a connected Google account.")
+				}
+				if in.Body.Categories != nil || in.Body.AI != nil && *in.Body.AI {
+					return nil, httpx.Validation("Gmail supplies fixed categories and does not use Ollie sorting.")
+				}
 			}
 			cats := cur.Own
 			if len(in.Body.Categories) > 0 {
@@ -406,10 +429,41 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 				return nil, errCategoriesLocked
 			}
 			aiOn := cur.AI
-			if in.Body.AI != nil {
+			if own := cs.accounts[a.ID]; own != nil {
+				aiOn = own.AI
+			}
+			if in.Body.AI != nil && mode != modeGmail {
 				aiOn = *in.Body.AI
 			}
 			err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				// Serialize admissions with policy changes and preserve dormant preferences.
+				a, err = loadAccountForUpdate(ctx, tx, a.ID)
+				if err != nil {
+					return err
+				}
+				cs, err = loadAccountCategorySets(ctx, tx, a)
+				if err != nil {
+					return err
+				}
+				current := cs.resolve(a)
+				if len(in.Body.Categories) == 0 {
+					cats = current.Own
+					if mode == modeOn && len(cats) < minCategories {
+						cats = defaultCategories()
+					}
+				}
+				changed = in.Body.Mode != current.Mode || len(in.Body.Categories) > 0 && !slices.Equal(cats, current.Own)
+				if changed && cs.locked() && !p.Role.AtLeast(auth.RoleAdmin) {
+					return errCategoriesLocked
+				}
+				aiOn = current.AI
+				if own := cs.accounts[a.ID]; own != nil {
+					aiOn = own.AI
+				}
+				if in.Body.AI != nil && mode != modeGmail {
+					aiOn = *in.Body.AI
+				}
+
 				_, err := tx.Exec(ctx, `INSERT INTO collab_category_sets (id, workspace_id, scope, account_id, mode, categories, ai, by_admin, updated_by)
 					VALUES ($1, $2, 'account', $3, $4, $5, $6, $7, $8)
 					ON CONFLICT (account_id) WHERE scope = 'account' DO UPDATE SET mode = EXCLUDED.mode, categories = EXCLUDED.categories,
@@ -424,6 +478,9 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 					return err
 				}
 				if err := s.publishAccounts(ctx, tx, p.WorkspaceID, a.ID, nil); err != nil {
+					return err
+				}
+				if err := s.refreshCategoryPolicy(ctx, tx, a); err != nil {
 					return err
 				}
 				return s.queueCategorize(ctx, tx, a.ID)
@@ -502,6 +559,17 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 			}
 			var rule categoryRule
 			err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				a, err = loadAccountForUpdate(ctx, tx, a.ID)
+				if err != nil {
+					return err
+				}
+				cs, err := loadAccountCategorySets(ctx, tx, a)
+				if err != nil {
+					return err
+				}
+				if cs.resolve(a).Engine == modeGmail {
+					return httpx.Validation("Gmail decides categories while sync with Gmail is enabled.")
+				}
 				var n int
 				if err := tx.QueryRow(ctx, `SELECT count(*) FROM collab_category_rules WHERE account_id = $1 AND sender <> $2`, a.ID, sender).Scan(&n); err != nil {
 					return err
@@ -509,7 +577,7 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 				if n >= maxCategoryRules {
 					return httpx.Validation("An account keeps at most 500 sender rules.")
 				}
-				err := tx.QueryRow(ctx, `INSERT INTO collab_category_rules (id, workspace_id, account_id, sender, category, created_by)
+				err = tx.QueryRow(ctx, `INSERT INTO collab_category_rules (id, workspace_id, account_id, sender, category, created_by)
 					VALUES ($1, $2, $3, $4, $5, $6)
 					ON CONFLICT (account_id, sender) DO UPDATE SET category = EXCLUDED.category, created_by = EXCLUDED.created_by, created_at = now()
 					RETURNING id, sender, category, created_at`, ids.New(), p.WorkspaceID, a.ID, sender, in.Body.Category, p.UserID).
@@ -587,31 +655,7 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 // categorizeThreads moves conversations to a category of their account, the person's
 // choice (the action categorize), and tells who sees them.
 func (s *service) categorizeThreads(ctx context.Context, p *auth.Principal, threads []*threadRow, key string) error {
-	var accountIDs []uuid.UUID
-	for _, t := range threads {
-		accountIDs = appendNew(accountIDs, t.AccountID)
-	}
-	keys, err := accountCategoryKeys(ctx, s.d.DB.Pool, threads)
-	if err != nil {
-		return httpx.Wrap(err)
-	}
-	for _, id := range accountIDs {
-		if !slices.Contains(keys[id], key) {
-			return httpx.Validation("Choose one of the inbox's categories.")
-		}
-	}
-	err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
-		tids := make([]uuid.UUID, 0, len(threads))
-		for _, t := range threads {
-			tids = append(tids, t.ID)
-		}
-		if _, err := tx.Exec(ctx, `UPDATE collab_threads SET category = $3, category_source = 'person', category_pending = false
-			WHERE workspace_id = $1 AND id = ANY($2)`, p.WorkspaceID, tids, key); err != nil {
-			return err
-		}
-		return s.publishChanged(ctx, tx, p.WorkspaceID, nil, tids, true)
-	})
-	return httpx.Wrap(err)
+	return httpx.Wrap(s.chooseCategories(ctx, p, threads, key))
 }
 
 // cleanSender reads a sender rule's sender: an address, or @ and a domain, lower case.

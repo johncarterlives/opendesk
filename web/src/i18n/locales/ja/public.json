@@ -72,5 +72,45 @@
   "footer": {
     "powered_by": "Powered by",
     "language": "言語"
+  },
+  "portal": {
+    "title": "リクエスト",
+    "login": "サインイン",
+    "forgot": "パスワードのリンクを取得する",
+    "reset": "パスワードを選択してください",
+    "login_action": "サインイン",
+    "forgot_action": "リンクを送信",
+    "reset_action": "パスワードを保存",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "forgot_link": "パスワードが必要ですか？",
+    "back_login": "サインインに戻る",
+    "sign_out": "サインアウト",
+    "loading": "読み込み中…",
+    "unavailable": "このヘルプセンターはご利用いただけません。",
+    "error": "エラーが発生しました。もう一度お試しください。",
+    "weak_password": "より強力なパスワードを選択してください。",
+    "invalid_link": "このリンクは有効期限が切れているか、無効です。 新しいリンクをリクエストしてください。",
+    "password_change": "サインインする前に新しいパスワードを選択してください。",
+    "get_link": "パスワードのリンクを取得する",
+    "email_sent": "このアドレスでサインインできる場合は、リンクが送信されています。",
+    "reset_done": "パスワードが保存されました。",
+    "requests": "リクエスト",
+    "empty": "リクエストはまだありません。",
+    "next": "次へ",
+    "back_requests": "すべてのリクエスト",
+    "you": "あなた",
+    "team": "サポートチーム",
+    "reply": "返信する",
+    "send": "返信を送信",
+    "no_messages": "まだメッセージはありません。",
+    "help_center": "ヘルプセンターにアクセス",
+    "status": {
+      "open": "開く",
+      "pending": "保留中",
+      "on_hold": "保留",
+      "solved": "解決済み",
+      "closed": "休み"
+    }
   }
 }

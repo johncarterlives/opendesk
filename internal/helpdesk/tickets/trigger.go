@@ -606,6 +606,17 @@ func (r *triggerRun) apply(ctx context.Context, a automation, f facts) ([]string
 				return nil, err
 			}
 			changed = append(changed, "messages")
+		case "run_procedure":
+			// Ollie runs the procedure in a job, never in this transaction: once per automation,
+			// ticket and the message or call this run is about (contracts/ai.md "Automations").
+			id, err := uuid.Parse(act.Value)
+			if err != nil {
+				continue
+			}
+			if _, err := r.d.Jobs.InsertTx(ctx, r.tx, jobs.AIProcedureRunArgs{WorkspaceID: r.wid, TicketID: r.tid, AutomationID: a.ID, ProcedureID: id,
+				MessageID: r.messageID, CallID: r.callID}, &river.InsertOpts{MaxAttempts: 3, UniqueOpts: river.UniqueOpts{ByArgs: true}}); err != nil {
+				return nil, fmt.Errorf("automation %s: run_procedure: %w", a.ID, err)
+			}
 		case "ai_triage":
 			// The hook skips (nil, nil) when AI is off, out of AI balance or unavailable; an
 			// error is a database failure of this transaction.
@@ -778,12 +789,15 @@ func autoAssign(ctx context.Context, tx pgx.Tx, d *deps.Deps, wid, tid uuid.UUID
 		return err
 	}
 	var assignee, team, mailbox *uuid.UUID
+	var requiredSkillIDs []uuid.UUID
 	var status string
 	var spam bool
 	var custom map[string]any
-	if err := tx.QueryRow(ctx, `SELECT assignee_id, team_id, mailbox_id, status, spam, custom FROM tickets
+	if err := tx.QueryRow(ctx, `SELECT assignee_id, team_id, mailbox_id, status, spam, custom,
+		COALESCE((SELECT array_agg(skill_id ORDER BY skill_id) FROM ticket_skills WHERE workspace_id = tickets.workspace_id AND ticket_id = tickets.id), '{}')
+		FROM tickets
 		WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL FOR UPDATE`, wid, tid).
-		Scan(&assignee, &team, &mailbox, &status, &spam, &custom); err != nil {
+		Scan(&assignee, &team, &mailbox, &status, &spam, &custom, &requiredSkillIDs); err != nil {
 		if db.IsNotFound(err) {
 			return nil
 		}
@@ -816,7 +830,7 @@ func autoAssign(ctx context.Context, tx pgx.Tx, d *deps.Deps, wid, tid uuid.UUID
 		}
 		pool = mbTeam
 	}
-	next, err := PickAssignee(ctx, tx, wid, pool, mode)
+	next, err := PickAssignee(ctx, tx, wid, pool, mode, requiredSkillIDs)
 	if err != nil || next == nil {
 		return err
 	}
@@ -831,8 +845,19 @@ type candidate struct {
 
 // PickAssignee chooses the next agent of a pool (a team, or the whole workspace) and
 // moves the pool's cursor. Eligible: owners, admins and agents whose presence is
-// online and who are under their open ticket cap. nil when nobody is eligible.
-func PickAssignee(ctx context.Context, tx pgx.Tx, wid uuid.UUID, team *uuid.UUID, mode string) (*uuid.UUID, error) {
+// online, who are under their open ticket cap, and who hold every required skill. The
+// qualifying member-skill rows stay key-shared through the caller's assignee write.
+// nil means nobody is eligible.
+func PickAssignee(ctx context.Context, tx pgx.Tx, wid uuid.UUID, team *uuid.UUID, mode string, requiredSkillIDs []uuid.UUID) (*uuid.UUID, error) {
+	// Member-skill replacement takes the workspace lock before locking a skill and
+	// replacing its relations. Take that same first lock before any eligibility or
+	// cursor lock so replacement cannot form a cycle with the assignment event write.
+	if _, err := tx.Exec(ctx, `SELECT 1 FROM workspaces WHERE id = $1 FOR NO KEY UPDATE`, wid); err != nil {
+		return nil, err
+	}
+	requiredSkillIDs = slices.Clone(requiredSkillIDs)
+	slices.SortFunc(requiredSkillIDs, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	requiredSkillIDs = slices.Compact(requiredSkillIDs)
 	key := "workspace"
 	q := `SELECT m.user_id, ` + domain.OpenTicketsSQL + ` FROM members m JOIN users u ON u.id = m.user_id JOIN workspaces w ON w.id = m.workspace_id
 		WHERE m.workspace_id = $1 AND m.role IN ('owner','admin','agent') AND ` + domain.PresenceSQL + ` = 'online'
@@ -845,6 +870,13 @@ func PickAssignee(ctx context.Context, tx pgx.Tx, wid uuid.UUID, team *uuid.UUID
 			WHERE tm.user_id = m.user_id AND tm.team_id = $2 AND tt.workspace_id = $1 AND tm.role IN ('lead', 'member'))`
 		args = append(args, *team)
 	}
+	if len(requiredSkillIDs) > 0 {
+		skillArg := "$" + fmt.Sprint(len(args)+1)
+		countArg := "$" + fmt.Sprint(len(args)+2)
+		q += ` AND (SELECT count(*) FROM member_skills ms WHERE ms.workspace_id = m.workspace_id
+			AND ms.user_id = m.user_id AND ms.skill_id = ANY(` + skillArg + `::uuid[])) = ` + countArg
+		args = append(args, requiredSkillIDs, len(requiredSkillIDs))
+	}
 	rows, err := tx.Query(ctx, q+` ORDER BY m.user_id`, args...)
 	if err != nil {
 		return nil, err
@@ -855,6 +887,29 @@ func PickAssignee(ctx context.Context, tx pgx.Tx, wid uuid.UUID, team *uuid.UUID
 	})
 	if err != nil || len(cands) == 0 {
 		return nil, err
+	}
+	if len(requiredSkillIDs) > 0 {
+		// A member deletion can hold a relation before publishing its workspace event.
+		// Skip busy relations so assignment never waits in the reverse order.
+		eligible := make([]candidate, 0, len(cands))
+		for _, c := range cands {
+			rows, err := tx.Query(ctx, `SELECT skill_id FROM member_skills
+				WHERE workspace_id = $1 AND user_id = $2 AND skill_id = ANY($3::uuid[]) FOR KEY SHARE SKIP LOCKED`, wid, c.ID, requiredSkillIDs)
+			if err != nil {
+				return nil, err
+			}
+			locked, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+			if err != nil {
+				return nil, err
+			}
+			if len(locked) == len(requiredSkillIDs) {
+				eligible = append(eligible, c)
+			}
+		}
+		cands = eligible
+		if len(cands) == 0 {
+			return nil, nil
+		}
 	}
 	if _, err := tx.Exec(ctx, `INSERT INTO round_robin_cursors (workspace_id, pool) VALUES ($1, $2) ON CONFLICT DO NOTHING`, wid, key); err != nil {
 		return nil, err

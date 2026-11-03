@@ -60,6 +60,8 @@ type Held = {
   bytes: number;
   timer: ReturnType<typeof setTimeout>;
   toast: string | number;
+  /** Say so in a toast when it fails (DeliverOpts.warn): the agent moved on from its ticket. */
+  warn: boolean;
 };
 
 const held = new Map<string, Held>();
@@ -134,8 +136,11 @@ export async function deliver(temp: Message, body: SendMessageBody, me: string, 
   }
 }
 
-/** Holds a reply for `seconds` before sending it, with a way to take it back or keep it as a note. */
-export function hold(temp: Message, body: SendMessageBody, unsent: Unsent, me: string, seconds: number) {
+/**
+ * Holds a reply for `seconds` before sending it, with a way to take it back or keep it as a
+ * note. `warn` says so in a toast if it fails, for a reply sent on the way to the next ticket.
+ */
+export function hold(temp: Message, body: SendMessageBody, unsent: Unsent, me: string, seconds: number, { warn = false }: { warn?: boolean } = {}) {
   const t = i18n.getFixedT(null, "inbox");
   const bytes = jsonBytes(body);
   // Closing the tab sends what is held, and the browser carries only so much out of a closing
@@ -144,7 +149,7 @@ export function hold(temp: Message, body: SendMessageBody, unsent: Unsent, me: s
   if (seconds <= 0 || tooLong) {
     revoke(unsent.uploads);
     if (tooLong) toast.info(t("outbox.tooLongToHold"));
-    void deliver(temp, body, me);
+    void deliver(temp, body, me, { warn });
     return;
   }
   const ms = seconds * 1000;
@@ -152,7 +157,7 @@ export function hold(temp: Message, body: SendMessageBody, unsent: Unsent, me: s
     ? t("outbox.sendingAndMark", { status: statusLabel(body.status).toLowerCase() })
     : t("outbox.sending");
   const id = toast.held(label, ms, { label: t("outbox.undo"), onClick: () => undo(temp.id) }, { label: t("outbox.asNote"), onClick: () => asNote(temp.id) });
-  held.set(temp.id, { temp, body, unsent, me, origin: currentOrigin(), bytes, timer: setTimeout(() => void release(temp.id), ms), toast: id });
+  held.set(temp.id, { temp, body, unsent, me, origin: currentOrigin(), bytes, timer: setTimeout(() => void release(temp.id), ms), toast: id, warn });
   useHeld.setState({ [temp.id]: Date.now() + ms });
   qc.setQueryData<Message[]>(qk.messages(temp.ticket_id), (old) => old && [...old, { ...temp, delivery_status: "scheduled" }]);
 }
@@ -172,7 +177,7 @@ export function release(tempId: string, opts: { keepalive?: boolean; warn?: bool
   const h = take(tempId);
   if (!h) return Promise.resolve(false);
   revoke(h.unsent.uploads);
-  return deliver(h.temp, h.body, h.me, { ...opts, origin: h.origin });
+  return deliver(h.temp, h.body, h.me, { ...opts, warn: opts.warn || h.warn, origin: h.origin });
 }
 
 /** Sends every held reply now (signing out, switching away, closing the tab), each where it was written. */

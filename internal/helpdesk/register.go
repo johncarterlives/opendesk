@@ -20,6 +20,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/deps"
 	"github.com/useopendesk/opendesk/internal/helpdesk/brands"
 	"github.com/useopendesk/opendesk/internal/helpdesk/contacts"
+	"github.com/useopendesk/opendesk/internal/helpdesk/customerportal"
 	"github.com/useopendesk/opendesk/internal/helpdesk/helpdomains"
 	"github.com/useopendesk/opendesk/internal/helpdesk/helpsite"
 	"github.com/useopendesk/opendesk/internal/helpdesk/imports"
@@ -36,6 +37,7 @@ import (
 // (redirects, raw bodies, streaming).
 func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	tickets.Register(d, api, r)
+	customerportal.Register(d, api, r)
 	contacts.Register(d, api, r)
 	resources.Register(d, api, r)
 	kb.Register(d, api, r)
@@ -52,6 +54,7 @@ func Register(d *deps.Deps, api huma.API, r chi.Router) {
 // RegisterWorkers adds this area's River workers.
 func RegisterWorkers(d *deps.Deps, w *river.Workers) {
 	tickets.RegisterWorkers(d, w)
+	customerportal.RegisterWorkers(d, w)
 	images.RegisterWorkers(d, w)
 	helpdomains.RegisterWorkers(d, w)
 	imports.RegisterWorkers(d, w)
@@ -60,7 +63,7 @@ func RegisterWorkers(d *deps.Deps, w *river.Workers) {
 
 // Periodic returns this area's scheduled jobs.
 func Periodic(d *deps.Deps) []*river.PeriodicJob {
-	return slices.Concat(tickets.Periodic(d), images.Periodic(), helpdomains.Periodic(d), imports.Periodic(d))
+	return slices.Concat(customerportal.Periodic(d), tickets.Periodic(d), images.Periodic(), helpdomains.Periodic(d), imports.Periodic(d))
 }
 
 // Background runs until ctx is done, in the worker role only. The helpdesk has no

@@ -360,6 +360,7 @@
       "actionValue": "Every action needs a value.",
       "phrases": "A phrase list takes 1 to 100 phrases, one per line, of up to 500 characters each.",
       "mergeTrigger": "Merge into the contact's open ticket runs only when a ticket is created.",
+      "procedureTrigger": "Ollie can't run a procedure when a ticket is updated. Pick another trigger.",
       "callTrigger": "Call conditions need the trigger A call ends."
     },
     "chooseSeverity": "Choose a severity",
@@ -603,6 +604,27 @@
       "tickets": "tickets",
       "saveCap": "Save",
       "saveFailed": "Couldn't update this teammate"
+    },
+    "skills": {
+      "title": "Routing skills",
+      "hint": "Describe the expertise needed for tickets and assign each skill to teammates.",
+      "add": "Add skill",
+      "namePlaceholder": "Skill name",
+      "createHint": "Enter a name to create this skill.",
+      "create": "Create skill",
+      "created": "Created {{name}}",
+      "saveFailed": "Couldn't save skill",
+      "emptyTitle": "No skills yet",
+      "emptyHint": "Add skills such as Billing or Technical support.",
+      "memberCount_one": "{{count}} teammate",
+      "memberCount_other": "{{count}} teammates",
+      "members": "Assign teammates",
+      "archived": "Archived",
+      "archive": "Archive skill",
+      "restore": "Restore skill",
+      "archiveNamed": "Archive {{name}}",
+      "restoreNamed": "Restore {{name}}",
+      "note": "Skills are required by matching routing rules before automatic assignment."
     }
   },
   "triage": {
@@ -784,7 +806,12 @@
       "abandoned_in_ivr": "Hung up in the menu",
       "abandoned_in_classic": "Hung up while waiting",
       "no_available_agent": "No teammate available",
-      "agents_did_not_answer": "Nobody answered"
+      "agents_did_not_answer": "Nobody answered",
+      "busy": "Line busy",
+      "no_answer": "Not answered",
+      "failed": "Call failed",
+      "cancelled": "Hung up before an answer",
+      "abandon": "Hung up in the queue"
     }
   }
 }

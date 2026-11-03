@@ -36,7 +36,7 @@ import { LOCALE_NAMES, matchLocale, SUPPORTED } from "@/i18n";
 type DisplaySettings = { status_labels?: Overrides<TicketStatus>; priority_labels?: Overrides<Priority>; send_and_finish_button?: boolean };
 type Draft = {
   name: string;
-  settings: Required<Pick<WS, "timezone" | "help_center_enabled" | "help_center_title" | "csat_enabled" | "gravatar" | "domain_logos" | "undo_send_seconds" | "undo_send_chat_seconds" | "message_delete" | "collab_ticket_replies" | "collab_ticket_reply_to">> & {
+  settings: Required<Pick<WS, "timezone" | "help_center_enabled" | "help_center_title" | "csat_enabled" | "gravatar" | "domain_logos" | "undo_send_seconds" | "undo_send_chat_seconds" | "message_delete" | "collab_ticket_replies" | "collab_ticket_reply_to" | "agent_online_time">> & {
     brand_color: string;
     locale: string;
     locale_fixed: boolean;
@@ -64,6 +64,7 @@ function toDraft(w: Workspace): Draft {
       message_delete: w.settings.message_delete ?? "own",
       collab_ticket_replies: w.settings.collab_ticket_replies ?? true,
       collab_ticket_reply_to: w.settings.collab_ticket_reply_to ?? "address",
+      agent_online_time: w.settings.agent_online_time ?? true,
     },
   };
 }
@@ -349,6 +350,17 @@ export default function WorkspaceSettings() {
           </Row>
           <Row label={t("workspace.domainLogos")} description={t("workspace.domainLogosHint")}>
             <Switch aria-label={t("workspace.domainLogos")} checked={draft.settings.domain_logos} onCheckedChange={(v) => set("domain_logos", v)} disabled={!canEdit} />
+          </Row>
+        </Section>
+
+        <Section title={t("workspace.reports")}>
+          <Row label={t("workspace.onlineTime")} description={draft.settings.agent_online_time ? t("workspace.onlineTimeOn") : t("workspace.onlineTimeOff")}>
+            <Switch
+              aria-label={t("workspace.onlineTime")}
+              checked={draft.settings.agent_online_time}
+              onCheckedChange={(v) => set("agent_online_time", v)}
+              disabled={!canEdit}
+            />
           </Row>
         </Section>
 

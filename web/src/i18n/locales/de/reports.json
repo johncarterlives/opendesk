@@ -154,6 +154,7 @@
     "onlineHint": "Zeit in opendesk mit dem Status Online",
     "onlineNote": "Online zählt die Zeit, in der jedes Teammitglied opendesk mit dem Status Online geöffnet hatte, unabhängig vom Team- oder Markenfilter.",
     "onlineSelf": "Du siehst deine eigene Arbeit und Online-Zeit. Admins sehen die von allen.",
+    "onlineOff": "Die Online-Zeit ist für diesen Workspace ausgeschaltet, daher wird keine erfasst oder gezeigt. Admins können sie unter Einstellungen → Workspace einschalten.",
     "emptyTitle": "Keine Agenten",
     "emptyDescription": "Agenten erscheinen hier, sobald sie in diesem Zeitraum Tickets bearbeiten.",
     "emptySelf": "Deine Arbeit erscheint hier, sobald du in diesem Zeitraum Tickets bearbeitest. Admins sehen die von allen.",

@@ -72,5 +72,45 @@
   "footer": {
     "powered_by": "Powered by",
     "language": "언어"
+  },
+  "portal": {
+    "title": "요청 사항",
+    "login": "로그인",
+    "forgot": "비밀번호 링크 받기",
+    "reset": "비밀번호 선택",
+    "login_action": "로그인",
+    "forgot_action": "링크 보내기",
+    "reset_action": "비밀번호 저장",
+    "email": "이메일",
+    "password": "비밀번호",
+    "forgot_link": "비밀번호가 필요하신가요?",
+    "back_login": "로그인으로 돌아가기",
+    "sign_out": "로그아웃",
+    "loading": "로딩 중...",
+    "unavailable": "이 도움말 센터는 이용할 수 없습니다.",
+    "error": "문제가 발생했습니다. 다시 시도하세요.",
+    "weak_password": "더 강력한 비밀번호를 선택하세요.",
+    "invalid_link": "이 링크는 만료되었거나 유효하지 않습니다. 새 링크를 요청하세요.",
+    "password_change": "로그인하기 전에 새 비밀번호를 선택하세요.",
+    "get_link": "비밀번호 링크 받기",
+    "email_sent": "이 주소로 로그인할 수 있는 경우, 링크가 전송됩니다.",
+    "reset_done": "비밀번호가 저장되었습니다.",
+    "requests": "요청 사항",
+    "empty": "아직 요청이 없습니다.",
+    "next": "다음",
+    "back_requests": "모든 요청",
+    "you": "귀하",
+    "team": "지원팀",
+    "reply": "답장하기",
+    "send": "회신 보내기",
+    "no_messages": "아직 메시지가 없습니다.",
+    "help_center": "도움말 센터 방문하기",
+    "status": {
+      "open": "열기",
+      "pending": "대기 중",
+      "on_hold": "보류 중",
+      "solved": "해결됨",
+      "closed": "닫기"
+    }
   }
 }

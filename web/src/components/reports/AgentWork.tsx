@@ -46,7 +46,7 @@ export function AgentWorkTable({ report }: { report: ReportsAgents }) {
     { key: "first_response_p50_minutes", label: t("work.firstResponse"), hint: t("work.firstResponseHint"), show: (r) => minutes(r.first_response_p50_minutes) },
     { key: "handle_p50_minutes", label: t("work.handle"), hint: t("work.handleHint"), show: (r) => minutes(r.handle_p50_minutes) },
   ];
-  if (report.online_time !== "none") {
+  if (report.online_time === "all" || report.online_time === "self") {
     columns.push({ key: "online_minutes", label: t("work.online"), hint: t("work.onlineHint"), show: (r) => minutes(r.online_minutes) });
   }
   const rows = sortAgents(report.data, sort);

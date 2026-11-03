@@ -257,12 +257,13 @@ func (g *gmailProvider) listIDs(ctx context.Context, q, label string, max int) (
 
 // gmailChange is what history says about one message: its current labels, or deleted.
 type gmailChange struct {
-	ID       string
-	ThreadID string
-	LabelIDs []string
-	Labels   bool // LabelIDs is known
-	Added    bool // a messagesAdded record: the message is new to the mailbox
-	Deleted  bool
+	Observation *gmailCategoryObservation
+	ID          string
+	ThreadID    string
+	LabelIDs    []string
+	Labels      bool // LabelIDs is known
+	Added       bool // a messagesAdded record: the message is new to the mailbox
+	Deleted     bool
 }
 
 // gmailSyncState is collab_accounts.sync_state of a Gmail account.
@@ -384,6 +385,9 @@ func (p *pass) gmailState(labels []string) state {
 
 // Apply makes an action at Gmail (contracts/collab.md "Actions").
 func (g *gmailProvider) Apply(ctx context.Context, op ApplyOp) error {
+	if op.category != nil {
+		return g.applyCategory(ctx, op.category)
+	}
 	if len(op.Messages) == 0 {
 		return nil
 	}
@@ -501,8 +505,19 @@ func (g *gmailProvider) Send(ctx context.Context, raw []byte, info SendInfo) (Se
 // syncGmail runs one pass: a first sync without a history id (or when Gmail no longer
 // has it), else the history since it.
 func (s *service) syncGmail(ctx context.Context, p *pass, g *gmailProvider) error {
+	pending, err := s.refreshGmailCategories(ctx, p, g)
+	if err != nil {
+		return err
+	}
+	return s.syncGmailLive(ctx, p, g, pending)
+}
+
+func (s *service) syncGmailLive(ctx context.Context, p *pass, g *gmailProvider, refreshing bool) error {
 	var st gmailSyncState
 	_ = json.Unmarshal(p.a.SyncState, &st)
+	if refreshing && st.HistoryID == "" {
+		return nil
+	}
 	if st.HistoryID != "" {
 		changes, first, next, err := g.history(ctx, st.HistoryID, st.PageToken)
 		if err != nil && st.PageToken != "" && gmailRefused(err) {
@@ -533,13 +548,32 @@ func (s *service) syncGmail(ctx context.Context, p *pass, g *gmailProvider) erro
 		if err != errHistoryGone {
 			return err
 		}
+		if refreshing {
+			return nil
+		} // the durable sweep owns recovery of its baseline
 		s.log.Info("collab gmail history expired, syncing from scratch", "account_id", p.a.ID)
+		cs, e := loadAccountCategorySets(ctx, s.d.DB.Pool, p.a)
+		if e != nil {
+			return e
+		}
+		if cs.resolve(p.a).Engine == modeGmail {
+			_, e = s.d.DB.Pool.Exec(ctx, `UPDATE collab_accounts SET category_refresh = '{"expired":true}' WHERE id = $1 AND category_epoch = $2`, p.a.ID, p.a.CategoryEpoch)
+			return e
+		}
 	}
 	// The history id is read first so nothing that changes during the import is missed.
 	historyID, err := g.profileHistoryID(ctx)
 	if err != nil {
 		return err
 	}
+	backlog, err := s.importGmailWindow(ctx, p, g, st.Backlog)
+	if err != nil {
+		return err
+	}
+	return s.saveAccountState(ctx, p.a, gmailSyncState{HistoryID: historyID, Backlog: backlog})
+}
+
+func (s *service) importGmailWindow(ctx context.Context, p *pass, g *gmailProvider, backlog []string) ([]string, error) {
 	q := fmt.Sprintf("after:%d", time.Now().Add(-initialWindow).Unix())
 	ids := []string{}
 	for _, label := range []string{"INBOX", "SENT", ""} {
@@ -548,7 +582,7 @@ func (s *service) syncGmail(ctx context.Context, p *pass, g *gmailProvider) erro
 		}
 		list, err := g.listIDs(ctx, q, label, initialMax)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, id := range list {
 			if len(ids) < initialMax && !slices.Contains(ids, id) {
@@ -560,11 +594,7 @@ func (s *service) syncGmail(ctx context.Context, p *pass, g *gmailProvider) erro
 	for _, id := range ids {
 		changes = append(changes, gmailChange{ID: id, Added: true})
 	}
-	backlog, err := s.applyGmailChanges(ctx, p, g, changes, st.Backlog)
-	if err != nil {
-		return err
-	}
-	return s.saveAccountState(ctx, p.a, gmailSyncState{HistoryID: historyID, Backlog: backlog})
+	return s.applyGmailChanges(ctx, p, g, changes, backlog)
 }
 
 // gmailRefused reports Gmail refusing a request as invalid (a 4xx other than a missing
@@ -584,7 +614,7 @@ func gmailRefused(err error) bool {
 // fit, oldest first, at most gmailBacklogMax.
 func (s *service) applyGmailChanges(ctx context.Context, p *pass, g *gmailProvider, changes []gmailChange, backlog []string) ([]string, error) {
 	inChanges := make(map[string]bool, len(changes))
-	all := make([]string, 0, len(changes)+len(backlog))
+	all := make([]string, 0, len(changes))
 	for _, c := range changes {
 		inChanges[c.ID] = true
 		all = append(all, c.ID)
@@ -666,7 +696,7 @@ func (s *service) applyGmailChanges(ctx context.Context, p *pass, g *gmailProvid
 		var at []int // todo's index in chunk
 		for i := range chunk {
 			c := &chunk[i]
-			if c.Deleted || (known[c.ID] == nil && !admit[c.ID]) || (known[c.ID] != nil && c.Labels) {
+			if c.Deleted || (known[c.ID] == nil && !admit[c.ID]) {
 				continue
 			}
 			todo, at = append(todo, c.ID), append(at, i)
@@ -695,6 +725,10 @@ func (s *service) applyGmailChanges(ctx context.Context, p *pass, g *gmailProvid
 			}
 			m := res[k].m
 			c.LabelIDs, c.Labels = m.LabelIDs, true
+			c.Observation, err = gmailObservation(m)
+			if err != nil {
+				return nil, err
+			}
 			if known[c.ID] == nil {
 				c.ThreadID = m.ThreadID
 				fetched[c.ID] = &newMessage{RemoteID: c.ID, ThreadRemoteID: m.ThreadID, Raw: res[k].raw, Date: m.date(), Signals: gmailSignals(m.LabelIDs)}
@@ -710,12 +744,15 @@ func (s *service) applyGmailChanges(ctx context.Context, p *pass, g *gmailProvid
 					}
 				case c.Deleted || !c.Labels:
 				case m != nil:
-					if err := p.update(ctx, tx, m, p.gmailState(c.LabelIDs)); err != nil {
+					st := p.gmailState(c.LabelIDs)
+					st.Gmail = c.Observation
+					if err := p.update(ctx, tx, m, st); err != nil {
 						return err
 					}
 				case fetched[c.ID] != nil:
 					in := fetched[c.ID]
 					in.State = p.gmailState(c.LabelIDs)
+					in.State.Gmail = c.Observation
 					if _, err := p.insert(ctx, tx, in); err != nil {
 						return err
 					}

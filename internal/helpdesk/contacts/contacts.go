@@ -311,6 +311,8 @@ func registerContacts(d *deps.Deps, api huma.API) {
 				if err := applyFields(ctx, tx, p.WorkspaceID, domain.FieldEntityContact, &row.Fields, in.Body.Fields); err != nil {
 					return err
 				}
+				// The contacts_customer_identity trigger ends customer credentials, sessions
+				// and reset links when the email changes or the contact is blocked.
 				if _, err := tx.Exec(ctx, `UPDATE contacts SET email = $3, name = $4, phone = $5, company_id = $6,
 					external_id = $7, notes = $8, custom = $9, blocked = $10, fields = $11, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
 					p.WorkspaceID, id, row.Email, row.Name, row.Phone, row.CompanyID, row.ExternalID,

@@ -76,5 +76,45 @@
   "footer": {
     "powered_by": "Realizzato con",
     "language": "Lingua"
+  },
+  "portal": {
+    "title": "Le tue richieste",
+    "login": "Accedi",
+    "forgot": "Ottieni un link per la password",
+    "reset": "Scegli una password",
+    "login_action": "Accedi",
+    "forgot_action": "Invia link",
+    "reset_action": "Salva password",
+    "email": "E-mail",
+    "password": "Password",
+    "forgot_link": "Hai bisogno di una password?",
+    "back_login": "Torna all'accesso",
+    "sign_out": "Disconnetti",
+    "loading": "Caricamento in corso...",
+    "unavailable": "Questo Centro assistenza non è disponibile.",
+    "error": "Si è verificato un errore. Riprova.",
+    "weak_password": "Scegli una password più sicura.",
+    "invalid_link": "Questo link è scaduto o non è valido. Richiedi un nuovo link.",
+    "password_change": "Scegli una nuova password prima di accedere.",
+    "get_link": "Ottieni un link per la password",
+    "email_sent": "Se questo indirizzo può accedere, è in arrivo un link.",
+    "reset_done": "La tua password è stata salvata.",
+    "requests": "Le tue richieste",
+    "empty": "Non hai ancora richieste.",
+    "next": "Avanti",
+    "back_requests": "Tutte le richieste",
+    "you": "Tu",
+    "team": "Team di supporto",
+    "reply": "Rispondi",
+    "send": "Invia risposta",
+    "no_messages": "Ancora nessun messaggio.",
+    "help_center": "Visita il Centro Assistenza",
+    "status": {
+      "open": "Apri",
+      "pending": "In attesa",
+      "on_hold": "In sospeso",
+      "solved": "Risolto",
+      "closed": "Chiuso"
+    }
   }
 }

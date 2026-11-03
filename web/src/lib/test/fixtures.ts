@@ -25,6 +25,7 @@ export function ticket(over: Partial<Ticket> = {}): Ticket {
     page_url: "",
     routed: null,
     tags: [],
+    required_skills: [],
     fields: {},
     sla: null,
     first_responded_at: null,

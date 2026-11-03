@@ -427,7 +427,7 @@ func (s *Server) newPage(r *http.Request, hc kb.HelpCenter, base, sub string) *p
 		p.langQ = "?lang=" + url.QueryEscape(explicit)
 	}
 	p.OGLocale = strings.ReplaceAll(lang, "-", "_")
-	p.Site = siteInfo{Title: hc.Title, Tone: "t-" + toneFor(hc.Title), Initial: initial(hc.Title), Changelog: hc.Changelog}
+	p.Site = siteInfo{Title: hc.Title, Tone: "t-" + toneFor(hc.Title), Initial: initial(hc.Title), Changelog: hc.Changelog, PortalURL: strings.TrimRight(s.d.Cfg.AppURL, "/") + "/portal/" + url.PathEscape(hc.Slug)}
 	if u := hc.Logo.URL(); u != "" {
 		p.Site.Logo, p.Site.Image = u, u
 	}

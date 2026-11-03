@@ -109,6 +109,7 @@ type siteInfo struct {
 	Initial string
 	// Changelog: the help center has a public changelog entry, so the header links it.
 	Changelog bool
+	PortalURL string
 }
 
 type alternate struct{ Lang, URL string }

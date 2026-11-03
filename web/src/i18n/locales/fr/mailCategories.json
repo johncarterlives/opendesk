@@ -117,9 +117,15 @@
     "team": "Suit {{team}}",
     "workspace": "Suit l'espace de travail",
     "workspaceOff": "L'espace de travail les a désactivées",
-    "none": "Pas encore de défaut"
+    "none": "Pas encore de défaut",
+    "gmail": "Synchroniser avec Gmail"
   },
   "section": {
+    "sync": {
+          "refreshing": "Actualisation des catégories depuis Gmail. Les anciennes conversations peuvent prendre un peu plus de temps.",
+          "pending": "Les changements de catégorie attendent la confirmation de Gmail.",
+          "failed": "Certains changements de catégorie n’ont pas pu atteindre Gmail. Vérifiez la connexion du compte et déplacez à nouveau la conversation."
+    },
     "title": "Catégories de boîte de réception",
     "description": "Répartissez cette boîte de réception en onglets comme Principal, Mises à jour et Newsletters. Le nouveau courrier est trié à son arrivée, et rien ne quitte la boîte de réception.",
     "locked": "Les admins de votre espace de travail définissent les catégories. Vous pouvez toujours choisir si Ollie trie le courrier de ce compte.",
@@ -154,11 +160,11 @@
   },
   "setup": {
     "title": "Répartissez votre boîte de réception",
-    "description": "Des onglets pour {{account}} : le courrier des personnes reste dans Principal, et les mises à jour, newsletters et le reste ont leurs propres onglets dès leur arrivée.",
+    "description": "Choisissez comment organiser les messages de {{account}} : synchronisez les catégories Gmail ou créez vos propres onglets.",
     "steps": "Étapes",
     "step1": "Choisir un départ",
     "step2": "L'adapter",
-    "gmail": "Comme Gmail",
+    "gmail": "Synchroniser avec Gmail",
     "ollie": "Demander à Ollie",
     "ollieHint": "Ollie regarde les expéditeurs et les objets des derniers messages de cette boîte et propose des onglets.",
     "ollieAbout": "Quelque chose qu'Ollie devrait savoir ? (facultatif)",
@@ -171,6 +177,9 @@
     "save": "Répartir ma boîte",
     "saved": "Votre boîte de réception est répartie. Le nouveau courrier est trié à son arrivée.",
     "everyone": "La configurer plutôt pour tout le monde",
-    "locked": "Les admins de votre espace de travail définissent les catégories pour tout le monde. Demandez à un admin de les modifier."
+    "locked": "Les admins de votre espace de travail définissent les catégories pour tout le monde. Demandez à un admin de les modifier.",
+    "gmailHint": "Utilisez les catégories Gmail. Déplacer une conversation ici modifie sa catégorie dans Gmail, et les changements Gmail apparaissent ici. Ollie et les règles par expéditeur ne trient pas cette boîte.",
+    "gmailSaved": "La synchronisation des catégories Gmail est activée. Les messages existants sont en cours d’actualisation.",
+    "preset": "Catégories suggérées"
   }
 }

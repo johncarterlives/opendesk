@@ -285,7 +285,7 @@ func (s *service) processInbound(ctx context.Context, wid, inboundID uuid.UUID) 
 			// Replies go out from the address the ticket arrived at.
 			ticket, err = domain.CreateTicket(ctx, tx, domain.NewTicket{WorkspaceID: wid, Subject: subject, Channel: domain.ChannelEmail,
 				MailboxID: &m.ID, ContactID: &contactID, TeamID: route.TeamID, Routed: route.Routed, Custom: custom,
-				BrandID: &brand, OriginMailboxID: &m.ID, ReceivedAt: receivedAt})
+				BrandID: &brand, OriginMailboxID: &m.ID, ReceivedAt: receivedAt, RequiredSkillIDs: route.RequiredSkillIDs})
 			if err != nil {
 				return err
 			}

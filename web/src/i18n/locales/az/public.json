@@ -74,5 +74,45 @@
   "footer": {
     "powered_by": "Texnoloji dəstək:",
     "language": "Dil"
+  },
+  "portal": {
+    "title": "Sorğularınız",
+    "login": "Daxil ol",
+    "forgot": "Parol linki əldə edin",
+    "reset": "Parol seçin",
+    "login_action": "Daxil ol",
+    "forgot_action": "Linki göndər",
+    "reset_action": "Parolu yaddaşda saxla",
+    "email": "E-poçt",
+    "password": "Parol",
+    "forgot_link": "Parol lazımdır?",
+    "back_login": "Giriş etmək üçün geri qayıdın",
+    "sign_out": "Çıxış et",
+    "loading": "Yüklənir...",
+    "unavailable": "Bu yardım mərkəzi mövcud deyil.",
+    "error": "Xəta baş verdi. Yenidən cəhd edin.",
+    "weak_password": "Daha güclü parol seçin.",
+    "invalid_link": "Bu linkin müddəti bitib və ya etibarsızdır. Yeni link üçün sorğu göndərin.",
+    "password_change": "Daxil olmazdan əvvəl yeni parol seçin.",
+    "get_link": "Parol linki əldə edin",
+    "email_sent": "Bu ünvan daxil ola bilərsə, link göndərilir.",
+    "reset_done": "Parolunuz yaddaşda saxlandı.",
+    "requests": "Sorğularınız",
+    "empty": "Hələ ki, heç bir sorğunuz yoxdur.",
+    "next": "Növbəti",
+    "back_requests": "Bütün sorğular",
+    "you": "Siz",
+    "team": "Dəstək komandası",
+    "reply": "Cavablandır",
+    "send": "Cavab göndər",
+    "no_messages": "Hələ heç bir mesaj yoxdur.",
+    "help_center": "Yardım mərkəzinə daxil olun",
+    "status": {
+      "open": "Aç",
+      "pending": "Gözləmədədir",
+      "on_hold": "Gözlənilir",
+      "solved": "Həll edildi",
+      "closed": "Bağlandı"
+    }
   }
 }

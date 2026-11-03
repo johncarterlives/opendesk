@@ -76,5 +76,45 @@
   "footer": {
     "powered_by": "Con la tecnología de",
     "language": "Idioma"
+  },
+  "portal": {
+    "title": "Tus solicitudes",
+    "login": "Iniciar sesión",
+    "forgot": "Obtener un enlace de contraseña",
+    "reset": "Elige una contraseña",
+    "login_action": "Iniciar sesión",
+    "forgot_action": "Enviar enlace",
+    "reset_action": "Guardar contraseña",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgot_link": "¿Necesitas una contraseña?",
+    "back_login": "Volver al inicio de sesión",
+    "sign_out": "Cerrar sesión",
+    "loading": "Cargando...",
+    "unavailable": "Este centro de ayuda no está disponible.",
+    "error": "Se ha producido un error. Inténtalo de nuevo.",
+    "weak_password": "Elige una contraseña más segura.",
+    "invalid_link": "Este enlace ha caducado o no es válido. Solicita un nuevo enlace.",
+    "password_change": "Elige una nueva contraseña antes de iniciar sesión.",
+    "get_link": "Obtener un enlace de contraseña",
+    "email_sent": "Si esta dirección puede iniciar sesión, un enlace está en camino.",
+    "reset_done": "Su contraseña ha sido guardada.",
+    "requests": "Tus solicitudes",
+    "empty": "Aún no tienes ninguna solicitud.",
+    "next": "Siguiente",
+    "back_requests": "Todas las solicitudes",
+    "you": "Tú",
+    "team": "Equipo de soporte",
+    "reply": "Responder",
+    "send": "Enviar respuesta",
+    "no_messages": "Aún no hay mensajes.",
+    "help_center": "Visita el Centro de ayuda",
+    "status": {
+      "open": "Abierto",
+      "pending": "Pendiente",
+      "on_hold": "En espera",
+      "solved": "Resuelto",
+      "closed": "Cerrado"
+    }
   }
 }

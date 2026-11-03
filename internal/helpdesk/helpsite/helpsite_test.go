@@ -106,6 +106,9 @@ func TestPathModeRendersTheHelpCenter(t *testing.T) {
 	base := "http://app.test/help/" + s.slug
 
 	home := s.get(t, "app.test", "/help/"+s.slug)
+	if !strings.Contains(home.body, `href="`+strings.TrimRight(s.D.Cfg.AppURL, "/")+`/portal/`+s.slug+`"`) {
+		t.Fatalf("portal link missing from help center: %s", home.body)
+	}
 	if home.status != 200 || !strings.Contains(home.body, "Acme help") || !strings.Contains(home.body, "How can we help?") ||
 		!strings.Contains(home.body, "Billing") || !strings.Contains(home.body, "2 articles") || strings.Contains(home.body, "Secret draft") {
 		t.Fatalf("home %d\n%s", home.status, home.body)
@@ -326,7 +329,7 @@ func TestChangelogPages(t *testing.T) {
 	// Without a public entry the header has no link and the home page no updates.
 	s.Exec(`INSERT INTO changelog_entries (workspace_id, title, slug, status, published_at) VALUES ($1, 'Not yet', 'not-yet', 'published', now() + interval '1 day')`, s.ws.ID)
 	s.Exec(`INSERT INTO changelog_entries (workspace_id, title, slug, status) VALUES ($1, 'Draft update', 'draft-update', 'draft')`, s.ws.ID)
-	if home := s.get(t, "app.test", root); strings.Contains(home.body, `class="hc-nav"`) || strings.Contains(home.body, "Latest updates") {
+	if home := s.get(t, "app.test", root); strings.Contains(home.body, `href="`+base+`/changelog"`) || strings.Contains(home.body, "Latest updates") {
 		t.Fatalf("home before any entry\n%s", home.body)
 	}
 	if r := s.get(t, "app.test", root+"/changelog/not-yet"); r.status != 404 || !strings.Contains(r.body, "Update not found") {

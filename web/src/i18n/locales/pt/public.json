@@ -76,5 +76,45 @@
   "footer": {
     "powered_by": "Desenvolvido com",
     "language": "Idioma"
+  },
+  "portal": {
+    "title": "Os seus pedidos",
+    "login": "Entrar",
+    "forgot": "Obter um link de palavra-passe",
+    "reset": "Escolha uma palavra-passe",
+    "login_action": "Entrar",
+    "forgot_action": "Enviar link",
+    "reset_action": "Guardar palavra-passe",
+    "email": "E-mail",
+    "password": "Palavra-passe",
+    "forgot_link": "Precisa de uma palavra-passe?",
+    "back_login": "Voltar a iniciar sessão",
+    "sign_out": "Terminar sessão",
+    "loading": "A carregar…",
+    "unavailable": "Este centro de ajuda não está disponível.",
+    "error": "Ocorreu um erro. Tente novamente.",
+    "weak_password": "Escolha uma palavra-passe mais forte.",
+    "invalid_link": "Este link expirou ou é inválido. Solicite um novo link.",
+    "password_change": "Escolha uma nova palavra-passe antes de iniciar sessão.",
+    "get_link": "Obter um link de palavra-passe",
+    "email_sent": "Se este endereço puder entrar, um link está a caminho.",
+    "reset_done": "A sua palavra-passe foi guardada.",
+    "requests": "Os seus pedidos",
+    "empty": "Ainda não tem pedidos.",
+    "next": "Próximo",
+    "back_requests": "Todos os pedidos",
+    "you": "Tu",
+    "team": "Equipa de apoio",
+    "reply": "Responder",
+    "send": "Enviar resposta",
+    "no_messages": "Ainda não há mensagens.",
+    "help_center": "Visite o centro de ajuda",
+    "status": {
+      "open": "Abrir",
+      "pending": "Pendente",
+      "on_hold": "Em espera",
+      "solved": "Resolvido",
+      "closed": "Terminados"
+    }
   }
 }

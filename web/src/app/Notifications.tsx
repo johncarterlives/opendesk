@@ -19,6 +19,8 @@ import { Segmented } from "@/components/ui/tabs";
 import { useBellNotifications, useMarkReadIn } from "./notificationRead";
 import { selectWorkspace, useSession } from "@/lib/session";
 import { WorkspaceBadge } from "@/components/workspaces/WorkspaceBadge";
+import { browserClick } from "@/lib/links";
+import { withWorkspaceParam } from "@/lib/workspaceParam";
 import { i18n } from "@/i18n";
 
 // Each kind keeps one icon and one hue, so the list scans by what happened.
@@ -311,6 +313,10 @@ export function NotificationsButton() {
               {shown.map(({ row: n, workspaceId }) => {
                 const k = kindOf(n);
                 const ws = bell.several ? wsOf(workspaceId) : undefined;
+                // A real link where it leads somewhere, in its own workspace: a right, Ctrl/Cmd or
+                // middle click opens it in a new tab (and marks it read), a plain click here.
+                const path = notificationPath(n);
+                const Row = path ? "a" : "button";
                 return (
                   <motion.li
                     key={`${workspaceId}:${n.id}`}
@@ -320,9 +326,16 @@ export function NotificationsButton() {
                     exit={reduce ? undefined : { opacity: 0, transition: { duration: 0.12 } }}
                     transition={{ type: "spring", stiffness: 500, damping: 40 }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => openTicket(n, workspaceId)}
+                    <Row
+                      {...(path ? { href: withWorkspaceParam(path, workspaceId) } : { type: "button" as const })}
+                      onClick={(e: React.MouseEvent) => {
+                        if (path && browserClick(e)) {
+                          if (!n.read_at) markRead.mutate({ wid: workspaceId, body: { ids: [n.id] } });
+                          return;
+                        }
+                        e.preventDefault();
+                        openTicket(n, workspaceId);
+                      }}
                       className="group flex w-full items-start gap-2.5 rounded-md px-2 py-2 text-left transition-colors duration-100 hover:bg-hover active:scale-[0.995] motion-reduce:active:scale-100"
                     >
                       <span
@@ -362,7 +375,7 @@ export function NotificationsButton() {
                         <span className="mono text-[10.5px] text-fg-4">{relShort(n.created_at)}</span>
                         {!n.read_at && <span className="size-1.5 rounded-full bg-tone-blue-solid" role="img" aria-label={t("notifications.unreadDot")} />}
                       </span>
-                    </button>
+                    </Row>
                   </motion.li>
                 );
               })}

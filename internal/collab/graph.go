@@ -194,6 +194,9 @@ func (g *graphProvider) FetchRaw(ctx context.Context, ref MessageRef) ([]byte, e
 
 // Apply makes an action at Microsoft (contracts/collab.md "Actions").
 func (g *graphProvider) Apply(ctx context.Context, op ApplyOp) error {
+	if op.category != nil {
+		return &providerError{msg: "Gmail categories require a Google account.", permanent: true}
+	}
 	var patch map[string]any
 	var dest string
 	switch op.Action {

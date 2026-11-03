@@ -29,6 +29,7 @@ type RoutingRule struct {
 	Match      string             `json:"match" enum:"all,any"`
 	Conditions []RoutingCondition `json:"conditions"`
 	TeamID     uuid.UUID          `json:"team_id"`
+	SkillIDs   []uuid.UUID        `json:"skill_ids"`
 	CreatedAt  time.Time          `json:"created_at"`
 	UpdatedAt  time.Time          `json:"updated_at"`
 }
@@ -66,26 +67,98 @@ var (
 	idFields = map[string]string{"mailbox_id": "mailboxes", "brand_id": "brands", "widget_id": "widgets"}
 )
 
-const ruleSelect = `SELECT id, name, enabled, position, run_count, match, conditions, team_id, created_at, updated_at FROM routing_rules`
+const ruleSelect = `SELECT r.id, r.name, r.enabled, r.position, r.run_count, r.match, r.conditions, r.team_id,
+	ARRAY(SELECT rs.skill_id FROM routing_rule_skills rs WHERE rs.workspace_id = r.workspace_id AND rs.routing_rule_id = r.id ORDER BY rs.skill_id),
+	r.created_at, r.updated_at FROM routing_rules r`
 
 func scanRule(row pgx.Row) (RoutingRule, error) {
 	var r RoutingRule
 	var conds []byte
-	if err := row.Scan(&r.ID, &r.Name, &r.Enabled, &r.Position, &r.RunCount, &r.Match, &conds, &r.TeamID, &r.CreatedAt, &r.UpdatedAt); err != nil {
+	if err := row.Scan(&r.ID, &r.Name, &r.Enabled, &r.Position, &r.RunCount, &r.Match, &conds, &r.TeamID, &r.SkillIDs, &r.CreatedAt, &r.UpdatedAt); err != nil {
 		return r, err
 	}
 	if err := json.Unmarshal(conds, &r.Conditions); err != nil || r.Conditions == nil {
 		r.Conditions = []RoutingCondition{}
 	}
+	if r.SkillIDs == nil {
+		r.SkillIDs = []uuid.UUID{}
+	}
 	return r, nil
 }
 
 func loadRule(ctx context.Context, q db.Querier, wid, id uuid.UUID, lock bool) (RoutingRule, error) {
-	sql := ruleSelect + ` WHERE workspace_id = $1 AND id = $2`
+	sql := ruleSelect + ` WHERE r.workspace_id = $1 AND r.id = $2`
 	if lock {
-		sql += ` FOR UPDATE`
+		sql += ` FOR UPDATE NOWAIT`
 	}
 	return scanRule(q.QueryRow(ctx, sql, wid, id))
+}
+
+func normalizeSkillIDs(raw []string) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, 0, len(raw))
+	for _, value := range raw {
+		id, err := uuid.Parse(strings.TrimSpace(value))
+		if err != nil {
+			return nil, httpx.Validation("skill_ids must contain valid skill ids")
+		}
+		ids = append(ids, id)
+	}
+	slices.SortFunc(ids, func(a, b uuid.UUID) int { return strings.Compare(a.String(), b.String()) })
+	for i := 1; i < len(ids); i++ {
+		if ids[i] == ids[i-1] {
+			return nil, httpx.Validation("skill_ids must not repeat")
+		}
+	}
+	return ids, nil
+}
+
+// validateRuleSkillIDs locks the workspace, then referenced skills in ID order. This
+// matches catalog writes, so archiving and rule edits cannot deadlock or race.
+func validateRuleSkillIDs(ctx context.Context, tx pgx.Tx, wid uuid.UUID, ids []uuid.UUID) error {
+	if _, err := tx.Exec(ctx, `SELECT 1 FROM workspaces WHERE id = $1 FOR NO KEY UPDATE`, wid); err != nil {
+		return err
+	}
+	for _, id := range ids {
+		var archived bool
+		err := tx.QueryRow(ctx, `SELECT archived FROM skills WHERE workspace_id = $1 AND id = $2 FOR UPDATE`, wid, id).Scan(&archived)
+		if db.IsNotFound(err) {
+			return httpx.Validation("skill_ids must reference skills in this workspace")
+		}
+		if err != nil {
+			return err
+		}
+		if archived {
+			return httpx.Validation("archived skills cannot be required by a routing rule")
+		}
+	}
+	return nil
+}
+
+func replaceRuleSkills(ctx context.Context, tx pgx.Tx, wid, ruleID uuid.UUID, ids []uuid.UUID) error {
+	if _, err := tx.Exec(ctx, `DELETE FROM routing_rule_skills WHERE workspace_id = $1 AND routing_rule_id = $2`, wid, ruleID); err != nil {
+		return err
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	_, err := tx.Exec(ctx, `INSERT INTO routing_rule_skills(workspace_id, routing_rule_id, skill_id)
+		SELECT $1, $2, unnest($3::uuid[])`, wid, ruleID, ids)
+	return err
+}
+
+func loadSkills(ctx context.Context, q db.Querier, wid uuid.UUID, ids []uuid.UUID) ([]Skill, error) {
+	if len(ids) == 0 {
+		return []Skill{}, nil
+	}
+	rows, err := q.Query(ctx, skillSelect+` WHERE s.workspace_id = $1 AND s.id = ANY($2) ORDER BY s.id`, wid, ids)
+	if err != nil {
+		return nil, err
+	}
+	skills, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (Skill, error) { return scanSkill(r) })
+	if err != nil {
+		return nil, err
+	}
+	return skills, nil
 }
 
 // cleanName trims a rule name: 1..80 runes, single-spaced, no control characters or markup.

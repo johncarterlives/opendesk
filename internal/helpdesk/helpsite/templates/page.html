@@ -51,6 +51,7 @@
       <bdi>{{.Site.Title}}</bdi>
     </a>
     <div class="hc-actions">
+      {{- if .Site.PortalURL}}<a class="hc-nav" href="{{.Site.PortalURL}}">{{.T.T "portal.login"}}</a>{{end}}
       {{- if .Site.Changelog}}
       <a class="hc-nav" href="{{.CategoryURL ""}}"{{if or (eq .Kind "changelog") (eq .Kind "entry")}} aria-current="page"{{end}}>{{.T.T "help.changelog"}}</a>
       {{- end}}

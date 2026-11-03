@@ -43,7 +43,7 @@ gateway pushes it in full to those user channels and the `event.hidden` stand-in
 (`events.user_ids`), and no webhook receives it.
 
 `events.Event.Admins` scopes an event the same way to the workspace's owner and admins at publish
-time: settings whose REST reads need admin (`webhook.*`, `ai_mcp_server.*`, `ai_agent_test*`) never
+time: settings whose REST reads need admin (`webhook.*`, `ai_mcp_server.*`, `ai_agent_test*`, `ai_procedure.*`) never
 reach other members, API keys or webhooks. A notification is scoped to its recipient, and a personal
 view to its owner.
 
@@ -70,8 +70,8 @@ view to its owner.
 
 | type                     | visibility | topics (besides workspace)            | data |
 | ------------------------ | ---------- | ------------------------------------- | ---- |
-| `ticket.created`         | agents     | —                                     | `{ "ticket": Ticket }` |
-| `ticket.updated`         | agents     | `user:<assignee>` when assignee changes | `{ "ticket": Ticket, "changes": ["status","assignee_id","tags","fields",...] }` |
+| `ticket.created`         | agents     | —                                     | `{ "ticket": Ticket }` (including the route's fixed `required_skills`) |
+| `ticket.updated`         | agents     | `user:<assignee>` when assignee changes | `{ "ticket": Ticket, "changes": ["status","assignee_id","tags","fields",...] }` (the ticket's fixed `required_skills` remain in its Ticket shape) |
 | `ticket.deleted`         | agents     | —                                     | `{ "ticket_id": "..." }` |
 | `message.created`        | agents (note) / public (reply on chat ticket) / agents (reply on email ticket) | `contact:<wid>:<cid>:<brand_id>` when public | `{ "ticket_id": "...", "message": Message }` |
 | `message.updated`        | agents (public on chat tickets, never for a marker) | `contact:<wid>:<cid>:<brand_id>` when public | `{ "ticket_id": "...", "message": Message }` (delivery status; an internal note's edit; a message deleted, restored or purged; a note sent as a reply; the widget agent's action card status and visitor rating, `contracts/agent.md`). A deleted message, or a note sent as a reply, is always its marker (`domain.Tombstone`: no text, files or action card) and goes to the team alone, whoever publishes it (delivery, bounce, action card) |
@@ -91,9 +91,12 @@ view to its owner.
 | `member.added` / `member.updated` / `member.removed` | agents | `user:<uid>` | `{ "member": Member }` / `{ "user_id" }`. `member.updated` also on availability, profile and picture changes (in every workspace of that user) |
 | `workspace.updated`      | agents     | —                                     | `{ "workspace": Workspace }` (name, settings, logo and brand images) |
 | `notification.created`   | agents     | `private`, `user:<uid>` (the recipient alone) | `{ "notification": Notification }` |
+| `notification.read`      | agents     | `private`, `user:<uid>` (the reader alone) | `{ "ids": string[], "read_at": string }`, or `{ "all": true, "read_at": string }` when more than 200 were read at once (every notification created up to `read_at`): `POST /v1/notifications/read` from any window or device, so the bell and the desktop badge everywhere else follow |
+| `notification.deleted`   | agents     | `private`, `user:<uid>` (the recipient alone) | `{ "ids": string[] }`: notifications removed with what they were about (a deleted message's mention); a phone whose unread count fell gets a badge update |
 | `ai_suggested_reply.created` / `ai_suggested_reply.updated` | agents | — | `{ "ticket_id": "...", "suggested_reply": SuggestedReply }` (`contracts/agent.md` "Email"). `created` when the agent suggests a reply on an email ticket (it supersedes the pending one); `updated` when a teammate sends or discards it |
 | `ai_mcp_server.created` / `ai_mcp_server.updated` / `ai_mcp_server.deleted` | agents | admins (`private`, `user:<uid>`) | `{ "mcp_server": McpServer }` / `{ "mcp_server_id" }` (`contracts/agent.md`). `updated` also when a sync changes the tools or the status |
 | `ai_knowledge.created` / `ai_knowledge.updated` / `ai_knowledge.deleted` | agents | — | `{ "source": KnowledgeSource }` / `{ "source_id" }` (`contracts/agent.md`). `updated` on every status change of a sync |
+| `ai_procedure.created` / `ai_procedure.updated` / `ai_procedure.deleted` | agents | admins (`private`, `user:<uid>`) | `{ "procedure": Procedure }` / `{ "procedure_id" }` (`contracts/agent.md` "Procedures") |
 | `ai_agent_test.created` / `ai_agent_test.updated` / `ai_agent_test.deleted` | agents | admins (`private`, `user:<uid>`) | `{ "test": AgentTest }` / `{ "test_id" }` (`contracts/agent.md` "Tests") |
 | `ai_agent_test_run.created` / `ai_agent_test_run.updated` | agents | admins (`private`, `user:<uid>`) | `{ "run": AgentTestRun }` (without `results`): on start, when the job picks it up, after each test and when it ends or is stopped |
 | `ai_agent_test_result.updated` | agents | admins (`private`, `user:<uid>`) | `{ "result": AgentTestResult }`: a test of a run finished (`passed`, `failed` or `error`); it becomes that test's `last_result` |
@@ -104,12 +107,14 @@ view to its owner.
 | `webhook.*` | agents | admins (`private`, `user:<uid>`) | `{ "webhook": Webhook }` / `{ "webhook_id" }` |
 | `brand.created` / `brand.updated` / `brand.deleted` | agents | — | `{ "brand": Brand }` / `{ "brand_id" }` |
 | `routing_rule.created` / `routing_rule.updated` / `routing_rule.deleted` | agents | — | `{ "routing_rule": RoutingRule }` / `{ "routing_rule_id" }` |
+| `skill.created` / `skill.updated` / `skill.members_updated` | agents, owner/admin recipients only | — | `{ "skill": { "id", "name", "archived", "member_ids" } }`; updated includes archive/restore, members_updated replaces the full set |
 | `widget.created` / `widget.updated` / `widget.deleted` | agents | — | `{ "widget": Widget }` / `{ "widget_id" }` |
 | `email_template.updated` | agents | — | `{ "brand_id", "kind": "layout" \| "csat" }` (contracts/templates.md): a brand's email layout or CSAT email was saved or reset; refetch it |
 | `bot.created` / `bot.updated` / `bot.deleted` | agents | — | `{ "bot": Bot }` / `{ "bot_id" }` (contracts/bots.md); a new default, a reorder or a new picture is `bot.updated` of each bot it changed |
 | `integration.created` / `integration.updated` / `integration.deleted` | agents | — | `{ "integration": Integration }` / `{ "integration_id" }` (`contracts/integrations.md`; never credentials) |
 | `support_channel_connection.created` / `support_channel_connection.updated` / `support_channel_connection.deleted` | agents | — | `{ "support_channel_connection": Connection }` / `{ "support_channel_connection": Connection }` / `{ "support_channel_connection_id" }` (`contracts/support-channels.md`; never credentials). Updated on rotated credentials and on a new health state. Deleting one removes its destinations |
-| `support_channel_destination.created` / `support_channel_destination.deleted` | agents | — | `{ "support_channel_destination": Destination }` / `{ "support_channel_destination_id" }` |
+| `support_channel_destination.created` / `support_channel_destination.updated` / `support_channel_destination.deleted` | agents | — | `{ "support_channel_destination": Destination }` / `{ "support_channel_destination": Destination }` / `{ "support_channel_destination_id" }`. Updated when its Ollie settings change |
+| `support_channel_ollie.updated` | agents | — | `{ "support_channel_ollie": { "actions": string[] } }`: what Ollie may change in support channel threads (`contracts/support-channels.md` "Ollie") |
 | `phone_connection.created` / `phone_connection.updated` / `phone_connection.deleted` | agents | admins (`private`, `user:<uid>`) | `{ "phone_connection": PhoneConnection }` / `{ "phone_connection_id" }` (`contracts/phone.md`; never credentials). Updated on settings, rotated credentials and every new health state |
 | `ticket_link.created` / `ticket_link.deleted` | agents | — | `{ "ticket_id", "link": Link }` / `{ "ticket_id", "link_id" }` |
 | `ticket_panel.created` / `ticket_panel.updated` / `ticket_panel.deleted` | agents | — | `{ "panel": TicketPanel }` / `{ "panel_id" }` (`contracts/integrations.md` "Ticket panels"; never a token, a secret or a URL's path). Updated too when a lookup finds the credentials refused, or working again |

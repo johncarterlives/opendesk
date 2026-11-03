@@ -260,6 +260,16 @@
       "label": "Gesprächsansicht",
       "hint": "Nachrichten des Kunden links, Antworten und Notizen deines Teams rechts, wie in einem Chat. Volle Breite auf schmalen Bildschirmen."
     },
+    "properties": {
+      "label": "Ticket-Eigenschaften",
+      "hint": "Status, Priorität, Zuständige Person, Team und Labels in der Detailspalte oder in einer Leiste über der Unterhaltung, direkt bearbeitbar. Mit der Leiste beginnt die Detailspalte mit dem Kunden und dem, was deine Apps über ihn wissen.",
+      "column": "In der Detailspalte",
+      "bar": "In einer Leiste über der Unterhaltung"
+    },
+    "nextTicket": {
+      "label": "Nach „{{action}}“ das nächste Ticket öffnen",
+      "hint": "Auch nach dem Senden mit einem Status, der das Ticket aus der Liste nimmt. Das nächste Ticket der Liste oder Ansicht, aus der du kommst, öffnet sich, mit ihren Filtern und ihrer Sortierung; nach dem letzten bist du zurück in der Liste. Machst du das Senden rückgängig, kommst du zum Ticket zurück."
+    },
     "sounds": {
       "title": "Töne",
       "hint": "Gilt für diesen Browser. Live-Chat hat einen helleren Klang; alles andere ist leise.",
@@ -351,6 +361,10 @@
     "gravatarHint": "Sendet einen Hash der E-Mail-Adressen von Kontakten an Gravatar, um deren Bilder abzurufen.",
     "domainLogos": "Unternehmenslogos",
     "domainLogosHint": "Lädt das Logo jedes Unternehmens von dessen Website.",
+    "reports": "Berichte",
+    "onlineTime": "Online-Zeit der Agents",
+    "onlineTimeOn": "Erfasst die Zeit, in der jedes Mitglied opendesk mit dem Status Online geöffnet hat, für Berichte → Agents. Schalte sie aus, wo ihre Erfassung die Zustimmung des Teams oder eine Betriebsvereinbarung braucht.",
+    "onlineTimeOff": "Es wird keine Online-Zeit erfasst oder in den Berichten gezeigt. Speichern mit ausgeschalteter Option löscht die bisher erfasste Online-Zeit.",
     "undoSend": "Senden rückgängig für E-Mail",
     "undoSendHint": "E-Mail-Antworten warten so lange, bevor sie rausgehen, damit sie zurückgenommen oder zu einer Notiz gemacht werden können.",
     "undoSendChat": "Senden rückgängig für Chat",
