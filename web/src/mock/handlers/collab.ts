@@ -1191,6 +1191,11 @@ function applyAction(ws: WsData, t: ThreadMeta, action: MailThreadAction, folder
     t.snoozedUntil = until;
     return;
   }
+  // Out of Spam into the inbox of an account with handling on: in Needs action again, as new mail (contracts/collab.md "Conversations").
+  if ((action === "not_spam" || action === "inbox") && a.visibility === "shared" && a.handling_enabled && ms.some((m) => !m.draft && m.folder_ids.includes(rid("spam")))) {
+    t.needsAction = true;
+    t.snoozedUntil = undefined;
+  }
   for (const m of ms) {
     switch (action) {
       case "read":

@@ -131,3 +131,37 @@ export function useThreadAction() {
     },
   });
 }
+
+/** A conversation's assignees before and after a change from the list. */
+export type AssignChange = { id: string; before: string[]; ids: string[] };
+
+/**
+ * The changes that give conversations new assignees from their own (`next`), leaving out those
+ * that stay the same.
+ */
+export function assignChanges(threads: MailThread[], next: (ids: string[]) => string[]): AssignChange[] {
+  return threads.flatMap((t) => {
+    const before = t.assignees.map((a) => a.id);
+    const ids = next(before);
+    return ids.length === before.length && ids.every((id) => before.includes(id)) ? [] : [{ id: t.id, before, ids }];
+  });
+}
+
+/**
+ * Changes who is assigned to conversations from the list, several at once
+ * (PUT /v1/collab/threads/{id}/assignees replaces them, one conversation per call).
+ */
+export function useAssignThreads() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (changes: AssignChange[]) => Promise.all(changes.map((c) => api.collab.threads.assign(c.id, c.ids))),
+    onSuccess: (ds) => {
+      for (const d of ds) qc.setQueryData(qk.mailThread(d.thread.id), d);
+      patchThreads(qc, ds.map((d) => d.thread));
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: qk.mailCounts });
+      void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+    },
+  });
+}

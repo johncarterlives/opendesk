@@ -710,6 +710,59 @@ func TestHandlingStateFollowsNewMail(t *testing.T) {
 	}
 }
 
+// Mail taken out of Spam into the inbox of an account with handling on is in Needs action
+// again, from an action in opendesk or a move the sync sees; nowhere else.
+func TestOutOfSpamNeedsAction(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	mustExec(t, w.d, `UPDATE collab_accounts SET handling_enabled = true WHERE id = $1`, a.ID)
+	a, _ = loadAccount(w.ctx, w.d.DB.Pool, w.wid, a.ID)
+	off := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	spam, inbox := w.folder(a, RoleSpam), w.folder(a, RoleInbox)
+	notSpam, _ := w.seedThread(a, "Quote request", spam)
+	toInbox, _ := w.seedThread(a, "Bottles", spam)
+	toTrash, _ := w.seedThread(a, "Lottery", spam)
+	atProvider, atProviderMsg := w.seedThread(a, "Order", spam)
+	elsewhere, _ := w.seedThread(off, "Hello", w.folder(off, RoleSpam))
+	srv := w.api(w.agent)
+	act := func(action string, tids ...uuid.UUID) {
+		t.Helper()
+		if st := doJSON(t, "POST", srv.URL+"/v1/collab/threads/actions", map[string]any{"thread_ids": tids, "action": action}, nil); st != 200 {
+			t.Fatalf("%s: %d", action, st)
+		}
+	}
+	act("not_spam", notSpam, elsewhere)
+	act("inbox", toInbox)
+	act("trash", toTrash)
+	// Moved back to the inbox in Gmail itself: the sync sees its labels change.
+	p, err := w.s.newPass(w.ctx, w.d.DB.Pool, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.batch(w.ctx, func(tx pgx.Tx) error {
+		m, err := scanStored(tx.QueryRow(w.ctx, `SELECT `+storedColumns+` FROM collab_messages m WHERE m.id = $1`, atProviderMsg))
+		if err != nil {
+			return err
+		}
+		return p.update(w.ctx, tx, m, state{Unread: true, FolderIDs: []uuid.UUID{inbox.ID}})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for tid, want := range map[uuid.UUID]bool{notSpam: true, toInbox: true, atProvider: true, toTrash: false, elsewhere: false} {
+		var got bool
+		if err := w.d.DB.Pool.QueryRow(w.ctx, `SELECT needs_action FROM collab_threads WHERE id = $1`, tid).Scan(&got); err != nil || got != want {
+			t.Fatalf("thread %s needs_action = %t, want %t (%v)", tid, got, want, err)
+		}
+	}
+	// Taken out of the inbox and back is not new: Done stays done.
+	act("done", notSpam)
+	act("archive", notSpam)
+	act("inbox", notSpam)
+	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = $1 AND needs_action`, notSpam); n != 0 {
+		t.Fatalf("archive and back re-marked: %d", n)
+	}
+}
+
 func TestAPISnooze(t *testing.T) {
 	w := newWorld(t)
 	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})

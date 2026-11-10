@@ -22,6 +22,7 @@ import { accountAssignedNumbers, accountNumbers, allInboxNumbers, folderNumbers,
 import { ACCOUNT_BOXES, accountName, buildFolderTree, flattenTree, folderWithRole } from "@/lib/collab/boxes";
 import { useAllFolders, useMailAccounts, useSaveSidebarPrefs } from "@/lib/collab/hooks";
 import { badgeFor, hid, iconOf, livePins, nameOf, pickCount, toggleExpanded, type MailBadge } from "@/lib/collab/sidebarPrefs";
+import { dropOverCls, useThreadDrop } from "@/lib/collab/threadDrag";
 import { cn } from "@/lib/cn";
 import { q } from "@/lib/queries";
 import { useOpenWorkspaceData } from "@/lib/spaces/hooks";
@@ -97,6 +98,8 @@ function MailRow({
   const source: EditSource | undefined = rowKey
     ? { kind: "row", from: rowKey.startsWith("account:") ? "mail" : "mail:box", key: rowKey, pin, row: pin && pin.kind !== "view_section" ? { kind: pin.kind, id: pin.id } : undefined }
     : undefined;
+  // Conversations dragged from the list land here: moved, starred, marked or assigned (lib/collab/threadDrag.ts).
+  const drop = useThreadDrop(link);
   return (
     <SidebarRow id={`mail|${rowKey || target}`} source={source} label={name} edit={rowKey ? rowEdit(rowKey, label) : undefined} rail={rail}>
     <NavTip rail={rail} label={name}>
@@ -106,7 +109,8 @@ function MailRow({
         params={{ box: link.box, threadId: undefined }}
         search={{ account: link.account, folder: link.folder }}
         onClick={() => markOpener(target, "mail")}
-        className={cn(rowBase, rowShape(rail), lit ? rowActive : rowIdle)}
+        {...drop.props}
+        className={cn(rowBase, rowShape(rail), lit ? rowActive : rowIdle, drop.over && dropOverCls)}
         data-status={lit ? "active" : undefined}
         aria-current={active ? "page" : undefined}
         aria-label={rail ? label : undefined}
