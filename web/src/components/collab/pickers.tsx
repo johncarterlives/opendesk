@@ -2,13 +2,15 @@
 // audience editor that shares an account or a single conversation.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, Check, Globe, Inbox, Plus, ShieldAlert, Trash2, Users, X } from "lucide-react";
+import { Archive, Check, Globe, Inbox, Mail, Plus, ShieldAlert, Trash2, Users, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api/endpoints";
 import type { MailAudience, MailCategory, MailFolder, MailThreadAction, Member } from "@/lib/api/types";
 import { buildFolderTree, flattenTree } from "@/lib/collab/boxes";
 import { categoryTone } from "@/lib/collab/categories";
+import { isEmail } from "@/lib/collab/recipients";
+import { useRole } from "@/lib/session";
 import { cn } from "@/lib/cn";
 import { tone } from "@/lib/tones";
 import { qk, q, upsertInList } from "@/lib/queries";
@@ -203,7 +205,7 @@ export function AssignPicker({
 }
 
 export const emptyAudience = (): MailAudience => ({ everyone: false, team_ids: [], user_ids: [] });
-export const audienceIsEmpty = (a: MailAudience) => !a.everyone && !a.team_ids.length && !a.user_ids.length;
+export const audienceIsEmpty = (a: MailAudience) => !a.everyone && !a.team_ids.length && !a.user_ids.length && !a.invited?.length;
 
 /** A shared account's audience: "Everyone", "2 teams, 3 people" or "No one added yet". */
 export function useAudienceSummary() {
@@ -213,6 +215,7 @@ export function useAudienceSummary() {
     const parts = [
       ...(a.team_ids.length ? [t("audience.summaryTeams", { count: a.team_ids.length })] : []),
       ...(a.user_ids.length ? [t("audience.summaryPeople", { count: a.user_ids.length })] : []),
+      ...(a.invited?.length ? [t("audience.summaryInvited", { count: a.invited.length })] : []),
     ];
     return parts.length ? parts.join(", ") : t("audience.summaryNobody");
   };
@@ -231,12 +234,62 @@ function Chip({ children, onRemove, label }: { children: ReactNode; onRemove?: (
   );
 }
 
-/** Teams and people of an audience, as chips with pickers to add more. */
-export function AudienceLists({ value, onChange, disabled, exclude }: { value: MailAudience; onChange: (a: MailAudience) => void; disabled?: boolean; exclude?: string }) {
+/**
+ * Teams and people of an audience, as chips with pickers to add more. With `grow` (a shared
+ * account's audience, GH#447), admins may also create a team or invite someone by email from
+ * the pickers: the team is picked at once, and the invitee gets the account when they accept.
+ */
+export function AudienceLists({
+  value,
+  onChange,
+  disabled,
+  exclude,
+  grow,
+}: {
+  value: MailAudience;
+  onChange: (a: MailAudience) => void;
+  disabled?: boolean;
+  exclude?: string;
+  grow?: boolean;
+}) {
   const { t } = useTranslation("collab");
+  const qc = useQueryClient();
+  const role = useRole();
+  const admin = role === "owner" || role === "admin";
   const { data: teams } = useQuery(q.teams());
   const { data: members } = useQuery(q.members());
   const memberOf = (id: string): Member | undefined => members?.find((m) => m.user.id === id);
+  const invited = value.invited ?? [];
+
+  const createTeam = useMutation({
+    mutationFn: (name: string) => api.teams.create({ name }),
+    onSuccess: (team) => {
+      upsertInList(qc, qk.teams, team);
+      void qc.invalidateQueries({ queryKey: qk.teams });
+      onChange({ ...value, team_ids: [...value.team_ids, team.id] });
+      toast.success(t("audience.teamCreated", { name: team.name }));
+    },
+    onError: (e) => toast.error(e, t("audience.teamCreateFailed")),
+  });
+  const invite = useMutation({
+    mutationFn: (email: string) => api.invitations.create({ email, role: "agent" }),
+    onSuccess: (inv) => {
+      void qc.invalidateQueries({ queryKey: qk.invitations });
+      if (!invited.some((x) => x.id === inv.id)) onChange({ ...value, invited: [...invited, { id: inv.id, email: inv.email }] });
+      toast.success(t("audience.invited", { email: inv.email }));
+    },
+    onError: (e) => toast.error(e, t("audience.inviteFailed")),
+  });
+  const onInvite = (typed: string) => {
+    const email = typed.trim().toLowerCase();
+    if (!isEmail(email)) return toast.error(t("audience.inviteNeedsEmail"));
+    const member = members?.find((m) => m.user.email.toLowerCase() === email);
+    if (member) {
+      if (!value.user_ids.includes(member.user.id)) onChange({ ...value, user_ids: [...value.user_ids, member.user.id] });
+      return;
+    }
+    invite.mutate(email);
+  };
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
@@ -259,6 +312,8 @@ export function AudienceLists({ value, onChange, disabled, exclude }: { value: M
               placeholder={t("audience.addTeams")}
               emptyText={t("share.noTeams")}
               items={(teams ?? []).map((x) => ({ value: x.id, label: x.name, icon: <TeamDot team={x} /> }))}
+              onCreate={grow && admin && !createTeam.isPending ? (name) => createTeam.mutate(name) : undefined}
+              createLabel={t("audience.createTeam")}
               trigger={
                 <Button size="xs" variant="ghost" icon={<Plus />}>
                   {t("audience.addTeams")}
@@ -290,6 +345,9 @@ export function AudienceLists({ value, onChange, disabled, exclude }: { value: M
               items={(members ?? [])
                 .filter((m) => m.user.id !== exclude)
                 .map((m) => ({ value: m.user.id, label: m.user.name || m.user.email, icon: <Avatar name={m.user.name || m.user.email} src={m.user.avatar_url} size="xs" />, keywords: [m.user.email] }))}
+              onCreate={grow && admin && !invite.isPending ? onInvite : undefined}
+              createLabel={t("audience.invite")}
+              footer={grow && admin ? <p className="px-2 py-1 text-[11px] text-fg-4">{t("audience.inviteHint")}</p> : undefined}
               trigger={
                 <Button size="xs" variant="ghost" icon={<Plus />}>
                   {t("audience.addPeople")}
@@ -297,6 +355,13 @@ export function AudienceLists({ value, onChange, disabled, exclude }: { value: M
               }
             />
           )}
+          {invited.map((i) => (
+            <Chip key={i.id} label={t("composer.remove", { name: i.email ?? "" })} onRemove={disabled ? undefined : () => onChange({ ...value, invited: invited.filter((x) => x.id !== i.id) })}>
+              <Mail className="size-3.5 text-fg-3" />
+              {i.email ?? "…"}
+              <span className="text-fg-4">{t("audience.invitedMark")}</span>
+            </Chip>
+          ))}
         </div>
       </div>
     </div>
@@ -381,7 +446,7 @@ export function SharedAudience({ value, onChange, disabled, exclude }: { value: 
         title={t("audience.pick")}
         hint={t("audience.pickHint")}
       >
-        <AudienceLists value={value} onChange={(a) => onChange({ ...a, everyone: false })} disabled={disabled} exclude={exclude} />
+        <AudienceLists value={value} onChange={(a) => onChange({ ...a, everyone: false })} disabled={disabled} exclude={exclude} grow />
       </ChoiceCard>
     </div>
   );

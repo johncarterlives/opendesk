@@ -361,7 +361,18 @@
     "summaryTeams_other": "{{count}} Teams",
     "summaryPeople_one": "{{count}} Person",
     "summaryPeople_other": "{{count}} Personen",
-    "summaryNobody": "Noch niemand hinzugefügt"
+    "summaryInvited_one": "{{count}} eingeladen",
+    "summaryInvited_other": "{{count}} eingeladen",
+    "summaryNobody": "Noch niemand hinzugefügt",
+    "createTeam": "Team erstellen",
+    "teamCreated": "Team {{name}} erstellt",
+    "teamCreateFailed": "Das Team wurde nicht erstellt",
+    "invite": "Einladen",
+    "inviteHint": "Geben Sie eine E-Mail-Adresse ein, um jemanden einzuladen. Das Konto wird geteilt, sobald die Person beitritt.",
+    "inviteNeedsEmail": "Geben Sie eine E-Mail-Adresse ein, um jemanden einzuladen",
+    "invited": "Einladung an {{email}} gesendet",
+    "inviteFailed": "Die Einladung wurde nicht gesendet",
+    "invitedMark": "eingeladen"
   },
   "accounts": {
     "title": "E-Mail-Konten",

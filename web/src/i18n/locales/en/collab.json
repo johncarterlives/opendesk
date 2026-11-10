@@ -370,7 +370,18 @@
     "summaryTeams_other": "{{count}} teams",
     "summaryPeople_one": "{{count}} person",
     "summaryPeople_other": "{{count}} people",
-    "summaryNobody": "No one added yet"
+    "summaryInvited_one": "{{count}} invited",
+    "summaryInvited_other": "{{count}} invited",
+    "summaryNobody": "No one added yet",
+    "createTeam": "Create team",
+    "teamCreated": "Team {{name}} created",
+    "teamCreateFailed": "The team was not created",
+    "invite": "Invite",
+    "inviteHint": "Type an email address to invite someone. They get this account when they join.",
+    "inviteNeedsEmail": "Type an email address to invite someone",
+    "invited": "Invitation sent to {{email}}",
+    "inviteFailed": "The invitation was not sent",
+    "invitedMark": "invited"
   },
   "accounts": {
     "title": "Mail accounts",

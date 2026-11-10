@@ -2987,7 +2987,13 @@ export type TicketVariables = { values: Record<string, string>; signature_html: 
 
 // ─── Collab: shared and private mail accounts (contracts/collab.md) ─────────
 
-export type MailAudience = { everyone: boolean; team_ids: string[]; user_ids: string[] };
+export type MailAudience = {
+  everyone: boolean;
+  team_ids: string[];
+  user_ids: string[];
+  /** On an account: people invited to the workspace who get it when they accept (pending invitations; email read-only). */
+  invited?: { id: string; email?: string }[];
+};
 export type MailAddress = { name: string; email: string };
 export type MailProvider = "google" | "microsoft" | "imap";
 export type MailTls = "tls" | "starttls";

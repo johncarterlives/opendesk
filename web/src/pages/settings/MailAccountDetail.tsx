@@ -67,7 +67,9 @@ const imapOf = (a: MailAccount): ImapForm => ({
   smtp_password: "",
 });
 
-const sameAudience = (a: MailAudience, b: MailAudience) => a.everyone === b.everyone && a.team_ids.join() === b.team_ids.join() && a.user_ids.join() === b.user_ids.join();
+const invitedIds = (a: MailAudience) => (a.invited ?? []).map((i) => i.id).join();
+const sameAudience = (a: MailAudience, b: MailAudience) =>
+  a.everyone === b.everyone && a.team_ids.join() === b.team_ids.join() && a.user_ids.join() === b.user_ids.join() && invitedIds(a) === invitedIds(b);
 
 export default function MailAccountDetail() {
   const { t } = useTranslation("collab");
