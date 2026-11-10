@@ -943,6 +943,8 @@ function detailOut(ws: WsData, t: ThreadMeta): MailThreadDetail {
     comments: t.comments,
     shares: t.shares,
     can_act: canActRole(ws, db.meId),
+    // The demo keeps no AI draft records once a draft is gone.
+    unused_ai_drafts: [],
   };
 }
 

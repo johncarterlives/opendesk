@@ -249,6 +249,30 @@ func aiDraftRefs(ctx context.Context, q db.Querier, list []*messageRow) (map[uui
 	return out, rows.Err()
 }
 
+// unusedAIDrafts lists a conversation's AI drafts a person discarded, replaced or
+// abandoned whose draft is gone, oldest outcome first, so feedback on them stays reachable
+// after the draft left the conversation (GH#437). A replaced or abandoned draft still
+// waiting shows as the draft itself.
+func unusedAIDrafts(ctx context.Context, q db.Querier, workspace, thread uuid.UUID) ([]UnusedAIDraft, error) {
+	rows, err := q.Query(ctx, `SELECT d.id, d.outcome, d.client, d.feedback_at IS NOT NULL, d.outcome_at
+		FROM collab_ai_drafts d
+		WHERE d.workspace_id = $1 AND d.thread_id = $2 AND d.outcome IN ('discarded', 'replaced', 'abandoned')
+			AND NOT EXISTS (SELECT 1 FROM collab_messages m WHERE m.id = d.draft_message_id AND m.draft)
+		ORDER BY d.outcome_at, d.id`, workspace, thread)
+	if err != nil {
+		return nil, err
+	}
+	list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (UnusedAIDraft, error) {
+		var u UnusedAIDraft
+		err := r.Scan(&u.ID, &u.Outcome, &u.Client, &u.HasFeedback, &u.OutcomeAt)
+		return u, err
+	})
+	if list == nil {
+		list = []UnusedAIDraft{}
+	}
+	return list, err
+}
+
 func (s *service) registerOutcomeRoutes(api huma.API) {
 	collabOp(api, huma.Operation{OperationID: "list-collab-ai-draft-outcomes", Method: http.MethodGet,
 		Path: "/v1/collab/ai-drafts/outcomes", Summary: "Read what became of this key's AI drafts"},

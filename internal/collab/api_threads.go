@@ -647,8 +647,12 @@ func (s *service) threadDetail(ctx context.Context, q db.Querier, p *auth.Princi
 	if err != nil {
 		return out, err
 	}
+	unused, err := unusedAIDrafts(ctx, q, p.WorkspaceID, t.ID)
+	if err != nil {
+		return out, err
+	}
 	return MailThreadDetail{Thread: threads[0], Messages: messages, Comments: comments, Shares: shares, CanAct: canAct(p),
-		Account: account, Ticket: ticket}, nil
+		Account: account, Ticket: ticket, UnusedAIDrafts: unused}, nil
 }
 
 // threadTicket is the conversation's ticket when p sees it, else nil.

@@ -619,6 +619,9 @@ changes a model; what the client does with the feedback is its own business.
   stored without being read; left out on a save again keeps the last one.
 - **On messages**: `ai_draft` names the AI draft a draft is, or a sent message was sent from
   (`{id, client, outcome, has_feedback}`), even after a person took it over.
+- **On the conversation**: `unused_ai_drafts` lists its AI drafts that were `discarded`,
+  `replaced` or `abandoned` and whose draft is gone, so a person can still give feedback on a
+  draft that was not used (GH#437). A replaced or abandoned draft still waiting is the draft itself.
 - **Feedback** from a person, which never blocks a send: `PUT /v1/collab/ai-drafts/{id}/feedback`
   (agent or above, who sees the conversation; never a key) `{reason: wrong_facts | wrong_tone |
   missing_info | should_not_answer | other, note? (≤1000), better_answer_html? (sanitized like
@@ -842,6 +845,7 @@ interface MailThreadDetail {
   shares: Audience             // the conversation's own shares
   can_act: boolean
   ticket: { id: string; number: number; subject: string } | null  // the ticket it answered or was answered from, when the caller sees it ("Answering tickets")
+  unused_ai_drafts: (AIDraftRef & { outcome_at: string })[]  // AI drafts discarded, replaced or abandoned and gone, oldest first ("AI draft outcomes")
 }
 
 interface CollabStatus {
