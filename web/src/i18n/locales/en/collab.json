@@ -325,6 +325,9 @@
     "deleteTitle": "Delete comment",
     "edited": "edited",
     "someone": "A former teammate",
+    "aiNoteBy": "AI note by {{name}}",
+    "aiSkipped": "{{name}} looked at this and did not draft: {{reason}}",
+    "aiSkippedNoReason": "{{name}} looked at this and did not draft",
     "empty": "No comments yet. Discuss this conversation with your team here.",
     "menu": "Comment actions"
   },

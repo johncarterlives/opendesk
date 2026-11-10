@@ -66,6 +66,7 @@ type draftCreateInput struct {
 		FromEmail          string      `json:"from_email,omitempty" maxLength:"254" doc:"One of the account's usable addresses"`
 		ClaimToken         *uuid.UUID  `json:"claim_token,omitempty" doc:"AI queue: the claim this reply reports back on; refused once that claim has expired or passed on"`
 		ClientRef          string      `json:"client_ref,omitempty" maxLength:"200" doc:"AI keys: a label of your own for the instructions behind this draft, returned with its outcome"`
+		AINote             string      `json:"ai_note,omitempty" maxLength:"20000" doc:"AI keys: an internal note for the team, saved as an AI note on the conversation with the draft (never sent)"`
 	}
 }
 
@@ -97,6 +98,18 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				if len(b.AttachmentIDs) > 0 || b.ForwardAttachments {
 					return nil, errAIDraftFiles
 				}
+			} else if b.AINote != "" {
+				return nil, httpx.Validation("ai_note is for AI keys; a person comments on the conversation.")
+			}
+			if b.AINote != "" {
+				// Checked before the draft is saved, so a note that cannot be stored never
+				// leaves a draft without it.
+				if _, err := cleanComment(b.AINote); err != nil {
+					return nil, err
+				}
+				if mentionAttr.MatchString(b.AINote) {
+					return nil, errAINoteMentions
+				}
 			}
 			t, err := s.composeTarget(ctx, p, b.AccountID, b.Mode, b.MessageID)
 			if err != nil {
@@ -124,6 +137,15 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				ClientRef: b.ClientRef})
 			if err != nil {
 				return nil, err
+			}
+			if b.AINote != "" && threadID != nil {
+				ai, err := s.aiDrafterOf(ctx, p)
+				if err != nil {
+					return nil, httpx.Wrap(err)
+				}
+				if _, err := s.addComment(ctx, p, t.thread, b.AINote, nil, ai); err != nil {
+					return nil, err
+				}
 			}
 			out, err := s.messageByID(ctx, p, t.a, id)
 			if err != nil {

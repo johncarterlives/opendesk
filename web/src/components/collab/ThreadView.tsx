@@ -28,6 +28,7 @@ import {
   Settings,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Star,
   Tag,
   Ticket,
@@ -695,6 +696,16 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
           })}
 
           {drafts.map((m) => (canAct ? <DraftRow key={m.id} m={m} composing={!!composer || !!editing} onOpen={() => editDraft(m)} /> : <MailMessageItem key={m.id} m={m} open={false} onToggle={() => undefined} />))}
+
+          {/* AI keys that looked at it in the queue and handed it back (contracts/collab.md "AI notes"). */}
+          {detail.ai_skips?.map((s) => (
+            <p key={`${s.client}-${s.at}`} className="flex min-h-7 items-center gap-1.5 px-1 text-[11.5px] text-fg-4">
+              <Sparkles className="size-3 shrink-0" aria-hidden />
+              <span data-text className="cursor-text select-text">
+                {s.reason ? t("comments.aiSkipped", { name: s.client, reason: s.reason }) : t("comments.aiSkippedNoReason", { name: s.client })}
+              </span>
+            </p>
+          ))}
 
           <AnimatePresence initial={false}>
             {detail.comments.length > 0 && (

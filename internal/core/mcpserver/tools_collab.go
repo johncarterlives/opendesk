@@ -15,12 +15,13 @@ import (
 )
 
 // Collab tools (contracts/collab.md "AI drafts"): an API key with collab:draft reads the
-// conversations of the member who created it and saves reply drafts for a
-// person to review and send. Nothing here sends, marks read or unread, moves, assigns
-// or comments; the API refuses those routes to a key whatever a tool asks.
+// conversations of the member who created it, saves reply drafts for a person to review
+// and send, and leaves the team AI notes. Nothing here sends, marks read or unread,
+// moves or assigns; the API refuses those routes to a key whatever a tool asks.
 
 const (
 	maxListConversations = 50
+	maxNoteChars         = 4000
 	collabBoxes          = "inbox, unread, assigned (to the member), shared (with the member), starred or all"
 )
 
@@ -63,6 +64,7 @@ func collabTools() []*tool {
 				"claim_token":  str("The claim_token from claim_collab_conversation, when replying to a conversation you claimed; refused once the claim has expired or passed to another holder."),
 				"to":           arr("Recipients instead of the message's.", strN("", 3, 254), 20),
 				"cc":           arr("Copied addresses instead of the message's.", strN("", 3, 254), 20),
+				"note":         strN("An internal note for the reviewer, in markdown, saved with the draft as an AI note (never sent): why it needs a person, what to check.", 1, maxNoteChars),
 			}, "conversation", "body"),
 			Run: draftCollabReply,
 		},
@@ -90,6 +92,17 @@ func collabTools() []*tool {
 				"reason":       strN("Why, briefly.", 1, 500),
 			}, "conversation"),
 			Run: releaseCollabConversation,
+		},
+		{
+			Name: "add_collab_note", Title: "Leave the team an internal note on a mail conversation", Scopes: scopes,
+			Description: "Add an internal comment to a Collab conversation, labelled \"AI note by\" your key's name. It is never sent to the customer: " +
+				"use it to tell the reviewer why a draft needs a person (for example a credit to decide, a date to confirm) or why you did not draft. " +
+				"Keep such notes out of draft bodies. A note cannot mention anyone. Write it in markdown.",
+			Schema: obj(map[string]any{
+				"conversation": str("The conversation id."),
+				"note":         strN("The note, in markdown.", 1, maxNoteChars),
+			}, "conversation", "note"),
+			Run: addCollabNote,
 		},
 		{
 			Name: "list_collab_draft_outcomes", Title: "See what became of your mail drafts", Scopes: scopes, ReadOnly: true, Idempotent: true,
@@ -245,7 +258,13 @@ type apiMailDetail struct {
 		Author    *userRef  `json:"author"`
 		BodyHTML  string    `json:"body_html"`
 		CreatedAt time.Time `json:"created_at"`
+		AINoteBy  *string   `json:"ai_note_by"`
 	} `json:"comments"`
+	AISkips []struct {
+		Client string    `json:"client"`
+		Reason string    `json:"reason"`
+		At     time.Time `json:"at"`
+	} `json:"ai_skips"`
 }
 
 // --- outputs -------------------------------------------------------------------------
@@ -280,8 +299,15 @@ type outMail struct {
 
 type outComment struct {
 	Author string    `json:"author,omitempty"`
+	AINote string    `json:"ai_note_by,omitempty"`
 	At     time.Time `json:"at"`
 	Text   string    `json:"text"`
+}
+
+type outSkip struct {
+	By     string    `json:"by"`
+	Reason string    `json:"reason,omitempty"`
+	At     time.Time `json:"at"`
 }
 
 type conversationOut struct {
@@ -290,6 +316,7 @@ type conversationOut struct {
 	SendsFrom      []string        `json:"sends_from,omitempty"`
 	Messages       []outMail       `json:"messages"`
 	Comments       []outComment    `json:"team_comments,omitempty"`
+	SkippedBy      []outSkip       `json:"skipped_by_ai,omitempty"`
 	EarlierOmitted int             `json:"earlier_messages_omitted,omitempty"`
 	TextSpent      bool            `json:"text_truncated,omitempty"`
 }
@@ -452,9 +479,58 @@ func renderConversation(d *apiMailDetail) conversationOut {
 		if cm.Author != nil {
 			oc.Author = cm.Author.Name
 		}
+		if cm.AINoteBy != nil {
+			oc.AINote = *cm.AINoteBy
+		}
 		out.Comments = append(out.Comments, oc)
 	}
+	for _, sk := range d.AISkips {
+		out.SkippedBy = append(out.SkippedBy, outSkip{By: sk.Client, Reason: sk.Reason, At: sk.At})
+	}
 	return out
+}
+
+func addCollabNote(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
+	a, err := decode[struct {
+		Conversation string `json:"conversation"`
+		Note         string `json:"note"`
+	}](raw)
+	if err != nil {
+		return nil, err
+	}
+	id, err := idRef(a.Conversation, "conversation")
+	if err != nil {
+		return nil, err
+	}
+	html, err := noteHTML(a.Note)
+	if err != nil {
+		return nil, err
+	}
+	var saved struct {
+		ID       string  `json:"id"`
+		AINoteBy *string `json:"ai_note_by"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/v1/collab/threads/"+id+"/comments", nil, map[string]any{"body_html": html}, &saved); err != nil {
+		return nil, err
+	}
+	out := struct {
+		NoteID       string `json:"note_id"`
+		Conversation string `json:"conversation"`
+		AINoteBy     string `json:"ai_note_by,omitempty"`
+		Note         string `json:"note"`
+	}{NoteID: saved.ID, Conversation: id, Note: "an internal comment for the team; never sent to the customer"}
+	if saved.AINoteBy != nil {
+		out.AINoteBy = *saved.AINoteBy
+	}
+	return out, nil
+}
+
+// noteHTML is an AI note's markdown as the comment HTML the API takes.
+func noteHTML(md string) (string, error) {
+	if utf8.RuneCountInString(md) > maxNoteChars {
+		return "", invalid("note is at most 4000 characters")
+	}
+	return markdownBody(md)
 }
 
 func claimCollabConversation(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
@@ -559,9 +635,16 @@ func draftCollabReply(ctx context.Context, c *caller, raw json.RawMessage) (any,
 		ClaimToken   string   `json:"claim_token"`
 		To           []string `json:"to"`
 		Cc           []string `json:"cc"`
+		Note         string   `json:"note"`
 	}](raw)
 	if err != nil {
 		return nil, err
+	}
+	note := ""
+	if strings.TrimSpace(a.Note) != "" {
+		if note, err = noteHTML(a.Note); err != nil {
+			return nil, err
+		}
 	}
 	if a.ClaimToken != "" && a.DraftID != "" {
 		return nil, invalid("claim_token reports back on a claim with a new draft; leave out draft_id")
@@ -609,6 +692,12 @@ func draftCollabReply(ctx context.Context, c *caller, raw json.RawMessage) (any,
 		if err := c.do(ctx, http.MethodPut, "/v1/collab/drafts/"+id, nil, body, &saved); err != nil {
 			return nil, err
 		}
+		if note != "" {
+			// Saving again has no note of its own: the note is added beside the draft.
+			if err := c.do(ctx, http.MethodPost, "/v1/collab/threads/"+d.Thread.ID+"/comments", nil, map[string]any{"body_html": note}, nil); err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		orig, err := answered(d, a.MessageID)
 		if err != nil {
@@ -636,6 +725,9 @@ func draftCollabReply(ctx context.Context, c *caller, raw json.RawMessage) (any,
 				return nil, err
 			}
 			body["claim_token"] = token
+		}
+		if note != "" {
+			body["ai_note"] = note
 		}
 		if err := c.do(ctx, http.MethodPost, "/v1/collab/drafts", nil, body, &saved); err != nil {
 			return nil, err

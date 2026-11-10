@@ -3357,7 +3357,12 @@ export type MailComment = {
   mentions: string[];
   created_at: string;
   updated_at: string;
+  /** An AI note: the key's name when it added it (contracts/collab.md "AI notes"). */
+  ai_note_by?: string | null;
 };
+
+/** An AI key that skipped a conversation since its last message (contracts/collab.md "AI notes"). */
+export type MailAISkip = { client: string; reason: string; at: string };
 
 export type MailThreadAccount = {
   id: string;
@@ -3386,6 +3391,8 @@ export type MailThreadDetail = {
   can_act: boolean;
   /** The ticket it answered or was answered from, when you see it (contracts/collab.md "Answering tickets"). */
   ticket?: { id: string; number: number; subject: string } | null;
+  /** AI keys that skipped it since its last message, newest first. */
+  ai_skips?: MailAISkip[];
 };
 
 /** One address across the conversations you see (contracts/collab.md "People"). */

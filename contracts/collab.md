@@ -544,9 +544,10 @@ Any AI client, whatever model runs it (local or hosted), may draft replies for a
   team's internal comments), `POST /v1/collab/drafts` (mode `reply` or `reply_all`, no
   `attachment_ids` or `forward_attachments`) and `PUT /v1/collab/drafts/{id}` for a draft it saved
   that nobody has saved since (`403 ai_draft_not_own` otherwise; no `attachment_ids`), both with an
-  optional `client_ref`, and the outcome feed ("AI draft outcomes"). Every other
-  Collab route refuses it (`403`): it never sends, discards, marks read or unread, moves, labels,
-  assigns, shares or comments. Reading changes no state, so a conversation the key read stays
+  optional `client_ref`, the outcome feed ("AI draft outcomes") and `POST
+  /v1/collab/threads/{id}/comments` for an AI note ("AI notes"). Every other Collab route refuses
+  it (`403`): it never sends, discards, marks read or unread, moves, labels, assigns or shares, and
+  never edits or deletes a comment. Reading changes no state, so a conversation the key read stays
   unread for the team.
 - **Attribution**: a draft it saves is the member's (`sent_by`) with `drafted_by_ai`, the key's name
   as it was then (shown "AI draft by <name>"). A person who saves the draft takes it over:
@@ -556,8 +557,25 @@ Any AI client, whatever model runs it (local or hosted), may draft replies for a
   as with any draft. Each save by a key is audit-logged (`collab.ai_draft_saved`, actor the member,
   `actor: "ai"` with the key).
 - **MCP tools** (contracts/agent.md): `list_collab_conversations`, `get_collab_conversation`,
-  `draft_collab_reply`, `claim_collab_conversation`, `release_collab_conversation` and
-  `list_collab_draft_outcomes`, offered to a key with `collab:draft`.
+  `draft_collab_reply`, `claim_collab_conversation`, `release_collab_conversation`,
+  `add_collab_note` and `list_collab_draft_outcomes`, offered to a key with `collab:draft`.
+
+### AI notes
+
+A key tells the reviewer why a draft needs a person, or why it did not draft, in the team's
+internal comments, never in a draft body (GH#431).
+
+- `POST /v1/collab/threads/{id}/comments` from a `collab:draft` key (member an agent or above, on a
+  conversation the member sees) adds an internal comment written as the member, with `ai_note_by`
+  the key's name then (shown "AI note by <name>"). It mentions no one (`422 ai_note_mentions` for a
+  mention mark or `mentions`), so a note never shares a conversation. At most 30 a minute per key.
+  Audit-logged (`collab.ai_note_added`, `actor: "ai"` with the key and its name, never the words).
+  An AI note is never edited (`403`), so its words stay the key's; it is deleted like a comment.
+- `ai_note` (≤20000) on `POST /v1/collab/drafts` from a key: the same note, checked before the draft
+  is saved and added once it is; refused from a person (`422`).
+- **Skips shown**: a conversation's `ai_skips` are the keys that released it with `skip` since its
+  last message (`{client, reason, at}`, the key's name now; revoked keys left out), shown "<name>
+  skipped: <reason>", so a person knows an AI looked and why it did not draft.
 
 ### AI queue
 
@@ -831,6 +849,7 @@ interface MailComment {
   mentions: string[]           // user ids
   created_at: string
   updated_at: string
+  ai_note_by: string | null    // an AI note: the key's name when it added it ("AI notes")
 }
 
 interface MailThreadDetail {
@@ -842,6 +861,7 @@ interface MailThreadDetail {
   shares: Audience             // the conversation's own shares
   can_act: boolean
   ticket: { id: string; number: number; subject: string } | null  // the ticket it answered or was answered from, when the caller sees it ("Answering tickets")
+  ai_skips: { client: string; reason: string; at: string }[]  // AI keys that skipped it since its last message, newest first ("AI notes")
 }
 
 interface CollabStatus {

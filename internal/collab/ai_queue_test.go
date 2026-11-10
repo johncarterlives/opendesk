@@ -87,6 +87,12 @@ func TestAIQueue(t *testing.T) {
 	if n := w.count(`SELECT count(*) FROM collab_ai_skips WHERE thread_id = $1 AND reason = 'not confident'`, t2); n != 1 {
 		t.Fatal("skip not kept")
 	}
+	// A person sees who skipped it and why (GH#431).
+	var skipped MailThreadDetail
+	if st := doJSON(t, "GET", w.api(w.agent).URL+"/v1/collab/threads/"+t2.String(), nil, &skipped); st != 200 ||
+		len(skipped.AISkips) != 1 || skipped.AISkips[0].Client != "Second drafter" || skipped.AISkips[0].Reason != "not confident" {
+		t.Fatalf("skips on the conversation: %d %+v", st, skipped.AISkips)
+	}
 	claim(bot2.URL, uuid.Nil)
 	if st := release(bot.URL, t3, map[string]any{}); st != 204 {
 		t.Fatalf("release: %d", st)

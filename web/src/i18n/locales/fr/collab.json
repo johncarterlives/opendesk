@@ -328,6 +328,9 @@
     "deleteTitle": "Supprimer le commentaire",
     "edited": "modifié",
     "someone": "Un ancien collègue",
+    "aiNoteBy": "Note IA par {{name}}",
+    "aiSkipped": "{{name}} a examiné cette conversation sans rédiger de brouillon : {{reason}}",
+    "aiSkippedNoReason": "{{name}} a examiné cette conversation sans rédiger de brouillon",
     "empty": "Aucun commentaire pour le moment. Discutez de cette conversation avec votre équipe ici.",
     "menu": "Actions du commentaire"
   },

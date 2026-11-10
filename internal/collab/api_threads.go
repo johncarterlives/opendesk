@@ -647,8 +647,33 @@ func (s *service) threadDetail(ctx context.Context, q db.Querier, p *auth.Princi
 	if err != nil {
 		return out, err
 	}
+	skips, err := threadAISkips(ctx, q, p.WorkspaceID, t.ID)
+	if err != nil {
+		return out, err
+	}
 	return MailThreadDetail{Thread: threads[0], Messages: messages, Comments: comments, Shares: shares, CanAct: canAct(p),
-		Account: account, Ticket: ticket}, nil
+		Account: account, Ticket: ticket, AISkips: skips}, nil
+}
+
+// threadAISkips are the skips of a conversation still in force (no new mail since), by
+// each key's name now, newest first (GH#431).
+func threadAISkips(ctx context.Context, q db.Querier, workspace, thread uuid.UUID) ([]AISkip, error) {
+	rows, err := q.Query(ctx, `SELECT k.name, sk.reason, sk.created_at
+		FROM collab_ai_skips sk JOIN collab_threads t ON t.id = sk.thread_id JOIN api_keys k ON k.id = sk.api_key_id
+		WHERE sk.workspace_id = $1 AND sk.thread_id = $2 AND sk.last_message_at >= t.last_message_at AND k.revoked_at IS NULL
+		ORDER BY sk.created_at DESC`, workspace, thread)
+	if err != nil {
+		return nil, err
+	}
+	list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (AISkip, error) {
+		var s AISkip
+		err := r.Scan(&s.Client, &s.Reason, &s.At)
+		return s, err
+	})
+	if list == nil {
+		list = []AISkip{}
+	}
+	return list, err
 }
 
 // threadTicket is the conversation's ticket when p sees it, else nil.

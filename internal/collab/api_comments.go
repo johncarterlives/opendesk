@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/google/uuid"
@@ -39,7 +40,9 @@ func (s *service) registerCommentRoutes(api huma.API) {
 				Mentions []uuid.UUID `json:"mentions,omitempty" maxItems:"50"`
 			}
 		}) (*commentBody, error) {
-			p, err := s.require(ctx, auth.RoleAgent)
+			// A collab:draft key may add an AI note ("AI notes"); every other comment route
+			// stays a person's.
+			p, err := s.requireDrafter(ctx, auth.RoleAgent)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -51,31 +54,18 @@ func (s *service) registerCommentRoutes(api huma.API) {
 			if err != nil {
 				return nil, notFound(err, "Conversation")
 			}
-			body, err := cleanComment(in.Body.BodyHTML)
+			var ai *aiDrafter
+			if viaAIClient(p) {
+				if !s.d.Limiter.Allow("collab-ai-note:"+p.APIKeyID.String(), aiNotesPerMinute, time.Minute) {
+					return nil, httpx.RateLimited()
+				}
+				if ai, err = s.aiDrafterOf(ctx, p); err != nil {
+					return nil, httpx.Wrap(err)
+				}
+			}
+			cid, err := s.addComment(ctx, p, t, in.Body.BodyHTML, in.Body.Mentions, ai)
 			if err != nil {
 				return nil, err
-			}
-			cid := ids.New()
-			err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
-				before, err := threadsAudience(ctx, tx, p.WorkspaceID, []uuid.UUID{t.ID})
-				if err != nil {
-					return err
-				}
-				mentions, err := mentioned(ctx, tx, p, body, in.Body.Mentions)
-				if err != nil {
-					return err
-				}
-				if _, err := tx.Exec(ctx, `INSERT INTO collab_comments (id, workspace_id, thread_id, author_id, body_html, mentions)
-					VALUES ($1, $2, $3, $4, $5, $6)`, cid, p.WorkspaceID, t.ID, p.UserID, body, mentions); err != nil {
-					return err
-				}
-				if err := s.mentionPeople(ctx, tx, p, t, cid, body, mentions); err != nil {
-					return err
-				}
-				return s.publishThread(ctx, tx, p.WorkspaceID, t, before)
-			})
-			if err != nil {
-				return nil, httpx.Wrap(err)
 			}
 			return s.commentResponse(ctx, p, cid)
 		})
@@ -96,7 +86,8 @@ func (s *service) registerCommentRoutes(api huma.API) {
 			if err != nil {
 				return nil, err
 			}
-			if c.AuthorID == nil || *c.AuthorID != p.UserID {
+			// An AI note stays the key's words: it can be deleted, not edited ("AI notes").
+			if c.AuthorID == nil || *c.AuthorID != p.UserID || c.AIClient != nil {
 				return nil, httpx.Forbidden()
 			}
 			body, err := cleanComment(in.Body.BodyHTML)
@@ -164,6 +155,59 @@ func (s *service) registerCommentRoutes(api huma.API) {
 }
 
 // cleanComment sanitizes a comment like a note; nothing left is refused.
+// aiNotesPerMinute bounds the AI notes one key adds.
+const aiNotesPerMinute = 30
+
+var errAINoteMentions = httpx.E(422, "ai_note_mentions", "An AI note cannot mention anyone: a mention would share the conversation.")
+
+// addComment stores a comment on t by p, notifies and shares with the people it mentions,
+// and publishes the change. ai is the key adding an AI note (nil for a person): it is
+// labelled with the key's name, may mention no one, and is audit-logged.
+func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRow, raw string, listed []uuid.UUID, ai *aiDrafter) (uuid.UUID, error) {
+	body, err := cleanComment(raw)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	cid := ids.New()
+	err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
+		before, err := threadsAudience(ctx, tx, p.WorkspaceID, []uuid.UUID{t.ID})
+		if err != nil {
+			return err
+		}
+		mentions, err := mentioned(ctx, tx, p, body, listed)
+		if err != nil {
+			return err
+		}
+		var keyID *uuid.UUID
+		var client *string
+		if ai != nil {
+			if len(mentions) > 0 {
+				return errAINoteMentions
+			}
+			keyID, client = &ai.APIKeyID, &ai.Client
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO collab_comments (id, workspace_id, thread_id, author_id, body_html, mentions, ai_api_key_id, ai_client)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, cid, p.WorkspaceID, t.ID, p.UserID, body, mentions, keyID, client); err != nil {
+			return err
+		}
+		if ai != nil {
+			// The words are the client's; the entry names the conversation, never them.
+			if err := audit.Log(ctx, tx, p, p.WorkspaceID, "collab.ai_note_added", "collab_comment", &cid,
+				map[string]any{"actor": "ai", "client": ai.Client, "api_key_id": ai.APIKeyID, "thread_id": t.ID}); err != nil {
+				return err
+			}
+		}
+		if err := s.mentionPeople(ctx, tx, p, t, cid, body, mentions); err != nil {
+			return err
+		}
+		return s.publishThread(ctx, tx, p.WorkspaceID, t, before)
+	})
+	if err != nil {
+		return uuid.Nil, httpx.Wrap(err)
+	}
+	return cid, nil
+}
+
 func cleanComment(raw string) (string, error) {
 	if len(raw) > maxCommentHTML {
 		return "", httpx.Validation("A comment is at most 20000 characters.")

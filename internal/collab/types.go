@@ -307,6 +307,8 @@ type MailComment struct {
 	Mentions  []uuid.UUID     `json:"mentions"`
 	CreatedAt time.Time       `json:"created_at"`
 	UpdatedAt time.Time       `json:"updated_at"`
+	// AINoteBy is, for a note an AI key added, the key's name then ("AI note by <name>").
+	AINoteBy *string `json:"ai_note_by"`
 }
 
 // ThreadAccount is the account a conversation belongs to, as its detail shows it.
@@ -334,6 +336,16 @@ type MailThreadDetail struct {
 	// Ticket is the ticket the conversation answered or was answered from, when the caller
 	// sees it ("Answering tickets").
 	Ticket *ThreadTicket `json:"ticket"`
+	// AISkips are the AI keys that looked at the conversation in the queue and handed it
+	// back with skip since its last message, with their reason ("AI queue").
+	AISkips []AISkip `json:"ai_skips"`
+}
+
+// AISkip is an AI key skipping a conversation: "<client> skipped: <reason>".
+type AISkip struct {
+	Client string    `json:"client"`
+	Reason string    `json:"reason"`
+	At     time.Time `json:"at"`
 }
 
 // ThreadTicket names a conversation's ticket.

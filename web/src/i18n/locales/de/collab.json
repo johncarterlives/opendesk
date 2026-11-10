@@ -316,6 +316,9 @@
     "deleteTitle": "Kommentar löschen",
     "edited": "bearbeitet",
     "someone": "Ein ehemaliges Teammitglied",
+    "aiNoteBy": "KI-Notiz von {{name}}",
+    "aiSkipped": "{{name}} hat sich das angesehen und keinen Entwurf geschrieben: {{reason}}",
+    "aiSkippedNoReason": "{{name}} hat sich das angesehen und keinen Entwurf geschrieben",
     "empty": "Noch keine Kommentare. Besprich diese Unterhaltung hier mit deinem Team.",
     "menu": "Kommentaraktionen"
   },
