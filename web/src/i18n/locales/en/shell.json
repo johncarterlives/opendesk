@@ -73,6 +73,7 @@
     "label": "Search"
   },
   "newTicket": "New ticket",
+  "compose": "Compose",
   "chatPopup": {
     "title": "New chat",
     "open": "Open",
@@ -81,6 +82,8 @@
   "notifications": {
     "allow": {
       "title": "Get told about new tickets and replies.",
+      "titleMail": "Get told about new mail and replies.",
+      "titleBoth": "Get told about new tickets, mail and replies.",
       "hint": "Allow notifications so they reach you while opendesk is in the background.",
       "allow": "Allow notifications",
       "later": "Not now"

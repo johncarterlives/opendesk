@@ -1,6 +1,7 @@
 // The sidebar with Collab on: the member's sections in their order, with Favorites
 // (pinned boxes, folders, accounts, views, view sections and teams) and Mail, kept short: All inboxes,
-// Shared with me and Assigned to me while they hold something, then one row per account
+// Shared with me and Assigned to me while they hold something (the work queues always once
+// an account has Handling on), then one row per account
 // (its folders unfold on request) with its own Assigned to me under it while it has some. Unread counts come from GET /v1/collab/counts, kept
 // fresh by collab.changed events.
 
@@ -166,6 +167,7 @@ function AccountGroup({
   counts,
   here,
   rail,
+  queues,
 }: {
   account: MailAccount;
   folders: MailFolder[] | undefined;
@@ -174,6 +176,8 @@ function AccountGroup({
   counts: MailCounts | undefined;
   here: MailHere;
   rail: boolean;
+  /** The work queues are always shown above the accounts. */
+  queues: boolean;
 }) {
   const { t } = useTranslation("collab");
   const navigate = useNavigate();
@@ -264,7 +268,8 @@ function AccountGroup({
           </button>
         </Tooltip>
       </div>
-      {!hidden.has(hid.box("assigned")) && (assignedHere || !!counts?.assigned?.[account.id]) && (
+      {/* With the work queues in sight above, Assigned to me is one row there (GH#430). */}
+      {!hidden.has(hid.box("assigned")) && (assignedHere || (!queues && !!counts?.assigned?.[account.id])) && (
         <MailRow
           link={{ box: "assigned", account: account.id }}
           active={assignedHere}
@@ -346,6 +351,10 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
   // which has no rows under an account).
   const assignedIn = Object.entries(counts?.assigned ?? {}).filter(([, n]) => n > 0).map(([id]) => id);
   const assignedAcross = !!counts?.boxes.assigned && (rail || assignedIn.length > 1 || assignedIn.some((id) => !shown.some((a) => a.id === id)));
+  // With Handling on for an account the team works from queues: Ready for review, Assigned
+  // to me, Needs action and Snoozed stay in sight even while empty, so people know they
+  // exist (GH#430). Without it they show only while they hold something.
+  const handling = !!accounts?.some((a) => a.handling_enabled);
 
   return (
     <Section
@@ -387,7 +396,7 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
           menu={{ badge: { key: "box:shared", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "shared" }, hideId: hid.box("shared") }}
         />
       )}
-      {!hidden.has(hid.box("assigned")) && ((here.box === "assigned" && (rail || !here.account)) || assignedAcross) && (
+      {!hidden.has(hid.box("assigned")) && ((here.box === "assigned" && (rail || !here.account)) || assignedAcross || handling) && (
         <MailRow
           link={{ box: "assigned" }}
           active={here.box === "assigned" && (rail || !here.account)}
@@ -400,7 +409,7 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
         />
       )}
       {/* AI drafts waiting for a person to send, edit or discard (contracts/collab.md "AI queue"). */}
-      {!hidden.has(hid.box("ai_review")) && (here.box === "ai_review" || !!counts?.boxes.ai_review) && (
+      {!hidden.has(hid.box("ai_review")) && (here.box === "ai_review" || !!counts?.boxes.ai_review || handling) && (
         <MailRow
           link={{ box: "ai_review" }}
           active={here.box === "ai_review"}
@@ -412,7 +421,7 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
           menu={{ badge: { key: "box:ai_review", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "ai_review" }, hideId: hid.box("ai_review") }}
         />
       )}
-      {!hidden.has(hid.box("needs_action")) && (here.box === "needs_action" || !!counts?.boxes.needs_action) && (
+      {!hidden.has(hid.box("needs_action")) && (here.box === "needs_action" || !!counts?.boxes.needs_action || handling) && (
         <MailRow
           link={{ box: "needs_action" }}
           active={here.box === "needs_action"}
@@ -424,7 +433,7 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
           menu={{ badge: { key: "box:needs_action", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "needs_action" }, hideId: hid.box("needs_action") }}
         />
       )}
-      {!hidden.has(hid.box("snoozed")) && (here.box === "snoozed" || !!counts?.boxes.snoozed) && (
+      {!hidden.has(hid.box("snoozed")) && (here.box === "snoozed" || !!counts?.boxes.snoozed || handling) && (
         <MailRow
           link={{ box: "snoozed" }}
           active={here.box === "snoozed"}
@@ -437,7 +446,7 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
         />
       )}
       {shown.map((a) => (
-        <AccountGroup key={a.id} account={a} folders={folders[a.id]} prefs={prefs} hidden={hidden} counts={counts} here={here} rail={rail} />
+        <AccountGroup key={a.id} account={a} folders={folders[a.id]} prefs={prefs} hidden={hidden} counts={counts} here={here} rail={rail} queues={handling} />
       ))}
       {accounts && accounts.length === 0 && (
         <NavTip rail={rail} label={t("nav.noAccounts")}>

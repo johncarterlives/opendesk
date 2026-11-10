@@ -9,6 +9,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useCollab } from "@/lib/collab/hooks";
+import { useProducts } from "@/lib/products";
 import { q } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 import { dur, ease } from "@/lib/motion";
@@ -39,6 +41,10 @@ export function AllowNotificationsBanner() {
     return () => window.removeEventListener("focus", sync);
   }, []);
   const open = perm === "default" && !away;
+  // Name what this workspace actually brings in: tickets, mail or both (GH#430).
+  const mail = useCollab().enabled;
+  const { tickets } = useProducts();
+  const title = mail && !tickets ? "notifications.allow.titleMail" : mail ? "notifications.allow.titleBoth" : "notifications.allow.title";
 
   return (
     <AnimatePresence initial={false}>
@@ -54,7 +60,7 @@ export function AllowNotificationsBanner() {
           <div role="status" className={cn("flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b px-4 py-2", tone.blue.soft, tone.blue.line)}>
             <BellRing className={cn("size-3.5 shrink-0", tone.blue.text)} aria-hidden />
             <p className="min-w-0 flex-1 text-[12.5px] leading-[18px]">
-              <span className="font-medium">{t("notifications.allow.title")}</span>{" "}
+              <span className="font-medium">{t(title)}</span>{" "}
               <span className="text-fg-3">{t("notifications.allow.hint")}</span>
             </p>
             <div className="flex shrink-0 items-center gap-1.5">

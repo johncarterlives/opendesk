@@ -480,7 +480,9 @@
       "title": "Handling",
       "hint": "Keep shared inbox work separate from read and unread mail",
       "enabled": "Track conversations needing action",
-      "enabledHint": "New incoming mail needs action until someone marks it done. This does not change mail at your provider."
+      "enabledHint": "New incoming mail needs action until someone marks it done. This does not change mail at your provider.",
+      "markInbox": "Start with the current inbox",
+      "markInboxHint": "Put the conversations in the inbox now in Needs action, except those you answered last. Otherwise only mail that arrives from now on needs action."
     },
     "replying": {
       "title": "Replying",

@@ -1103,6 +1103,8 @@ export type CollabAccountPatch = {
   signature_html?: string;
   visibility?: "private" | "shared";
   handling_enabled?: boolean;
+  /** With handling_enabled turning on: put what is in the inbox now in Needs action (once). */
+  mark_inbox_needs_action?: boolean;
   reply_all?: boolean;
   shared_with?: T.MailAudience;
   imap?: Partial<T.MailImapSettings> & { password?: string; smtp_password?: string };
