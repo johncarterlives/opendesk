@@ -1,9 +1,10 @@
 // One conversation in a mail list: unread weight, participants, subject, snippet,
 // time, star, attachment, the account's dot when the list spans accounts, labels,
-// assignees, shared and comment marks. Hover offers archive, trash, read and star.
+// assignees, shared and comment marks. Hover offers archive, trash, read and star. A waiting
+// AI draft shows under it with Send, Edit and Discard where the list offers them.
 
 import { motion, useReducedMotion } from "motion/react";
-import { Archive, Mail, MailOpen, MessageSquare, Paperclip, Star, Trash2, Users } from "lucide-react";
+import { Archive, Mail, MailOpen, MessageSquare, Paperclip, PencilLine, Send, Sparkles, Star, Trash2, Users } from "lucide-react";
 import { forwardRef, memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MailCategory, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
@@ -38,7 +39,54 @@ export type ThreadRowProps = {
   onHover?: (t: MailThread) => void;
   /** Hover actions; left out for viewers. */
   onAction?: (t: MailThread, a: MailThreadAction) => void;
+  /** Acting on its waiting AI draft in place (Ready for review); left out where it is not offered. */
+  onDraft?: (t: MailThread, a: AIDraftAction) => void;
+  /** The AI draft is being sent or discarded. */
+  draftBusy?: boolean;
 };
+
+export type AIDraftAction = "send" | "edit" | "discard";
+
+/** A waiting AI draft under its conversation: who wrote it, to whom, its first lines, and Send, Edit, Discard (GH#430). */
+function AIDraftStrip({ t, busy, onDraft }: { t: MailThread; busy?: boolean; onDraft: (t: MailThread, a: AIDraftAction) => void }) {
+  const { t: tr } = useTranslation("collab");
+  const d = t.ai_draft!;
+  const to = d.to.map((a) => a.name || a.email).join(", ");
+  const button = (a: AIDraftAction, label: string, hint: string, icon: ReactNode, primary?: boolean) => (
+    <Tooltip content={hint}>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDraft(t, a);
+        }}
+        className={cn(
+          "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-2 text-[11.5px] font-medium outline-none transition-colors focus-visible:shadow-[0_0_0_2px_var(--focus)] disabled:opacity-50 [&_svg]:size-3.5",
+          primary ? "bg-inverse text-inverse-fg hover:bg-inverse-hover" : "text-fg-2 hover:bg-hover hover:text-fg",
+        )}
+      >
+        {icon}
+        {label}
+      </button>
+    </Tooltip>
+  );
+  return (
+    <div className="flex items-center gap-2 border-b border-line-soft bg-sunken/40 py-1.5 pl-10 pr-3" onClick={(e) => e.stopPropagation()}>
+      <span className="inline-flex h-[18px] shrink-0 items-center gap-1 rounded-sm bg-tone-violet-soft px-1.5 text-[10.5px] font-medium text-tone-violet">
+        <Sparkles className="size-3" />
+        {tr("thread.aiDraftBy", { name: d.drafted_by })}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs text-fg-3" data-ph-mask>
+        {to && <span className="text-fg-2">{tr("thread.draftTo", { who: to })} · </span>}
+        {d.snippet}
+      </span>
+      {button("send", tr("composer.send"), tr("list.aiDraftSendHint"), <Send />, true)}
+      {button("edit", tr("list.aiDraftEdit"), tr("list.aiDraftEditHint"), <PencilLine />)}
+      {button("discard", tr("composer.discard"), tr("composer.discardDraftTitle"), <Trash2 />)}
+    </div>
+  );
+}
 
 function Quick({ label, shortcut, onClick, children }: { label: string; shortcut?: string; onClick: () => void; children: ReactNode }) {
   return (
@@ -59,7 +107,7 @@ function Quick({ label, shortcut, onClick, children }: { label: string; shortcut
 }
 
 const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
-  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction },
+  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, onDraft, draftBusy },
   ref,
 ) {
   const { t: tr } = useTranslation("collab");
@@ -274,6 +322,7 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
           {end}
         </div>
       )}
+      {t.ai_draft && onDraft && <AIDraftStrip t={t} busy={draftBusy} onDraft={onDraft} />}
     </motion.div>
   );
 });

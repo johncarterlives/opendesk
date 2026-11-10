@@ -757,6 +757,12 @@ interface MailThread {
   comment_count: number
   to_address: string | null    // the account's address other than its own the conversation was written to or sent from (an alias), newest first
   category: string | null      // its category key ("Categories"); null when the account's inbox is not split
+  ai_draft: {                  // the AI draft waiting for a person ("AI drafts", Ready for review); null otherwise
+    draft_id: string           //   the id the /v1/collab/drafts routes take: a list row sends, edits or discards it in place
+    drafted_by: string         //   the AI client's name ("AI draft by <name>")
+    snippet: string            //   its first lines
+    to: Address[]
+  } | null
 }
 
 interface MailMessage {

@@ -248,6 +248,21 @@ type MailThread struct {
 	// Category is its category key (contracts/collab.md "Categories"); null when the
 	// account's inbox is not split.
 	Category *string `json:"category"`
+	// AIDraft is the draft an AI client saved last and no person has taken over, sent or
+	// discarded, so a list can show it and act on it in place (GH#430); null otherwise.
+	AIDraft *ThreadAIDraft `json:"ai_draft"`
+}
+
+// ThreadAIDraft is a conversation's waiting AI draft, as a list row shows it.
+type ThreadAIDraft struct {
+	// DraftID is the id the /v1/collab/drafts routes take.
+	DraftID uuid.UUID `json:"draft_id"`
+	// DraftedBy is the AI client's name ("AI draft by <name>").
+	DraftedBy string `json:"drafted_by"`
+	// Snippet is the draft's first lines.
+	Snippet string `json:"snippet"`
+	// To is who it goes to.
+	To []Address `json:"to"`
 }
 
 type MailMessage struct {
