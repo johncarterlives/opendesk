@@ -49,6 +49,14 @@ export async function run(t) {
     await page.goto(cfg.app + "/onboarding");
     await page.getByLabel("Workspace name").fill(`Acme ${uid()}`);
     await page.getByRole("button", { name: /create workspace|continue/i }).click();
+    await page.waitForURL(/\/onboarding\/(products|mailbox)/);
+  });
+
+  await t.step("onboarding: a help desk and a shared inbox", async () => {
+    // Asked only where the instance offers Mail; Both is the default and keeps every product on.
+    if (!/\/onboarding\/products/.test(page.url())) return;
+    assert(await page.getByRole("radio", { name: /^both/i }).isChecked(), "Both is the default");
+    await page.getByRole("button", { name: "Continue", exact: true }).click();
     await page.waitForURL(/\/onboarding\/mailbox/);
   });
 
