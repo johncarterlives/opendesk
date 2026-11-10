@@ -3428,7 +3428,8 @@ export type SidebarSection = { id: string; title: string; collapsed: boolean; ic
 /** unread / total / none for mail rows; count / awaiting / urgent / overdue / none for ticket rows, and open for team rows. */
 export type SidebarBadge = "unread" | "total" | "count" | "awaiting" | "urgent" | "overdue" | "open" | "none";
 
-export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned" | "needs_action" | "snoozed";
+/** ai_review: Ready for review, conversations in an inbox with an AI draft waiting for a person. */
+export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned" | "needs_action" | "snoozed" | "ai_review";
 
 export type MailThreadAction =
   | "read"
@@ -3449,8 +3450,8 @@ export type MailThreadAction =
   | "snooze";
 
 export type MailCounts = {
-  /** Unread conversations; assigned, shared, needs_action and snoozed: open ones. */
-  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number; snoozed?: number };
+  /** Unread conversations; assigned, shared, needs_action, snoozed and ai_review: open ones. */
+  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number; snoozed?: number; ai_review?: number };
   accounts: Record<string, number>;
   folders: Record<string, number>;
   /** By account with aliases, then address (its own included): unread conversations in its inbox with it on a message; missing = 0. */
@@ -3459,6 +3460,8 @@ export type MailCounts = {
   assigned: Record<string, number>;
   /** By split account, then category key (primary included): unread conversations in its inbox; missing = 0. */
   categories?: Record<string, Record<string, number>>;
+  /** boxes.ai_review by account; only accounts with some. */
+  ai_review?: Record<string, number>;
 };
 
 /** `collab.changed` event data. */

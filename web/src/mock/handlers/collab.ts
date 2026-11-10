@@ -992,6 +992,9 @@ function listThreads(ws: WsData, ctx: Ctx) {
           return t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox");
         case "snoozed":
           return !!t.snoozed_until && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox");
+        case "ai_review":
+          // The demo has no AI client drafting, so nothing waits for review.
+          return false;
         default:
           return false;
       }
@@ -1099,12 +1102,14 @@ function counts(ws: WsData) {
       drafts: mine.filter((t) => inRole(s, t, "drafts")).length,
       needs_action: mine.filter((t) => t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
       snoozed: mine.filter((t) => !!t.snoozed_until && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
+      ai_review: 0,
     },
     accounts,
     folders,
     addresses,
     assigned,
     categories,
+    ai_review: {},
   };
 }
 

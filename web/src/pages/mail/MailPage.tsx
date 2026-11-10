@@ -427,6 +427,7 @@ export default function MailPage() {
     if (box === "inbox" && !folder) return <EmptyState art="solved" title={t("list.empty.inbox")} description={t("list.empty.inboxHint")} />;
     if (box === "shared") return <EmptyState art="inbox" title={t("list.empty.shared")} description={t("list.empty.sharedHint")} />;
     if (box === "assigned") return <EmptyState art="mine" title={t("list.empty.assigned")} description={t("list.empty.assignedHint")} />;
+    if (box === "ai_review") return <EmptyState art="solved" title={t("list.empty.aiReview")} description={t("list.empty.aiReviewHint")} />;
     if (box === "starred") return <EmptyState art="generic" title={t("list.empty.starred")} description={t("list.empty.starredHint")} tips={[{ label: t("shortcuts.star"), kbd: "s" }]} />;
     return <EmptyState art="generic" title={t("list.empty.generic")} description={t("list.empty.genericHint")} />;
   })();

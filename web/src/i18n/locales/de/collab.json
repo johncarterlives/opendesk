@@ -132,6 +132,8 @@
       "sharedHint": "Wenn ein Teammitglied eine Unterhaltung oder ein Konto mit dir teilt, erscheint es hier.",
       "assigned": "Dir ist nichts zugewiesen",
       "assignedHint": "Unterhaltungen, die dir Teammitglieder zuweisen, erscheinen hier.",
+      "aiReview": "Keine KI-Entwürfe zu prüfen",
+      "aiReviewHint": "Wenn ein KI-Client eine Antwort entwirft, wartet die Unterhaltung hier, bis jemand den Entwurf sendet, bearbeitet oder verwirft.",
       "starred": "Keine markierten Unterhaltungen",
       "starredHint": "Markiere eine Unterhaltung mit s, um sie griffbereit zu haben."
     },

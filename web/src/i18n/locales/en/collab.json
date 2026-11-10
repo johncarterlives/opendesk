@@ -31,6 +31,7 @@
     "assigned": "Assigned to me",
     "needs_action": "Needs action",
     "snoozed": "Snoozed",
+    "ai_review": "Ready for review",
     "folder": "Folder"
   },
   "customize": {
@@ -134,6 +135,8 @@
       "sharedHint": "When a teammate shares a conversation or an account with you, it shows up here.",
       "assigned": "Nothing assigned to you",
       "assignedHint": "Conversations teammates assign to you show up here.",
+      "aiReview": "No AI drafts to review",
+      "aiReviewHint": "When an AI client drafts a reply, the conversation waits here until someone sends, edits or discards the draft.",
       "starred": "No starred conversations",
       "starredHint": "Star a conversation with s to keep it close."
     },

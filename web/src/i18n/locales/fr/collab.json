@@ -31,6 +31,7 @@
     "assigned": "Attribués à moi",
     "needs_action": "À traiter",
     "snoozed": "En pause",
+    "ai_review": "À relire",
     "folder": "Dossier"
   },
   "customize": {
@@ -136,6 +137,8 @@
       "sharedHint": "Lorsqu’un collègue partage une conversation ou un compte avec vous, cela apparaît ici.",
       "assigned": "Aucune conversation attribuée",
       "assignedHint": "Les conversations que vos collègues vous attribuent apparaissent ici.",
+      "aiReview": "Aucun brouillon IA à relire",
+      "aiReviewHint": "Quand un client IA rédige une réponse, la conversation attend ici jusqu’à ce que quelqu’un envoie, modifie ou supprime le brouillon.",
       "starred": "Aucune conversation suivie",
       "starredHint": "Suivez une conversation avec s pour la garder à portée de main."
     },

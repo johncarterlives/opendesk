@@ -399,6 +399,19 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
           menu={{ badge: { key: "box:assigned", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "assigned" }, hideId: hid.box("assigned") }}
         />
       )}
+      {/* AI drafts waiting for a person to send, edit or discard (contracts/collab.md "AI queue"). */}
+      {!hidden.has(hid.box("ai_review")) && (here.box === "ai_review" || !!counts?.boxes.ai_review) && (
+        <MailRow
+          link={{ box: "ai_review" }}
+          active={here.box === "ai_review"}
+          icon={boxIcon.ai_review}
+          label={t("box.ai_review")}
+          shown={mailShown(prefs, "box:ai_review", ["mail"], listBoxNumbers("ai_review", counts))}
+          rail={rail}
+          prefs={prefs}
+          menu={{ badge: { key: "box:ai_review", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "ai_review" }, hideId: hid.box("ai_review") }}
+        />
+      )}
       {!hidden.has(hid.box("needs_action")) && (here.box === "needs_action" || !!counts?.boxes.needs_action) && (
         <MailRow
           link={{ box: "needs_action" }}
