@@ -150,6 +150,8 @@ export function countsAfter(
   const out: MailCounts = { assigned: { ...counts.assigned }, boxes: { ...counts.boxes }, accounts: { ...counts.accounts }, folders: { ...counts.folders } };
   if (counts.addresses) out.addresses = Object.fromEntries(Object.entries(counts.addresses).map(([id, m]) => [id, { ...m }]));
   if (counts.categories) out.categories = Object.fromEntries(Object.entries(counts.categories).map(([id, m]) => [id, { ...m }]));
+  if (counts.ai_review) out.ai_review = { ...counts.ai_review };
+  if (counts.spam) out.spam = { ...counts.spam };
   // A zero is kept: an account missing from the counts falls back to its own (older) number.
   const bump = (rec: Record<string, number>, key: string, d: number) => {
     rec[key] = Math.max(0, (rec[key] ?? 0) + d);
@@ -172,6 +174,11 @@ export function countsAfter(
         if (t.category && out.categories?.[t.account_id]) bump(out.categories[t.account_id], t.category, sign);
       }
       if (!has("trash") && !has("spam")) out.boxes.unread = Math.max(0, out.boxes.unread + sign);
+      // Unread spam, beside Needs action (contracts/collab.md "Spam beside Needs action").
+      if (has("spam") && out.spam && out.boxes.spam !== undefined) {
+        out.boxes.spam = Math.max(0, out.boxes.spam + sign);
+        bump(out.spam, t.account_id, sign);
+      }
       for (const id of t.folder_ids) bump(out.folders, id, sign);
     }
     if (t.shared && inInbox) out.boxes.shared = Math.max(0, out.boxes.shared + sign);

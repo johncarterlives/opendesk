@@ -18,7 +18,7 @@ import { buildRow, NavItemRow, RowEmoji, rowNumber, useMailLocation, useRowLabel
 import { useWaitingFor } from "@/components/tickets/useUrgentChats";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { MailAccount, MailBox, MailCounts, MailFolder, SidebarPin, SidebarPrefs, SidebarSectionId, View, ViewIcon } from "@/lib/api/types";
-import { accountAssignedNumbers, accountNumbers, allInboxNumbers, folderNumbers, listBoxNumbers, type RowNumbers } from "@/lib/collab/badges";
+import { accountAssignedNumbers, accountNumbers, allInboxNumbers, folderNumbers, handlingSpam, listBoxNumbers, tracksHandling, type RowNumbers } from "@/lib/collab/badges";
 import { ACCOUNT_BOXES, accountName, buildFolderTree, flattenTree, folderWithRole } from "@/lib/collab/boxes";
 import { useAllFolders, useMailAccounts, useSaveSidebarPrefs } from "@/lib/collab/hooks";
 import { badgeFor, hid, iconOf, livePins, nameOf, pickCount, toggleExpanded, type MailBadge } from "@/lib/collab/sidebarPrefs";
@@ -346,6 +346,13 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
   // which has no rows under an account).
   const assignedIn = Object.entries(counts?.assigned ?? {}).filter(([, n]) => n > 0).map(([id]) => id);
   const assignedAcross = !!counts?.boxes.assigned && (rail || assignedIn.length > 1 || assignedIn.some((id) => !shown.some((a) => a.id === id)));
+  // Spam never reaches Needs action, so handling accounts show their unread spam after the work
+  // queues, and keep the row while it is open (contracts/collab.md "Spam beside Needs action").
+  const spam = handlingSpam(accounts, counts);
+  const atSpam = here.box === "spam" && !here.folder;
+  const openHandling = atSpam && (here.account ? !!accounts?.some((a) => a.id === here.account && tracksHandling(a)) : !!accounts?.some(tracksHandling));
+  const spamAccount = spam.n ? spam.account : here.account;
+  const spamRow = !hidden.has(hid.box("spam")) && (spam.n > 0 || openHandling);
 
   return (
     <Section
@@ -434,6 +441,18 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
           rail={rail}
           prefs={prefs}
           menu={{ badge: { key: "box:snoozed", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "snoozed" }, hideId: hid.box("snoozed") }}
+        />
+      )}
+      {spamRow && (
+        <MailRow
+          link={{ box: "spam", account: spamAccount }}
+          active={atSpam && here.account === spamAccount}
+          icon={boxIcon.spam}
+          label={t("box.spam")}
+          shown={mailShown(prefs, "box:spam", ["mail"], { unread: spam.n, total: spamAccount ? folderWithRole(folders[spamAccount], "spam")?.total : undefined })}
+          rail={rail}
+          prefs={prefs}
+          menu={{ badge: { key: "box:spam", kind: "mail", sections: ["mail"] }, pin: { kind: "box", id: "spam" }, hideId: hid.box("spam") }}
         />
       )}
       {shown.map((a) => (

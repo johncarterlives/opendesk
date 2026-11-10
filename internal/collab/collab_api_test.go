@@ -661,6 +661,33 @@ func TestAPIHandlingState(t *testing.T) {
 	}
 }
 
+// Spam never reaches Needs action, so counts give its unread conversations by account
+// (contracts/collab.md "Spam beside Needs action").
+func TestAPISpamCounts(t *testing.T) {
+	w := newWorld(t)
+	shared := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	own := w.account(w.agent, ProviderGoogle, VisibilityPrivate, Audience{})
+	sharedSpam, ownSpam := w.folder(shared, RoleSpam), w.folder(own, RoleSpam)
+	w.seedThread(shared, "First order", sharedSpam)
+	w.seedThread(shared, "Quote request", sharedSpam)
+	read, _ := w.seedThread(shared, "Seen already", sharedSpam)
+	w.seedThread(own, "Prize", ownSpam)
+	w.seedThread(shared, "In the inbox", w.folder(shared, RoleInbox))
+	mustExec(t, w.d, `UPDATE collab_threads SET unread = false WHERE id = $1`, read)
+
+	var counts CollabCounts
+	if st := doJSON(t, "GET", w.api(w.agent).URL+"/v1/collab/counts", nil, &counts); st != 200 || counts.Boxes.Spam != 3 ||
+		counts.Spam[shared.ID] != 2 || counts.Spam[own.ID] != 1 || counts.Boxes.Unread != 1 {
+		t.Fatalf("spam counts: %d %+v", st, counts)
+	}
+	// Another member sees the shared account's spam only.
+	counts = CollabCounts{}
+	if st := doJSON(t, "GET", w.api(w.agent2).URL+"/v1/collab/counts", nil, &counts); st != 200 || counts.Boxes.Spam != 2 ||
+		len(counts.Spam) != 1 || counts.Spam[shared.ID] != 2 {
+		t.Fatalf("other member's spam counts: %d %+v", st, counts)
+	}
+}
+
 func TestHandlingStateFollowsNewMail(t *testing.T) {
 	w := newWorld(t)
 	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})

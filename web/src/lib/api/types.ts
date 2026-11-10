@@ -3487,8 +3487,8 @@ export type MailThreadAction =
   | "snooze";
 
 export type MailCounts = {
-  /** Unread conversations; assigned, shared, needs_action, snoozed and ai_review: open ones. */
-  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number; snoozed?: number; ai_review?: number };
+  /** Unread conversations; assigned, shared, needs_action, snoozed and ai_review: open ones; spam: unread ones in spam. */
+  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number; snoozed?: number; ai_review?: number; spam?: number };
   accounts: Record<string, number>;
   folders: Record<string, number>;
   /** By account with aliases, then address (its own included): unread conversations in its inbox with it on a message; missing = 0. */
@@ -3499,6 +3499,8 @@ export type MailCounts = {
   categories?: Record<string, Record<string, number>>;
   /** boxes.ai_review by account; only accounts with some. */
   ai_review?: Record<string, number>;
+  /** boxes.spam by account: unread conversations in spam; only accounts with some (contracts/collab.md "Spam beside Needs action"). */
+  spam?: Record<string, number>;
 };
 
 /** `collab.changed` event data. */

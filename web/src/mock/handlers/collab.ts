@@ -1101,6 +1101,10 @@ function counts(ws: WsData) {
   const assignedOpen = all.filter((t) => t.assignees.some((a) => a.id === me) && inRole(s, t, "inbox"));
   const assigned: Record<string, number> = {};
   for (const t of assignedOpen) assigned[t.account_id] = (assigned[t.account_id] ?? 0) + 1;
+  // Unread in spam by account, only accounts with some (contracts/collab.md "Spam beside Needs action").
+  const spamUnread = mine.filter((t) => t.unread && inRole(s, t, "spam"));
+  const spam: Record<string, number> = {};
+  for (const t of spamUnread) spam[t.account_id] = (spam[t.account_id] ?? 0) + 1;
   return {
     boxes: {
       inbox: inbox.filter((t) => t.unread).length,
@@ -1111,6 +1115,7 @@ function counts(ws: WsData) {
       needs_action: mine.filter((t) => t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
       snoozed: mine.filter((t) => !!t.snoozed_until && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
       ai_review: 0,
+      spam: spamUnread.length,
     },
     accounts,
     folders,
@@ -1118,6 +1123,7 @@ function counts(ws: WsData) {
     assigned,
     categories,
     ai_review: {},
+    spam,
   };
 }
 

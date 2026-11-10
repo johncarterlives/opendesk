@@ -151,7 +151,11 @@
     },
     "toAlias": "Écrit à {{email}}, l’une de vos adresses",
     "writtenTo": "Écrit à",
-    "anyAddress": "Toutes les adresses"
+    "anyAddress": "Toutes les adresses",
+    "spamHint_one": "{{count}} conversation non lue dans les spams. Les spams n’arrivent jamais dans À traiter : vérifiez qu’elle ne vient pas d’un client.",
+    "spamHint_other": "{{count}} conversations non lues dans les spams. Les spams n’arrivent jamais dans À traiter : vérifiez qu’aucune ne vient d’un client.",
+    "spamHint_many": "{{count}} conversations non lues dans les spams. Les spams n’arrivent jamais dans À traiter : vérifiez qu’aucune ne vient d’un client.",
+    "spamOpen": "Ouvrir les spams"
   },
   "action": {
     "archive": "Archiver",

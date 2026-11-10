@@ -292,6 +292,24 @@ action and comes back to it on its own.
   them. It is kept in opendesk only: the provider's message state, read state and folders do not
   change, and the conversation stays in the inbox.
 
+### Spam beside Needs action
+
+Only new mail in an inbox sets `needs_action`, so mail the provider filed as spam never reaches
+Needs action or the AI queue, however much it matters. A customer's first email is the usual case.
+On a shared account with handling on, the work view keeps spam in sight:
+
+- `counts.boxes.spam` counts the unread conversations in spam across the accounts the caller sees,
+  and `counts.spam` the same by account (only accounts with some, missing = 0). `collab.changed`
+  keeps them current like every other count.
+- The sidebar shows a Spam row after the work queues (Ready for review, Needs action, Snoozed)
+  while a handling account the caller sees has unread spam, and while that Spam is open, without
+  opening the folder bar's More. When one handling account has unread spam the row opens that
+  account's Spam and counts it; when several do, spam across every account the caller sees,
+  counted by `boxes.spam`. Like the other rows it can be hidden, pinned and its number chosen
+  (`box:spam`).
+- Needs action and Ready for review say, above the list, how many unread conversations of the
+  handling accounts in view are in spam, with a link to them.
+
 ### Drafts
 
 Drafts are kept at the provider and stored like synced mail: `draft: true`, in the Drafts folder,
@@ -1107,7 +1125,7 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | PATCH | `/v1/collab/folders/{id}` | act | `{name?, color?: tone}`, at least one → `MailFolder`; at the provider first, then stored. `422` for a special folder; `color` only on a Gmail label or an Outlook category (`422 validation_error` otherwise); an Outlook category cannot be renamed (`422 rename_unsupported`) |
 | DELETE | `/v1/collab/folders/{id}` | act | → 204; its conversations stay in their other folders; `422` for a special folder |
 | GET | `/v1/collab/threads` | member | `?box=&account_id=&folder_id=&q=&to=&with=&category=&limit=(1..100, 50)&cursor=` → `Page<MailThread>`, newest first. `category`: one tab of the inbox ("Categories"), with `box=inbox` only (`422` otherwise). `to`: only conversations with that address on a message (From, To, Cc or where it was delivered), case-insensitive: one alias's mail. `box`: `inbox` (default), `unread`, `starred`, `sent`, `drafts`, `archive`, `trash`, `spam`, `all`, `shared`, `assigned`, `needs_action`, `snoozed` ("Snooze"), `ai_review` (conversations in an inbox whose draft an AI client saved and no person has saved, sent or discarded since: "Ready for review", "AI queue"). Without `account_id` it spans every account the caller sees (for `shared`, `assigned`, and `needs_action`, every conversation they see). `folder_id` replaces `box`. `unread` and `all` leave out trash and spam, `starred` leaves out trash, and `shared`, `assigned`, and `needs_action` count conversations still in an inbox. `archive` is the Archive folder, and for Gmail, which archives by removing `INBOX`, what is in none of inbox, trash, spam and drafts. `q` matches each message's subject, sender and text and the conversation's subject and participants ("Search"). `with`: only conversations with that person on a message, like `to`; without `account_id` it spans every conversation the caller sees, those shared with them on their own included ("People") |
-| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts, needs_action, snoozed, ai_review}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, addresses: Record<id, Record<address, number>>, categories: Record<account id, Record<key, number>>, ai_review: Record<account id, number>}`: unread conversations; `shared`, `assigned`, `needs_action`, `snoozed` and `ai_review` count those still in an inbox, `drafts` every draft conversation; `ai_review` (`boxes.ai_review` by account) lists only accounts with some (missing = 0); `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0); `categories`, for each split account, the unread conversations in its inbox by category key, `primary` included (missing = 0) |
+| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts, needs_action, snoozed, ai_review, spam}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, addresses: Record<id, Record<address, number>>, categories: Record<account id, Record<key, number>>, ai_review: Record<account id, number>, spam: Record<account id, number>}`: unread conversations; `shared`, `assigned`, `needs_action`, `snoozed` and `ai_review` count those still in an inbox, `drafts` every draft conversation, `spam` the unread ones in spam ("Spam beside Needs action"); `ai_review` and `spam` (`boxes.ai_review` and `boxes.spam` by account) list only accounts with some (missing = 0); `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0); `categories`, for each split account, the unread conversations in its inbox by category key, `primary` included (missing = 0) |
 | GET | `/v1/collab/threads/{id}` | see | `MailThreadDetail` |
 | GET | `/v1/collab/person` | member | `?email=&exclude=&limit=` → `MailPerson` ("People"); `422 validation_failed` for an address that is not one |
 | POST | `/v1/collab/threads/actions` | act | `{thread_ids: string[1..100], action, folder_id?, category?, until?}` → `{threads: MailThread[]}`. `done`, `needs_action` and `snooze` are available only for a shared account with handling enabled and do not create a provider job; `snooze` needs `until` in the future ("Snooze"). Threads the caller cannot act on are `404` (all or nothing). `categorize` needs a `category` every one of their accounts has (`422 validation_failed`) |
