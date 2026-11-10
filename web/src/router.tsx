@@ -252,7 +252,9 @@ const appLayout = createRoute({
     void qc.prefetchQuery(q.notifications());
     // Collab's mail sections join the sidebar when the workspace has it.
     void qc.prefetchQuery(q.collabStatus());
-    return Promise.all([qc.ensureQueryData(q.counts()), qc.ensureQueryData(q.views())]);
+    // Ticket counts only while the workspace has Tickets: with it off, Mail, Pages and settings still load.
+    const counts = qc.ensureQueryData(q.workspace()).then((ws) => (productsOf(ws).tickets ? qc.ensureQueryData(q.counts()) : null));
+    return Promise.all([counts, qc.ensureQueryData(q.views())]);
   },
   component: AppLayout,
 });

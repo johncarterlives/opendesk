@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TicketListQuery } from "@/lib/api/endpoints";
 import type { Ticket } from "@/lib/api/types";
 import { folderById, type FolderId } from "@/lib/folders";
+import { useProducts } from "@/lib/products";
 import { ticketMatches } from "@/lib/ticketCache";
 import { q } from "@/lib/queries";
 import { realtime } from "@/lib/realtime/manager";
@@ -23,8 +24,11 @@ const QUERY = { status: ["open", "pending"], assignee: "none", channel: "chat" }
 export type UrgentChat = { ticket: Ticket; wait: ChatWait };
 
 /** `watch`: follow presence on the waiting chats; only the app-wide alerts hook sets it. */
-export function useUrgentChats(enabled = true, watch = false) {
+export function useUrgentChats(on = true, watch = false) {
   const agentOn = useAgentOn();
+  // A workspace with Tickets off has no chats waiting.
+  const ticketsOn = useProducts().tickets;
+  const enabled = on && ticketsOn;
   const list = useInfiniteQuery({ ...q.tickets({ ...QUERY, status: [...QUERY.status] }), enabled });
   const tickets = useMemo(() => list.data?.pages.flatMap((p) => p.data) ?? [], [list.data]);
   // Bumped to re-read the time when a grace runs out; the time itself is always read fresh.

@@ -159,7 +159,8 @@ export function useWorkspacesData(wids: string[], opts: { folders?: (wid: string
     if (o) return o.mail_counts !== null;
     return st?.isFetched ? false : undefined;
   };
-  const counts = useQueries({ queries: wids.map((w) => inWorkspace(w, () => ({ ...q.counts(), enabled: on && w === focus }))) });
+  const ticketsOn = (w: string) => productsOf(memberships.find((x) => x.workspace.id === w)?.workspace).tickets;
+  const counts = useQueries({ queries: wids.map((w) => inWorkspace(w, () => ({ ...q.counts(), enabled: on && w === focus && ticketsOn(w) }))) });
   const teams = useQueries({ queries: each(() => ({ ...q.teams(), enabled: on })) });
   const views = useQueries({ queries: each(() => ({ ...q.views(), enabled: on })) });
   const mailboxes = useQueries({ queries: each(() => ({ ...q.mailboxes(), enabled: on })) });

@@ -154,6 +154,8 @@ export default function WorkspaceSettings() {
       qc.setQueryData(qk.workspace, w);
       updateWorkspace(w);
       void qc.invalidateQueries({ queryKey: qk.collabStatus });
+      // Tickets turned back on: the counts read while it was off are all zero.
+      void qc.invalidateQueries({ queryKey: qk.counts });
       toast.success(t("workspace.saved"));
     },
   });
