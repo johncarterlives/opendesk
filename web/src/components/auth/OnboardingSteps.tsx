@@ -1,11 +1,20 @@
 import { useTranslation } from "react-i18next";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/cn";
+import type { Workspace } from "@/lib/api/types";
 
-/** Two-step progress for onboarding: 1 Workspace, 2 Mailbox. */
-export function OnboardingSteps({ current }: { current: 1 | 2 }) {
+/**
+ * Whether first run asks what the workspace is for: only where the instance and plan offer
+ * Mail (it may since have been switched off by that answer).
+ */
+export function offersProducts(ws: Pick<Workspace, "mail_available" | "mail_disabled_reason"> | null | undefined): boolean {
+  return !!ws && (ws.mail_available || ws.mail_disabled_reason === "workspace_disabled");
+}
+
+/** Progress for onboarding: Workspace, then Products where Mail is offered, then Mailbox. */
+export function OnboardingSteps({ current, withProducts = false }: { current: 1 | 2 | 3; withProducts?: boolean }) {
   const { t: a } = useTranslation("auth");
-  const steps = [a("workspace"), a("mailbox")] as const;
+  const steps = withProducts ? [a("workspace"), a("products.step"), a("mailbox")] : [a("workspace"), a("mailbox")];
   return (
     <ol className="mb-8 flex items-center gap-2" aria-label={a("setupProgress")}>
       {steps.map((label, i) => {

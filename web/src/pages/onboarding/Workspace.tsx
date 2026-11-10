@@ -6,7 +6,7 @@ import { AuthHeading } from "@/app/AuthLayout";
 import { Button } from "@/components/ui/button";
 import { TextInput } from "@/components/ui/input";
 import { AuthField, Notice } from "@/components/auth/parts";
-import { OnboardingSteps } from "@/components/auth/OnboardingSteps";
+import { OnboardingSteps, offersProducts } from "@/components/auth/OnboardingSteps";
 import { api } from "@/lib/api/endpoints";
 import { errorMessage } from "@/lib/api/client";
 import { reloadSession, selectWorkspace, useSession, useWorkspace } from "@/lib/session";
@@ -43,7 +43,8 @@ export default function Workspace() {
       selectWorkspace(ws.id);
       qc.clear();
       track("workspace_created");
-      void navigate({ to: "/onboarding/mailbox" });
+      // Where Mail is offered, ask what the workspace is for before the first mailbox.
+      void navigate({ to: offersProducts(ws) ? "/onboarding/products" : "/onboarding/mailbox" });
     } catch (err) {
       setBusy(false);
       setError(errorMessage(err));

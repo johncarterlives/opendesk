@@ -11,11 +11,12 @@ import (
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/httpx"
+	"github.com/useopendesk/opendesk/internal/products"
 )
 
 // OnboardingStep is one item of the setup checklist.
 type OnboardingStep struct {
-	ID          string `json:"id" enum:"connect_mailbox,invite_teammate,upload_photo,install_widget,publish_article,setup_triage,create_label,try_ollie,setup_ai_agent"`
+	ID          string `json:"id" enum:"connect_mailbox,invite_teammate,upload_photo,install_widget,publish_article,setup_triage,create_label,try_ollie,setup_ai_agent,connect_mail_account,share_mail_account"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Done        bool   `json:"done"`
@@ -36,8 +37,10 @@ var seededLabels = []string{"question", "problem", "bug", "feature request", "bi
 
 // loadOnboarding computes every step from the workspace's real state. instanceAI
 // reports an AI provider on the instance (the AI agent step's checklist needs it).
-func loadOnboarding(ctx context.Context, q db.Querier, wid, uid uuid.UUID, instanceAI bool) (Onboarding, error) {
-	var mailbox, teammate, photo, widget, article, triage, label, ollie, dismissed bool
+// The steps follow the products that are on: with Tickets on they are the help desk's;
+// with Tickets off they are Mail's (when Mail is on) and the team's.
+func loadOnboarding(ctx context.Context, q db.Querier, wid, uid uuid.UUID, instanceAI bool, on products.State) (Onboarding, error) {
+	var mailbox, teammate, photo, widget, article, triage, label, ollie, mailAccount, mailShared, dismissed bool
 	err := q.QueryRow(ctx, `SELECT
 		EXISTS (SELECT 1 FROM mailboxes WHERE workspace_id = $1),
 		(SELECT count(*) FROM members WHERE workspace_id = $1) > 1
@@ -50,26 +53,41 @@ func loadOnboarding(ctx context.Context, q db.Querier, wid, uid uuid.UUID, insta
 			OR COALESCE(w.settings -> 'ai' ->> 'auto_triage', 'false') = 'true',
 		EXISTS (SELECT 1 FROM tags WHERE workspace_id = $1 AND lower(name) <> ALL($3)),
 		EXISTS (SELECT 1 FROM ai_usage WHERE workspace_id = $1 AND user_id IS NOT NULL),
+		EXISTS (SELECT 1 FROM collab_accounts WHERE workspace_id = $1),
+		EXISTS (SELECT 1 FROM collab_accounts ca WHERE ca.workspace_id = $1 AND ca.visibility = 'shared'
+			AND EXISTS (SELECT 1 FROM collab_shares sh WHERE sh.account_id = ca.id)),
 		COALESCE((SELECT onboarding_dismissed_at IS NOT NULL FROM members WHERE workspace_id = $1 AND user_id = $2), false)
 		FROM workspaces w WHERE w.id = $1`, wid, uid, seededLabels).
-		Scan(&mailbox, &teammate, &photo, &widget, &article, &triage, &label, &ollie, &dismissed)
+		Scan(&mailbox, &teammate, &photo, &widget, &article, &triage, &label, &ollie, &mailAccount, &mailShared, &dismissed)
 	if err != nil {
 		return Onboarding{}, err
 	}
-	agent, err := agentsetup.Load(ctx, q, wid, instanceAI)
-	if err != nil {
-		return Onboarding{}, err
-	}
-	steps := []OnboardingStep{
-		{"connect_mailbox", "Connect a mailbox", "Bring your support email in so messages become tickets.", mailbox, "/settings/mailboxes", "admin"},
-		{"invite_teammate", "Invite a teammate", "Answer tickets together and share the load.", teammate, "/settings/members", "admin"},
-		{"upload_photo", "Upload your photo", "Customers and teammates see who is replying.", photo, "/settings/profile", "agent"},
-		{"install_widget", "Install the chat widget", "Add live chat to your site with one script tag.", widget, "/settings/widget", "admin"},
-		{"publish_article", "Publish a help article", "Answer common questions before they become tickets.", article, "/kb", "agent"},
-		{"setup_triage", "Set up triage and assignment", "Let Ollie sort new tickets and route them to whoever is available.", triage, "/settings/triage", "admin"},
-		{"create_label", "Create a label", "Group tickets by topic, product or customer type.", label, "/settings/tags", "admin"},
-		{"try_ollie", "Try Ollie", "Ask Ollie to draft a reply, summarize a ticket or find an answer.", ollie, "/inbox/all", "agent"},
-		{"setup_ai_agent", "Set up the AI agent", "Teach Ollie your answers, test it, then let it reply to chats.", agent.Complete, "/settings/ai/agent", "admin"},
+	var steps []OnboardingStep
+	if on.Tickets {
+		agent, err := agentsetup.Load(ctx, q, wid, instanceAI)
+		if err != nil {
+			return Onboarding{}, err
+		}
+		steps = []OnboardingStep{
+			{"connect_mailbox", "Connect a mailbox", "Bring your support email in so messages become tickets.", mailbox, "/settings/mailboxes", "admin"},
+			{"invite_teammate", "Invite a teammate", "Answer tickets together and share the load.", teammate, "/settings/members", "admin"},
+			{"upload_photo", "Upload your photo", "Customers and teammates see who is replying.", photo, "/settings/profile", "agent"},
+			{"install_widget", "Install the chat widget", "Add live chat to your site with one script tag.", widget, "/settings/widget", "admin"},
+			{"publish_article", "Publish a help article", "Answer common questions before they become tickets.", article, "/kb", "agent"},
+			{"setup_triage", "Set up triage and assignment", "Let Ollie sort new tickets and route them to whoever is available.", triage, "/settings/triage", "admin"},
+			{"create_label", "Create a label", "Group tickets by topic, product or customer type.", label, "/settings/tags", "admin"},
+			{"try_ollie", "Try Ollie", "Ask Ollie to draft a reply, summarize a ticket or find an answer.", ollie, "/inbox/all", "agent"},
+			{"setup_ai_agent", "Set up the AI agent", "Teach Ollie your answers, test it, then let it reply to chats.", agent.Complete, "/settings/ai/agent", "admin"},
+		}
+	} else {
+		if on.Mail {
+			steps = append(steps,
+				OnboardingStep{"connect_mail_account", "Connect a mail account", "Bring a Gmail, Outlook or IMAP inbox in. Keep it private or share it.", mailAccount, "/settings/mail-accounts", "agent"},
+				OnboardingStep{"share_mail_account", "Share an inbox with your team", "Everyone you add sees its mail and can reply, assign and comment.", mailShared, "/settings/mail-accounts", "agent"})
+		}
+		steps = append(steps,
+			OnboardingStep{"invite_teammate", "Invite a teammate", "Work together and share the load.", teammate, "/settings/members", "admin"},
+			OnboardingStep{"upload_photo", "Upload your photo", "Teammates see who is replying.", photo, "/settings/profile", "agent"})
 	}
 	o := Onboarding{Steps: steps, Total: len(steps), Dismissed: dismissed}
 	for _, s := range steps {
@@ -89,7 +107,11 @@ func (s *svc) registerOnboarding(api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			o, err := loadOnboarding(ctx, s.d.DB.Pool, p.WorkspaceID, p.UserID, s.d.Cfg.AIEnabled())
+			on, err := products.Load(ctx, s.d.DB.Pool, s.d.Plan, s.d.Cfg.Collab, p.WorkspaceID)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			o, err := loadOnboarding(ctx, s.d.DB.Pool, p.WorkspaceID, p.UserID, s.d.Cfg.AIEnabled(), on)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}

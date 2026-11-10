@@ -247,6 +247,15 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
   });
 
   const offered = (["google", "microsoft", "imap"] as const).filter((p) => status.providers[p]);
+  // A self-host offering some providers but not Google or Microsoft: say why, and what turns them on.
+  const missing = (["google", "microsoft"] as const).filter((p) => !status.providers[p]);
+  const missingNote =
+    offered.length > 0 && missing.length > 0
+      ? t("connect.missing", {
+          providers: missing.map((p) => t(`connect.${p}`)).join(" / "),
+          vars: missing.map((p) => `COLLAB_${p.toUpperCase()}_CLIENT_ID`).join(", "),
+        })
+      : null;
   const providerName = provider ? t(`connect.${provider}`) : "";
 
   const footer =
@@ -298,6 +307,7 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
           ) : (
             <p className="rounded-md bg-sunken px-3 py-2.5 text-[12.5px] text-fg-3">{t("connect.none")}</p>
           ))}
+        {step === "provider" && missingNote && <p className="rounded-md bg-sunken px-3 py-2.5 text-[12px] leading-[18px] text-fg-3">{missingNote}</p>}
 
         {step === "audience" && (
           <>

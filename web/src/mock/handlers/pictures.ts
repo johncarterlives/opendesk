@@ -25,6 +25,7 @@ import { HttpError, del, forbidden, get, invalid, notFound, patch, post, put, re
 import { isRecord, nowIso, uuid } from "../util";
 import { aiOff, decisionEngine } from "./ai";
 import { agentSetup } from "./aiClients";
+import { collabAccountsOf } from "./collab";
 import { memberOut } from "./workspace";
 
 const MAX_BYTES = 5 << 20;
@@ -153,6 +154,23 @@ export function onboarding(ws: WsData): Onboarding {
     try_ollie: ws.aiUsage.some((u) => u.user_id !== null),
     setup_ai_agent: agentSetup(ws).complete,
   };
+  // The steps follow the products (contracts/api.md "Onboarding").
+  if (ws.workspace.settings.tickets_enabled === false) {
+    const mail = ws.workspace.mail_available !== false;
+    const accounts = mail ? collabAccountsOf(ws) : [];
+    const mailSteps: OnboardingStep[] = mail
+      ? [
+          { id: "connect_mail_account", title: "Connect a mail account", description: "Bring a Gmail, Outlook or IMAP inbox in. Keep it private or share it.", done: accounts.length > 0, href: "/settings/mail-accounts", requires: "agent" },
+          { id: "share_mail_account", title: "Share an inbox with your team", description: "Everyone you add sees its mail and can reply, assign and comment.", done: accounts.some((a) => a.shared), href: "/settings/mail-accounts", requires: "agent" },
+        ]
+      : [];
+    const steps: OnboardingStep[] = [
+      ...mailSteps,
+      { id: "invite_teammate", title: "Invite a teammate", description: "Work together and share the load.", done: done.invite_teammate, href: "/settings/members", requires: "admin" },
+      { id: "upload_photo", title: "Upload your photo", description: "Teammates see who is replying.", done: done.upload_photo, href: "/settings/profile", requires: "agent" },
+    ];
+    return { steps, done_count: steps.filter((s) => s.done).length, total: steps.length, dismissed: !!row?.onboarding_dismissed };
+  }
   const steps: OnboardingStep[] = [
     { id: "connect_mailbox", title: "Connect a mailbox", description: "Bring your support email in so messages become tickets.", done: done.connect_mailbox, href: "/settings/mailboxes", requires: "admin" },
     { id: "invite_teammate", title: "Invite a teammate", description: "Answer tickets together and share the load.", done: done.invite_teammate, href: "/settings/members", requires: "admin" },

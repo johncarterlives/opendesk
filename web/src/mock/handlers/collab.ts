@@ -620,6 +620,14 @@ export function ownMailAccounts(ws: WsData, uid: string): Pick<MailAccount, "id"
     .map((a) => ({ id: a.id, email: a.email, name: a.name, provider: a.provider }));
 }
 
+/** The workspace's mail accounts for the setup checklist: shared means shared with someone. */
+export function collabAccountsOf(ws: WsData): { shared: boolean }[] {
+  if (!status(ws).enabled) return [];
+  return state(ws).accounts.map((a) => ({
+    shared: a.visibility === "shared" && (a.shared_with.everyone || a.shared_with.team_ids.length > 0 || a.shared_with.user_ids.length > 0),
+  }));
+}
+
 /** Whether the workspace has Collab in the mock (`?mock_collab=off` turns it off). */
 export function collabOn(ws: WsData): boolean {
   return status(ws).enabled;

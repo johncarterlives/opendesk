@@ -425,6 +425,7 @@
     "imap": "Other (IMAP)",
     "imapHint": "Any server with IMAP and SMTP",
     "none": "No provider is set up on this instance yet. Ask whoever runs it to add a Google or Microsoft client, or turn on IMAP.",
+    "missing": "{{providers}} accounts need an OAuth app on this instance first. Whoever runs it sets {{vars}} (Self-hosting → OAuth apps in the docs).",
     "continueWith": "Continue with {{provider}}",
     "continue": "Continue",
     "back": "Back",

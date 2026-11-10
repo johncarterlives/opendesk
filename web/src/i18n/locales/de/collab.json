@@ -417,6 +417,7 @@
     "imap": "Andere (IMAP)",
     "imapHint": "Jeder Server mit IMAP und SMTP",
     "none": "Auf dieser Instanz ist noch kein Anbieter eingerichtet. Bitte die Person, die sie betreibt, einen Google- oder Microsoft-Client hinzuzufügen oder IMAP einzuschalten.",
+    "missing": "Für {{providers}}-Konten braucht diese Instanz zuerst eine OAuth-App. Wer sie betreibt, setzt {{vars}} (Self-Hosting → OAuth-Apps in der Dokumentation).",
     "continueWith": "Weiter mit {{provider}}",
     "continue": "Weiter",
     "back": "Zurück",

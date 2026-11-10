@@ -717,7 +717,7 @@ export type BusinessHours = {
 };
 export type OnboardingStepId =
   | "connect_mailbox" | "invite_teammate" | "upload_photo" | "install_widget" | "publish_article" | "setup_triage" | "create_label" | "try_ollie"
-  | "setup_ai_agent";
+  | "setup_ai_agent" | "connect_mail_account" | "share_mail_account";
 export type OnboardingStep = {
   id: OnboardingStepId;
   title: string;

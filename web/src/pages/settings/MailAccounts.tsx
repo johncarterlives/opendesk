@@ -67,7 +67,8 @@ export default function MailAccounts() {
   const canAct = useCanAct();
   const me = useSession((s) => s.user?.id);
   const { data, isLoading } = useSettingsAccounts();
-  const [connect, setConnect] = useState(false);
+  // First run for a shared inbox lands here with the Connect dialog open (?connect=1).
+  const [connect, setConnect] = useState(search.connect === "1");
   const summary = useAudienceSummary();
   const reconnect = useReconnect();
   const handled = useRef(false);
@@ -194,7 +195,16 @@ export default function MailAccounts() {
           )}
         </>
       )}
-      {collab.status && <ConnectAccountDialog open={connect} onOpenChange={setConnect} status={collab.status} />}
+      {collab.status && (
+        <ConnectAccountDialog
+          open={connect}
+          onOpenChange={(open) => {
+            setConnect(open);
+            if (!open && search.connect) void navigate({ to: "/settings/mail-accounts", search: {}, replace: true });
+          }}
+          status={collab.status}
+        />
+      )}
     </SettingsPage>
   );
 }

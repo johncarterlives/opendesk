@@ -4,7 +4,7 @@
 
 import { useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { BookOpen, Bot, Camera, ChevronRight, Mail, MessageSquare, Shuffle, Sparkles, Tag, UserPlus, X, type LucideIcon } from "lucide-react";
+import { AtSign, BookOpen, Bot, Camera, ChevronRight, Mail, MessageSquare, Shuffle, Sparkles, Tag, UserPlus, Users, X, type LucideIcon } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatedNumber } from "@/components/motion";
@@ -28,6 +28,8 @@ export const STEP_ICONS: Record<OnboardingStepId, LucideIcon> = {
   create_label: Tag,
   try_ollie: Sparkles,
   setup_ai_agent: Bot,
+  connect_mail_account: AtSign,
+  share_mail_account: Users,
 };
 
 /** Done and total from the steps themselves, so an optimistic flip moves the bar at once. */

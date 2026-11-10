@@ -430,6 +430,7 @@
     "imap": "Autre (IMAP)",
     "imapHint": "Tout serveur avec IMAP et SMTP",
     "none": "Aucun fournisseur n’est encore configuré sur cette instance. Demandez à la personne qui la gère d’ajouter un client Google ou Microsoft, ou d’activer IMAP.",
+    "missing": "Les comptes {{providers}} nécessitent d’abord une application OAuth sur cette instance. La personne qui la gère définit {{vars}} (Auto-hébergement → Applications OAuth dans la documentation).",
     "continueWith": "Continuer avec {{provider}}",
     "continue": "Continuer",
     "back": "Retour",

@@ -220,6 +220,13 @@ const onboardingRoute = createRoute({
   component: page(() => import("./pages/onboarding/Workspace")),
   staticData: { title: "createAWorkspace" },
 });
+const onboardingProductsRoute = createRoute({
+  getParentRoute: () => authLayout,
+  path: "/onboarding/products",
+  beforeLoad: ({ location }) => requireWorkspace(location.href),
+  component: page(() => import("./pages/onboarding/Products")),
+  staticData: { title: "whatIsItFor" },
+});
 const onboardingMailboxRoute = createRoute({
   getParentRoute: () => authLayout,
   path: "/onboarding/mailbox",
@@ -893,7 +900,12 @@ const sMailboxDetail = createRoute({
 const sMailAccounts = createRoute({
   getParentRoute: () => settingsLayout,
   path: "/mail-accounts",
-  validateSearch: (s: Record<string, unknown>): { connected?: string; error?: string } => ({ connected: str(s.connected), error: str(s.error) }),
+  // connect=1 opens the Connect dialog (first run for a shared inbox).
+  validateSearch: (s: Record<string, unknown>): { connected?: string; error?: string; connect?: string } => ({
+    connected: str(s.connected),
+    error: str(s.error),
+    connect: s.connect === "1" || s.connect === 1 ? "1" : undefined,
+  }),
   loader: async ({ context }) => {
     const qc = context.queryClient;
     const status = await qc.ensureQueryData(q.collabStatus());
@@ -1129,6 +1141,7 @@ const routeTree = rootRoute.addChildren([
     unsubscribeRoute,
     oauthConsentRoute,
     onboardingRoute,
+    onboardingProductsRoute,
     onboardingMailboxRoute,
   ]),
   appLayout.addChildren([

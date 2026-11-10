@@ -188,7 +188,8 @@ type TriageSettings = { auto_triage: boolean; fields: TriageField[]; assign_afte
   engine: DecisionEngine /* the workspace's: Jev on its own TypeSafe or OpenRouter key when it has one (contracts/ai.md "Provider per workspace"), else the instance's */; available: boolean /* triage can run: AI or a decision engine is configured and AI is on for the workspace */ };
 type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 type BusinessHours = { enabled: boolean; timezone: string /* the workspace timezone */; schedule: Record<Weekday, { start: string; end: string }[]> /* "HH:MM", 24h */; holidays: { date: string /* YYYY-MM-DD */; name: string }[] };
-type OnboardingStepId = "connect_mailbox" | "invite_teammate" | "upload_photo" | "install_widget" | "publish_article" | "setup_triage" | "create_label" | "try_ollie" | "setup_ai_agent";
+type OnboardingStepId = "connect_mailbox" | "invite_teammate" | "upload_photo" | "install_widget" | "publish_article" | "setup_triage" | "create_label" | "try_ollie" | "setup_ai_agent"
+  | "connect_mail_account" | "share_mail_account";
 type OnboardingStep = { id: OnboardingStepId; title: string; description: string; done: boolean; href: string /* app path */; requires: "admin" | "agent" };
 type Onboarding = { steps: OnboardingStep[]; done_count: number; total: number; dismissed: boolean };
 type AgentSetupStepId = "ai_on" | "identity" | "knowledge" | "tools" | "playground" | "widget" | "answers_on" | "email_answers";
@@ -933,6 +934,15 @@ invitation; `upload_photo` the caller has a picture; `install_widget` a widget s
 published article; `setup_triage` auto-assignment is not `none` anywhere or auto-triage is on; `create_label` a label other
 than the seeded ones; `try_ollie` any Ollie feature was used in the workspace; `setup_ai_agent` (admin) the AI agent's setup
 checklist is complete (`GET /v1/ai/agent/setup`, `contracts/agent.md` "Setup"). Titles are English copy the app may override.
+
+The steps follow the workspace's products (effective availability, "Products"). With Tickets on they are the nine above.
+With Tickets off they are `connect_mail_account` a Collab mail account exists in the workspace, and `share_mail_account`
+an account is shared with someone (a share row exists), when Mail is on; then `invite_teammate` and `upload_photo`.
+Switching a product changes the steps on the next `GET`; `done_count` and `total` count the steps returned.
+
+The first person to create a workspace is asked what it is for (the app's first-run step, only when Mail is available):
+a shared inbox sets `tickets_enabled: false`, a help desk `mail_enabled: false`, both changes nothing. It is an ordinary
+`PATCH /v1/workspace` of the existing switches and can be changed later in workspace settings.
 
 #### Changelog
 
