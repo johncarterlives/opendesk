@@ -16,8 +16,12 @@ func TestOnboardingFollowsProducts(t *testing.T) {
 	e.d.Plan = plan.New(false, 1)
 	c, _ := e.signup("onboarding-products")
 	c.workspace = c.newWorkspace("Shared inbox")
-	ids := func() ([]string, map[string]bool) {
-		r := c.do("GET", "/v1/onboarding", nil)
+	ids := func(as ...*client) ([]string, map[string]bool) {
+		who := c
+		if len(as) > 0 {
+			who = as[0]
+		}
+		r := who.do("GET", "/v1/onboarding", nil)
 		if r.Status != 200 {
 			t.Fatalf("onboarding: %d %s", r.Status, r.Raw)
 		}
@@ -51,6 +55,12 @@ func TestOnboardingFollowsProducts(t *testing.T) {
 	if err := e.d.DB.Pool.QueryRow(ctx, `SELECT workspace_id, user_id FROM members WHERE workspace_id = $1::uuid`, c.workspace).Scan(&wid, &uid); err != nil {
 		t.Fatal(err)
 	}
+	// A teammate, an admin: the owner's account counts for them only once they see it.
+	mate, mateEmail := e.signup("onboarding-mate")
+	if _, err := e.d.DB.Pool.Exec(ctx, `INSERT INTO members (workspace_id, user_id, role) SELECT $1, id, 'admin' FROM users WHERE email = $2`, wid, mateEmail); err != nil {
+		t.Fatal(err)
+	}
+	mate.workspace = c.workspace
 	acc := uuid.New()
 	if _, err := e.d.DB.Pool.Exec(ctx, `INSERT INTO collab_accounts (id, workspace_id, owner_id, provider, email, visibility)
 		VALUES ($1, $2, $3, 'imap', 'team@example.com', 'shared')`, acc, wid, uid); err != nil {
@@ -59,11 +69,17 @@ func TestOnboardingFollowsProducts(t *testing.T) {
 	if _, done = ids(); !done["connect_mail_account"] || done["share_mail_account"] {
 		t.Fatalf("connected, shared with no one yet: %v", done)
 	}
+	if _, done = ids(mate); done["connect_mail_account"] || done["share_mail_account"] {
+		t.Fatalf("a teammate sees an account shared with no one: %v", done)
+	}
 	if _, err := e.d.DB.Pool.Exec(ctx, `INSERT INTO collab_shares (id, workspace_id, account_id, everyone) VALUES ($1, $2, $3, true)`, uuid.New(), wid, acc); err != nil {
 		t.Fatal(err)
 	}
 	if _, done = ids(); !done["share_mail_account"] {
 		t.Fatalf("shared: %v", done)
+	}
+	if _, done = ids(mate); !done["connect_mail_account"] || !done["share_mail_account"] {
+		t.Fatalf("shared with everyone, for a teammate: %v", done)
 	}
 }
 

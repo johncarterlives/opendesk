@@ -343,7 +343,7 @@ func (s *service) pinAllInboxes(ctx context.Context, wid, uid uuid.UUID, prefs S
 		return prefs, err
 	}
 	var n int
-	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM collab_accounts a WHERE a.workspace_id = $1 AND `+accountVisibleSQL("a", "$2"),
+	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM collab_accounts a WHERE a.workspace_id = $1 AND `+AccountVisibleSQL("a", "$2"),
 		wid, uid).Scan(&n); err != nil || n < 2 {
 		return prefs, err
 	}

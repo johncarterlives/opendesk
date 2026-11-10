@@ -72,7 +72,7 @@ func (s *service) registerAccountRoutes(api huma.API) {
 			}
 			orphans := in.Manage && p.Role.AtLeast(auth.RoleAdmin)
 			rows, err := s.d.DB.Pool.Query(ctx, `SELECT `+accountColumns+` FROM collab_accounts a
-				WHERE a.workspace_id = $1 AND (`+accountVisibleSQL("a", "$2")+`
+				WHERE a.workspace_id = $1 AND (`+AccountVisibleSQL("a", "$2")+`
 					OR ($3 AND a.visibility = 'shared' AND a.owner_id IS NULL))
 				ORDER BY (a.owner_id IS NOT DISTINCT FROM $2) DESC, a.created_at, a.id`, p.WorkspaceID, p.UserID, orphans)
 			if err != nil {

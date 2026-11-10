@@ -17,9 +17,9 @@ import (
 // viewer's user id as a SQL parameter and is used inside a query already scoped to the
 // Principal's workspace.
 
-// accountVisibleSQL is a predicate on collab_accounts alias a: the user (SQL parameter u)
+// AccountVisibleSQL is a predicate on collab_accounts alias a: the user (SQL parameter u)
 // sees the account: it is theirs, or it is shared with everyone, one of their teams or them.
-func accountVisibleSQL(a, u string) string {
+func AccountVisibleSQL(a, u string) string {
 	return fmt.Sprintf(`(%[1]s.owner_id = %[2]s OR (%[1]s.visibility = 'shared' AND EXISTS (
 		SELECT 1 FROM collab_shares sh WHERE sh.account_id = %[1]s.id AND (sh.everyone OR sh.user_id = %[2]s
 			OR sh.team_id IN (SELECT tm.team_id FROM team_members tm WHERE tm.user_id = %[2]s)))))`, a, u)
@@ -37,13 +37,13 @@ func threadSharedSQL(t, u string) string {
 // the conversation through its account or on its own.
 func threadVisibleSQL(t, u string) string {
 	return fmt.Sprintf(`(EXISTS (SELECT 1 FROM collab_accounts va WHERE va.id = %[1]s.account_id AND %[3]s) OR %[2]s)`,
-		t, threadSharedSQL(t, u), accountVisibleSQL("va", u))
+		t, threadSharedSQL(t, u), AccountVisibleSQL("va", u))
 }
 
 // visibleAccount loads an account the caller sees; anything else is not found.
 func visibleAccount(ctx context.Context, q db.Querier, p *auth.Principal, id uuid.UUID) (*accountRow, error) {
 	return scanAccount(q.QueryRow(ctx, `SELECT `+accountColumns+` FROM collab_accounts a
-		WHERE a.workspace_id = $1 AND a.id = $2 AND `+accountVisibleSQL("a", "$3"), p.WorkspaceID, id, p.UserID))
+		WHERE a.workspace_id = $1 AND a.id = $2 AND `+AccountVisibleSQL("a", "$3"), p.WorkspaceID, id, p.UserID))
 }
 
 // canManageAccount reports whether the caller manages the account: its owner, or for a

@@ -9,6 +9,7 @@ import (
 
 	"github.com/useopendesk/opendesk/internal/ai/agentsetup"
 	"github.com/useopendesk/opendesk/internal/auth"
+	"github.com/useopendesk/opendesk/internal/collab"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/httpx"
 	"github.com/useopendesk/opendesk/internal/products"
@@ -38,7 +39,8 @@ var seededLabels = []string{"question", "problem", "bug", "feature request", "bi
 // loadOnboarding computes every step from the workspace's real state. instanceAI
 // reports an AI provider on the instance (the AI agent step's checklist needs it).
 // The steps follow the products that are on: with Tickets on they are the help desk's;
-// with Tickets off they are Mail's (when Mail is on) and the team's.
+// with Tickets off they are Mail's (when Mail is on) and the team's. The Mail steps count only
+// accounts the member sees (contracts/collab.md "Who sees what").
 func loadOnboarding(ctx context.Context, q db.Querier, wid, uid uuid.UUID, instanceAI bool, on products.State) (Onboarding, error) {
 	var mailbox, teammate, photo, widget, article, triage, label, ollie, mailAccount, mailShared, dismissed bool
 	err := q.QueryRow(ctx, `SELECT
@@ -53,9 +55,9 @@ func loadOnboarding(ctx context.Context, q db.Querier, wid, uid uuid.UUID, insta
 			OR COALESCE(w.settings -> 'ai' ->> 'auto_triage', 'false') = 'true',
 		EXISTS (SELECT 1 FROM tags WHERE workspace_id = $1 AND lower(name) <> ALL($3)),
 		EXISTS (SELECT 1 FROM ai_usage WHERE workspace_id = $1 AND user_id IS NOT NULL),
-		EXISTS (SELECT 1 FROM collab_accounts WHERE workspace_id = $1),
-		EXISTS (SELECT 1 FROM collab_accounts ca WHERE ca.workspace_id = $1 AND ca.visibility = 'shared'
-			AND EXISTS (SELECT 1 FROM collab_shares sh WHERE sh.account_id = ca.id)),
+		EXISTS (SELECT 1 FROM collab_accounts a WHERE a.workspace_id = $1 AND `+collab.AccountVisibleSQL("a", "$2")+`),
+		EXISTS (SELECT 1 FROM collab_accounts a WHERE a.workspace_id = $1 AND a.visibility = 'shared' AND `+collab.AccountVisibleSQL("a", "$2")+`
+			AND EXISTS (SELECT 1 FROM collab_shares sh WHERE sh.account_id = a.id)),
 		COALESCE((SELECT onboarding_dismissed_at IS NOT NULL FROM members WHERE workspace_id = $1 AND user_id = $2), false)
 		FROM workspaces w WHERE w.id = $1`, wid, uid, seededLabels).
 		Scan(&mailbox, &teammate, &photo, &widget, &article, &triage, &label, &ollie, &mailAccount, &mailShared, &dismissed)

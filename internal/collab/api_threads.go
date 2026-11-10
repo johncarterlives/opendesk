@@ -97,7 +97,7 @@ func categorySQL(k string, primary bool) string {
 
 // visibleAccountsSQL is the accounts the caller (SQL parameter u) sees in the workspace ($1).
 func visibleAccountsSQL(u string) string {
-	return `(SELECT a.id FROM collab_accounts a WHERE a.workspace_id = $1 AND ` + accountVisibleSQL("a", u) + `)`
+	return `(SELECT a.id FROM collab_accounts a WHERE a.workspace_id = $1 AND ` + AccountVisibleSQL("a", u) + `)`
 }
 
 type listThreadsInput struct {

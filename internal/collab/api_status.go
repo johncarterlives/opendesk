@@ -40,7 +40,7 @@ func (s *service) registerStatusRoutes(api huma.API) {
 				return nil, httpx.Wrap(err)
 			}
 			if err := s.d.DB.Pool.QueryRow(ctx, `SELECT count(*) FROM collab_accounts a WHERE a.workspace_id = $1 AND `+
-				accountVisibleSQL("a", "$2"), p.WorkspaceID, p.UserID).Scan(&out.Accounts); err != nil {
+				AccountVisibleSQL("a", "$2"), p.WorkspaceID, p.UserID).Scan(&out.Accounts); err != nil {
 				return nil, httpx.Wrap(err)
 			}
 			return &struct{ Body CollabStatus }{out}, nil

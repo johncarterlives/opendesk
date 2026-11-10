@@ -356,7 +356,7 @@ func (s *service) enqueueDue(ctx context.Context) error {
 			OR (a.last_synced_at <= now() - make_interval(secs => $2) AND (EXISTS (
 				SELECT 1 FROM members m JOIN users u ON u.id = m.user_id
 				WHERE m.workspace_id = a.workspace_id AND u.last_seen_at > now() - make_interval(secs => $3)
-				AND `+accountVisibleSQL("a", "m.user_id")+`)
+				AND `+AccountVisibleSQL("a", "m.user_id")+`)
 				OR a.category_refresh IS NOT NULL OR EXISTS (SELECT 1 FROM collab_history h WHERE h.account_id = a.id AND h.status = 'running'))))`,
 		idleInterval.Seconds(), (activeInterval - 10*time.Second).Seconds(), activeWindow.Seconds())
 	if err != nil {

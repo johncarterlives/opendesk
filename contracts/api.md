@@ -936,8 +936,9 @@ than the seeded ones; `try_ollie` any Ollie feature was used in the workspace; `
 checklist is complete (`GET /v1/ai/agent/setup`, `contracts/agent.md` "Setup"). Titles are English copy the app may override.
 
 The steps follow the workspace's products (effective availability, "Products"). With Tickets on they are the nine above.
-With Tickets off they are `connect_mail_account` a Collab mail account exists in the workspace, and `share_mail_account`
-an account is shared with someone (a share row exists), when Mail is on; then `invite_teammate` and `upload_photo`.
+With Tickets off they are `connect_mail_account` the member sees a Collab mail account, and `share_mail_account`
+the member sees a shared account with someone added (contracts/collab.md "Who sees what"), when Mail is on; then
+`invite_teammate` and `upload_photo`.
 Switching a product changes the steps on the next `GET`; `done_count` and `total` count the steps returned.
 
 The first person to create a workspace is asked what it is for (the app's first-run step, only when Mail is available):
