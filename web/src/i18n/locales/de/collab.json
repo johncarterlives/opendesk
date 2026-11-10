@@ -351,13 +351,15 @@
     "people": "Personen",
     "addTeams": "Teams hinzufügen",
     "addPeople": "Personen hinzufügen",
-    "needSomeone": "Wähle mindestens ein Team oder eine Person oder teile mit allen",
+    "nobodyYet": "Noch niemand hinzugefügt. Nur du siehst es, bis du Teams oder Personen hinzufügst, jetzt hier oder später in den Einstellungen des Kontos.",
+    "nobodyYetHere": "Noch niemand hinzugefügt. Nur du siehst es, bis du Teams oder Personen hinzufügst.",
+    "changeLater": "Wer es sieht, kannst du später in den Einstellungen des Kontos ändern.",
     "summaryEveryone": "Alle",
     "summaryTeams_one": "{{count}} Team",
     "summaryTeams_other": "{{count}} Teams",
     "summaryPeople_one": "{{count}} Person",
     "summaryPeople_other": "{{count}} Personen",
-    "onlyYou": "Nur du"
+    "summaryNobody": "Noch niemand hinzugefügt"
   },
   "accounts": {
     "title": "E-Mail-Konten",

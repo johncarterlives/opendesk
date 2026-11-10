@@ -163,11 +163,10 @@ func (s *service) registerAccountRoutes(api huma.API) {
 							return nil, httpx.Wrap(err)
 						}
 					}
+					// A shared account may have no one added yet, as when it is connected before the
+					// team joins: its owner sees it alone until teams or people are added.
 					if audience, err = checkAudience(ctx, s.d.DB.Pool, p.WorkspaceID, audience); err != nil {
 						return nil, httpx.Wrap(err)
-					}
-					if audience.Empty() {
-						return nil, httpx.Validation("Choose who to share the account with.")
 					}
 				}
 				if visibility != a.Visibility {

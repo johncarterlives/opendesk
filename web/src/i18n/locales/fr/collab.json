@@ -362,7 +362,9 @@
     "people": "Personnes",
     "addTeams": "Ajouter des équipes",
     "addPeople": "Ajouter des personnes",
-    "needSomeone": "Choisissez au moins une équipe ou une personne, ou partagez avec tout le monde",
+    "nobodyYet": "Personne n’a encore été ajouté. Vous seul le voyez jusqu’à ce que vous ajoutiez des équipes ou des personnes, ici maintenant ou plus tard dans les paramètres du compte.",
+    "nobodyYetHere": "Personne n’a encore été ajouté. Vous seul le voyez jusqu’à ce que vous ajoutiez des équipes ou des personnes.",
+    "changeLater": "Vous pourrez modifier plus tard qui le voit dans les paramètres du compte.",
     "summaryEveryone": "Tout le monde",
     "summaryTeams_one": "{{count}} équipe",
     "summaryTeams_other": "{{count}} équipes",
@@ -370,7 +372,7 @@
     "summaryPeople_one": "{{count}} personne",
     "summaryPeople_other": "{{count}} personnes",
     "summaryPeople_many": "{{count}} personnes",
-    "onlyYou": "Vous seul"
+    "summaryNobody": "Personne pour l’instant"
   },
   "accounts": {
     "title": "Comptes de messagerie",

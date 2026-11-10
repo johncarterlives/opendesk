@@ -359,13 +359,15 @@
     "people": "People",
     "addTeams": "Add teams",
     "addPeople": "Add people",
-    "needSomeone": "Pick at least one team or person, or share with everyone",
+    "nobodyYet": "No one added yet. Only you see it until you add teams or people, here now or later in the account's settings.",
+    "nobodyYetHere": "No one added yet. Only you see it until you add teams or people.",
+    "changeLater": "You can change who sees it later in the account's settings.",
     "summaryEveryone": "Everyone",
     "summaryTeams_one": "{{count}} team",
     "summaryTeams_other": "{{count}} teams",
     "summaryPeople_one": "{{count}} person",
     "summaryPeople_other": "{{count}} people",
-    "onlyYou": "Only you"
+    "summaryNobody": "No one added yet"
   },
   "accounts": {
     "title": "Mail accounts",

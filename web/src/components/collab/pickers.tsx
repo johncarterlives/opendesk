@@ -205,7 +205,7 @@ export function AssignPicker({
 export const emptyAudience = (): MailAudience => ({ everyone: false, team_ids: [], user_ids: [] });
 export const audienceIsEmpty = (a: MailAudience) => !a.everyone && !a.team_ids.length && !a.user_ids.length;
 
-/** "Everyone", "2 teams, 3 people" or "Only you". */
+/** A shared account's audience: "Everyone", "2 teams, 3 people" or "No one added yet". */
 export function useAudienceSummary() {
   const { t } = useTranslation("collab");
   return (a: MailAudience) => {
@@ -214,7 +214,7 @@ export function useAudienceSummary() {
       ...(a.team_ids.length ? [t("audience.summaryTeams", { count: a.team_ids.length })] : []),
       ...(a.user_ids.length ? [t("audience.summaryPeople", { count: a.user_ids.length })] : []),
     ];
-    return parts.length ? parts.join(", ") : t("audience.onlyYou");
+    return parts.length ? parts.join(", ") : t("audience.summaryNobody");
   };
 }
 
@@ -354,7 +354,8 @@ export function ChoiceCard({
 /** Who sees a shared account: everyone, or the teams and people picked. */
 export function SharedAudience({ value, onChange, disabled, exclude }: { value: MailAudience; onChange: (a: MailAudience) => void; disabled?: boolean; exclude?: string }) {
   const { t } = useTranslation("collab");
-  const [mode, setMode] = useState<"everyone" | "pick">(value.everyone || audienceIsEmpty(value) ? "everyone" : "pick");
+  // An account shared with no one yet opens on the teams and people to add, not on Everyone.
+  const [mode, setMode] = useState<"everyone" | "pick">(value.everyone ? "everyone" : "pick");
   const everyone = mode === "everyone";
   return (
     <div role="radiogroup" aria-label={t("audience.with")} className="flex flex-col gap-2">
