@@ -103,6 +103,7 @@ export default defineConfig({
           label: 'Guides',
           items: [
             { label: 'Inbox and tickets', slug: 'guides/inbox-and-tickets' },
+            { label: 'Mail and shared inboxes', slug: 'guides/mail' },
             { label: 'Inbox categories', slug: 'guides/inbox-categories' },
             { label: 'Import your history', slug: 'guides/importing' },
             { label: 'Your sidebar', slug: 'guides/sidebar' },

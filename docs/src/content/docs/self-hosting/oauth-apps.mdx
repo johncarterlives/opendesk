@@ -5,25 +5,28 @@ description: Register Google and Microsoft OAuth apps for sign-in and mailbox co
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-Self-hosted instances use their own OAuth apps. One app per provider covers both **sign-in** and **mailbox connections**. Without them, password sign-in and forwarding, SMTP and IMAP mailboxes still work.
+Self-hosted instances use their own OAuth apps. One app per provider covers **sign-in**, **mailbox connections** and members' own **[mail accounts](#mail-accounts)**. Without them, password sign-in, forwarding, SMTP and IMAP mailboxes, and IMAP mail accounts still work.
 
 Gmail mailbox connections can also use a separate Google client, for example in its own Google Cloud project while its Gmail scope is reviewed: set `GOOGLE_MAILBOX_CLIENT_ID` and `GOOGLE_MAILBOX_CLIENT_SECRET`, and register only the mailbox redirect URI on it. Microsoft mailbox connections can likewise use their own Entra app with `MICROSOFT_MAILBOX_CLIENT_ID` and `MICROSOFT_MAILBOX_CLIENT_SECRET`; Microsoft sign-in then stays off unless `MICROSOFT_CLIENT_ID` is set too.
 
 ## Redirect URIs
 
-Register both of these, with `API_URL` exactly as configured (on a single domain, your site URL):
+Register these, with `API_URL` exactly as configured (on a single domain, your site URL):
 
 ```
-API_URL/v1/auth/oauth/{provider}/callback        sign-in
-API_URL/v1/mailboxes/oauth/{provider}/callback   mailbox connections
+API_URL/v1/auth/oauth/{provider}/callback              sign-in
+API_URL/v1/mailboxes/oauth/{provider}/callback         mailbox connections
+API_URL/v1/collab/accounts/oauth/{provider}/callback   mail accounts
 ```
 
 For `API_URL=https://desk.example.com`:
 
 | Provider | Redirect URIs |
 | --- | --- |
-| Google | `https://desk.example.com/v1/auth/oauth/google/callback`, `https://desk.example.com/v1/mailboxes/oauth/google/callback` |
-| Microsoft | `https://desk.example.com/v1/auth/oauth/microsoft/callback`, `https://desk.example.com/v1/mailboxes/oauth/microsoft/callback` |
+| Google | `https://desk.example.com/v1/auth/oauth/google/callback`, `https://desk.example.com/v1/mailboxes/oauth/google/callback`, `https://desk.example.com/v1/collab/accounts/oauth/google/callback` |
+| Microsoft | `https://desk.example.com/v1/auth/oauth/microsoft/callback`, `https://desk.example.com/v1/mailboxes/oauth/microsoft/callback`, `https://desk.example.com/v1/collab/accounts/oauth/microsoft/callback` |
+
+Leave out the mail accounts URI if no one on your instance connects their own Google or Microsoft account.
 
 ## Scopes
 
@@ -48,9 +51,9 @@ Mailbox connections use PKCE and request offline access, so opendesk keeps worki
 
 4. Under **Audience**, choose **Internal** if everyone who connects a mailbox is in your Google Workspace organization. Choose **External** otherwise.
 
-5. Under **Data Access**, add the scopes `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile` and, for mailboxes, `.../auth/gmail.send`. Add `https://mail.google.com/` only if mailboxes will sync over IMAP.
+5. Under **Data Access**, add the scopes `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile` and, for mailboxes, `.../auth/gmail.send`. Add `https://mail.google.com/` only if mailboxes will sync over IMAP, and `.../auth/gmail.modify` and `.../auth/gmail.settings.basic` only for [mail accounts](#mail-accounts).
 
-6. Go to **Clients → Create client**. Choose **Web application**, give it a name, and add both Google redirect URIs above under **Authorized redirect URIs**. Click **Create**.
+6. Go to **Clients → Create client**. Choose **Web application**, give it a name, and add the Google redirect URIs above under **Authorized redirect URIs**. Click **Create**.
 
 7. Copy the client id and secret into `.env` and restart opendesk:
 
@@ -79,13 +82,14 @@ While an app is in **Testing**, add each Google account under **Audience → Tes
    - **Accounts in this organizational directory only** for one tenant (set `MICROSOFT_TENANT` to your tenant id)
    - **Accounts in any organizational directory and personal Microsoft accounts** for everyone (keep `MICROSOFT_TENANT=common`)
 
-3. Under **Redirect URI**, choose **Web** and enter the sign-in redirect URI. Click **Register**. Then open **Authentication** and add the mailbox redirect URI as a second **Web** URI.
+3. Under **Redirect URI**, choose **Web** and enter the sign-in redirect URI. Click **Register**. Then open **Authentication** and add the mailbox redirect URI, and the mail accounts one if you use it, as further **Web** URIs.
 
 4. Open **Certificates & secrets → New client secret**. Copy the secret **value** (not its id) now; it is shown once. Note its expiry and rotate it before then.
 
 5. Open **API permissions → Add a permission**:
    - **Microsoft Graph → Delegated**: `openid`, `email`, `profile`, `offline_access`, `User.Read`, `Mail.Send`
    - Only if mailboxes will sync over IMAP: **APIs my organization uses →** search **Office 365 Exchange Online → Delegated**: `IMAP.AccessAsUser.All`
+   - Only for [mail accounts](#mail-accounts): **Microsoft Graph → Delegated**: `Mail.ReadWrite`, `MailboxSettings.ReadWrite`
 
    For a single organization, click **Grant admin consent** so members are not asked individually.
 
@@ -102,6 +106,34 @@ While an app is in **Testing**, add each Google account under **Audience → Tes
 A Microsoft app used by people outside your organization should have a verified publisher: under **Branding & properties**, set the publisher domain and link a Microsoft partner account, so the consent screen shows your name as verified.
 
 Mailboxes that sync through Microsoft read mail over IMAP, so IMAP must be enabled for each of them in Microsoft 365. See [Microsoft 365 and Outlook](/guides/mailboxes/microsoft/#imap-must-be-enabled).
+
+## Mail accounts
+
+[Mail](/guides/mail/) (Collab) lets members connect their own Google and Microsoft accounts, private or shared with the team. **Connect a mail account** offers **Google** and **Microsoft** only once the instance has a client for them; until then it offers **Other (IMAP)** alone (while `COLLAB_IMAP` is on).
+
+Mail accounts use the mailbox clients (`GOOGLE_MAILBOX_CLIENT_ID`, `MICROSOFT_MAILBOX_CLIENT_ID`, which default to the sign-in clients) unless you give them their own, for example a Google project of its own while its restricted scope is reviewed:
+
+```sh
+COLLAB_GOOGLE_CLIENT_ID=1234567890-def.apps.googleusercontent.com
+COLLAB_GOOGLE_CLIENT_SECRET=...
+COLLAB_MICROSOFT_CLIENT_ID=00000000-0000-0000-0000-000000000000
+COLLAB_MICROSOFT_CLIENT_SECRET=...
+```
+
+Whichever client they use needs the mail accounts redirect URI above and these scopes:
+
+| Provider | Mail accounts |
+| --- | --- |
+| Google | `openid`, `email`, `profile`, `https://www.googleapis.com/auth/gmail.modify`, `https://www.googleapis.com/auth/gmail.settings.basic`, with the **Gmail API** enabled |
+| Microsoft | `openid`, `email`, `offline_access`, `https://graph.microsoft.com/Mail.ReadWrite`, `https://graph.microsoft.com/Mail.Send`, `https://graph.microsoft.com/User.Read`, `https://graph.microsoft.com/MailboxSettings.ReadWrite` |
+
+`gmail.settings.basic` and `MailboxSettings.ReadWrite` keep each account's signature, From name and automatic replies in sync; an account connected without them still syncs its mail. When the Collab clients differ from the mailbox clients, also register the mailbox redirect URI on them: support mailboxes that read their inbox directly sign in with the Collab clients.
+
+<Aside type="note" title="Google verification">
+`gmail.modify` is a **restricted** scope and `gmail.settings.basic` a **sensitive** one. An **Internal** app in your own Workspace can use them immediately. An **External** app in production needs Google's verification, and a yearly security assessment for the restricted scope, before people outside your test users can connect.
+</Aside>
+
+See [Collab](/self-hosting/configuration/#collab-your-own-mail-accounts) for `COLLAB` and `COLLAB_IMAP`.
 
 ## GitHub and OIDC sign-in
 

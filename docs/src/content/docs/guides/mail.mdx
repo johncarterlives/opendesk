@@ -1,0 +1,79 @@
+---
+title: Mail and shared inboxes
+description: Connect your own Google, Microsoft or IMAP account, keep it private or share it with your team, and work a shared inbox together, with or without tickets.
+---
+
+import Steps from '../../../components/Steps.astro';
+import Step from '../../../components/Step.astro';
+import Callout from '../../../components/Callout.astro';
+
+**Mail** reads and answers your own email accounts in opendesk, like a mail client: every folder and label, read and unread, stars, archive, move, trash and spam, with each change made at your provider too. An account is **private**, seen by you alone, or **shared** with the whole workspace or the teams and people you choose, so a team can answer a sales or support address together.
+
+A mail account is not a ticket [mailbox](/guides/mailboxes/): its mail never becomes tickets. Use a mailbox when every email should be a ticket with a status, an SLA and reports, and a mail account when the team should read and answer the address as it is.
+
+## Use opendesk as a shared inbox only
+
+A workspace that only needs Mail can turn Tickets off. Admins open **Settings**, **General** and, under **Products**, turn off **Tickets**, then click **Save changes**. Ticket folders and views, live chat, the help center, reports and the ticket settings are hidden; Mail stays. Nothing is deleted: turn Tickets back on in the same place at any time.
+
+## Connect an account
+
+<Steps>
+<Step title="Open Connect a mail account">
+
+Click **Connect an account** in the sidebar's Mail section, or open **Settings**, **Mail accounts** (under **Channels**) and click **Connect an account**.
+
+</Step>
+<Step title="Choose where the account is">
+
+Under **Where is the account?**, pick **Google** for Gmail and Google Workspace, **Microsoft** for Outlook and Microsoft 365, or **Other (IMAP)** for any server with IMAP and SMTP. An IMAP account needs the address and its password, or an app password where the host asks for one.
+
+</Step>
+<Step title="Choose who sees it">
+
+Under **Who sees it?**:
+
+- **Private**: only you. Admins cannot see it either.
+- **Shared** with **Everyone** in the workspace, or **Choose teams and people** to share it with only those.
+
+</Step>
+<Step title="Sign in">
+
+Click **Continue with Google** or **Continue with Microsoft** and approve access at the provider, or click **Connect account** for IMAP. The last 30 days of mail arrive first, and older mail follows in the background.
+
+</Step>
+</Steps>
+
+<Callout>
+
+On your own instance, **Google** and **Microsoft** are offered only once the instance has OAuth clients for them, and **Other (IMAP)** while `COLLAB_IMAP` is on. See [Google and Microsoft OAuth](/self-hosting/oauth-apps/#mail-accounts) and [Collab](/self-hosting/configuration/#collab-your-own-mail-accounts).
+
+</Callout>
+
+## Change who sees an account
+
+Open **Settings**, **Mail accounts**, the account, then **Sharing**. Whoever connected an account manages it; for a shared account, workspace admins can too. A private account can become shared, and a shared one private, at any time. An account shared with **Everyone** is seen by every member, including people who join later; one shared with teams and people is seen by those teams' members and those people.
+
+You can also share a single conversation from a private account, or assign it, so a teammate can help with one email without seeing the rest of the account.
+
+## Work a shared inbox together
+
+On a shared account, turn on **Handling** in the account's settings (**Track conversations needing action**). New incoming mail then needs action until someone answers it or marks it done, separately from read and unread, and without changing mail at your provider.
+
+- **Needs action** lists the conversations nobody has finished.
+- **Assign** a conversation to teammates: assignees can see and answer it, and find it under **Assigned to me**.
+- **Snooze** a conversation until a time: it leaves Needs action and comes back on its own, or sooner when new mail arrives.
+- **Shared with me** lists conversations others shared with you.
+- Comments under a conversation stay inside the team.
+
+Turning Handling on applies to mail that arrives from then on.
+
+## AI drafts
+
+An AI client, with whatever model you run, can draft replies for a person to send. Create an API key with the `collab:draft` scope (see [Change a key's scopes](/api/resources/api-keys-webhooks/#change-a-keys-scopes)): it acts as the member who created it and sees only what they see. It can read conversations, take the longest-waiting Needs action conversation from a shared account with Handling on, and save a reply draft; it never sends, archives, assigns or marks anything. Its drafts show as **AI draft by** the key's name, and the conversation stays in Needs action until a person sends or discards the draft.
+
+## Related
+
+- [Inbox categories](/guides/inbox-categories/) to split an inbox into Primary, Updates and more
+- [Reply from your own address](/guides/inbox-and-tickets/#reply-from-your-own-address) on a ticket
+- [Your sidebar](/guides/sidebar/)
+- [Google and Microsoft OAuth](/self-hosting/oauth-apps/) for self-hosted instances
