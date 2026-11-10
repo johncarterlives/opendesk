@@ -143,7 +143,11 @@ export function parseHours(body: Record<string, unknown>): Omit<BusinessHours, "
 
 export function onboarding(ws: WsData): Onboarding {
   const row = ws.members.find((m) => m.user_id === db.meId);
+  const mail = ws.workspace.mail_available !== false;
+  const accounts = mail ? collabAccountsOf(ws) : [];
   const done: Record<OnboardingStep["id"], boolean> = {
+    connect_mail_account: accounts.length > 0,
+    share_mail_account: accounts.some((a) => a.shared),
     connect_mailbox: ws.mailboxes.length > 0,
     invite_teammate: ws.members.length > 1 || ws.invitations.length > 0,
     upload_photo: !!me().avatar_url,
@@ -156,12 +160,10 @@ export function onboarding(ws: WsData): Onboarding {
   };
   // The steps follow the products (contracts/api.md "Onboarding").
   if (ws.workspace.settings.tickets_enabled === false) {
-    const mail = ws.workspace.mail_available !== false;
-    const accounts = mail ? collabAccountsOf(ws) : [];
     const mailSteps: OnboardingStep[] = mail
       ? [
-          { id: "connect_mail_account", title: "Connect a mail account", description: "Bring a Gmail, Outlook or IMAP inbox in. Keep it private or share it.", done: accounts.length > 0, href: "/settings/mail-accounts", requires: "agent" },
-          { id: "share_mail_account", title: "Share an inbox with your team", description: "Everyone you add sees its mail and can reply, assign and comment.", done: accounts.some((a) => a.shared), href: "/settings/mail-accounts", requires: "agent" },
+          { id: "connect_mail_account", title: "Connect a mail account", description: "Bring a Gmail, Outlook or IMAP inbox in. Keep it private or share it.", done: done.connect_mail_account, href: "/settings/mail-accounts", requires: "agent" },
+          { id: "share_mail_account", title: "Share an inbox with your team", description: "Everyone you add sees its mail and can reply, assign and comment.", done: done.share_mail_account, href: "/settings/mail-accounts", requires: "agent" },
         ]
       : [];
     const steps: OnboardingStep[] = [
