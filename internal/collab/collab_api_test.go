@@ -145,8 +145,14 @@ func TestAPIAccountSharingAndDelete(t *testing.T) {
 	a := w.account(w.agent, ProviderGoogle, VisibilityPrivate, Audience{})
 	srv := w.api(w.agent)
 	var out MailAccount
-	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"visibility": "shared"}, nil); st != 422 {
-		t.Fatalf("shared with nobody: %d, want 422", st)
+	// Shared with no one added yet (the team has not joined): only its owner sees it.
+	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"visibility": "shared"}, &out); st != 200 ||
+		out.Visibility != VisibilityShared || !out.SharedWith.Empty() {
+		t.Fatalf("shared with no one yet: %d %+v", st, out)
+	}
+	var seen []MailAccount
+	if st := doJSON(t, "GET", w.api(w.agent2).URL+"/v1/collab/accounts", nil, &seen); st != 200 || len(seen) != 0 {
+		t.Fatalf("a teammate sees an account shared with no one yet: %d %+v", st, seen)
 	}
 	if st := doJSON(t, "PATCH", srv.URL+"/v1/collab/accounts/"+a.ID.String(), map[string]any{"visibility": "shared",
 		"shared_with": Audience{UserIDs: []uuid.UUID{uuid.New()}}}, nil); st != 422 {
