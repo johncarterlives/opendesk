@@ -67,16 +67,18 @@ import { canOfferCategories, CategoryOffer, CategoryTabs, useCategorySettingsTar
 import { FolderBar } from "@/components/collab/FolderBar";
 import { SearchCoverage, StorageFullBanner } from "@/components/collab/MailNotices";
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "@/components/collab/pickers";
-import { ListShareDialog, SnoozeItems, ThreadMenu } from "@/components/collab/ThreadMenu";
+import { ListShareDialog, SnoozeItems } from "@/components/collab/ThreadMenu";
 import { ThreadRow, type AIDraftAction } from "@/components/collab/ThreadRow";
 import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { useConfirm } from "@/components/ui/confirm";
 import { ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuSub } from "@/components/ui/context-menu";
 import { ThreadView, type ThreadViewHandle } from "@/components/collab/ThreadView";
 
+const NO_LABELS: MailFolder[] = [];
+
 type ActOpts = { folderId?: string; category?: string; label?: string; silent?: boolean; until?: string };
 
-const toastKey: Partial<Record<MailThreadAction, "archived" | "trashed" | "spammed" | "moved" | "inboxed" | "notSpam" | "snoozed" | "done" | "needsAction" | "labeled">> = {
+const toastKey: Partial<Record<MailThreadAction, "archived" | "trashed" | "spammed" | "moved" | "inboxed" | "notSpam" | "snoozed" | "done" | "needsAction" | "labeled" | "starred">> = {
   snooze: "snoozed",
   done: "done",
   needs_action: "needsAction",
@@ -87,6 +89,8 @@ const toastKey: Partial<Record<MailThreadAction, "archived" | "trashed" | "spamm
   move: "moved",
   inbox: "inboxed",
   not_spam: "notSpam",
+  // Only a drop on Starred says so: the star button and s are silent.
+  star: "starred",
 };
 
 function BulkButton({ label, shortcut, onClick, children }: { label: string; shortcut?: string; onClick?: () => void; children: ReactNode }) {
@@ -344,9 +348,13 @@ export default function MailPage() {
     [canAct, query, qc, openId, threads, go, close, action, t, categorized],
   );
 
+  // The rows' callbacks read the latest act through a ref: act changes on every render, and
+  // a new callback would redraw every memoized row as the focus moves.
+  const actRef = useRef(act);
+  actRef.current = act;
   const onRowAction = useCallback(
-    (x: MailThread, a: MailThreadAction) => act([x], a, { silent: a !== "archive" && a !== "trash" && a !== "done" && a !== "needs_action" }),
-    [act],
+    (x: MailThread, a: MailThreadAction) => actRef.current([x], a, { silent: a !== "archive" && a !== "trash" && a !== "done" && a !== "needs_action" }),
+    [],
   );
 
   // ── AI drafts in place (Ready for review and Needs action, GH#430) ─────────
@@ -636,6 +644,12 @@ export default function MailPage() {
     );
   };
 
+  // The rows get one callback for the life of the page, reading the latest menu when it opens,
+  // so moving the focus does not redraw every row (ThreadRow is memoized).
+  const rowMenuRef = useRef(rowMenu);
+  rowMenuRef.current = rowMenu;
+  const renderRowMenu = useCallback((row: MailThread) => rowMenuRef.current(row), []);
+
   // The context-menu key and Shift+F10 open the focused conversation's menu where it is.
   const menuKeyAt = useRef(0);
   useEffect(() => {
@@ -696,8 +710,11 @@ export default function MailPage() {
       case "spam":
       case "trash":
         return act(its, to.box);
-      case "starred":
-        return act(its, "star", { silent: true });
+      case "starred": {
+        // Only those it stars, so Undo unstars exactly those.
+        const ok = its.filter((x) => !x.starred);
+        return ok.length ? act(ok, "star") : undefined;
+      }
       case "needs_action": {
         const ok = its.filter(handlingOn);
         if (!ok.length) return void toast.error(t("drop.noHandling"));
@@ -772,11 +789,16 @@ export default function MailPage() {
 
   // Off the inbox's tabs (a search, another box), a conversation sorted out of Primary says where to.
   const categoryOf = (x: MailThread) => (x.category && x.category !== PRIMARY ? accountCategories(accountsById.get(x.account_id)).find((c) => c.key === x.category) : undefined);
-  const labelsFor = (x: MailThread): MailFolder[] => {
-    const fs = folderMap[x.account_id];
-    if (!fs) return [];
-    return fs.filter((f) => f.kind === "label" && !f.role && f.id !== search.folder && x.folder_ids.includes(f.id));
-  };
+  // Each row's labels kept between renders while nothing they come from changes, so the row's memo holds.
+  const rowLabels = useMemo(() => {
+    const out = new Map<string, MailFolder[]>();
+    for (const x of threads) {
+      const fs = folderMap[x.account_id]?.filter((f) => f.kind === "label" && !f.role && f.id !== search.folder && x.folder_ids.includes(f.id));
+      if (fs?.length) out.set(x.id, fs);
+    }
+    return out;
+  }, [threads, folderMap, search.folder]);
+  const labelsFor = (x: MailThread): MailFolder[] => rowLabels.get(x.id) ?? NO_LABELS;
 
   const empty = (() => {
     if (search.q)
@@ -997,8 +1019,8 @@ export default function MailPage() {
                 {threads.map((x, i) => {
                   const acc = accountsById.get(x.account_id);
                   return (
-                    <ThreadMenu key={x.id} thread={x} render={rowMenu} onPoint={onPoint} onCloseAutoFocus={onMenuCloseFocus}>
                     <ThreadRow
+                      key={x.id}
                       thread={x}
                       active={x.id === openId}
                       focused={i === focusIdx}
@@ -1014,12 +1036,14 @@ export default function MailPage() {
                       onToggle={toggle}
                       onHover={prefetch}
                       onAction={canAct ? onRowAction : undefined}
-                      onDraft={draftsInRows ? onRowDraft : undefined}
-                      draftBusy={draftBusy.has(x.id)}
                       handling={handlingOn(x)}
                       onDragOut={canAct ? onDragOut : undefined}
+                      onDraft={draftsInRows ? onRowDraft : undefined}
+                      draftBusy={draftBusy.has(x.id)}
+                      menu={renderRowMenu}
+                      onMenuPoint={onPoint}
+                      onMenuCloseFocus={onMenuCloseFocus}
                     />
-                    </ThreadMenu>
                   );
                 })}
               </AnimatePresence>

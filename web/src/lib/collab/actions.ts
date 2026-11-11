@@ -6,7 +6,7 @@ import type { CollabThreadQuery } from "../api/endpoints";
 import type { MailCounts, MailFolder, MailThread, MailThreadAction } from "../api/types";
 
 /** Actions whose toast offers Undo. */
-export const UNDOABLE: ReadonlySet<MailThreadAction> = new Set<MailThreadAction>(["archive", "trash", "spam", "move", "label", "done", "needs_action"]);
+export const UNDOABLE: ReadonlySet<MailThreadAction> = new Set<MailThreadAction>(["archive", "trash", "spam", "move", "label", "done", "needs_action", "star"]);
 
 /** The conversation as it reads once the action applied. */
 export function applyAction(t: MailThread, action: MailThreadAction, folderId?: string, category?: string, until?: string): MailThread {

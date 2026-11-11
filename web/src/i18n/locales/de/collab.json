@@ -224,6 +224,8 @@
     "labeled_other": "Label {{folder}} zu {{count}} Unterhaltungen hinzugefügt",
     "assignedToYou_one": "Unterhaltung dir zugewiesen",
     "assignedToYou_other": "{{count}} Unterhaltungen dir zugewiesen",
+    "starred_one": "Unterhaltung markiert",
+    "starred_other": "{{count}} Unterhaltungen markiert",
     "undo": "Rückgängig",
     "failed": "Das hat nicht geklappt. Nichts wurde geändert.",
     "syncing": "{{name}} wird synchronisiert",

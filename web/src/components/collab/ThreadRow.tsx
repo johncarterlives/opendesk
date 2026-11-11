@@ -19,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip } from "@/components/ui/tooltip";
 import { rowMotion } from "@/components/tickets/motion";
 import { AccountDot, LabelPill } from "./bits";
+import { ThreadMenu } from "./ThreadMenu";
 
 export type ThreadRowProps = {
   thread: MailThread;
@@ -40,15 +41,15 @@ export type ThreadRowProps = {
   onHover?: (t: MailThread) => void;
   /** Hover actions; left out for viewers. */
   onAction?: (t: MailThread, a: MailThreadAction) => void;
-  /** Acting on its waiting AI draft in place (Ready for review); left out where it is not offered. */
-  onDraft?: (t: MailThread, a: AIDraftAction) => void;
-  /** The AI draft is being sent or discarded. */
-  draftBusy?: boolean;
   /** Its account has Handling on: hover offers Done or Needs action. */
   handling?: boolean;
   /** Dragging the row (or the selection it is in) toward the sidebar; left out, it does not drag. */
   onDragOut?: (t: MailThread, e: DragEvent) => void;
-} & TriggerProps;
+  /** Acting on its waiting AI draft in place (Ready for review); left out where it is not offered. */
+  onDraft?: (t: MailThread, a: AIDraftAction) => void;
+  /** The AI draft is being sent or discarded. */
+  draftBusy?: boolean;
+};
 
 /** What a context-menu trigger (components/ui/context-menu.tsx) puts on the row. */
 type TriggerProps = Pick<HTMLAttributes<HTMLDivElement>, "onContextMenu" | "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel"> & {
@@ -117,8 +118,8 @@ function Quick({ label, shortcut, onClick, children }: { label: string; shortcut
   );
 }
 
-const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
-  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, onDraft, draftBusy, handling, onDragOut, style, ...trigger },
+const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function ThreadRow(
+  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, handling, onDragOut, onDraft, draftBusy, style, ...trigger },
   ref,
 ) {
   const { t: tr } = useTranslation("collab");
@@ -350,4 +351,23 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
   );
 });
 
-export const ThreadRow = memo(Row);
+export type ThreadRowMenuProps = {
+  /** The right-click menu's items for this row (and the selection it is in); left out, no menu. */
+  menu?: (t: MailThread) => ReactNode;
+  /** Where the menu opened: a picker an item opens shows there. */
+  onMenuPoint?: (x: number, y: number) => void;
+  onMenuCloseFocus?: (e: Event) => void;
+};
+
+/**
+ * The row with its menu inside the memo: given stable callbacks, moving the focus redraws only
+ * the rows whose own props changed, not every row's menu trigger.
+ */
+export const ThreadRow = memo(function ThreadRowWithMenu({ menu, onMenuPoint, onMenuCloseFocus, ...row }: ThreadRowProps & ThreadRowMenuProps) {
+  if (!menu) return <Row {...row} />;
+  return (
+    <ThreadMenu thread={row.thread} render={menu} onPoint={onMenuPoint} onCloseAutoFocus={onMenuCloseFocus}>
+      <Row {...row} />
+    </ThreadMenu>
+  );
+});

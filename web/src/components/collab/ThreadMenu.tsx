@@ -1,6 +1,7 @@
 // The right-click menu of a conversation in the mail list (GH#455), as Gmail has it. The page
 // builds its items (pages/mail/MailPage.tsx), so each does what its button or key does; this
-// file holds the menu around a row, the Snooze choices and Share for a conversation of the list.
+// file holds the menu around a row (ThreadRow renders it), the Snooze choices and Share for a
+// conversation of the list.
 
 import { useQuery } from "@tanstack/react-query";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
@@ -28,13 +29,13 @@ export function ThreadMenu({
   /** The items for this row (and the selection it is in). */
   render: (t: MailThread) => ReactNode;
   /** Where the menu opened: a picker an item opens shows there. */
-  onPoint: (x: number, y: number) => void;
-  onCloseAutoFocus: (e: Event) => void;
+  onPoint?: (x: number, y: number) => void;
+  onCloseAutoFocus?: (e: Event) => void;
   children: ReactElement;
 }) {
   return (
     <ContextMenu>
-      <ContextMenuTrigger onContextMenu={(e: MouseEvent) => onPoint(e.clientX, e.clientY)}>{children}</ContextMenuTrigger>
+      <ContextMenuTrigger onContextMenu={(e: MouseEvent) => onPoint?.(e.clientX, e.clientY)}>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-[236px]" onCloseAutoFocus={onCloseAutoFocus}>
         <Items render={() => render(thread)} />
       </ContextMenuContent>
