@@ -242,11 +242,16 @@ func threadsOut(ctx context.Context, q db.Querier, list []*threadRow) ([]MailThr
 	if err != nil {
 		return nil, err
 	}
+	aiDrafts, err := threadAIDrafts(ctx, q, tids)
+	if err != nil {
+		return nil, err
+	}
 	for _, t := range list {
 		m := MailThread{ID: t.ID, AccountID: t.AccountID, Subject: t.Subject, Snippet: t.Snippet, Participants: t.Participants,
 			LastMessageAt: t.LastMessageAt, MessageCount: t.MessageCount, Unread: t.Unread, Starred: t.Starred,
 			HasAttachments: t.HasAttachments, NeedsAction: t.NeedsAction, SnoozedUntil: t.SnoozedUntil, FolderIDs: t.FolderIDs, Shared: slices.Contains(sharedList, t.ID),
-			Assignees: assignees[t.ID], CommentCount: comments[t.ID], Category: effectiveCategory(keys[t.AccountID], t.Category)}
+			Assignees: assignees[t.ID], CommentCount: comments[t.ID], Category: effectiveCategory(keys[t.AccountID], t.Category),
+			AIDraft: aiDrafts[t.ID]}
 		if m.Assignees == nil {
 			m.Assignees = []domain.UserRef{}
 		}
@@ -259,6 +264,31 @@ func threadsOut(ctx context.Context, q db.Querier, list []*threadRow) ([]MailThr
 		out = append(out, m)
 	}
 	return out, nil
+}
+
+// threadAIDrafts is each conversation's newest draft an AI client saved and no person has
+// taken over (saving clears ai_api_key_id, "AI drafts"), as aiDraftSQL selects them.
+func threadAIDrafts(ctx context.Context, q db.Querier, tids []uuid.UUID) (map[uuid.UUID]*ThreadAIDraft, error) {
+	rows, err := q.Query(ctx, `SELECT DISTINCT ON (thread_id) thread_id, id, COALESCE(ai_client, ''), snippet, to_addrs
+		FROM collab_messages WHERE thread_id = ANY($1) AND draft AND ai_api_key_id IS NOT NULL
+		ORDER BY thread_id, sent_at DESC, id DESC`, tids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[uuid.UUID]*ThreadAIDraft{}
+	for rows.Next() {
+		var tid uuid.UUID
+		d := &ThreadAIDraft{}
+		if err := rows.Scan(&tid, &d.DraftID, &d.DraftedBy, &d.Snippet, &d.To); err != nil {
+			return nil, err
+		}
+		if d.To == nil {
+			d.To = []Address{}
+		}
+		out[tid] = d
+	}
+	return out, rows.Err()
 }
 
 // accountCategoryKeys is the category keys the conversations' accounts are sorted with.

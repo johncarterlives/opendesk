@@ -1,0 +1,74 @@
+name: Bug report
+description: Something does not work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. Search the open issues first, and report a vulnerability privately through
+        [a security advisory](https://github.com/useopendesk/opendesk/security/advisories/new), never here.
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where does it happen?
+      options:
+        - opendesk Cloud (opendesk.sh)
+        - Self-hosted
+        - Both, or not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Tickets and inbox
+        - Mail and mailboxes
+        - Live chat and widget
+        - Customer portal
+        - Knowledge base and help center
+        - Pages and wiki
+        - Contacts and companies
+        - Reports, SLA and automations
+        - Settings, members and billing
+        - API and webhooks
+        - Admin panel
+        - Desktop or iPhone app
+        - Self-hosting and install
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See the error
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release or commit for a self-hosted install, or the date you saw it on Cloud.
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and operating system, or how you deploy (Docker compose, Kubernetes, bare metal).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: Remove tokens, passwords, customer names and email addresses before you paste.
+      render: shell

@@ -543,6 +543,11 @@ notifications made meanwhile stay in the app and are never emailed or pushed lat
 Delivery:
 - `hd.Notify` stores `email_due_at` on the notification when its type's `email` channel is on and the cadence is not
   `off`: `created_at` + 5 minutes for `instant`, the next full hour for `hourly`, the next `digest_hour` for `daily`.
+- When the email is due, everything is checked again: read in the app, preferences, the pause, membership, a confirmed
+  address and the ticket's visibility. A `new_ticket` or `customer_replied` email is also dropped once its ticket was
+  taken care of after the notification was made: a member or an API key replied to the customer (a rule's or an
+  automation's automatic reply does not count), someone other than the recipient was assigned, or the ticket was
+  solved, closed or marked spam. The notification itself stays in the app.
 - A worker job sweeps every minute. When pacing allows (below), everything still waiting for that user in that workspace
   goes into **one** email: one notification gets its own email ("Maya assigned you #1095: SAML with Okta"); several get
   one grouped email. Its subject names the most pressing notification and counts the rest ("Maya Chen mentioned you
