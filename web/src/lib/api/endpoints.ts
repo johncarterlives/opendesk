@@ -351,7 +351,7 @@ export const api = {
     dismiss: () => http.post<void>("/v1/onboarding/dismiss"),
   },
   invitations: {
-    list: () => http.get<T.Page<T.Invitation>>("/v1/invitations"),
+    list: (q?: ListQuery) => http.get<T.Page<T.Invitation>>("/v1/invitations", { query: q }),
     create: (b: { email: string; role: T.Role }) => http.create<T.Invitation>("/v1/invitations", b),
     revoke: (id: string) => http.del(`/v1/invitations/${id}`),
     link: (id: string) => http.post<{ url: string; expires_at: string }>(`/v1/invitations/${id}/link`),

@@ -50,6 +50,37 @@ func TestInvitedSharesOnAccept(t *testing.T) {
 	if n := count(`SELECT count(*) FROM collab_invited_shares WHERE invitation_id = $1 AND account_id = $2`, again.str("id"), account); n != 1 {
 		t.Fatalf("pending share moved: %d", n)
 	}
+	// An expired invitation's account dropped out: neither inviting again nor resending brings it back.
+	share := func(inv string) {
+		t.Helper()
+		if _, err := e.d.DB.Pool.Exec(ctx, `INSERT INTO collab_invited_shares (account_id, invitation_id, workspace_id) VALUES ($1, $2, $3)`, account, inv, wid); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := e.d.DB.Pool.Exec(ctx, `UPDATE invitations SET expires_at = now() - interval '1 day' WHERE id = $1`, inv); err != nil {
+			t.Fatal(err)
+		}
+	}
+	stale := uniqueEmail(t, "stale")
+	expired := owner.do("POST", "/v1/invitations", map[string]any{"email": stale, "role": "agent"})
+	if expired.Status != 201 {
+		t.Fatalf("invite: %d %s", expired.Status, expired.Raw)
+	}
+	share(expired.str("id"))
+	if r := owner.do("POST", "/v1/invitations/"+expired.str("id")+"/resend", nil); r.Status != 200 {
+		t.Fatalf("resend: %d %s", r.Status, r.Raw)
+	}
+	if n := count(`SELECT count(*) FROM collab_invited_shares WHERE invitation_id = $1`, expired.str("id")); n != 0 {
+		t.Fatalf("resending an expired invitation kept its account: %d", n)
+	}
+	share(expired.str("id"))
+	reinvited := owner.do("POST", "/v1/invitations", map[string]any{"email": stale, "role": "agent"})
+	if reinvited.Status != 201 {
+		t.Fatalf("invite again: %d %s", reinvited.Status, reinvited.Raw)
+	}
+	if n := count(`SELECT count(*) FROM collab_invited_shares WHERE invitation_id = $1`, reinvited.str("id")); n != 0 {
+		t.Fatalf("inviting again after expiry kept the account: %d", n)
+	}
+
 	_, text := e.lastMail(email)
 	token := tokenFromText(text, "/invite?token=")
 

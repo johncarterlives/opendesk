@@ -234,6 +234,18 @@ function Chip({ children, onRemove, label }: { children: ReactNode; onRemove?: (
   );
 }
 
+/** The workspace's pending, unexpired invitation of an address, if any (admins only). */
+async function pendingInvitation(email: string) {
+  let cursor: string | null = null;
+  do {
+    const page = await api.invitations.list({ limit: 100, cursor });
+    const hit = page.data.find((i) => i.email.toLowerCase() === email && Date.parse(i.expires_at) > Date.now());
+    if (hit) return hit;
+    cursor = page.next_cursor;
+  } while (cursor);
+  return undefined;
+}
+
 /**
  * Teams and people of an audience, as chips with pickers to add more. With `grow` (a shared
  * account's audience, GH#447), admins may also create a team or invite someone by email from
@@ -271,12 +283,17 @@ export function AudienceLists({
     },
     onError: (e) => toast.error(e, t("audience.teamCreateFailed")),
   });
+  // An address with a pending invitation keeps it: inviting again would replace it, with a
+  // new role and link. An expired one is invited again.
   const invite = useMutation({
-    mutationFn: (email: string) => api.invitations.create({ email, role: "agent" }),
-    onSuccess: (inv) => {
+    mutationFn: async (email: string) => {
+      const pending = await pendingInvitation(email);
+      return pending ? { inv: pending, sent: false } : { inv: await api.invitations.create({ email, role: "agent" }), sent: true };
+    },
+    onSuccess: ({ inv, sent }) => {
       void qc.invalidateQueries({ queryKey: qk.invitations });
       if (!invited.some((x) => x.id === inv.id)) onChange({ ...value, invited: [...invited, { id: inv.id, email: inv.email }] });
-      toast.success(t("audience.invited", { email: inv.email }));
+      toast.success(t(sent ? "audience.invited" : "audience.alreadyInvited", { email: inv.email }));
     },
     onError: (e) => toast.error(e, t("audience.inviteFailed")),
   });

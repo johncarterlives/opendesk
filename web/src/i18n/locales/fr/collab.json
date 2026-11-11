@@ -386,6 +386,7 @@
     "inviteHint": "Saisissez une adresse e-mail pour inviter quelqu’un. Ce compte lui est partagé quand il rejoint l’espace.",
     "inviteNeedsEmail": "Saisissez une adresse e-mail pour inviter quelqu’un",
     "invited": "Invitation envoyée à {{email}}",
+    "alreadyInvited": "{{email}} est déjà invité et aura ce compte en rejoignant l’espace.",
     "inviteFailed": "L’invitation n’a pas été envoyée",
     "invitedMark": "invité"
   },

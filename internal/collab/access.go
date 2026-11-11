@@ -216,17 +216,25 @@ func checkAudience(ctx context.Context, q db.Querier, wid uuid.UUID, a Audience)
 		return out, errAudienceTooLarge
 	}
 	if len(out.Invited) > 0 {
+		// An invitation accepted, revoked or expired since it was picked drops out quietly:
+		// the editor or the connect flow may have started before.
 		inviteIDs := make([]uuid.UUID, 0, len(out.Invited))
 		for _, i := range out.Invited {
 			inviteIDs = append(inviteIDs, i.ID)
 		}
-		if err := q.QueryRow(ctx, `SELECT count(*) FROM invitations WHERE workspace_id = $1 AND id = ANY($2)
-			AND accepted_at IS NULL AND expires_at > now()`, wid, inviteIDs).Scan(&n); err != nil {
+		rows, err := q.Query(ctx, `SELECT id FROM invitations WHERE workspace_id = $1 AND id = ANY($2)
+			AND accepted_at IS NULL AND expires_at > now()`, wid, inviteIDs)
+		if err != nil {
 			return out, err
 		}
-		if n != len(inviteIDs) {
-			return out, errUnknownInvitation
+		pending, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+		if err != nil {
+			return out, err
 		}
+		out.Invited = slices.DeleteFunc(out.Invited, func(i Invitee) bool { return !slices.Contains(pending, i.ID) })
+	}
+	if len(out.Invited) == 0 {
+		out.Invited = nil
 	}
 	return out, nil
 }
@@ -293,6 +301,13 @@ func ApplyInvitedShares(ctx context.Context, tx pgx.Tx, wid, invitationID, userI
 	return tag.RowsAffected(), nil
 }
 
+// DropInvitedShares removes the accounts an invitation is shared with, in tx: an expired
+// invitation given new days (resent, link copied) does not bring them back.
+func DropInvitedShares(ctx context.Context, tx pgx.Tx, wid, invitationID uuid.UUID) error {
+	_, err := tx.Exec(ctx, `DELETE FROM collab_invited_shares WHERE workspace_id = $1 AND invitation_id = $2`, wid, invitationID)
+	return err
+}
+
 // InvitedShares is the accounts pending invitations are shared with, read before those
 // invitations are replaced (inviting the same address again) so the new one keeps them.
 type InvitedShares []invitedShare
@@ -303,13 +318,15 @@ type invitedShare struct {
 	createdAt time.Time
 }
 
-// TakeInvitedShares reads the accounts the invitations are shared with, in tx.
+// TakeInvitedShares reads the accounts the invitations are shared with, in tx. Those of an
+// expired invitation have dropped out and stay out.
 func TakeInvitedShares(ctx context.Context, tx pgx.Tx, wid uuid.UUID, invitationIDs []uuid.UUID) (InvitedShares, error) {
 	if len(invitationIDs) == 0 {
 		return nil, nil
 	}
-	rows, err := tx.Query(ctx, `SELECT DISTINCT ON (account_id) account_id, shared_by, created_at FROM collab_invited_shares
-		WHERE workspace_id = $1 AND invitation_id = ANY($2) ORDER BY account_id, created_at`, wid, invitationIDs)
+	rows, err := tx.Query(ctx, `SELECT DISTINCT ON (s.account_id) s.account_id, s.shared_by, s.created_at FROM collab_invited_shares s
+		JOIN invitations i ON i.id = s.invitation_id AND i.expires_at > now()
+		WHERE s.workspace_id = $1 AND s.invitation_id = ANY($2) ORDER BY s.account_id, s.created_at`, wid, invitationIDs)
 	if err != nil {
 		return nil, err
 	}

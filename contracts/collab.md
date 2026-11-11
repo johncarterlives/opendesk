@@ -512,10 +512,13 @@ Ollie off for an account they manage (`ai: false`) whatever the workspace locks.
   joined (`invited`: pending invitations, `POST /v1/invitations`). Nobody sees anything through
   them. When the person accepts, the account is shared with them (`user_ids`) in the same
   transaction, unless it became private meanwhile. Inviting the same address again keeps them on
-  the new invitation; a revoked or expired one drops out, and an expired one is refused
-  (`422`). Conversations' own `shares` take members only. With `everyone` the list is dropped:
-  a new member gets the account anyway. In the sharing pickers, admins invite by typing an email
-  (role agent) and create a team by typing a new name; it is picked at once (GH#447).
+  the new invitation; a revoked or expired one drops out, and stays out when the address is
+  invited again or the invitation resent. An invitation in a request that is no longer pending (accepted,
+  revoked or expired since it was picked) is dropped quietly. Only those who manage the account
+  (`can_manage`) see `invited`, as only admins read invitations. Conversations' own `shares` take
+  members only. With `everyone` the list is dropped: a new member gets the account anyway. In the
+  sharing pickers, admins invite by typing an email (role agent; an address with a pending
+  invitation keeps it) and create a team by typing a new name; it is picked at once (GH#447).
 - A conversation is also visible to whoever it is shared with on its own (`shares`: everyone,
   teams, people) and to its assignees.
 - Viewers read; acting (actions, sending, sharing, assigning, comments) needs agent or above and
@@ -646,7 +649,7 @@ changes a model; what the client does with the feedback is its own business.
 interface Audience {
   everyone: boolean; team_ids: string[]; user_ids: string[]
   // Accounts only: pending invitations whose person gets the account on accepting ("Who sees what").
-  // In: ids (at most 50). Out: with the invited email; left out when none.
+  // In: ids (at most 50). Out: with the invited email, to those who manage the account; left out when none.
   invited?: { id: string; email?: string }[]
 }
 interface Address { name: string; email: string }

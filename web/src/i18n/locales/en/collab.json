@@ -380,6 +380,7 @@
     "inviteHint": "Type an email address to invite someone. They get this account when they join.",
     "inviteNeedsEmail": "Type an email address to invite someone",
     "invited": "Invitation sent to {{email}}",
+    "alreadyInvited": "{{email}} was already invited. They get this account when they join.",
     "inviteFailed": "The invitation was not sent",
     "invitedMark": "invited"
   },

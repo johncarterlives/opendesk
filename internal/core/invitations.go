@@ -442,13 +442,20 @@ type openedInvitation struct {
 func (s *svc) openInvitation(ctx context.Context, tx pgx.Tx, wid, id uuid.UUID) (openedInvitation, error) {
 	var inv openedInvitation
 	var sealed []byte
-	err := tx.QueryRow(ctx, `SELECT email, role, token_enc FROM invitations
-		WHERE id = $1 AND workspace_id = $2 AND accepted_at IS NULL FOR UPDATE`, id, wid).Scan(&inv.email, &inv.role, &sealed)
+	var expired bool
+	err := tx.QueryRow(ctx, `SELECT email, role, token_enc, expires_at <= now() FROM invitations
+		WHERE id = $1 AND workspace_id = $2 AND accepted_at IS NULL FOR UPDATE`, id, wid).Scan(&inv.email, &inv.role, &sealed, &expired)
 	if db.IsNotFound(err) {
 		return inv, httpx.NotFound("Invitation")
 	}
 	if err != nil {
 		return inv, err
+	}
+	// The shared mail accounts of an expired invitation dropped out (contracts/collab.md).
+	if expired {
+		if err := collab.DropInvitedShares(ctx, tx, wid, id); err != nil {
+			return inv, err
+		}
 	}
 	if sealed != nil {
 		if plain, err := s.d.Box.Open(sealed); err == nil {

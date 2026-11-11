@@ -788,6 +788,7 @@ function accountOut(ws: WsData, a: Account): MailAccount {
     ...rest,
     owner: userRef(ownerId),
     can_manage: manage,
+    shared_with: manage ? a.shared_with : { ...a.shared_with, invited: undefined },
     unread: unreadInbox(ws, a.id),
     imap: manage ? a.imap : undefined,
     identities: identitiesOut(ws, a),

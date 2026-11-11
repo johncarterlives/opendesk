@@ -27,13 +27,24 @@ func TestAPIAccountSharedWithInvitee(t *testing.T) {
 	if st != 200 || len(out.SharedWith.Invited) != 1 || out.SharedWith.Invited[0].ID != inv || out.SharedWith.Invited[0].Email == "" {
 		t.Fatalf("share with an invitee: %d %+v", st, out.SharedWith)
 	}
-	// An unknown invitation is refused.
-	if st := doJSON(t, "PATCH", url, map[string]any{"shared_with": Audience{Invited: []Invitee{{ID: uuid.New()}}}}, nil); st != 422 {
-		t.Fatalf("unknown invitation: %d, want 422", st)
+	// An invitation no longer pending (accepted, revoked or expired meanwhile) drops out quietly.
+	gone := Audience{UserIDs: []uuid.UUID{w.agent2.UserID}, Invited: []Invitee{{ID: inv}, {ID: uuid.New()}}}
+	if st := doJSON(t, "PATCH", url, map[string]any{"shared_with": gone}, &out); st != 200 ||
+		len(out.SharedWith.Invited) != 1 || out.SharedWith.Invited[0].ID != inv || len(out.SharedWith.UserIDs) != 1 {
+		t.Fatalf("stale invitation: %d %+v", st, out.SharedWith)
 	}
 	// Another change keeps the invitee.
 	if st := doJSON(t, "PATCH", url, map[string]any{"color": "teal"}, &out); st != 200 || len(out.SharedWith.Invited) != 1 {
 		t.Fatalf("invitee kept: %d %+v", st, out.SharedWith)
+	}
+	// Who sees the account but does not manage it does not see who was invited.
+	var seen []MailAccount
+	if st := doJSON(t, "GET", w.api(w.agent2).URL+"/v1/collab/accounts", nil, &seen); st != 200 || len(seen) != 1 || seen[0].SharedWith.Invited != nil {
+		t.Fatalf("invitees shown to a member who does not manage the account: %d %+v", st, seen)
+	}
+	// Back to the invitee alone for the rest.
+	if st := doJSON(t, "PATCH", url, map[string]any{"shared_with": Audience{Invited: []Invitee{{ID: inv}}}}, &out); st != 200 || len(out.SharedWith.UserIDs) != 0 {
+		t.Fatalf("reset: %d %+v", st, out.SharedWith)
 	}
 
 	// They accept (the core accept path calls ApplyInvitedShares in its transaction).
@@ -49,7 +60,6 @@ func TestAPIAccountSharedWithInvitee(t *testing.T) {
 	if err := tx.Commit(w.ctx); err != nil {
 		t.Fatal(err)
 	}
-	var seen []MailAccount
 	if st := doJSON(t, "GET", w.api(joined).URL+"/v1/collab/accounts", nil, &seen); st != 200 || len(seen) != 1 || seen[0].ID != a.ID {
 		t.Fatalf("the invitee does not see the account: %d %+v", st, seen)
 	}

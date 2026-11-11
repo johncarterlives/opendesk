@@ -371,6 +371,7 @@
     "inviteHint": "Geben Sie eine E-Mail-Adresse ein, um jemanden einzuladen. Das Konto wird geteilt, sobald die Person beitritt.",
     "inviteNeedsEmail": "Geben Sie eine E-Mail-Adresse ein, um jemanden einzuladen",
     "invited": "Einladung an {{email}} gesendet",
+    "alreadyInvited": "{{email}} ist bereits eingeladen und erhält dieses Konto beim Beitritt.",
     "inviteFailed": "Die Einladung wurde nicht gesendet",
     "invitedMark": "eingeladen"
   },
