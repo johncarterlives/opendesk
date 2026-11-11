@@ -95,20 +95,34 @@ func (w *notificationEmailWorker) Work(ctx context.Context, job *river.Job[jobs.
 type waitingNote struct {
 	note emails.Note
 	due  time.Time
-	// gone: its ticket was deleted or the user may no longer see it.
+	// gone: its ticket was deleted, the user may no longer see it, or it was settled
+	// (settledSQL).
 	gone bool
 }
 
+// settledSQL is true for a new_ticket or customer_replied notification whose ticket was
+// taken care of after it was made: a member or an API key replied to the customer, someone
+// else was assigned, or the ticket was solved, closed or marked spam. Its email is no
+// longer needed (contracts/api.md "Notification preferences and emails"); the notification
+// stays in the app. Replies a rule or an automation sent (author_type system) do not count.
+const settledSQL = `COALESCE(n.type IN ('new_ticket', 'customer_replied') AND (
+	t.status IN ('solved', 'closed') OR t.spam
+	OR (t.assignee_id IS NOT NULL AND (n.type = 'new_ticket' OR t.assignee_id <> n.user_id))
+	OR EXISTS (SELECT 1 FROM messages m WHERE m.workspace_id = n.workspace_id AND m.ticket_id = n.ticket_id
+		AND m.kind = 'reply' AND m.direction = 'outbound' AND m.author_type IN ('user', 'api')
+		AND m.deleted_at IS NULL AND m.created_at > n.created_at)), false)`
+
 // sendNotificationEmail emails the user what waits for them in the workspace when pacing
 // allows. Everything is checked again here: read, preferences, pause, membership, a
-// confirmed address and the ticket's visibility. Notifications that may not be emailed any
+// confirmed address, the ticket's visibility, and whether a ticket nobody had was taken
+// care of meanwhile (settledSQL). Notifications that may not be emailed any
 // more stop waiting; the rest are marked emailed in this transaction, which also queues
 // the email, so each is emailed at most once. When pacing says later (a cooldown, a cap,
 // the member active in the app, the instance's send rate), nothing is sent and the member
 // is looked at again then; nothing is dropped.
 func (s *svc) sendNotificationEmail(ctx context.Context, tx pgx.Tx, wid, uid uuid.UUID, now time.Time) error {
 	rows, err := tx.Query(ctx, `SELECT n.id, n.type, n.data, n.ticket_id, n.created_at, n.email_due_at, t.number, t.subject,
-			n.ticket_id IS NOT NULL AND t.id IS NULL
+			n.ticket_id IS NOT NULL AND t.id IS NULL, `+settledSQL+`
 		FROM notifications n LEFT JOIN tickets t ON t.id = n.ticket_id AND t.workspace_id = n.workspace_id AND t.deleted_at IS NULL
 			AND `+domain.VisibleToUserSQL("t", 2)+`
 		WHERE n.workspace_id = $1 AND n.user_id = $2 AND n.email_due_at IS NOT NULL AND n.emailed_at IS NULL AND n.read_at IS NULL
@@ -122,9 +136,11 @@ func (s *svc) sendNotificationEmail(ctx context.Context, tx pgx.Tx, wid, uid uui
 		var raw []byte
 		var number *int64
 		var subject *string
-		if err := r.Scan(&x.note.ID, &x.note.Type, &raw, &x.note.TicketID, &x.note.CreatedAt, &x.due, &number, &subject, &x.gone); err != nil {
+		var settled bool
+		if err := r.Scan(&x.note.ID, &x.note.Type, &raw, &x.note.TicketID, &x.note.CreatedAt, &x.due, &number, &subject, &x.gone, &settled); err != nil {
 			return x, err
 		}
+		x.gone = x.gone || settled
 		_ = json.Unmarshal(raw, &x.note.Data)
 		if x.note.Data == nil {
 			x.note.Data = map[string]any{}

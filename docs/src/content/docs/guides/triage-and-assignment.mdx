@@ -102,6 +102,7 @@ When a ticket comes in and nobody is assigned to it, the team gets a **New ticke
 - A ticket that was assigned when it came in, by a person or by assignment, sends **Assigned** to its assignee instead.
 - While Ollie answers a chat, or an email to an address set to **Send automatically**, nobody is notified until Ollie hands the conversation to a person. With **Draft for review** the team hears at once, and with **Only outside business hours** it hears at once during business hours.
 - Each person chooses where it reaches them in their [notification settings](/guides/notifications/#per-type-and-channel). It goes to phones and the desktop, and by email only for those who turn it on.
+- Its email waits a few minutes. If someone answers the customer in the meantime, from the app or through the API, or the ticket is assigned, solved or marked spam, the email is not sent. The notification stays in the bell. An automatic reply from a rule does not count as an answer.
 
 ## Follow-ups of closed tickets
 

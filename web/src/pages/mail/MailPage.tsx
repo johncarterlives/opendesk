@@ -36,7 +36,8 @@ import { canOfferCategories, CategoryOffer, CategoryTabs, useCategorySettingsTar
 import { FolderBar } from "@/components/collab/FolderBar";
 import { SearchCoverage, StorageFullBanner } from "@/components/collab/MailNotices";
 import { LabelsPicker, MovePicker, type MoveTarget } from "@/components/collab/pickers";
-import { ThreadRow } from "@/components/collab/ThreadRow";
+import { ThreadRow, type AIDraftAction } from "@/components/collab/ThreadRow";
+import { useConfirm } from "@/components/ui/confirm";
 import { ThreadView, type ThreadViewHandle } from "@/components/collab/ThreadView";
 
 type ActOpts = { folderId?: string; category?: string; label?: string; silent?: boolean; until?: string };
@@ -92,6 +93,7 @@ export default function MailPage() {
   const prefs = useSidebarPrefs();
   const folderMap = useAllFolders(accounts);
   const action = useThreadAction();
+  const confirm = useConfirm();
 
   const account = search.account ? accounts?.find((a) => a.id === search.account) : undefined;
   const folder: MailFolder | undefined = search.folder ? Object.values(folderMap).flatMap((f) => f ?? []).find((f) => f.id === search.folder) : undefined;
@@ -304,6 +306,54 @@ export default function MailPage() {
   );
 
   const onRowAction = useCallback((x: MailThread, a: MailThreadAction) => act([x], a, { silent: a !== "archive" && a !== "trash" }), [act]);
+
+  // ── AI drafts in place (Ready for review and Needs action, GH#430) ─────────
+  // Send goes as saved; Edit opens the conversation with the draft in the composer;
+  // Discard asks first, as the composer does, since the draft is deleted at the provider too.
+  const draftsInRows = canAct && (box === "ai_review" || box === "needs_action");
+  const [editAI, setEditAI] = useState<string | null>(null);
+  // Only the conversation Edit opened takes the draft into its composer, once.
+  useEffect(() => setEditAI((id) => (id && id !== openId ? null : id)), [openId]);
+  const [draftBusy, setDraftBusy] = useState<Set<string>>(new Set());
+  const busyDraft = useCallback((id: string, on: boolean) => setDraftBusy((s) => {
+    const next = new Set(s);
+    if (on) next.add(id);
+    else next.delete(id);
+    return next;
+  }), []);
+  const onRowDraft = useCallback(
+    (x: MailThread, a: AIDraftAction) => {
+      const d = x.ai_draft;
+      if (!d) return;
+      if (a === "edit") {
+        setEditAI(x.id);
+        return open(x);
+      }
+      const run = (call: () => Promise<unknown>, done: () => void, failed: string) => {
+        busyDraft(x.id, true);
+        call().then(
+          () => {
+            busyDraft(x.id, false);
+            void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+            void qc.invalidateQueries({ queryKey: qk.mailThread(x.id) });
+            void qc.invalidateQueries({ queryKey: qk.mailCounts });
+            done();
+          },
+          (e) => {
+            busyDraft(x.id, false);
+            toast.error(e, failed);
+          },
+        );
+      };
+      if (a === "send") return run(() => api.collab.drafts.send(d.draft_id), () => toast.success(t("toast.sent", { email: accountsById.get(x.account_id)?.email ?? "" })), t("composer.sendFailed"));
+      confirm.show(t("composer.discardDraftConfirm"), () => run(() => api.collab.drafts.remove(d.draft_id), () => undefined, t("composer.discardFailed")), {
+        title: t("composer.discardDraftTitle"),
+        confirmLabel: t("composer.discard"),
+        danger: true,
+      });
+    },
+    [open, qc, t, accountsById, confirm, busyDraft],
+  );
   const onThreadAction = useCallback(
     (a: MailThreadAction, opts?: ActOpts) => {
       if (!openId) return;
@@ -629,6 +679,8 @@ export default function MailPage() {
                       onToggle={toggle}
                       onHover={prefetch}
                       onAction={canAct ? onRowAction : undefined}
+                      onDraft={draftsInRows ? onRowDraft : undefined}
+                      draftBusy={draftBusy.has(x.id)}
                     />
                   );
                 })}
@@ -695,7 +747,7 @@ export default function MailPage() {
             onAction={onThreadAction}
             markReadOnOpen={prefs.mark_read_on_open}
             intent={intent?.id === openId ? intent.mode : null}
-            openDraft={box === "drafts"}
+            openDraft={box === "drafts" || editAI === openId}
             onOpenThread={(id) => go(id)}
             onShowPerson={(email) =>
               void navigate({ to: "/mail/$box/{-$threadId}", params: { box: "all", threadId: openId }, search: { with: email } })

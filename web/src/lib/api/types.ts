@@ -3254,6 +3254,18 @@ export type MailThread = {
   to_address?: string | null;
   /** Its category key (contracts/collab.md "Categories"); null when its account's inbox is not split. */
   category?: string | null;
+  /** The AI draft waiting for a person (Ready for review); null otherwise. */
+  ai_draft?: MailThreadAIDraft | null;
+};
+
+export type MailThreadAIDraft = {
+  /** The id the /v1/collab/drafts routes take. */
+  draft_id: string;
+  /** The AI client's name ("AI draft by <name>"). */
+  drafted_by: string;
+  /** Its first lines. */
+  snippet: string;
+  to: MailAddress[];
 };
 
 export type MailAttachment = {

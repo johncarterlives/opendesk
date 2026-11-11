@@ -910,6 +910,8 @@ function threadOut(ws: WsData, t: ThreadMeta): MailThread {
     comment_count: t.comments.length,
     to_address: people.map((p) => p.email.toLowerCase()).find((e) => aliases.has(e)) ?? null,
     category: categoryOf(ws, t),
+    // The demo has no AI client drafting, so no conversation has an AI draft waiting.
+    ai_draft: null,
   };
 }
 

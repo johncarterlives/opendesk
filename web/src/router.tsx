@@ -25,6 +25,7 @@ import type { CompanySort, ContactSort } from "./lib/api/endpoints";
 import { COMPANY_SORTS, PEOPLE_SORTS } from "./lib/directorySort";
 import { productHome, productsOf, requireTickets, TICKET_SETTINGS } from "./lib/products";
 import { folderById, listQuery, parseInboxSearch, teamQuery } from "./lib/folders";
+import { viewOrTicket } from "./lib/viewLink";
 import { withRememberedSort } from "./lib/listSort";
 import { isMailRouteBox, mailListQuery, parseMailSearch } from "./lib/collab/boxes";
 import { parsePrintSearch } from "./lib/ticketPrint";
@@ -329,7 +330,8 @@ const viewRoute = createRoute({
     await requireTickets(qc);
     if (params.ticketId) prefetchTicket(qc, params.ticketId);
     prefetchInboxShared(qc);
-    return qc.ensureInfiniteQueryData(q.tickets(listQuery({ view_id: params.viewId }, deps)));
+    // A view the reader can't load (another member's personal view) opens the link's ticket in its folder.
+    return viewOrTicket(qc, params.ticketId, () => qc.ensureInfiniteQueryData(q.tickets(listQuery({ view_id: params.viewId }, deps))));
   },
   component: page(() => import("./pages/inbox/InboxPage")),
   staticData: { title: "view" },
