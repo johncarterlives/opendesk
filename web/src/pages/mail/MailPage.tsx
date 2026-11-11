@@ -8,7 +8,7 @@ import { AnimatePresence } from "motion/react";
 import { Archive, AtSign, Folder, Mail, MailOpen, PenSquare, RefreshCw, ShieldAlert, Star, Tag, Trash2, UserRound, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
+import type { AIDraftRef, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
 import { api } from "@/lib/api/endpoints";
 import { inverseAction, leavesList, listPlace, UNDOABLE } from "@/lib/collab/actions";
 import { accountName, isMailBox, mailListQuery, type MailSearch } from "@/lib/collab/boxes";
@@ -31,6 +31,7 @@ import { Select } from "@/components/ui/select";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
+import { AIDraftFeedbackDialog } from "@/components/collab/AIDraftFeedback";
 import { AccountDot, boxIcon, FolderGlyph } from "@/components/collab/bits";
 import { canOfferCategories, CategoryOffer, CategoryTabs, useCategorySettingsTarget } from "@/components/collab/CategoryTabs";
 import { FolderBar } from "@/components/collab/FolderBar";
@@ -315,6 +316,9 @@ export default function MailPage() {
   // Only the conversation Edit opened takes the draft into its composer, once.
   useEffect(() => setEditAI((id) => (id && id !== openId ? null : id)), [openId]);
   const [draftBusy, setDraftBusy] = useState<Set<string>>(new Set());
+  // An AI draft just discarded from its row: feedback on it, offered from the toast, as the composer's discard does.
+  const [discardedAI, setDiscardedAI] = useState<{ draft: AIDraftRef; threadId: string } | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const busyDraft = useCallback((id: string, on: boolean) => setDraftBusy((s) => {
     const next = new Set(s);
     if (on) next.add(id);
@@ -346,7 +350,15 @@ export default function MailPage() {
         );
       };
       if (a === "send") return run(() => api.collab.drafts.send(d.draft_id), () => toast.success(t("toast.sent", { email: accountsById.get(x.account_id)?.email ?? "" })), t("composer.sendFailed"));
-      confirm.show(t("composer.discardDraftConfirm"), () => run(() => api.collab.drafts.remove(d.draft_id), () => undefined, t("composer.discardFailed")), {
+      const discarded = () => {
+        if (!d.record_id) return;
+        setFeedbackOpen(false);
+        setDiscardedAI({ draft: { id: d.record_id, client: d.drafted_by, outcome: "discarded", has_feedback: false }, threadId: x.id });
+        toast.success(t("aiFeedback.discardedToast", { name: d.drafted_by }), {
+          action: { label: t("aiFeedback.why"), onClick: () => setFeedbackOpen(true) },
+        });
+      };
+      confirm.show(t("composer.discardDraftConfirm"), () => run(() => api.collab.drafts.remove(d.draft_id), discarded, t("composer.discardFailed")), {
         title: t("composer.discardDraftTitle"),
         confirmLabel: t("composer.discard"),
         danger: true,
@@ -636,6 +648,8 @@ export default function MailPage() {
             )}
           </div>
         )}
+
+        {discardedAI && <AIDraftFeedbackDialog draft={discardedAI.draft} threadId={discardedAI.threadId} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
 
         <div ref={listRef} role="listbox" aria-label={t("list.label")} aria-multiselectable className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {noAccounts ? (

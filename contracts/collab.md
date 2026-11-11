@@ -765,6 +765,7 @@ interface MailThread {
     drafted_by: string         //   the AI client's name ("AI draft by <name>")
     snippet: string            //   its first lines
     to: Address[]
+    record_id: string | null   //   its AI draft record ("AI draft outcomes"): feedback names it once the draft is discarded
   } | null
 }
 

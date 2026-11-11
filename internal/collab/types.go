@@ -263,6 +263,8 @@ type ThreadAIDraft struct {
 	Snippet string `json:"snippet"`
 	// To is who it goes to.
 	To []Address `json:"to"`
+	// RecordID is its AI draft record, which feedback on it names; null when none was kept.
+	RecordID *uuid.UUID `json:"record_id"`
 }
 
 type MailMessage struct {

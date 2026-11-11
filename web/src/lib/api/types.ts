@@ -3266,6 +3266,8 @@ export type MailThreadAIDraft = {
   /** Its first lines. */
   snippet: string;
   to: MailAddress[];
+  /** Its AI draft record (feedback names it once the draft is discarded); null when none was kept. */
+  record_id: string | null;
 };
 
 export type MailAttachment = {
