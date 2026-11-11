@@ -305,7 +305,7 @@ On a shared account with handling on, the work view keeps spam in sight:
   while a handling account the caller sees has unread spam, and while that Spam is open, without
   opening the folder bar's More. When one handling account has unread spam the row opens that
   account's Spam and counts it; when several do, spam across every account the caller sees,
-  counted by `boxes.spam`. Like the other rows it can be hidden, pinned and its number chosen
+  counting only those shared accounts with handling on (their sum in `spam`). Like the other rows it can be hidden, pinned and its number chosen
   (`box:spam`).
 - Needs action and Ready for review say, above the list, how many unread conversations of the
   handling accounts in view are in spam, with a link to them.

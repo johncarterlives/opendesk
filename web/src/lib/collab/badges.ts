@@ -50,13 +50,14 @@ export const tracksHandling = (a: MailAccount): boolean => a.visibility === "sha
 /**
  * Spam beside the work queues (contracts/collab.md "Spam beside Needs action"): spam never reaches
  * Needs action, so the handling accounts among `accounts` say how much unread mail waits there.
- * With one of them holding some, its own Spam; with several, spam across every account (boxes.spam).
+ * With one of them holding some, its own Spam; with several, Spam across accounts, counting
+ * only theirs (the private and non-handling accounts' spam is no one's work queue).
  */
 export function handlingSpam(accounts: MailAccount[] | undefined, counts: MailCounts | undefined): { n: number; account?: string } {
   const withSpam = (accounts ?? []).filter((a) => tracksHandling(a) && (counts?.spam?.[a.id] ?? 0) > 0);
   if (!withSpam.length) return { n: 0 };
   if (withSpam.length === 1) return { n: counts?.spam?.[withSpam[0].id] ?? 0, account: withSpam[0].id };
-  return { n: counts?.boxes.spam ?? withSpam.reduce((s, a) => s + (counts?.spam?.[a.id] ?? 0), 0) };
+  return { n: withSpam.reduce((s, a) => s + (counts?.spam?.[a.id] ?? 0), 0) };
 }
 
 /** Assigned to me within one account. */
