@@ -21,6 +21,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/email"
 	"github.com/useopendesk/opendesk/internal/httpx"
+	"github.com/useopendesk/opendesk/internal/ids"
 	"github.com/useopendesk/opendesk/internal/plan"
 )
 
@@ -685,6 +686,45 @@ func TestAPISpamCounts(t *testing.T) {
 	if st := doJSON(t, "GET", w.api(w.agent2).URL+"/v1/collab/counts", nil, &counts); st != 200 || counts.Boxes.Spam != 2 ||
 		len(counts.Spam) != 1 || counts.Spam[shared.ID] != 2 {
 		t.Fatalf("other member's spam counts: %d %+v", st, counts)
+	}
+}
+
+// Turning handling on may put what is already in the inbox in Needs action, once (GH#430):
+// not a conversation the account answered last, not one outside the inbox, not one whose
+// latest message is older than 30 days.
+func TestHandlingMarksInbox(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	inbox, sent := w.folder(a, RoleInbox), w.folder(a, RoleSent)
+	waiting, _ := w.seedThread(a, "Waiting on us", inbox)
+	answered, _ := w.seedThread(a, "We replied", inbox)
+	archived, _ := w.seedThread(a, "Archived", sent)
+	old, _ := w.seedThread(a, "Last year", inbox)
+	mustExec(t, w.d, `UPDATE collab_threads SET last_message_at = now() - interval '31 days' WHERE id = $1`, old)
+	reply := ids.New()
+	mustExec(t, w.d, `INSERT INTO collab_messages (id, workspace_id, account_id, thread_id, remote_id, message_id, from_addr, to_addrs,
+		subject, snippet, body_html, body_text, sent_at) SELECT $1, workspace_id, account_id, id, 'm-reply', 'reply@example.com',
+		'{"email":"x@example.com"}'::jsonb, '[]'::jsonb, subject, 'Thanks', '<p>Thanks</p>', 'Thanks', now() + interval '1 minute'
+		FROM collab_threads WHERE id = $2`, reply, answered)
+	mustExec(t, w.d, `INSERT INTO collab_message_folders (message_id, folder_id) VALUES ($1, $2)`, reply, sent.ID)
+	srv := w.api(w.agent)
+	path := srv.URL + "/v1/collab/accounts/" + a.ID.String()
+
+	// Only with handling turning on.
+	if st := doJSON(t, "PATCH", path, map[string]any{"mark_inbox_needs_action": true}, nil); st != 422 {
+		t.Fatalf("without turning handling on: %d", st)
+	}
+	if st := doJSON(t, "PATCH", path, map[string]any{"handling_enabled": true, "mark_inbox_needs_action": true}, nil); st != 200 {
+		t.Fatalf("turn on and mark: %d", st)
+	}
+	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = $1 AND needs_action`, waiting); n != 1 {
+		t.Fatal("inbox conversation not marked")
+	}
+	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = ANY($1) AND needs_action`, []uuid.UUID{answered, archived, old}); n != 0 {
+		t.Fatal("answered, archived or old conversation marked")
+	}
+	if st := doJSON(t, "PATCH", path, map[string]any{"handling_enabled": true, "mark_inbox_needs_action": true}, nil); st != 422 {
+		t.Fatalf("handling already on: %d", st)
 	}
 }
 

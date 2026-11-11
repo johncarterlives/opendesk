@@ -2,6 +2,7 @@
 // knowledge base, mailboxes and the public help center / CSAT pages.
 
 import { registerPortalRoutes } from "./portal";
+import { registerPortalInviteRoutes } from "./portalInvites";
 import type {
   Action,
   Automation,
@@ -88,6 +89,7 @@ function syncContactRefs(ws: WsData, c: Contact) {
 
 export function registerResources() {
   registerPortalRoutes();
+  registerPortalInviteRoutes();
   // Contacts.
   get("/v1/contacts", (ctx) => {
     const q = (ctx.query.get("q") ?? "").toLowerCase().trim();

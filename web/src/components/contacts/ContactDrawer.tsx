@@ -35,6 +35,7 @@ import { useNewTicketFor, useStartChat } from "@/components/tickets/useNewTicket
 import { CompanyPicker } from "./CompanyPicker";
 import { ContactEmails } from "./ContactEmails";
 import { MergeContactDialog } from "./MergeContactDialog";
+import { PortalAccessSection } from "./PortalAccess";
 import { CompanyGlyph, Detail, fieldLabel, fieldsOf, fieldText, MiniStat, none } from "./bits";
 import { RecordFields, RecordLabels, useRecordFields } from "./LabelsAndFields";
 import { dropContact, patchContact, restore, snapshot } from "./cache";
@@ -264,6 +265,8 @@ function Overview({ c, onEdit }: { c: Contact; onEdit?: () => void }) {
   const { t } = useTranslation("contacts");
   const { data: defs } = useRecordFields("contact");
   const fields = fieldsOf(c, new Set((defs ?? []).map((f) => f.key)));
+  // The customer portal is ticket work: it is offered only while Tickets is on.
+  const { tickets: ticketsOn } = useProducts();
   return (
     <div className="flex flex-col gap-6 px-5 py-4">
       <RecordFields kind="contact" record={c} />
@@ -281,6 +284,8 @@ function Overview({ c, onEdit }: { c: Contact; onEdit?: () => void }) {
           </Detail>
         ))}
       </dl>
+
+      {ticketsOn && <PortalAccessSection contact={c} canEdit={!!onEdit} />}
 
       <section>
         <div className="mb-2 flex items-center justify-between">

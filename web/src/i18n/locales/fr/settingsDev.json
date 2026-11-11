@@ -1,4 +1,25 @@
 {
+  "trash": {
+    "title": "Corbeille",
+    "what": "la corbeille",
+    "description": "Les tickets supprimés, les plus récents d’abord, avec qui a supprimé chacun et quand. Restaurer remet un ticket tel qu’il était, avec sa conversation, dans les listes, les vues et la recherche.",
+    "search": "Chercher par numéro ou objet",
+    "empty": "La corbeille est vide",
+    "emptyHint": "Un ticket que quelqu’un supprime apparaît ici, et un admin peut le remettre.",
+    "emptyFiltered": "Aucun ticket supprimé ne correspond",
+    "noSubject": "(sans objet)",
+    "messages": "Messages : {{n}}",
+    "deletedAt": "supprimé le {{when}}",
+    "byMember": "par {{name}}",
+    "byKey": "par la clé API {{name}}",
+    "byUnknown": "par une automatisation, ou avant que ce soit enregistré",
+    "merged": "Fusionné dans #{{number}} : sa conversation y est",
+    "restore": "Restaurer",
+    "restoreHint": "Remettre le ticket tel qu’il était",
+    "restored": "Ticket #{{number}} restauré",
+    "open": "Ouvrir",
+    "failed": "Le ticket n’a pas pu être restauré"
+  },
   "cancel": "Annuler",
   "apiKeys": {
     "title": "Clés API",

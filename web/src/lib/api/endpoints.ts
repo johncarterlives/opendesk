@@ -589,6 +589,10 @@ export const api = {
     get: (id: string) => http.get<T.Ticket>(`/v1/tickets/${encodeURIComponent(id)}`),
     update: (id: string, patch: T.TicketPatch) => http.patch<T.Ticket>(`/v1/tickets/${id}`, patch),
     delete: (id: string) => http.del(`/v1/tickets/${id}`),
+    /** The trash, admins only: deleted tickets, newest first. */
+    deleted: (q: { limit?: number; before?: string | null; q?: string }) =>
+      http.get<{ data: T.DeletedTicket[]; next_before?: string }>("/v1/tickets/deleted", { query: { limit: q.limit, before: q.before || undefined, q: q.q || undefined } }),
+    restore: (id: string) => http.post<T.Ticket>(`/v1/tickets/${encodeURIComponent(id)}/restore`),
     bulk: (b: ({ ids: string[] } | { query: TicketBulkQuery }) & { patch?: T.TicketPatch; delete?: true }) =>
       http.post<{ data: T.Ticket[]; updated: number; deleted: number } | undefined>("/v1/tickets/bulk", "query" in b ? { ...b, query: bulkQuery(b.query) } : b),
     merge: (id: string, into_id: string) => http.post<T.Ticket>(`/v1/tickets/${id}/merge`, { into_id }),
@@ -656,6 +660,14 @@ export const api = {
     addEmail: (id: string, email: string) => http.post<T.Contact>(`/v1/contacts/${id}/emails`, { email }),
     removeEmail: (id: string, email: string) => http.del<T.Contact>(`/v1/contacts/${id}/emails/${encodeURIComponent(email)}`),
     makePrimaryEmail: (id: string, email: string) => http.post<T.Contact>(`/v1/contacts/${id}/emails/${encodeURIComponent(email)}/make-primary`),
+    /** Customer portal access (contracts/customer-portal.md "Invitations"). */
+    portal: (id: string) => http.get<T.PortalAccess>(`/v1/contacts/${id}/portal`),
+    /** Emails a one-time link to choose a portal password, valid 7 days (422 no_email, contact_blocked, help_center_off, brand_required, password_sign_in_off; 429). */
+    invitePortal: (id: string, brandId?: string) => http.post<T.PortalAccess>(`/v1/contacts/${id}/portal/invite`, brandId ? { brand_id: brandId } : {}),
+    /** Up to 100 contacts at once; who could not be invited is counted, not refused. */
+    invitePortalBulk: (ids: string[], brandId?: string) => http.post<T.PortalBulkInvite>("/v1/contacts/portal/invite", brandId ? { ids, brand_id: brandId } : { ids }),
+    /** Removes the portal password, ends portal sessions and closes open links. */
+    removePortal: (id: string) => http.del<void>(`/v1/contacts/${id}/portal`),
     ...pictureRoutes<T.Contact>("/v1/contacts"),
   },
   companies: {
@@ -1103,6 +1115,8 @@ export type CollabAccountPatch = {
   signature_html?: string;
   visibility?: "private" | "shared";
   handling_enabled?: boolean;
+  /** With handling_enabled turning on: put what is in the inbox now in Needs action (once). */
+  mark_inbox_needs_action?: boolean;
   reply_all?: boolean;
   shared_with?: T.MailAudience;
   imap?: Partial<T.MailImapSettings> & { password?: string; smtp_password?: string };

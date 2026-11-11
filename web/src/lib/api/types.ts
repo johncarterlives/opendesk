@@ -183,6 +183,21 @@ export type HelpDomainRecord = { type: "TXT" | "CNAME"; name: string; value: str
 export type PortalAuthMode = "local" | "oidc" | "local_and_oidc";
 /** What GET /v1/brands/{id}/portal/auth returns (admin). The client secret is never returned. */
 export type PortalAuthSettings = { mode: PortalAuthMode; issuer: string; client_id: string; secret_configured: boolean; create_contacts: boolean };
+/** A brand whose help center is on: where a portal invitation can lead (contracts/customer-portal.md "Invitations"). */
+export type PortalBrand = { id: string; name: string; slug: string; auth_mode: PortalAuthMode; default: boolean };
+/** A contact's customer portal access, as members see it. */
+export type PortalAccess = {
+  /** active: a password or a provider sign-in; invited: a password link that is still open; none: neither. */
+  status: "none" | "invited" | "active";
+  password: boolean;
+  sso: boolean;
+  invited_at: string | null;
+  invite_expires_at: string | null;
+  last_sign_in_at: string | null;
+  brands: PortalBrand[];
+};
+/** What one bulk invitation did: skipped counts by reason (no_email, blocked, active, rate_limited, not_found). */
+export type PortalBulkInvite = { sent: number; skipped: Partial<Record<"no_email" | "blocked" | "active" | "rate_limited" | "not_found", number>> };
 export type PortalRelinkAuthorization = { id: string; brand_id: string; contact_id: string; expires_at: string };
 export type Brand = {
   id: string;
@@ -520,6 +535,8 @@ export type Message = {
   mailbox_id?: string | null;
   /** Inbound email: the Reply-To it named when that differs from from_email, else "". Agents only. */
   reply_to?: string;
+  /** Inbound email: where replies to it go instead of from_email (its reply_to, at the sender's own organisation), else "". Agents only. */
+  reply_address?: string;
   /** Inbound email: its From failed DMARC at a trusted receiving server. Shown as unverified. Agents only. */
   auth_failed?: boolean;
   /** Inbound email: the trusted contact form address it came through; from_email is then the visitor. Agents only. */
@@ -1444,6 +1461,23 @@ export type WebhookDelivery = {
   duration_ms: number | null;
   created_at: string;
 };
+/** A row of the trash (GET /v1/tickets/deleted): a deleted ticket, who deleted it and when. */
+export type DeletedTicket = {
+  id: string;
+  number: number;
+  subject: string;
+  status: TicketStatus;
+  channel: string;
+  contact: { id: string; name: string; email?: string } | null;
+  message_count: number;
+  deleted_at: string;
+  /** The member who deleted it; null for an API key, an automation, or a ticket deleted before this was recorded. */
+  deleted_by: { id: string; name: string; email?: string } | null;
+  deleted_by_api_key: { id: string; name: string } | null;
+  /** Set when the ticket was merged into another: its conversation lives there, and it is not restored. */
+  merged_into_number: number | null;
+};
+
 export type AuditLog = {
   id: string;
   actor: { type: "user" | "api_key" | "system"; user: UserRef | null; api_key_id: string | null };

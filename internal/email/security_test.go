@@ -114,7 +114,7 @@ func TestReplyToIsNotIdentity(t *testing.T) {
 		t.Fatalf("reply_to %q %v", replyTo, err)
 	}
 
-	// Replies go to that Reply-To only when it is at the From address's domain.
+	// Replies go to that Reply-To only when it is at the From address's organisation.
 	var rcpts []string
 	w.s.rawSend = func(_ context.Context, _ string, to []string, _ []byte) error { rcpts = to; return nil }
 	send := func(ticketID uuid.UUID) []string {
@@ -135,6 +135,40 @@ func TestReplyToIsNotIdentity(t *testing.T) {
 	same := w.messageFor(w.receive(m, raw))
 	if got := send(same.TicketID); len(got) != 1 || got[0] != person {
 		t.Fatalf("reply to a same-domain Reply-To went to %v", got)
+	}
+	replyAddress := func(id uuid.UUID) string {
+		t.Helper()
+		lm, err := domain.LoadMessage(w.ctx, w.d.DB.Pool, w.wid, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return lm.ReplyAddress
+	}
+	if got := replyAddress(same.ID); got != person {
+		t.Fatalf("reply_address %q, want %q", got, person)
+	}
+	if got := replyAddress(msg.ID); got != "" {
+		t.Fatalf("a foreign Reply-To became the reply address %q", got)
+	}
+
+	// A sending subdomain of the same organisation counts as it, for replies and automatic emails.
+	org := "org" + crypto.RandomString(4) + ".test"
+	alerts, john := "alerts@updates."+org, "john@"+org
+	raw = "From: " + alerts + "\r\nReply-To: John <" + john + ">\r\nTo: " + m.Email + "\r\nSubject: Ownership\r\nMessage-ID: <sub" +
+		crypto.RandomString(8) + "@updates." + org + ">\r\n\r\nPlease make John the owner.\r\n"
+	sub := w.messageFor(w.receive(m, raw))
+	if got := replyAddress(sub.ID); sub.FromEmail != alerts || got != john {
+		t.Fatalf("from %q reply_address %q", sub.FromEmail, got)
+	}
+	if got := send(sub.TicketID); len(got) != 1 || got[0] != john {
+		t.Fatalf("reply to a subdomain's Reply-To went to %v", got)
+	}
+	rcpts = nil
+	if err := w.s.sendTicketEmail(w.ctx, jobsSendTicketEmail(w.wid, sub.TicketID, "Got it", "<p>Got it</p>")); err != nil {
+		t.Fatal(err)
+	}
+	if len(rcpts) != 1 || rcpts[0] != john {
+		t.Fatalf("automatic email went to %v", rcpts)
 	}
 }
 

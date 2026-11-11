@@ -1,4 +1,25 @@
 {
+  "trash": {
+    "title": "Trash",
+    "what": "the trash",
+    "description": "Deleted tickets, newest first, with who deleted each and when. Restore brings a ticket back as it was, with its conversation, in lists, views and search.",
+    "search": "Search by number or subject",
+    "empty": "The trash is empty",
+    "emptyHint": "A ticket someone deletes shows here, and an admin can bring it back.",
+    "emptyFiltered": "No deleted ticket matches",
+    "noSubject": "(no subject)",
+    "messages": "Messages: {{n}}",
+    "deletedAt": "deleted {{when}}",
+    "byMember": "by {{name}}",
+    "byKey": "by the API key {{name}}",
+    "byUnknown": "by an automation, or before this was recorded",
+    "merged": "Merged into #{{number}}: its conversation is there",
+    "restore": "Restore",
+    "restoreHint": "Bring the ticket back as it was",
+    "restored": "Ticket #{{number}} restored",
+    "open": "Open",
+    "failed": "The ticket could not be restored"
+  },
   "cancel": "Cancel",
   "apiKeys": {
     "title": "API keys",

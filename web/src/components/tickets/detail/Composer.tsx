@@ -37,6 +37,7 @@ import { ComposerAiMenu, ComposerAiStatus, ComposerSources, useComposerAi } from
 import { SuggestedReplyCard } from "./SuggestedReply";
 import { SharedDraftBar } from "./SharedDraft";
 import { useReplyDraftSync } from "./replyDraft";
+import { replyRecipient } from "./replyRecipient";
 import { backToNote, deliver, hold, undoSeconds as undoSecondsFor, useUnsent, type Upload } from "./outbox";
 import { EmailChips, SavedReplyButton, UploadChip, uploadFiles } from "./composerParts";
 import { mergeReplyActions, ReplyActionChips, replyActionLabels } from "./ReplyActions";
@@ -108,6 +109,7 @@ export type ComposerHandle = {
 /** The optimistic copy of a reply or note this agent writes, shown until the server's arrives. */
 function useTempMessage(ticket: Ticket, ctx: TeamsCtx, personal?: PersonalSender) {
   const user = useSession((s) => s.user!);
+  const qc = useQueryClient();
   return (body: SendMessageBody, tempId: string): Message => {
     const own = body.kind === "reply" && body.from_account ? personal : undefined;
     const mb = body.kind === "reply" && !own ? ctx.mailbox(body.mailbox_id ?? ticket.mailbox_id) : undefined;
@@ -128,7 +130,10 @@ function useTempMessage(ticket: Ticket, ctx: TeamsCtx, personal?: PersonalSender
       mailbox_id: mb?.id ?? null,
       from_account:
         own && body.from_account ? { account_id: own.account.id, email: own.identity.email, reply_to: body.from_account.reply_to ?? "" } : null,
-      to: body.kind === "reply" && ticket.contact?.email ? [ticket.contact.email] : [],
+      to:
+        body.kind === "reply" && ticket.contact?.email
+          ? [replyRecipient(ticket.contact.email, qc.getQueryData<Message[]>(qk.messages(ticket.id)))]
+          : [],
       cc: body.cc ?? [],
       bcc: body.bcc ?? [],
       attachments: [],
@@ -334,6 +339,7 @@ export const Composer = forwardRef<
   const me = useSession((s) => s.user!.id);
   const userName = useSession((s) => s.user!.name);
   const { data: workspace } = useQuery(q.workspace());
+  const { data: messages } = useQuery(q.messages(ticket.id));
   // Email replies wait a few seconds by default, chat replies go at once (settings).
   const undoSeconds = undoSecondsFor(workspace?.settings, ticket.channel);
   const sendThread = useSendThread(ticket);
@@ -600,7 +606,7 @@ export const Composer = forwardRef<
 
   const note = mode === "note";
   const threadMode = mode === "thread";
-  const recipient = ticket.contact?.email ?? ticket.contact?.name ?? t("composer.theCustomer");
+  const recipient = ticket.contact?.email ? replyRecipient(ticket.contact.email, messages) : (ticket.contact?.name ?? t("composer.theCustomer"));
   // An email reply: from one of my own addresses, or from a team address.
   const replyMailbox = teams.mailbox(replyMailboxId);
   const emailReply = mode === "reply" && (!!personalSender || (!!replyMailbox && (ticket.channel === "email" || !!ticket.mailbox_id)));

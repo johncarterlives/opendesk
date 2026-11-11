@@ -73,6 +73,7 @@
     "label": "Suche"
   },
   "newTicket": "Neues Ticket",
+  "compose": "Neue E-Mail",
   "chatPopup": {
     "title": "Neuer Chat",
     "open": "Öffnen",
@@ -81,6 +82,8 @@
   "notifications": {
     "allow": {
       "title": "Erfahre von neuen Tickets und Antworten.",
+      "titleMail": "Erfahre von neuen E-Mails und Antworten.",
+      "titleBoth": "Erfahre von neuen Tickets, E-Mails und Antworten.",
       "hint": "Erlaube Benachrichtigungen, damit sie dich erreichen, während opendesk im Hintergrund läuft.",
       "allow": "Benachrichtigungen erlauben",
       "later": "Nicht jetzt"

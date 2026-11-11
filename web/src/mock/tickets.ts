@@ -567,6 +567,7 @@ export function buildMessage(ws: WsData, t: Ticket, m: NewMessage): Message {
     delivery_status: m.kind === "note" || inbound || !isEmail ? "none" : (m.delivery ?? "sent"),
     delivery_error: m.delivery_error ?? "",
     reply_to: inbound && isEmail ? (m.reply_to ?? "") : "",
+    reply_address: inbound && isEmail && !m.auth_failed && m.reply_to && sameOrg(contact?.email ?? "", m.reply_to) ? m.reply_to : "",
     received_at: inbound && isEmail ? (t.received_at || mailbox?.email || "").toLowerCase() : "",
     auth_failed: inbound && isEmail && !!m.auth_failed,
     form_sender: inbound && isEmail ? (m.form_sender ?? "") : "",
@@ -575,6 +576,12 @@ export function buildMessage(ws: WsData, t: Ticket, m: NewMessage): Message {
   };
   if (msg.delivery_status === "failed" && !msg.delivery_error) msg.delivery_error = "550 5.1.1 Recipient address rejected";
   return msg;
+}
+
+/** Whether two addresses share a registrable domain; the mock reads the last two labels. */
+function sameOrg(a: string, b: string): boolean {
+  const org = (x: string) => x.toLowerCase().split("@")[1]?.split(".").slice(-2).join(".") ?? "";
+  return !!org(a) && org(a) === org(b);
 }
 
 /** Whether a message is one Ticket.last_note shows: a member's or an API key's note on the ticket itself, not Ollie's. */

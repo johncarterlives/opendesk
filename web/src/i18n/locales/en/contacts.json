@@ -232,6 +232,40 @@
     "deleteAllBody": {
       "contacts": "Everyone who matches the search and filters is deleted for good, up to 1000 people. Their tickets stay, without a customer. This can't be undone.",
       "companies": "Every company that matches the search and filters is deleted for good, up to 1000. Their people stay, without a company. This can't be undone."
-    }
+    },
+    "invite": "Invite to portal",
+    "inviteFrom": "Invite from",
+    "invited_one": "{{count}} invitation sent",
+    "invited_other": "{{count}} invitations sent",
+    "invitedSome_one": "{{count}} invitation sent, {{skipped}} skipped (no email, blocked or already has access)",
+    "invitedSome_other": "{{count}} invitations sent, {{skipped}} skipped (no email, blocked or already has access)",
+    "inviteFailed": "Could not send the invitations"
+  },
+  "portal": {
+    "title": "Customer portal",
+    "status": {
+      "none": "No access",
+      "invited": "Invited",
+      "active": "Has access"
+    },
+    "noAccessHint": "They have not been invited, and have not set a password themselves.",
+    "linkOpen": "A link to choose a password was sent. It works until {{date}}.",
+    "lastSignIn": "Last signed in {{when}}.",
+    "noRecentSignIn": "Has access. No recent sign-in.",
+    "withPassword": "Signs in with a password",
+    "withSso": "Signs in through the identity provider",
+    "invite": "Invite to portal",
+    "newLink": "Send a new link",
+    "brand": "Brand",
+    "sent": "Invitation sent to {{email}}",
+    "sendFailed": "Could not send the invitation",
+    "remove": "Remove access",
+    "removeTitle": "Remove portal access?",
+    "removeBody": "{{name}} is signed out of the portal, their password is removed and open links stop working. They can ask for a new link on the portal's sign-in page unless you block them. If they sign in through your identity provider, they can still sign in there.",
+    "removed": "Portal access removed",
+    "removeFailed": "Could not remove access",
+    "needsEmail": "Add an email address to invite this contact.",
+    "isBlocked": "Unblock this contact to invite them.",
+    "ssoOnly": "Customers sign in through your identity provider, with no invitation needed."
   }
 }

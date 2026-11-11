@@ -1,10 +1,10 @@
 // The bar over a selection on the People and Companies lists: add or remove a label, set a
-// company (People) and delete. A selection of rows goes by id, in requests of 100; "everyone who
+// company (People), invite to the customer portal (People) and delete. A selection of rows goes by id, in requests of 100; "everyone who
 // matches" goes by the list's own filters, which the server applies to at most 1000 records.
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
-import { Building2, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { Building2, Send, Tag as TagIcon, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AnimatedNumber } from "@/components/motion";
@@ -129,6 +129,7 @@ export function DirectoryBulkBar(props: Props) {
             }
           />
           {scope === "contacts" && <CompanyAction onPick={(company_id) => apply.mutate({ patch: { company_id } })} />}
+          {scope === "contacts" && !selection.allMatching && <InviteAction ids={selection.ids} onDone={selection.clear} />}
           <Button variant="ghost" size="sm" icon={<Trash2 className="size-3.5" />} onClick={remove} className="text-danger-fg">
             {t("bulk.delete")}
           </Button>
@@ -164,6 +165,48 @@ function CompanyAction({ onPick }: { onPick: (id: string | null) => void }) {
           {t("bulk.setCompany")}
         </Button>
       }
+    />
+  );
+}
+
+/** Invites the selected people to the customer portal, from a brand whose help center is on. */
+function InviteAction({ ids, onDone }: { ids: string[]; onDone: () => void }) {
+  const { t } = useTranslation("contacts");
+  const qc = useQueryClient();
+  const { data: brands } = useQuery(q.brands());
+  const from = (brands ?? []).filter((b) => b.help_center.enabled && b.portal_auth.mode !== "oidc");
+  const send = useMutation({
+    mutationFn: async (brandId?: string) => {
+      const total = { sent: 0, skipped: 0 };
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const r = await api.contacts.invitePortalBulk(ids.slice(i, i + CHUNK), brandId);
+        total.sent += r.sent;
+        total.skipped += Object.values(r.skipped).reduce((a, b) => a + (b ?? 0), 0);
+      }
+      return total;
+    },
+    onSuccess: (r) => {
+      toast.success(r.skipped > 0 ? t("bulk.invitedSome", { count: r.sent, skipped: r.skipped }) : t("bulk.invited", { count: r.sent }));
+      onDone();
+      void qc.invalidateQueries({ queryKey: qk.of("contacts", "portal") });
+    },
+    onError: (e) => toast.error(e, t("bulk.inviteFailed")),
+  });
+  if (from.length === 0) return null;
+  const button = (
+    <Button variant="ghost" size="sm" icon={<Send className="size-3.5" />} loading={send.isPending} onClick={from.length === 1 ? () => send.mutate(from[0].id) : undefined}>
+      {t("bulk.invite")}
+    </Button>
+  );
+  if (from.length === 1) return button;
+  return (
+    <Picker
+      side="top"
+      placeholder={t("bulk.inviteFrom")}
+      value={null}
+      items={from.map((b) => ({ value: b.id, label: b.name }))}
+      onSelect={(id) => send.mutate(id)}
+      trigger={button}
     />
   );
 }

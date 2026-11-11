@@ -447,6 +447,7 @@ export function CommandPalette() {
                     ["/settings/api-keys", "titles.apiKeys"],
                     ["/settings/webhooks", "titles.webhooks"],
                     ["/settings/audit-log", "titles.auditLog"],
+                    ["/settings/trash", "titles.trash"],
                     ["/settings/import", "command.importHistory"],
                   ] as const
                 ).filter(([to]) => ticketsOn || !TICKET_SETTINGS.has(to)).map(([to, labelKey]) => (

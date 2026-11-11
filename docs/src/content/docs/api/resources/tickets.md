@@ -15,6 +15,8 @@ Scopes: `tickets:read` to read, `tickets:write` to change.
 | `PATCH` | `/v1/tickets/{id}` | Update a ticket |
 | `DELETE` | `/v1/tickets/{id}` | Delete a ticket (soft delete) |
 | `POST` | `/v1/tickets/bulk` | Update or delete many tickets |
+| `GET` | `/v1/tickets/deleted` | The trash: deleted tickets, who deleted each and when (admins) |
+| `POST` | `/v1/tickets/{id}/restore` | Restore a deleted ticket (admins) |
 | `POST` | `/v1/tickets/{id}/merge` | Merge into another ticket |
 | `GET` | `/v1/tickets/{id}/activities` | The ticket's activity, ascending |
 | `GET` | `/v1/tickets/{id}/wiki` | The wiki pages you can see that mention the ticket. Also needs `wiki:read`. See [Wiki](/api/resources/wiki/#tickets-and-the-help-center) |
@@ -205,6 +207,16 @@ curl https://api.opendesk.sh/v1/tickets/bulk \
 ```
 
 Send `{ "ids": [...], "delete": true }` to delete instead.
+
+## Trash
+
+Deleting a ticket takes it out of every list, view and search, but keeps it: who deleted it (a member, or an API key) and when are recorded, and an admin can bring it back. `GET /v1/tickets/deleted` lists the deleted tickets, newest first, 50 at a time (`limit` up to 100, the page's `next_before` as `before` for the next one, `q` for a number or words of the subject). Each row has `deleted_at`, `deleted_by` (`{ id, name, email }`) or `deleted_by_api_key` (`{ id, name }`), both `null` for an automation's delete, and `merged_into_number` for a ticket merged into another.
+
+```sh
+curl -X POST https://api.opendesk.sh/v1/tickets/1234/restore   -H "Authorization: Bearer od_live_..."
+```
+
+Restoring brings the ticket back as it was and answers it. A ticket merged into another is `409`: its conversation lives on that ticket. Both routes need an admin, or a key with `tickets:read` and `tickets:write`.
 
 ## Your reply draft
 

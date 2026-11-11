@@ -99,6 +99,8 @@ export default function MailAccountDetail() {
   // Whether the person changed the signature: only then does a save send it, so opening
   // and saving other settings never writes a signature back to Gmail.
   const [sigEdited, setSigEdited] = useState(false);
+  // Turning handling on can also start from the inbox now: off unless chosen, each time (GH#430).
+  const [markInbox, setMarkInbox] = useState(false);
   useEffect(() => {
     const prev = lastBase.current;
     lastBase.current = base;
@@ -122,6 +124,8 @@ export default function MailAccountDetail() {
     if (sigEdited && form.signature_html !== base.signature_html) p.signature_html = form.signature_html;
     if (form.visibility !== base.visibility) p.visibility = form.visibility;
     if (form.handling_enabled !== base.handling_enabled) p.handling_enabled = form.handling_enabled;
+    // Turning handling on: start from the inbox now only when chosen (GH#430).
+    if (p.handling_enabled && markInbox) p.mark_inbox_needs_action = true;
     if (form.reply_all !== base.reply_all) p.reply_all = form.reply_all;
     const aud = form.visibility === "shared" ? (form.shared_with.everyone ? { everyone: true, team_ids: [], user_ids: [] } : form.shared_with) : { everyone: false, team_ids: [], user_ids: [] };
     if (form.visibility === "shared" && (p.visibility || !sameAudience(aud, base.shared_with))) p.shared_with = aud;
@@ -134,7 +138,7 @@ export default function MailAccountDetail() {
       if (Object.keys(changed).length) p.imap = changed as CollabAccountPatch["imap"];
     }
     return p;
-  }, [form, base, account, imap, imapBase, sigEdited]);
+  }, [form, base, account, imap, imapBase, sigEdited, markInbox]);
   const dirty = Object.keys(patch).length > 0;
   // Shared with no one yet is allowed (contracts/collab.md "Who sees what"); the page says so.
   const nobodyYet = !!form && form.visibility === "shared" && audienceIsEmpty(form.shared_with);
@@ -354,8 +358,21 @@ export default function MailAccountDetail() {
       {form.visibility === "shared" && (
         <Section title={t("detail.handling.title")} description={t("detail.handling.hint")}>
           <Row label={t("detail.handling.enabled")} description={t("detail.handling.enabledHint")} htmlFor="handling-enabled">
-            <Switch id="handling-enabled" checked={form.handling_enabled} disabled={!manage} onCheckedChange={(handling_enabled) => set({ handling_enabled })} />
+            <Switch
+              id="handling-enabled"
+              checked={form.handling_enabled}
+              disabled={!manage}
+              onCheckedChange={(handling_enabled) => {
+                set({ handling_enabled });
+                setMarkInbox(false);
+              }}
+            />
           </Row>
+          {form.handling_enabled && !base?.handling_enabled && (
+            <Row label={t("detail.handling.markInbox")} description={t("detail.handling.markInboxHint")} htmlFor="handling-mark-inbox">
+              <Switch id="handling-mark-inbox" checked={markInbox} disabled={!manage} onCheckedChange={setMarkInbox} />
+            </Row>
+          )}
         </Section>
       )}
 

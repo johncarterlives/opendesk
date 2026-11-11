@@ -407,8 +407,47 @@ export function registerTickets() {
   del("/v1/tickets/:id", (ctx) => {
     const t = ticket(ctx);
     ctx.ws.deletedTickets.add(t.id);
+    ctx.ws.deletedTicketInfo.set(t.id, { at: nowIso(), by: db.meId });
     publish(ctx.ws, "ticket.deleted", { ticket_id: t.id });
     return respond(204);
+  });
+  // The trash (contracts/api.md "Trash"): newest deletion first, admins only.
+  get("/v1/tickets/deleted", (ctx) => {
+    if (!isAdmin(ctx.ws, db.meId)) throw forbidden();
+    const q = (ctx.query.get("q") ?? "").trim().replace(/^#/, "").toLowerCase();
+    const data = ctx.ws.tickets
+      .filter((t) => ctx.ws.deletedTickets.has(t.id) && canSeeTicket(ctx.ws, t))
+      .filter((t) => !q || String(t.number) === q || t.subject.toLowerCase().includes(q))
+      .map((t) => {
+        const info = ctx.ws.deletedTicketInfo.get(t.id);
+        const by = userRef(info?.by);
+        const into = ctx.ws.mergedInto.get(t.id);
+        return {
+          id: t.id,
+          number: t.number,
+          subject: t.subject,
+          status: t.status,
+          channel: t.channel,
+          contact: t.contact ? { id: t.contact.id, name: t.contact.name ?? "", email: t.contact.email ?? undefined } : null,
+          message_count: t.message_count,
+          deleted_at: info?.at ?? t.updated_at,
+          deleted_by: by ? { id: by.id, name: by.name, email: by.email } : null,
+          deleted_by_api_key: null,
+          merged_into_number: into ? (findTicket(ctx.ws, into)?.number ?? null) : null,
+        };
+      })
+      .sort((a, b) => b.deleted_at.localeCompare(a.deleted_at));
+    return { data };
+  });
+  post("/v1/tickets/:id/restore", (ctx) => {
+    if (!isAdmin(ctx.ws, db.meId)) throw forbidden();
+    const t = findTicket(ctx.ws, ctx.params.id);
+    if (!t || !ctx.ws.deletedTickets.has(t.id) || !canSeeTicket(ctx.ws, t)) throw notFound("Deleted ticket");
+    if (ctx.ws.mergedInto.has(t.id)) throw new HttpError(409, "conflict", "This ticket was merged into another: its conversation lives there.");
+    ctx.ws.deletedTickets.delete(t.id);
+    ctx.ws.deletedTicketInfo.delete(t.id);
+    publishTicketUpdated(ctx.ws, t, ["deleted_at"]);
+    return t;
   });
   post("/v1/tickets/bulk", (ctx) => {
     const ids = strArr(ctx.body.ids) ?? [];
@@ -427,6 +466,7 @@ export function registerTickets() {
     for (const t of tickets) {
       if (doDelete) {
         ctx.ws.deletedTickets.add(t.id);
+        ctx.ws.deletedTicketInfo.set(t.id, { at: nowIso(), by: db.meId });
         publish(ctx.ws, "ticket.deleted", { ticket_id: t.id });
         deleted++;
       } else if (p) {

@@ -365,7 +365,11 @@ func PostMessage(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principal
 		if err != nil {
 			return domain.Message{}, err
 		}
-		nm.To, nm.Cc, nm.Bcc = []string{*contactEmail}, cc, bcc
+		to, err := domain.ReplyRecipients(ctx, tx, wid, tid, contactEmail, []string{*contactEmail})
+		if err != nil {
+			return domain.Message{}, err
+		}
+		nm.To, nm.Cc, nm.Bcc = to, cc, bcc
 		nm.FromEmail, nm.FromName = str(mailboxEmail), str(mailboxName)
 		nm.MailboxID = mailboxID
 		if personal != nil {

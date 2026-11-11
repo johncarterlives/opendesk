@@ -13,7 +13,9 @@ import {
   Settings2,
   ShieldCheck,
   ShieldAlert,
+  RotateCcw,
   Sparkles,
+  Trash2,
   UserPlus,
   Users,
   UsersRound,
@@ -72,6 +74,8 @@ function glyph(action: string): { icon: ReactNode; tone: Tone } {
   if (head === "widget" || head === "widget_secret" || a === "workspace.widget_secret_rotated") return { icon: <MessageCircle />, tone: "cyan" };
   if (head === "billing") return { icon: <CreditCard />, tone: "green" };
   if (head === "ai") return { icon: <Sparkles />, tone: "violet" };
+  if (a === "ticket.deleted") return { icon: <Trash2 />, tone: "red" };
+  if (a === "ticket.restored") return { icon: <RotateCcw />, tone: "green" };
   if (head === "workspace") return { icon: <Building2 />, tone: "gray" };
   return { icon: <Settings2 />, tone: "gray" };
 }
@@ -106,6 +110,8 @@ const verbs: Record<string, string> = {
   "mailbox.created": "added a mailbox",
   "mailbox.disconnected": "disconnected a mailbox",
   "mailbox.deleted": "removed a mailbox",
+  "ticket.deleted": "deleted a ticket",
+  "ticket.restored": "restored a ticket",
   "workspace.updated": "updated workspace settings",
   "workspace.transferred": "transferred ownership",
   "widget.secret_rotated": "rotated the widget secret",

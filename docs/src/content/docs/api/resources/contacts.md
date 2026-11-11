@@ -14,6 +14,10 @@ Scopes: `contacts:read` to read, `contacts:write` to change.
 | `DELETE` | `/v1/contacts/{id}` | Delete a contact |
 | `GET` | `/v1/contacts/{id}/tickets` | The contact's tickets |
 | `POST` | `/v1/contacts/bulk` | Label, set the company of, or delete many contacts: `ids` (up to 100) or `query` (the list's filters, at most 1000 contacts), with `patch` or `delete: true` |
+| `GET` | `/v1/contacts/{id}/portal` | The contact's customer portal access: `status` (`none`, `invited`, `active`), the last sign-in and the brands an invitation can come from |
+| `POST` | `/v1/contacts/{id}/portal/invite` | Email the contact a 7-day link to choose a portal password, from `brand_id` or the default brand |
+| `POST` | `/v1/contacts/portal/invite` | Invite up to 100 contacts by `ids`; answers `{sent, skipped}` with the skipped counted by reason |
+| `DELETE` | `/v1/contacts/{id}/portal` | Remove the portal password, sign out portal sessions and close open links |
 | `GET`, `POST` | `/v1/companies` | List or create companies. Filters: `q`, `tag`, `field.<key>`. `sort`: `name` (default), `-name`, `created`, `-created`, `contacts`, `-contacts` |
 | `GET`, `PATCH`, `DELETE` | `/v1/companies/{id}` | Get, update or delete a company |
 | `POST` | `/v1/companies/bulk` | Label or delete many companies, by `ids` or `query` (`q`, `tag`) |

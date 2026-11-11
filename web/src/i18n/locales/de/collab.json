@@ -512,6 +512,14 @@
       "microsoft": "Folgt deinem Microsoft-Profil, bis du ihn hier änderst.",
       "none": "Dieser Name liegt in opendesk."
     },
+    "handling": {
+      "title": "Bearbeitung",
+      "hint": "Trenne die Arbeit im geteilten Postfach von gelesenen und ungelesenen E-Mails",
+      "enabled": "Zu erledigende Unterhaltungen verfolgen",
+      "enabledHint": "Neue eingehende E-Mails sind zu erledigen, bis jemand sie als erledigt markiert. Das ändert nichts an den E-Mails bei deinem Anbieter.",
+      "markInbox": "Mit dem aktuellen Posteingang beginnen",
+      "markInboxHint": "Markiert die Unterhaltungen im Posteingang aus den letzten 30 Tagen als zu erledigen, außer denen, auf die du zuletzt geantwortet hast. Sonst sind nur E-Mails zu erledigen, die ab jetzt eintreffen."
+    },
     "ooo": {
       "title": "Abwesenheitsnotiz",
       "hint": "Eine automatische Antwort auf E-Mails, die während deiner Abwesenheit eintreffen",

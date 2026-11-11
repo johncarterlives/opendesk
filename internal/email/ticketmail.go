@@ -104,7 +104,7 @@ func (t *TicketMail) PersonalReply(ctx context.Context, wid, mid uuid.UUID) (*Pe
 		}
 		r.To = []string{*ti.contactEmail}
 	}
-	if r.To, err = replyDestination(ctx, s.d.DB.Pool, wid, r.TicketID, ti.contactEmail, r.To); err != nil {
+	if r.To, err = domain.ReplyRecipients(ctx, s.d.DB.Pool, wid, r.TicketID, ti.contactEmail, r.To); err != nil {
 		return nil, err
 	}
 	if m, err := s.sendingMailbox(ctx, wid, ti, nil); err == nil {

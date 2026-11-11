@@ -262,6 +262,9 @@ type Message struct {
 	MailboxID *uuid.UUID `json:"mailbox_id"`
 	// ReplyTo is the Reply-To an inbound email named when it differs from FromEmail, else "".
 	ReplyTo string `json:"reply_to"`
+	// ReplyAddress is where replies to an inbound email go instead of FromEmail: its ReplyTo when
+	// both are at one organisation and the sender passed authentication (ReplyAddress), else "".
+	ReplyAddress string `json:"reply_address"`
 	// AuthFailed marks an inbound email whose From failed DMARC at a trusted receiving server.
 	AuthFailed bool `json:"auth_failed"`
 	// FormSender is the trusted contact form address an inbound email came through; FromEmail
