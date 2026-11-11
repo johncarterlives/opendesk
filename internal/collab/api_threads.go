@@ -407,6 +407,12 @@ func (s *service) registerThreadRoutes(api huma.API) {
 							return err
 						}
 					}
+					if b.Action == ActionNeedsAction {
+						// Back in Needs action with the draft still waiting: no longer abandoned.
+						if err := reopenAbandoned(ctx, tx, list); err != nil {
+							return err
+						}
+					}
 					return s.publishChanged(ctx, tx, p.WorkspaceID, &a.ID, list, true)
 				})
 				if err != nil {

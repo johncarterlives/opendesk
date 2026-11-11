@@ -613,7 +613,8 @@ changes a model; what the client does with the feedback is its own business.
     a person sent (without the signature block and quoted history) are or are not the AI's;
   - `discarded`: a person discarded it;
   - `replaced`: a person sent another reply in the conversation while the draft waited;
-  - `abandoned`: a person marked the conversation done while the draft waited.
+  - `abandoned`: a person marked the conversation done while the draft waited. Putting it back in
+    Needs action (`needs_action`, which Undo sends) while the draft still waits unsent clears it.
 
   `sent_*` and `discarded` are final. A draft `replaced` or `abandoned` that is then sent or
   discarded takes that outcome. A draft sent or discarded outside opendesk has none.

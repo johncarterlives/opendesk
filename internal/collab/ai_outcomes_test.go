@@ -192,6 +192,55 @@ func TestAIDraftOutcomes(t *testing.T) {
 	}
 }
 
+// Undoing Done puts the conversation back in Needs action: its AI draft, still waiting, is no
+// longer abandoned. One already sent or discarded keeps its outcome.
+func TestAIDraftAbandonedUndone(t *testing.T) {
+	w, _, a, threads := queueWorld(t, 2)
+	bot := w.api(w.key(w.agent, "Local drafter", auth.ScopeCollabDraft))
+	human := w.api(w.agent)
+	drafts := make([]MailMessage, 2)
+	for i := range drafts {
+		m := w.messageByRemote(a, "m"+strconv.Itoa(i+1))
+		if st := doJSON(t, "POST", bot.URL+"/v1/collab/drafts", map[string]any{"account_id": a.ID, "mode": "reply", "message_id": m.ID,
+			"to": []string{"frank@example.com"}, "subject": "", "body_html": "<p>Draft.</p>"}, &drafts[i]); st != 200 || drafts[i].AIDraft == nil {
+			t.Fatalf("draft %d: %d", i, st)
+		}
+	}
+	handle := func(action string) {
+		t.Helper()
+		if st := doJSON(t, "POST", human.URL+"/v1/collab/threads/actions", map[string]any{"thread_ids": threads, "action": action}, nil); st != 200 {
+			t.Fatalf("%s: %d", action, st)
+		}
+	}
+	outcome := func(d MailMessage) string {
+		t.Helper()
+		var o *string
+		if err := w.d.DB.Pool.QueryRow(w.ctx, `SELECT outcome FROM collab_ai_drafts WHERE draft_message_id = $1`, d.ID).Scan(&o); err != nil {
+			t.Fatal(err)
+		}
+		if o == nil {
+			return ""
+		}
+		return *o
+	}
+	handle("done")
+	// The second draft is discarded after Done: final.
+	if st := doJSON(t, "DELETE", human.URL+"/v1/collab/drafts/"+drafts[1].ID.String(), nil, nil); st != 204 {
+		t.Fatalf("discard: %d", st)
+	}
+	handle("needs_action")
+	if o := outcome(drafts[0]); o != "" {
+		t.Fatalf("waiting draft after undo: %q", o)
+	}
+	if o := outcome(drafts[1]); o != OutcomeDiscarded {
+		t.Fatalf("discarded draft after undo: %q", o)
+	}
+	handle("done")
+	if o := outcome(drafts[0]); o != OutcomeAbandoned {
+		t.Fatalf("done again: %q", o)
+	}
+}
+
 func TestDraftWords(t *testing.T) {
 	for _, c := range []struct{ a, b string }{
 		{"<p>Hello  there</p>", "<div>Hello there</div>"},

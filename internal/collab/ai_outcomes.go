@@ -173,6 +173,19 @@ func settleDone(ctx context.Context, tx pgx.Tx, threads []uuid.UUID, by uuid.UUI
 	return err
 }
 
+// reopenAbandoned records, in tx, conversations put back in Needs action (Undo of Done, or
+// marked again): their AI drafts that Done abandoned and that still wait unsent are open again.
+func reopenAbandoned(ctx context.Context, tx pgx.Tx, threads []uuid.UUID) error {
+	if err := lockOutcomeCursor(ctx, tx); err != nil {
+		return err
+	}
+	_, err := tx.Exec(ctx, `UPDATE collab_ai_drafts d SET outcome = NULL, outcome_at = NULL, outcome_by = NULL,
+		seq = nextval('collab_ai_drafts_seq')
+		WHERE d.thread_id = ANY($1) AND d.outcome = 'abandoned'
+			AND EXISTS (SELECT 1 FROM collab_messages m WHERE m.id = d.draft_message_id AND m.draft)`, threads)
+	return err
+}
+
 // draftWords is what a person wrote in a draft's HTML, to tell an edit from a send as
 // saved: its text without the signature block and quoted history, spaces collapsed.
 func draftWords(html string) string {
