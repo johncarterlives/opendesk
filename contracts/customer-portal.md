@@ -138,8 +138,12 @@ is plain text (1..10000, converted to HTML as a portal reply is). The words are 
 ticket, and routing (`routing.Resolve`, channel `portal`) puts it in a team. The customer sets nothing else:
 status, priority, severity, team, assignee, labels and fields are the team's. A blocked customer or a suspended
 workspace is refused by the same session checks as every portal route, and the contact row is locked while the
-ticket is written. A customer starts at most 10 requests an hour, counted for the whole instance (`429`).
-The answer is the same `CustomerTicket` the list returns.
+ticket is written. A brand whose portal is off (its help center unpublished) takes no request (`404`). A customer
+starts at most 10 requests an hour (`429 rate_limited`), and a workspace's customers together at most 500
+(`429 portal_busy`), both counted for the whole instance in Postgres. The customer's own limit is counted first,
+so one customer cannot use up the workspace's.
+The answer is the same `CustomerTicket` the list returns. Like an `api` or `phone` ticket, a portal ticket has no reply
+address: the team's public replies are recorded and read in the portal, not emailed.
 
 ### Files
 

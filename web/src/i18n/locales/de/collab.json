@@ -194,7 +194,17 @@
     "folderCreated": "Ordner erstellt",
     "labelsUnsupported": "Nur Gmail-Konten haben Labels",
     "createLabel": "Label erstellen",
-    "labelCreated": "Label erstellt"
+    "labelCreated": "Label erstellt",
+    "snooze": "Zurückstellen",
+    "assignTo": "Zuweisen an…",
+    "shareWith": "Teilen mit…",
+    "moveTo": "Verschieben nach…",
+    "labelAs": "Label zuweisen…",
+    "newTab": "In neuem Tab öffnen"
+  },
+  "drop": {
+    "otherAccount": "Diese Unterhaltungen liegen in einem anderen Konto.",
+    "noHandling": "„Zu erledigen“ gibt es nur für geteilte Konten mit aktivierter Bearbeitung."
   },
   "toast": {
     "archived_one": "Unterhaltung archiviert",
@@ -209,6 +219,16 @@
     "inboxed_other": "{{count}} Unterhaltungen in den Posteingang verschoben",
     "notSpam_one": "Unterhaltung in den Posteingang verschoben",
     "notSpam_other": "{{count}} Unterhaltungen in den Posteingang verschoben",
+    "done_one": "Unterhaltung als erledigt markiert",
+    "done_other": "{{count}} Unterhaltungen als erledigt markiert",
+    "needsAction_one": "Unterhaltung als zu erledigen markiert",
+    "needsAction_other": "{{count}} Unterhaltungen als zu erledigen markiert",
+    "labeled_one": "Label {{folder}} hinzugefügt",
+    "labeled_other": "Label {{folder}} zu {{count}} Unterhaltungen hinzugefügt",
+    "assignedToYou_one": "Unterhaltung dir zugewiesen",
+    "assignedToYou_other": "{{count}} Unterhaltungen dir zugewiesen",
+    "starred_one": "Unterhaltung markiert",
+    "starred_other": "{{count}} Unterhaltungen markiert",
     "undo": "Rückgängig",
     "failed": "Das hat nicht geklappt. Nichts wurde geändert.",
     "syncing": "{{name}} wird synchronisiert",

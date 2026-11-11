@@ -1,11 +1,12 @@
 // One conversation in a mail list: unread weight, participants, subject, snippet,
 // time, star, attachment, the account's dot when the list spans accounts, labels,
-// assignees, shared and comment marks. Hover offers archive, trash, read and star. A waiting
-// AI draft shows under it with Send, Edit and Discard where the list offers them.
+// assignees, shared and comment marks. Hover offers archive, trash, read and star (and Done or
+// Needs action with Handling on); a right click opens its menu and the row drags to the sidebar.
+// A waiting AI draft shows under it with Send, Edit and Discard where the list offers them.
 
 import { motion, useReducedMotion } from "motion/react";
-import { Archive, Mail, MailOpen, MessageSquare, Paperclip, PencilLine, Send, Sparkles, Star, Trash2, Users } from "lucide-react";
-import { forwardRef, memo, type ReactNode } from "react";
+import { Archive, CircleCheck, CircleDot, Mail, MailOpen, MessageSquare, Paperclip, PencilLine, Send, Sparkles, Star, Trash2, Users } from "lucide-react";
+import { forwardRef, memo, type CSSProperties, type DragEvent, type HTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MailCategory, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
@@ -18,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip } from "@/components/ui/tooltip";
 import { rowMotion } from "@/components/tickets/motion";
 import { AccountDot, LabelPill } from "./bits";
+import { ThreadMenu } from "./ThreadMenu";
 
 export type ThreadRowProps = {
   thread: MailThread;
@@ -39,10 +41,20 @@ export type ThreadRowProps = {
   onHover?: (t: MailThread) => void;
   /** Hover actions; left out for viewers. */
   onAction?: (t: MailThread, a: MailThreadAction) => void;
+  /** Its account has Handling on: hover offers Done or Needs action. */
+  handling?: boolean;
+  /** Dragging the row (or the selection it is in) toward the sidebar; left out, it does not drag. */
+  onDragOut?: (t: MailThread, e: DragEvent) => void;
   /** Acting on its waiting AI draft in place (Ready for review); left out where it is not offered. */
   onDraft?: (t: MailThread, a: AIDraftAction) => void;
   /** The AI draft is being sent or discarded. */
   draftBusy?: boolean;
+};
+
+/** What a context-menu trigger (components/ui/context-menu.tsx) puts on the row. */
+type TriggerProps = Pick<HTMLAttributes<HTMLDivElement>, "onContextMenu" | "onPointerDown" | "onPointerMove" | "onPointerUp" | "onPointerCancel"> & {
+  "data-state"?: string;
+  style?: CSSProperties;
 };
 
 export type AIDraftAction = "send" | "edit" | "discard";
@@ -106,8 +118,8 @@ function Quick({ label, shortcut, onClick, children }: { label: string; shortcut
   );
 }
 
-const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
-  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, onDraft, draftBusy },
+const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function ThreadRow(
+  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, handling, onDragOut, onDraft, draftBusy, style, ...trigger },
   ref,
 ) {
   const { t: tr } = useTranslation("collab");
@@ -116,6 +128,8 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
   const who = participantsLine(t.participants, ownEmails, tr("list.me")) || tr("list.me");
   const subject = t.subject || tr("list.noSubject");
   const showCheck = selecting || selected;
+  // On the inner row: the motion wrapper's own drag props are its gestures, not the browser's.
+  const drag = onDragOut ? { draggable: true, onDragStart: (e: DragEvent<HTMLDivElement>) => onDragOut(t, e) } : undefined;
 
   const check = (
     <Checkbox
@@ -215,7 +229,8 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
   const pills = [tab, alias, ...labels.slice(0, compact ? 2 : 3).map((l) => <LabelPill key={l.id} name={l.name} color={l.color} />)];
 
   const end = (
-    <span className={cn("relative flex shrink-0 items-center justify-end", compact ? "h-4 min-w-[52px]" : "h-6 min-w-[72px]")}>
+    // Room for the hover buttons, so they never cover the marks beside them (a fourth with Handling on).
+    <span className={cn("relative flex shrink-0 items-center justify-end", compact ? "h-4" : "h-6", onAction && handling ? "min-w-[104px]" : compact ? "min-w-[52px]" : "min-w-[72px]")}>
       <span className={cn("flex items-center gap-2 transition-opacity duration-100", onAction && "md:group-hover:opacity-0 md:group-focus-within:opacity-0")}>
         {!compact && assignees}
         <time
@@ -237,6 +252,11 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
           <Quick label={t.unread ? tr("action.read") : tr("action.unread")} shortcut={t.unread ? "shift i" : "shift u"} onClick={() => onAction(t, t.unread ? "read" : "unread")}>
             {t.unread ? <MailOpen /> : <Mail />}
           </Quick>
+          {handling && (
+            <Quick label={t.needs_action ? tr("action.done") : tr("action.needsAction")} onClick={() => onAction(t, t.needs_action ? "done" : "needs_action")}>
+              {t.needs_action ? <CircleCheck /> : <CircleDot />}
+            </Quick>
+          )}
         </span>
       )}
     </span>
@@ -252,11 +272,14 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
       tabIndex={-1}
       onClick={() => onOpen(t)}
       onMouseEnter={() => onHover?.(t)}
+      {...trigger}
+      style={style}
       {...motionProps}
       className="relative z-[1] shrink-0 overflow-hidden outline-none"
     >
       {compact ? (
         <div
+          {...drag}
           className={cn(
             "group relative flex cursor-pointer gap-2.5 border-b border-line-soft py-2.5 pl-3.5 pr-3 transition-colors duration-100",
             active ? "bg-active" : selected ? "bg-hover" : focused ? "bg-sunken" : "hover:bg-sunken/70",
@@ -294,6 +317,7 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
         </div>
       ) : (
         <div
+          {...drag}
           className={cn(
             "group relative flex h-11 cursor-pointer items-center gap-3 border-b border-line-soft pl-3.5 pr-4 transition-colors duration-100",
             active ? "bg-active" : selected ? "bg-hover" : focused ? "bg-sunken" : "hover:bg-sunken/70",
@@ -327,4 +351,23 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps>(function ThreadRow(
   );
 });
 
-export const ThreadRow = memo(Row);
+export type ThreadRowMenuProps = {
+  /** The right-click menu's items for this row (and the selection it is in); left out, no menu. */
+  menu?: (t: MailThread) => ReactNode;
+  /** Where the menu opened: a picker an item opens shows there. */
+  onMenuPoint?: (x: number, y: number) => void;
+  onMenuCloseFocus?: (e: Event) => void;
+};
+
+/**
+ * The row with its menu inside the memo: given stable callbacks, moving the focus redraws only
+ * the rows whose own props changed, not every row's menu trigger.
+ */
+export const ThreadRow = memo(function ThreadRowWithMenu({ menu, onMenuPoint, onMenuCloseFocus, ...row }: ThreadRowProps & ThreadRowMenuProps) {
+  if (!menu) return <Row {...row} />;
+  return (
+    <ThreadMenu thread={row.thread} render={menu} onPoint={onMenuPoint} onCloseAutoFocus={onMenuCloseFocus}>
+      <Row {...row} />
+    </ThreadMenu>
+  );
+});

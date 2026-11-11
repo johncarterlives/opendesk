@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/domain"
 	"github.com/useopendesk/opendesk/internal/helpdesk/hdtest"
 	"github.com/useopendesk/opendesk/internal/ids"
@@ -377,6 +378,90 @@ func TestPortalCreateTicketIsRateLimited(t *testing.T) {
 	e.Scalar(`SELECT count(*) FROM tickets WHERE workspace_id=$1`, &n, ws.ID)
 	if n != newRequestsPerHour {
 		t.Fatalf("%d tickets", n)
+	}
+}
+
+// The workspace's customers together start a bounded number of requests an hour; one customer's
+// own limit is counted first, so a refused customer does not use up the workspace's.
+func TestPortalCreateTicketWorkspaceLimit(t *testing.T) {
+	e, ws, _, first := ticketSession(t)
+	was := workspaceRequestsPerHour
+	workspaceRequestsPerHour = 3
+	t.Cleanup(func() { workspaceRequestsPerHour = was })
+	// A second customer of the same workspace, signed in with a password of their own.
+	other := ids.New()
+	email := "second-" + other.String() + "@example.com"
+	e.Exec(`INSERT INTO contacts(id,workspace_id,email,name) VALUES($1,$2,$3,'Second')`, other, ws.ID, email)
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.Exec(`INSERT INTO customer_credentials(workspace_id,contact_id,email,password_hash) VALUES($1,$2,$3,$4)`, ws.ID, other, email, hash)
+	access, _ := signIn(t, e, ws, email)
+	second := hdtest.Auth{Bearer: access}
+	// Another workspace's portal keeps its own count.
+	elsewhereWS, elsewhereCID, elsewhere := otherPortalCustomer(t, e)
+
+	request := func(a hdtest.Auth, slug string) *hdtest.Resp {
+		return e.Do("POST", portalTickets, a, map[string]any{"workspace_slug": slug, "subject": "Help", "body": "Please"})
+	}
+	request(first, ws.Slug).Want(t, 201)
+	request(second, ws.Slug).Want(t, 201)
+	request(first, ws.Slug).Want(t, 201)
+	var out struct{ Code string }
+	request(second, ws.Slug).Want(t, 429).JSON(t, &out)
+	if out.Code != "portal_busy" {
+		t.Fatalf("code %q", out.Code)
+	}
+	request(elsewhere, elsewhereWS.Slug).Want(t, 201)
+	var n int
+	e.Scalar(`SELECT count(*) FROM tickets WHERE workspace_id=$1`, &n, ws.ID)
+	if n != 3 {
+		t.Fatalf("%d tickets", n)
+	}
+	var contact string
+	e.Scalar(`SELECT contact_id::text FROM tickets WHERE workspace_id=$1`, &contact, elsewhereWS.ID)
+	if contact != elsewhereCID.String() {
+		t.Fatalf("other workspace ticket for %s", contact)
+	}
+}
+
+// otherPortalCustomer signs in a customer of a second workspace's portal on the same instance.
+func otherPortalCustomer(t *testing.T, e *hdtest.Env) (hdtest.WS, uuid.UUID, hdtest.Auth) {
+	t.Helper()
+	ws := e.NewWorkspace()
+	e.Exec(`UPDATE brands SET help_center_enabled=true WHERE id=$1`, ws.BrandID)
+	cid := ids.New()
+	email := "elsewhere-" + cid.String() + "@example.com"
+	e.Exec(`INSERT INTO contacts(id,workspace_id,email,name) VALUES($1,$2,$3,'Elsewhere')`, cid, ws.ID, email)
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.Exec(`INSERT INTO customer_credentials(workspace_id,contact_id,email,password_hash) VALUES($1,$2,$3,$4)`, ws.ID, cid, email, hash)
+	access, _ := signIn(t, e, ws, email)
+	return ws, cid, hdtest.Auth{Bearer: access}
+}
+
+// A brand whose portal is off (its help center turned off) takes no new request, and its
+// signed-in customers' requests start again once it is back on. A suspended workspace takes none.
+func TestPortalOffRefusesNewRequest(t *testing.T) {
+	e, ws, _, customer := ticketSession(t)
+	ok := map[string]any{"workspace_slug": ws.Slug, "subject": "Help", "body": "Please"}
+	e.Exec(`UPDATE brands SET help_center_enabled=false WHERE id=$1`, ws.BrandID)
+	e.Do("POST", portalTickets, customer, ok).Want(t, 404)
+	var n int
+	e.Scalar(`SELECT count(*) FROM tickets WHERE workspace_id=$1`, &n, ws.ID)
+	if n != 0 {
+		t.Fatalf("a portal that is off opened %d tickets", n)
+	}
+	e.Exec(`UPDATE brands SET help_center_enabled=true WHERE id=$1`, ws.BrandID)
+	e.Do("POST", portalTickets, customer, ok).Want(t, 201)
+	e.Exec(`UPDATE workspaces SET suspended_at=now() WHERE id=$1`, ws.ID)
+	e.Do("POST", portalTickets, customer, ok).Want(t, 401)
+	e.Scalar(`SELECT count(*) FROM tickets WHERE workspace_id=$1`, &n, ws.ID)
+	if n != 1 {
+		t.Fatalf("%d tickets after the workspace was suspended", n)
 	}
 }
 

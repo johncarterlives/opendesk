@@ -244,8 +244,11 @@ Messages group into conversations (`MailThread`): Gmail threads, Microsoft `conv
 for IMAP the first message its `References` / `In-Reply-To` name that the account already has, else
 a new conversation. A conversation's state is its messages': unread when any is unread, starred when
 any is starred, in a folder when any message is. A shared account can also track `needs_action`
-locally. New incoming mail in its inbox sets it, a reply clears it, and drafts do not change it. It
-never changes the provider's message state. Such a conversation can also be snoozed ("Snooze").
+locally. New incoming mail in its inbox sets it, a reply clears it, and drafts do not change it.
+Mail taken out of Spam into the inbox sets it too, the same as new mail: `not_spam`, `inbox` or a
+move to the inbox in opendesk, or a move at the provider that the sync sees. Other moves back to
+the inbox (from Archive or Trash) leave it as it was. It never changes the provider's message
+state. Such a conversation can also be snoozed ("Snooze").
 
 ### Actions
 
@@ -629,7 +632,8 @@ changes a model; what the client does with the feedback is its own business.
     a person sent (without the signature block and quoted history) are or are not the AI's;
   - `discarded`: a person discarded it;
   - `replaced`: a person sent another reply in the conversation while the draft waited;
-  - `abandoned`: a person marked the conversation done while the draft waited.
+  - `abandoned`: a person marked the conversation done while the draft waited. Putting it back in
+    Needs action (`needs_action`, which Undo sends) while the draft still waits unsent clears it.
 
   `sent_*` and `discarded` are final. A draft `replaced` or `abandoned` that is then sent or
   discarded takes that outcome. A draft sent or discarded outside opendesk has none.

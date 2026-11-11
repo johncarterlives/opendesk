@@ -6,7 +6,7 @@ import type { CollabThreadQuery } from "../api/endpoints";
 import type { MailCounts, MailFolder, MailThread, MailThreadAction } from "../api/types";
 
 /** Actions whose toast offers Undo. */
-export const UNDOABLE: ReadonlySet<MailThreadAction> = new Set<MailThreadAction>(["archive", "trash", "spam", "move"]);
+export const UNDOABLE: ReadonlySet<MailThreadAction> = new Set<MailThreadAction>(["archive", "trash", "spam", "move", "label", "done", "needs_action", "star"]);
 
 /** The conversation as it reads once the action applied. */
 export function applyAction(t: MailThread, action: MailThreadAction, folderId?: string, category?: string, until?: string): MailThread {
@@ -83,10 +83,17 @@ export function leavesList(action: MailThreadAction, place: ListPlace, targetFol
 
 /**
  * The action that puts a conversation back: archive, trash and spam return it to
- * the inbox; a move returns it to the folder it was moved from, else the inbox.
+ * the inbox; a move returns it to the folder it was moved from, else the inbox; a
+ * label (`folderId`) comes off again; Done and Needs action swap (a snooze they ended stays ended).
  */
-export function inverseAction(action: MailThreadAction, from: ListPlace): { action: MailThreadAction; folderId?: string } | null {
+export function inverseAction(action: MailThreadAction, from: ListPlace, folderId?: string): { action: MailThreadAction; folderId?: string } | null {
   switch (action) {
+    case "label":
+      return folderId ? { action: "unlabel", folderId } : null;
+    case "done":
+      return { action: "needs_action" };
+    case "needs_action":
+      return { action: "done" };
     case "archive":
     case "trash":
       return { action: "inbox" };

@@ -134,6 +134,7 @@
       "message": "Waarmee kunnen we helpen?",
       "send": "Verzoek versturen",
       "limit": "Je hebt meerdere verzoeken kort na elkaar verstuurd. Wacht even en probeer het opnieuw.",
+      "busy": "Er komen nu veel verzoeken binnen. Wacht even en probeer het opnieuw.",
       "attach": "Bestanden kiezen",
       "drop": "Sleep bestanden hierheen of plak een schermafbeelding.",
       "remove": "{{name}} verwijderen",

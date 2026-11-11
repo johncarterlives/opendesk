@@ -267,11 +267,32 @@ func (p *pass) update(ctx context.Context, tx pgx.Tx, m *storedMsg, st state) er
 	if m.Unread != st.Unread {
 		p.foldersChanged = true // unread counts
 	}
+	if !sameFolders && p.outOfSpam(m, st) {
+		// Mail taken out of Spam into the inbox, in opendesk or at the provider, needs a
+		// person again, the same as new mail ("Conversations").
+		if _, err := tx.Exec(ctx, `UPDATE collab_threads SET needs_action = true, snoozed_until = NULL, updated_at = now()
+			WHERE id = $1 AND NOT needs_action`, m.ThreadID); err != nil {
+			return err
+		}
+	}
 	m.Unread, m.Starred, m.Draft, m.FolderIDs, m.Location = st.Unread, st.Starred, st.Draft, st.FolderIDs, loc
 	if !sameState {
 		p.touch(m.ThreadID) // a new location alone shows nothing new
 	}
 	return nil
+}
+
+// outOfSpam reports a message of a shared account with handling on that moves from Spam
+// to the inbox (not spam, or moved to the inbox).
+func (p *pass) outOfSpam(m *storedMsg, st state) bool {
+	if p.a.Visibility != VisibilityShared || !p.a.HandlingEnabled || st.Draft {
+		return false
+	}
+	spam, inbox := p.roleFolder(RoleSpam), p.roleFolder(RoleInbox)
+	if spam == nil || inbox == nil {
+		return false
+	}
+	return slices.Contains(m.FolderIDs, spam.ID) && !slices.Contains(st.FolderIDs, spam.ID) && slices.Contains(st.FolderIDs, inbox.ID)
 }
 
 // sameJSON compares two JSON documents by value (Postgres stores jsonb normalized).
