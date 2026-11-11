@@ -52,7 +52,7 @@ type updateAccountInput struct {
 		Visibility      *string `json:"visibility,omitempty" enum:"private,shared"`
 		HandlingEnabled *bool   `json:"handling_enabled,omitempty" doc:"Track work separately from unread for this shared account"`
 		// MarkInbox is the one-time offer when handling turns on (GH#430).
-		MarkInbox   bool       `json:"mark_inbox_needs_action,omitempty" doc:"With handling_enabled turning on: put the conversations now in its inbox in Needs action, except those it answered last"`
+		MarkInbox   bool       `json:"mark_inbox_needs_action,omitempty" doc:"With handling_enabled turning on: put the conversations now in its inbox with mail from the last 30 days in Needs action, except those it answered last"`
 		ReplyAll    *bool      `json:"reply_all,omitempty" doc:"Reply answers everyone on the message by default, for everyone who answers from this account"`
 		SharedWith  *Audience  `json:"shared_with,omitempty"`
 		IMAP        *imapPatch `json:"imap,omitempty"`
@@ -188,8 +188,8 @@ func (s *service) registerAccountRoutes(api huma.API) {
 			} else if visibility == VisibilityPrivate && a.HandlingEnabled {
 				a.HandlingEnabled, changed = false, append(changed, "handling_enabled")
 			}
-			// Marking the inbox is offered once, as handling turns on: later, a conversation
-			// not in Needs action was dealt with, and marking it again would undo that.
+			// Marking the inbox goes only with handling turning on, and only when asked for: an
+			// ordinary save never puts back in Needs action what someone marked done since.
 			markInbox := b.MarkInbox
 			if markInbox && !(a.HandlingEnabled && slices.Contains(changed, "handling_enabled")) {
 				return nil, httpx.Validation("mark_inbox_needs_action goes with turning handling_enabled on.")
@@ -451,16 +451,22 @@ func (s *service) patchIMAP(a *accountRow, in *imapPatch) (accountConfig, creden
 	return cfg, creds, nil
 }
 
+// markInboxRecent is how recent a conversation's latest message must be for turning handling
+// on to put it in Needs action: older mail is history, and the AI queue would draft it first.
+const markInboxRecent = 30 * 24 * time.Hour
+
 // markInboxNeedsAction puts the account's conversations now in its inbox in Needs action,
-// as new mail would have, in tx: not one whose latest message the account sent (it waits
-// on the other side), nor a snoozed one. It returns how many it marked (GH#430).
+// as new mail would have, in tx: only those with mail from the last 30 days, not one whose
+// latest message the account sent (it waits on the other side), nor a snoozed one. It
+// returns how many it marked (GH#430).
 func markInboxNeedsAction(ctx context.Context, tx pgx.Tx, wid, accountID uuid.UUID) (int64, error) {
 	tag, err := tx.Exec(ctx, `UPDATE collab_threads t SET needs_action = true, updated_at = now()
 		WHERE t.workspace_id = $1 AND t.account_id = $2 AND NOT t.needs_action AND t.snoozed_until IS NULL
+			AND t.last_message_at > $3
 			AND t.folder_ids && ARRAY(SELECT id FROM collab_folders WHERE account_id = $2 AND role = 'inbox')
 			AND NOT EXISTS (SELECT 1 FROM collab_message_folders mf JOIN collab_folders f ON f.id = mf.folder_id AND f.role = 'sent'
 				WHERE mf.message_id = (SELECT m.id FROM collab_messages m WHERE m.thread_id = t.id AND NOT m.draft
-					ORDER BY m.sent_at DESC, m.id DESC LIMIT 1))`, wid, accountID)
+					ORDER BY m.sent_at DESC, m.id DESC LIMIT 1))`, wid, accountID, time.Now().Add(-markInboxRecent))
 	if err != nil {
 		return 0, err
 	}

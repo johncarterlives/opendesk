@@ -351,10 +351,10 @@ export function MailSection({ prefs, rail, first }: { prefs: SidebarPrefs; rail:
   // which has no rows under an account).
   const assignedIn = Object.entries(counts?.assigned ?? {}).filter(([, n]) => n > 0).map(([id]) => id);
   const assignedAcross = !!counts?.boxes.assigned && (rail || assignedIn.length > 1 || assignedIn.some((id) => !shown.some((a) => a.id === id)));
-  // With Handling on for an account the team works from queues: Ready for review, Assigned
-  // to me, Needs action and Snoozed stay in sight even while empty, so people know they
-  // exist (GH#430). Without it they show only while they hold something.
-  const handling = !!accounts?.some((a) => a.handling_enabled);
+  // With Handling on for a shared account the team works from queues: Ready for review,
+  // Assigned to me, Needs action and Snoozed stay in sight even while empty, so people know
+  // they exist (GH#430). Without it they show only while they hold something.
+  const handling = !!accounts?.some((a) => a.visibility === "shared" && a.handling_enabled);
 
   return (
     <Section

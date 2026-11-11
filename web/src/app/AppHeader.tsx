@@ -180,7 +180,8 @@ export function AppHeader() {
           // The page's own "new" (Compose on the mail pages or without Tickets, else New ticket),
           // and beside it what else can be made in place: a ticket or email, a page and an import.
           <div className="ml-1 flex h-7 items-stretch rounded-md bg-inverse text-inverse-fg">
-            <Tooltip content={primaryLabel} shortcut="c">
+            {/* c makes a ticket or an email; without either there is no shortcut to show. */}
+            <Tooltip content={primaryLabel} shortcut={primary !== "page" ? "c" : undefined}>
               <button
                 type="button"
                 aria-label={primaryLabel}
@@ -218,9 +219,12 @@ export function AppHeader() {
                         </MenuItem>
                       ),
                 )}
-                <MenuItem icon={<FileText />} onSelect={() => quickAdd.page()}>
-                  {t("newPage")}
-                </MenuItem>
+                {/* With neither, New page is already the button. */}
+                {primary !== "page" && (
+                  <MenuItem icon={<FileText />} onSelect={() => quickAdd.page()}>
+                    {t("newPage")}
+                  </MenuItem>
+                )}
                 <MenuItem icon={<FileUp />} onSelect={() => openImport()}>
                   {t("importPages")}
                 </MenuItem>

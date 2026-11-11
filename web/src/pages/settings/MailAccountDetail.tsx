@@ -99,7 +99,8 @@ export default function MailAccountDetail() {
   // Whether the person changed the signature: only then does a save send it, so opening
   // and saving other settings never writes a signature back to Gmail.
   const [sigEdited, setSigEdited] = useState(false);
-  const [markInbox, setMarkInbox] = useState(true);
+  // Turning handling on can also start from the inbox now: off unless chosen, each time (GH#430).
+  const [markInbox, setMarkInbox] = useState(false);
   useEffect(() => {
     const prev = lastBase.current;
     lastBase.current = base;
@@ -123,7 +124,7 @@ export default function MailAccountDetail() {
     if (sigEdited && form.signature_html !== base.signature_html) p.signature_html = form.signature_html;
     if (form.visibility !== base.visibility) p.visibility = form.visibility;
     if (form.handling_enabled !== base.handling_enabled) p.handling_enabled = form.handling_enabled;
-    // Turning handling on: offer once to start from what is in the inbox now (GH#430).
+    // Turning handling on: start from the inbox now only when chosen (GH#430).
     if (p.handling_enabled && markInbox) p.mark_inbox_needs_action = true;
     if (form.reply_all !== base.reply_all) p.reply_all = form.reply_all;
     const aud = form.visibility === "shared" ? (form.shared_with.everyone ? { everyone: true, team_ids: [], user_ids: [] } : form.shared_with) : { everyone: false, team_ids: [], user_ids: [] };
@@ -357,7 +358,15 @@ export default function MailAccountDetail() {
       {form.visibility === "shared" && (
         <Section title={t("detail.handling.title")} description={t("detail.handling.hint")}>
           <Row label={t("detail.handling.enabled")} description={t("detail.handling.enabledHint")} htmlFor="handling-enabled">
-            <Switch id="handling-enabled" checked={form.handling_enabled} disabled={!manage} onCheckedChange={(handling_enabled) => set({ handling_enabled })} />
+            <Switch
+              id="handling-enabled"
+              checked={form.handling_enabled}
+              disabled={!manage}
+              onCheckedChange={(handling_enabled) => {
+                set({ handling_enabled });
+                setMarkInbox(false);
+              }}
+            />
           </Row>
           {form.handling_enabled && !base?.handling_enabled && (
             <Row label={t("detail.handling.markInbox")} description={t("detail.handling.markInboxHint")} htmlFor="handling-mark-inbox">

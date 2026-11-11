@@ -1369,7 +1369,7 @@ export function registerCollab() {
       if (a.visibility !== "shared") throw invalid("Handling state is available on shared accounts.");
       a.handling_enabled = b.handling_enabled;
     }
-    // Offered once, as handling turns on: the inbox now, except what the account answered last (GH#430).
+    // Only with handling turning on: the inbox now, mail from the last 30 days, except what the account answered last (GH#430).
     if (b.mark_inbox_needs_action === true) {
       if (wasHandling || !a.handling_enabled) throw invalid("mark_inbox_needs_action goes with turning handling_enabled on.");
       const s = state(ctx.ws);
@@ -1379,7 +1379,8 @@ export function registerCollab() {
         if (t.account_id !== a.id || t.needsAction || t.snoozedUntil) continue;
         const ms = msgsOf(s, t.id).filter((m) => !m.draft);
         const last = ms.at(-1);
-        if (last && ms.some((m) => !!inbox && m.folder_ids.includes(inbox)) && !(sent && last.folder_ids.includes(sent))) t.needsAction = true;
+        const recent = !!last && Date.parse(last.sent_at) > Date.now() - 30 * DAY;
+        if (last && recent && ms.some((m) => !!inbox && m.folder_ids.includes(inbox)) && !(sent && last.folder_ids.includes(sent))) t.needsAction = true;
       }
     }
     if (typeof b.reply_all === "boolean") a.reply_all = b.reply_all;

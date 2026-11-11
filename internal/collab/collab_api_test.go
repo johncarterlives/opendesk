@@ -663,7 +663,8 @@ func TestAPIHandlingState(t *testing.T) {
 }
 
 // Turning handling on may put what is already in the inbox in Needs action, once (GH#430):
-// not a conversation the account answered last, not one outside the inbox.
+// not a conversation the account answered last, not one outside the inbox, not one whose
+// latest message is older than 30 days.
 func TestHandlingMarksInbox(t *testing.T) {
 	w := newWorld(t)
 	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
@@ -671,6 +672,8 @@ func TestHandlingMarksInbox(t *testing.T) {
 	waiting, _ := w.seedThread(a, "Waiting on us", inbox)
 	answered, _ := w.seedThread(a, "We replied", inbox)
 	archived, _ := w.seedThread(a, "Archived", sent)
+	old, _ := w.seedThread(a, "Last year", inbox)
+	mustExec(t, w.d, `UPDATE collab_threads SET last_message_at = now() - interval '31 days' WHERE id = $1`, old)
 	reply := ids.New()
 	mustExec(t, w.d, `INSERT INTO collab_messages (id, workspace_id, account_id, thread_id, remote_id, message_id, from_addr, to_addrs,
 		subject, snippet, body_html, body_text, sent_at) SELECT $1, workspace_id, account_id, id, 'm-reply', 'reply@example.com',
@@ -690,8 +693,8 @@ func TestHandlingMarksInbox(t *testing.T) {
 	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = $1 AND needs_action`, waiting); n != 1 {
 		t.Fatal("inbox conversation not marked")
 	}
-	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = ANY($1) AND needs_action`, []uuid.UUID{answered, archived}); n != 0 {
-		t.Fatal("answered or archived conversation marked")
+	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = ANY($1) AND needs_action`, []uuid.UUID{answered, archived, old}); n != 0 {
+		t.Fatal("answered, archived or old conversation marked")
 	}
 	if st := doJSON(t, "PATCH", path, map[string]any{"handling_enabled": true, "mark_inbox_needs_action": true}, nil); st != 422 {
 		t.Fatalf("handling already on: %d", st)

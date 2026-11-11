@@ -487,7 +487,7 @@
       "enabled": "Suivre les conversations à traiter",
       "enabledHint": "Les nouveaux messages entrants restent à traiter jusqu’à ce qu’une personne les marque comme traités. Cela ne modifie pas les messages chez votre fournisseur.",
       "markInbox": "Partir de la boîte de réception actuelle",
-      "markInboxHint": "Mettre à traiter les conversations déjà dans la boîte de réception, sauf celles auxquelles vous avez répondu en dernier. Sinon, seuls les messages qui arrivent désormais sont à traiter."
+      "markInboxHint": "Mettre à traiter les conversations de la boîte de réception des 30 derniers jours, sauf celles auxquelles vous avez répondu en dernier. Sinon, seuls les messages qui arrivent désormais sont à traiter."
     },
     "server": "Paramètres du serveur",
     "serverHint": "Les nouveaux paramètres sont testés avant d’être enregistrés",
