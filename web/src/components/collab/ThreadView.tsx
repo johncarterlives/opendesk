@@ -315,6 +315,17 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
 
   useEffect(() => setCommentThread(null), [threadId]);
 
+  // A discard that finishes after the conversation changed offers no feedback on it.
+  const shownThread = useRef<string | null>(threadId);
+  useEffect(() => {
+    shownThread.current = threadId;
+    setDiscardedAI(null);
+    setFeedbackOpen(false);
+    return () => {
+      shownThread.current = null;
+    };
+  }, [threadId]);
+
   useEffect(() => {
     if (commentMode && detail?.can_act) commentBar.current?.focus();
   }, [commentMode, detail?.can_act, threadId]);
@@ -737,16 +748,18 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                     setEditing(null);
                     setComposerDraftId(null);
                   }}
-                  onDiscard={() => {
+                  onDiscard={(removed) => {
                     const ai = editing.ai_draft;
                     setEditing(null);
                     setComposerDraftId(null);
-                    if (ai) {
+                    if (!ai) return;
+                    void removed.then((ok) => {
+                      if (!ok || shownThread.current !== threadId) return;
                       setDiscardedAI(ai);
                       toast.success(t("aiFeedback.discardedToast", { name: ai.client }), {
                         action: { label: t("aiFeedback.why"), onClick: () => setFeedbackOpen(true) },
                       });
-                    }
+                    });
                   }}
                 />
               ) : composer ? (
