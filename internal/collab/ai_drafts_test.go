@@ -1,6 +1,7 @@
 package collab
 
 import (
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -97,6 +98,11 @@ func TestAIClientDrafts(t *testing.T) {
 	if st := doJSON(t, "GET", human.URL+"/v1/collab/threads?box=ai_review", nil, &list); st != 200 || len(list.Data) != 1 || list.Data[0].ID != m1.ThreadID {
 		t.Fatalf("ready for review: %d %+v", st, list)
 	}
+	// Its row carries the draft, so it can be sent, edited or discarded in place (GH#430).
+	if p := list.Data[0].AIDraft; p == nil || p.DraftID != d.ID || p.DraftedBy != "Local drafter" || !strings.Contains(p.Snippet, "1.90") ||
+		len(p.To) != 1 || p.To[0].Email != "frank@example.com" {
+		t.Fatalf("row preview: %+v", list.Data[0].AIDraft)
+	}
 
 	// It never sends, discards, marks read, assigns or comments.
 	refusals := []struct {
@@ -158,6 +164,9 @@ func TestAIClientDrafts(t *testing.T) {
 	// Taken over, it is no longer waiting for review.
 	if st := doJSON(t, "GET", human.URL+"/v1/collab/threads?box=ai_review", nil, &list); st != 200 || len(list.Data) != 0 {
 		t.Fatalf("ready for review after takeover: %d %+v", st, list)
+	}
+	if st := doJSON(t, "GET", human.URL+"/v1/collab/threads?box=inbox", nil, &list); st != 200 || len(list.Data) == 0 || list.Data[0].AIDraft != nil {
+		t.Fatalf("preview after takeover: %d %+v", st, list)
 	}
 	// Another key of the same member does not own the first one's drafts.
 	var d3 MailMessage

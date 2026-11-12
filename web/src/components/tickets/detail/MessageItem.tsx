@@ -726,7 +726,11 @@ export const MessageItem = memo(function MessageItem({
               </span>
             )}
             {replyTo && (
-              <Tooltip content={t("message.replyToHint")}>
+              <Tooltip
+                content={
+                  m.reply_address ? t("message.replyToUsed") : t("message.replyToOther", { address: m.from_email })
+                }
+              >
                 <span className="flex min-w-0 items-center gap-1.5">
                   <Reply className="size-3 shrink-0 text-fg-4" />
                   <span className="min-w-0 truncate">

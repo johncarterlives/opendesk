@@ -102,10 +102,9 @@ func (t *TicketMail) PersonalReply(ctx context.Context, wid, mid uuid.UUID) (*Pe
 		if ti.contactEmail == nil || *ti.contactEmail == "" {
 			return nil, &SendFailure{"The customer has no email address."}
 		}
-		r.To = []string{*ti.contactEmail}
-	}
-	if r.To, err = replyDestination(ctx, s.d.DB.Pool, wid, r.TicketID, ti.contactEmail, r.To); err != nil {
-		return nil, err
+		if r.To, err = domain.ReplyRecipients(ctx, s.d.DB.Pool, wid, r.TicketID, ti.contactEmail, []string{*ti.contactEmail}); err != nil {
+			return nil, err
+		}
 	}
 	if m, err := s.sendingMailbox(ctx, wid, ti, nil); err == nil {
 		r.MailboxAddress = strings.ToLower(firstNonEmpty(m.alias(ti.receivedAt), m.Email))

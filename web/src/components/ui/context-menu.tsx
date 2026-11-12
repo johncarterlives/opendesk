@@ -19,11 +19,13 @@ export const ContextMenuTrigger = forwardRef<HTMLElement, { children: ReactNode 
   );
 });
 
-export function ContextMenuContent({ children, className }: { children: ReactNode; className?: string }) {
+/** onCloseAutoFocus: preventDefault keeps the focus where an item moved it (a picker or dialog it opened). */
+export function ContextMenuContent({ children, className, onCloseAutoFocus }: { children: ReactNode; className?: string; onCloseAutoFocus?: (e: Event) => void }) {
   return (
     <CM.Portal>
       <CM.Content
         collisionPadding={8}
+        onCloseAutoFocus={onCloseAutoFocus}
         className={cn(floatingPanel, "min-w-[184px] origin-[var(--radix-context-menu-content-transform-origin)] p-1 motion-reduce:animate-none", className)}
       >
         {children}

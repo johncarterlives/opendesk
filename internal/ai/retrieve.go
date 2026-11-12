@@ -148,6 +148,10 @@ func bestPassage(text string, words []string, n int) string {
 // when the collection has one.
 
 // kbBrandJoin joins an article a to its brand eb (the collection's, else its own).
+// kbArticlePath is an article's address on a help center, after the help center's own
+// (kb.KbArticle.Path), with kbBrandJoin's collection kc.
+const kbArticlePath = `COALESCE('/c/' || kc.slug || '/', '/a/') || a.slug`
+
 const kbBrandJoin = ` LEFT JOIN kb_collections kc ON kc.workspace_id = a.workspace_id AND kc.id = a.collection_id
 	LEFT JOIN brands eb ON eb.workspace_id = a.workspace_id AND eb.id = COALESCE(kc.brand_id, a.brand_id)`
 
@@ -209,7 +213,7 @@ func (s *Service) semanticKB(ctx context.Context, wid uuid.UUID, brand *uuid.UUI
 	if forAnswer {
 		minSim = minSimilarityAnswer
 	}
-	rows, err := s.d.DB.Pool.Query(ctx, `SELECT a.id, a.title, a.slug, COALESCE(eb.slug, $7), e.content, 1 - (e.embedding <=> $3::vector) AS sim
+	rows, err := s.d.DB.Pool.Query(ctx, `SELECT a.id, a.title, `+kbArticlePath+`, COALESCE(eb.slug, $7), e.content, 1 - (e.embedding <=> $3::vector) AS sim
 		FROM ai_embeddings e JOIN kb_articles a ON a.id = e.ref_id AND a.workspace_id = e.workspace_id`+kbBrandJoin+`
 		WHERE e.workspace_id = $1 AND e.kind = 'article' AND e.model = $2 AND e.dims = $4 AND a.status = 'published' AND `+kbBrandSQL(6)+`
 		ORDER BY e.embedding <=> $3::vector LIMIT $5`, wid, s.embedder.Model(), vectorLiteral(vecs[0]), len(vecs[0]), limit*4, brand, slug)
@@ -218,12 +222,12 @@ func (s *Service) semanticKB(ctx context.Context, wid uuid.UUID, brand *uuid.UUI
 	}
 	type hit struct {
 		id                              uuid.UUID
-		title, slug, brandSlug, passage string
+		title, path, brandSlug, passage string
 		sim                             float64
 	}
 	hits, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (hit, error) {
 		var h hit
-		err := r.Scan(&h.id, &h.title, &h.slug, &h.brandSlug, &h.passage, &h.sim)
+		err := r.Scan(&h.id, &h.title, &h.path, &h.brandSlug, &h.passage, &h.sim)
 		return h, err
 	})
 	if err != nil {
@@ -250,7 +254,7 @@ func (s *Service) semanticKB(ctx context.Context, wid uuid.UUID, brand *uuid.UUI
 			continue
 		}
 		idx[h.id] = len(out)
-		out = append(out, kbSource{ArticleID: h.id.String(), Title: h.title, URL: s.articleURL(hosts, h.brandSlug, h.slug), Passage: h.passage, Score: h.sim})
+		out = append(out, kbSource{ArticleID: h.id.String(), Title: h.title, URL: s.articleURL(hosts, h.brandSlug, h.path), Passage: h.passage, Score: h.sim})
 	}
 	return out, nil
 }
@@ -264,7 +268,7 @@ func (s *Service) ftsKB(ctx context.Context, wid uuid.UUID, brand *uuid.UUID, sl
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.d.DB.Pool.Query(ctx, `SELECT a.id, a.title, a.slug, COALESCE(eb.slug, $5), a.excerpt, a.body_html
+	rows, err := s.d.DB.Pool.Query(ctx, `SELECT a.id, a.title, `+kbArticlePath+`, COALESCE(eb.slug, $5), a.excerpt, a.body_html
 		FROM kb_articles a`+kbBrandJoin+`
 		WHERE a.workspace_id = $1 AND a.status = 'published' AND a.search @@ to_tsquery('simple', $2) AND `+kbBrandSQL(4)+`
 		ORDER BY ts_rank_cd(a.search, to_tsquery('simple', $2)) DESC, a.updated_at DESC LIMIT $3`, wid, orQuery(words), limit*3, brand, slug)
@@ -279,8 +283,8 @@ func (s *Service) ftsKB(ctx context.Context, wid uuid.UUID, brand *uuid.UUID, sl
 	var cands []cand
 	for rows.Next() {
 		var id uuid.UUID
-		var title, slug, brandSlug, excerpt, body string
-		if err := rows.Scan(&id, &title, &slug, &brandSlug, &excerpt, &body); err != nil {
+		var title, path, brandSlug, excerpt, body string
+		if err := rows.Scan(&id, &title, &path, &brandSlug, &excerpt, &body); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -291,7 +295,7 @@ func (s *Service) ftsKB(ctx context.Context, wid uuid.UUID, brand *uuid.UUID, sl
 		}
 		hits := keywordHits(words, title+" "+excerpt+" "+text)
 		cov := coverage(words, title+" "+excerpt+" "+text, capWords)
-		cands = append(cands, cand{kbSource{ArticleID: id.String(), Title: title, URL: s.articleURL(hosts, brandSlug, slug),
+		cands = append(cands, cand{kbSource{ArticleID: id.String(), Title: title, URL: s.articleURL(hosts, brandSlug, path),
 			Passage: bestPassage(text, words, passageChars), Score: min(cov, 1)}, cov, hits})
 	}
 	rows.Close()

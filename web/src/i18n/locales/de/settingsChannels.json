@@ -157,6 +157,7 @@
     "connection": "Verbindung",
     "testConnection": "Verbindung testen",
     "lastSyncFailed": "Letzte Synchronisierung fehlgeschlagen",
+    "foldersSkipped": "Einige Ordner wurden nicht gelesen",
     "lastSynced": "Zuletzt synchronisiert",
     "never": "Nie",
     "forwardingInstant": "Weitergeleitete E-Mails kommen an, sobald sie gesendet werden.",
@@ -1012,5 +1013,31 @@
       "step4": "Hake die Ereignisse für Zusammenfassungen und Transkripte an (sie brauchen Voys Intelligence) und klicke auf Opslaan.",
       "step5": "Mache einen Testanruf: Die Verbindung zeigt Empfängt Anrufe, sobald er ankommt."
     }
+  },
+  "folders": {
+    "title": "Ordner",
+    "description": "opendesk holt E-Mails aus diesen Ordnern Ihres IMAP-Servers. Wählen Sie die Ordner, in die die Regeln Ihres Servers Support-E-Mails ablegen, etwa E-Mails an einen Alias. Eine Nachricht in mehreren davon wird eine Ticketnachricht.",
+    "inbox": "Posteingang",
+    "choose": "Ordner wählen",
+    "done": "Fertig",
+    "failed": "Die Ordner konnten nicht geladen werden",
+    "retry": "Erneut versuchen",
+    "hint": "Wählen Sie bis zu {{max}} Ordner. Änderungen gelten nach dem Speichern.",
+    "full": "Ein Postfach liest höchstens {{max}} Ordner. Entfernen Sie einen, um einen anderen zu wählen.",
+    "saveFirst": "Speichern Sie zuerst die Servereinstellungen und wählen Sie dann die Ordner.",
+    "special": {
+      "sent": "Gesendet",
+      "drafts": "Entwürfe",
+      "trash": "Papierkorb",
+      "junk": "Spam",
+      "all": "Alle Nachrichten"
+    }
+  },
+  "sentCopy": {
+    "title": "Gesendete E-Mails auf dem Server behalten",
+    "hint": "Speichert eine Kopie jeder E-Mail, die dieses Postfach sendet, in einem Ordner auf Ihrem IMAP-Server, wie Ihr E-Mail-Programm, damit Ihr Postfach die ganze Unterhaltung enthält.",
+    "folder": "Ordner für gesendete E-Mails",
+    "choose": "Ordner wählen",
+    "loading": "Ordner werden geladen…"
   }
 }

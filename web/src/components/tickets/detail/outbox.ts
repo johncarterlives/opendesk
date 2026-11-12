@@ -36,6 +36,8 @@ export type Upload = { key: string; file: File; status: "uploading" | "done" | "
 /** A reply taken back: what goes into its ticket's composer again. */
 export type Unsent = {
   html: string;
+  /** Who it goes to, when the agent chose (Draft.to). */
+  to?: string[];
   cc: string[];
   bcc: string[];
   mailboxId?: string;

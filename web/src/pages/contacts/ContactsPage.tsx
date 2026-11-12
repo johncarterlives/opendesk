@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
-import { Plus, Users, X } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader, Stat, StatStrip } from "@/components/layout";
@@ -17,6 +17,7 @@ import { DirectoryBulkBar } from "@/components/contacts/DirectoryBulkBar";
 import { DirectoryFilters } from "@/components/contacts/DirectoryFilters";
 import { HeaderCheck, RowCheck } from "@/components/contacts/RowCheck";
 import { useSelection } from "@/components/contacts/useSelection";
+import { isFiltered, NO_COMPANY, peopleFilter } from "@/lib/directorySort";
 import { DirectoryNav } from "@/components/contacts/DirectoryNav";
 import { ContactDrawer } from "@/components/contacts/ContactDrawer";
 import { CompanyPicker } from "@/components/contacts/CompanyPicker";
@@ -56,17 +57,18 @@ export default function ContactsPage() {
     void navigate({ search: { ...search, q: debounced || undefined }, replace: true });
   }, [debounced, search, navigate]);
 
-  const list = useInfiniteQuery(q.contacts({ q: search.q, company_id: search.company, tag: search.tag, blocked: search.blocked, sort: search.sort }));
-  const company = useQuery({ ...q.company(search.company ?? ""), enabled: !!search.company });
+  const filter = peopleFilter(search);
+  const list = useInfiniteQuery(q.contacts({ ...filter, sort: search.sort }));
+  const company = useQuery({ ...q.company(search.company ?? ""), enabled: !!search.company && search.company !== NO_COMPANY });
   const rows = list.data?.pages.flatMap((p) => p.data) ?? [];
   // A selection belongs to this list: other filters or another search drop it.
-  const selection = useSelection(JSON.stringify([search.q, search.company, search.tag, search.blocked]));
+  const selection = useSelection(JSON.stringify(filter));
   const allTicked = rows.length > 0 && rows.every((r) => selection.has(r.id));
   const sentinel = useSentinel(() => {
     if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
   }, !!list.hasNextPage);
 
-  const filtered = !!(search.q || search.company || search.tag || search.blocked);
+  const filtered = isFiltered(search);
   const open = (id: string | undefined) => navigate({ to: "/contacts/{-$contactId}", params: { contactId: id }, search });
 
   const companies = new Set(rows.map((c) => c.company?.id).filter(Boolean)).size;
@@ -93,15 +95,7 @@ export default function ContactsPage() {
       </PageHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <DirectoryFilters
-          scope="contacts"
-          tag={search.tag}
-          onTag={(tag) => void navigate({ search: { ...search, tag } })}
-          blocked={search.blocked}
-          onBlocked={(blocked) => void navigate({ search: { ...search, blocked } })}
-          sort={search.sort}
-          onSort={(sort) => void navigate({ search: { ...search, sort } })}
-        />
+        <DirectoryFilters scope="contacts" search={search} onSearch={(next) => void navigate({ search: next })} />
 
         {!list.isLoading && rows.length > 0 && (
           <StatStrip>
@@ -110,24 +104,6 @@ export default function ContactsPage() {
             <Stat label={t("stat.tickets")} value={<AnimatedNumber value={tickets} />} sub={t("stat.fromThesePeople")} />
             <Stat label={t("stat.blocked")} value={<AnimatedNumber value={blocked} />} sub={t("stat.blockedHint")} />
           </StatStrip>
-        )}
-
-        {search.company && (
-          <div className="flex h-10 items-center gap-2 border-b border-line-soft px-4 md:px-5">
-            <span className="text-xs text-fg-3">{t("filteredBy")}</span>
-            <span className="inline-flex h-6 items-center gap-1.5 rounded-sm bg-hover pl-1 pr-0.5 text-xs">
-              <CompanyGlyph name={company.data?.name ?? "?"} src={company.data?.avatar_url} size="xs" />
-              {company.data?.name ?? t("company")}
-              <button
-                type="button"
-                aria-label={t("clearCompany")}
-                onClick={() => void navigate({ search: { ...search, company: undefined } })}
-                className="flex size-5 items-center justify-center rounded-sm text-fg-4 transition-colors hover:bg-active hover:text-fg"
-              >
-                <X className="size-3" />
-              </button>
-            </span>
-          </div>
         )}
 
         <div className={`${cols} sticky top-0 z-10 h-9 border-b border-line bg-surface px-4 md:px-5`}>
@@ -158,7 +134,7 @@ export default function ContactsPage() {
                 <Button
                   onClick={() => {
                     setTerm("");
-                    void navigate({ search: { ...search, q: undefined, company: undefined, tag: undefined, blocked: undefined } });
+                    void navigate({ search: { sort: search.sort } });
                   }}
                 >
                   {t("clearFilters")}
@@ -236,8 +212,9 @@ export default function ContactsPage() {
         <DirectoryBulkBar
           scope="contacts"
           selection={selection}
-          query={{ q: search.q, company_id: search.company, tag: search.tag, blocked: search.blocked }}
+          query={filter}
           canSelectMore={allTicked && (!!list.hasNextPage || filtered)}
+          matching={list.hasNextPage ? undefined : rows.length}
         />
       )}
 

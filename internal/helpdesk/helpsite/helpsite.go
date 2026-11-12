@@ -295,10 +295,18 @@ func (s *Server) serveSite(w http.ResponseWriter, r *http.Request, hc kb.HelpCen
 			return
 		}
 		err = s.search(ctx, p, hc, r.URL.Query().Get("q"))
-	case strings.HasPrefix(sub, "/c/") && !strings.Contains(sub[3:], "/"):
-		err = s.collection(ctx, p, hc, sub[3:])
+	case strings.HasPrefix(sub, "/c/"):
+		// A topic, or an article in it (contracts/api.md "Knowledge base").
+		switch parts := strings.Split(sub[3:], "/"); {
+		case len(parts) == 1 && parts[0] != "":
+			err = s.collection(ctx, p, hc, parts[0])
+		case len(parts) == 2 && parts[0] != "" && parts[1] != "":
+			err = s.article(ctx, p, hc, parts[0], parts[1])
+		default:
+			err = errNotFound
+		}
 	case strings.HasPrefix(sub, "/a/") && !strings.Contains(sub[3:], "/"):
-		err = s.article(ctx, p, hc, sub[3:])
+		err = s.article(ctx, p, hc, "", sub[3:])
 	case sub == "/changelog":
 		err = s.changelog(ctx, p, hc, r.URL.Query())
 	case sub == "/changelog/feed.xml":
@@ -316,6 +324,15 @@ func (s *Server) serveSite(w http.ResponseWriter, r *http.Request, hc kb.HelpCen
 		err = errNotFound
 	}
 	if err == errNotFound || db.IsNotFound(err) {
+		// An address that moved answers 301 to where the article or topic is now.
+		to, ok, merr := s.moved(ctx, hc, sub)
+		if merr != nil {
+			s.d.Log.Error("help center redirect", "err", merr)
+		}
+		if ok {
+			s.redirect(w, r, base+to)
+			return
+		}
 		s.notFoundPage(p, sub)
 		status, err = http.StatusNotFound, nil
 	}
@@ -328,6 +345,25 @@ func (s *Server) serveSite(w http.ResponseWriter, r *http.Request, hc kb.HelpCen
 }
 
 type notFound struct{}
+
+// moved is where an article or topic address that is not one any more leads: a recorded
+// move (a slug or topic change, or the /a/<slug> an article in a topic had before articles
+// lived in their topic), or an article of a topic whose slug changed.
+func (s *Server) moved(ctx context.Context, hc kb.HelpCenter, sub string) (string, bool, error) {
+	q := s.d.DB.Pool
+	if to, ok, err := kb.Moved(ctx, q, hc, sub); err != nil || ok {
+		return to, ok, err
+	}
+	parts := strings.Split(strings.TrimPrefix(sub, "/c/"), "/")
+	if !strings.HasPrefix(sub, "/c/") || len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", false, nil
+	}
+	id, err := kb.MovedCollectionID(ctx, q, hc, parts[0])
+	if err != nil || id == nil {
+		return "", false, err
+	}
+	return kb.ArticleInCollection(ctx, q, hc, *id, parts[1])
+}
 
 func (notFound) Error() string { return "not found" }
 
@@ -521,13 +557,14 @@ func (s *Server) collection(ctx context.Context, p *page, hc kb.HelpCenter, slug
 	return nil
 }
 
-func (s *Server) article(ctx context.Context, p *page, hc kb.HelpCenter, slug string) error {
-	a, err := kb.ArticleBySlug(ctx, s.d.DB.Pool, hc, slug)
+// article serves a published article by its topic's slug ("" for one in no topic) and its own.
+func (s *Server) article(ctx context.Context, p *page, hc kb.HelpCenter, collection, slug string) error {
+	a, err := kb.ArticleIn(ctx, s.d.DB.Pool, hc, collection, slug)
 	if err != nil {
 		return err
 	}
 	p.Kind = "article"
-	p.path = "/a/" + a.Slug
+	p.path = a.Path
 	p.Article = &a
 	p.OGType = "article"
 	p.Body = articleBody(a.BodyHTML, strings.TrimRight(s.d.Cfg.APIURL, "/"))
@@ -682,7 +719,11 @@ func (s *Server) sitemap(w http.ResponseWriter, r *http.Request, hc kb.HelpCente
 				changelog = e.UpdatedAt
 			}
 		}
-		urls = append(urls, sitemapURL{Loc: base + seg + url.PathEscape(e.Slug), LastMod: e.UpdatedAt.UTC().Format("2006-01-02")})
+		loc := base + seg + url.PathEscape(e.Slug)
+		if e.Kind == "article" {
+			loc = base + e.Path
+		}
+		urls = append(urls, sitemapURL{Loc: loc, LastMod: e.UpdatedAt.UTC().Format("2006-01-02")})
 		if e.UpdatedAt.After(newest) {
 			newest = e.UpdatedAt
 		}

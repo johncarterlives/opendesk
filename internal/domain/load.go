@@ -246,6 +246,9 @@ func ScanMessage(row pgx.Row) (Message, error) {
 	if collabAccount != nil {
 		m.FromAccount = &FromAccount{AccountID: *collabAccount, Email: m.FromEmail, ReplyTo: collabReplyTo}
 	}
+	if m.Direction == "inbound" && !m.AuthFailed {
+		m.ReplyAddress = ReplyAddress(m.FromEmail, m.ReplyTo)
+	}
 	if dID != nil {
 		m.DeletedBy = &UserRef{ID: *dID, Name: deref(dName), Email: deref(dEmail), AvatarURL: Avatar(deref(dAvatar))}
 	}
@@ -399,7 +402,7 @@ func PublicMessage(m Message) Message {
 	m.To, m.Cc, m.Bcc = []string{}, []string{}, []string{}
 	m.DeliveryError = ""
 	m.MailboxID = nil
-	m.ReplyTo, m.AuthFailed, m.FormSender, m.ReceivedAt = "", false, "", ""
+	m.ReplyTo, m.ReplyAddress, m.AuthFailed, m.FormSender, m.ReceivedAt = "", "", false, "", ""
 	m.ThreadID = nil
 	m.FromAccount = nil
 	if m.Direction == "outbound" {

@@ -6,7 +6,7 @@ import type { CollabThreadQuery } from "../api/endpoints";
 import type { MailCounts, MailFolder, MailThread, MailThreadAction } from "../api/types";
 
 /** Actions whose toast offers Undo. */
-export const UNDOABLE: ReadonlySet<MailThreadAction> = new Set<MailThreadAction>(["archive", "trash", "spam", "move"]);
+export const UNDOABLE: ReadonlySet<MailThreadAction> = new Set<MailThreadAction>(["archive", "trash", "spam", "move", "label", "done", "needs_action", "star"]);
 
 /** The conversation as it reads once the action applied. */
 export function applyAction(t: MailThread, action: MailThreadAction, folderId?: string, category?: string, until?: string): MailThread {
@@ -83,10 +83,17 @@ export function leavesList(action: MailThreadAction, place: ListPlace, targetFol
 
 /**
  * The action that puts a conversation back: archive, trash and spam return it to
- * the inbox; a move returns it to the folder it was moved from, else the inbox.
+ * the inbox; a move returns it to the folder it was moved from, else the inbox; a
+ * label (`folderId`) comes off again; Done and Needs action swap (a snooze they ended stays ended).
  */
-export function inverseAction(action: MailThreadAction, from: ListPlace): { action: MailThreadAction; folderId?: string } | null {
+export function inverseAction(action: MailThreadAction, from: ListPlace, folderId?: string): { action: MailThreadAction; folderId?: string } | null {
   switch (action) {
+    case "label":
+      return folderId ? { action: "unlabel", folderId } : null;
+    case "done":
+      return { action: "needs_action" };
+    case "needs_action":
+      return { action: "done" };
     case "archive":
     case "trash":
       return { action: "inbox" };
@@ -150,6 +157,8 @@ export function countsAfter(
   const out: MailCounts = { assigned: { ...counts.assigned }, boxes: { ...counts.boxes }, accounts: { ...counts.accounts }, folders: { ...counts.folders } };
   if (counts.addresses) out.addresses = Object.fromEntries(Object.entries(counts.addresses).map(([id, m]) => [id, { ...m }]));
   if (counts.categories) out.categories = Object.fromEntries(Object.entries(counts.categories).map(([id, m]) => [id, { ...m }]));
+  if (counts.ai_review) out.ai_review = { ...counts.ai_review };
+  if (counts.spam) out.spam = { ...counts.spam };
   // A zero is kept: an account missing from the counts falls back to its own (older) number.
   const bump = (rec: Record<string, number>, key: string, d: number) => {
     rec[key] = Math.max(0, (rec[key] ?? 0) + d);
@@ -172,6 +181,11 @@ export function countsAfter(
         if (t.category && out.categories?.[t.account_id]) bump(out.categories[t.account_id], t.category, sign);
       }
       if (!has("trash") && !has("spam")) out.boxes.unread = Math.max(0, out.boxes.unread + sign);
+      // Unread spam, beside Needs action (contracts/collab.md "Spam beside Needs action").
+      if (has("spam") && out.spam && out.boxes.spam !== undefined) {
+        out.boxes.spam = Math.max(0, out.boxes.spam + sign);
+        bump(out.spam, t.account_id, sign);
+      }
       for (const id of t.folder_ids) bump(out.folders, id, sign);
     }
     if (t.shared && inInbox) out.boxes.shared = Math.max(0, out.boxes.shared + sign);

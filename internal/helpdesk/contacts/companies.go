@@ -154,17 +154,33 @@ func companyUniqueErr(err error) error {
 
 type companyOut struct{ Body Company }
 
-// companyOrders are the sorts a list can ask for, by their `sort` value; name is the default.
-var companyOrders = map[string]string{
-	"name": "lower(co.name)", "-name": "lower(co.name)",
-	"created": "co.created_at", "-created": "co.created_at",
-	"contacts":  "(SELECT count(*) FROM contacts c WHERE c.workspace_id = co.workspace_id AND c.company_id = co.id)",
-	"-contacts": "(SELECT count(*) FROM contacts c WHERE c.workspace_id = co.workspace_id AND c.company_id = co.id)",
-}
+// companySorts are the orders the Companies list can take, by their `sort` value; name, A to Z,
+// is the default. The people count is the one companySelect reads.
+var companySorts = func() map[string]listSort[Company] {
+	name := nameSort("co.name", func(c Company) string { return c.Name })
+	created := timeSort("co.created_at", func(c Company) time.Time { return c.CreatedAt })
+	updated := timeSort("co.updated_at", func(c Company) time.Time { return c.UpdatedAt })
+	people := countSort("(SELECT count(*) FROM contacts c WHERE c.workspace_id = co.workspace_id AND c.company_id = co.id)", func(c Company) int { return c.ContactCount })
+	return map[string]listSort[Company]{"name": name, "-name": name, "created": created, "-created": created,
+		"updated": updated, "-updated": updated, "contacts": people, "-contacts": people}
+}()
 
-type companyCursor struct {
-	Name string    `json:"n"`
-	ID   uuid.UUID `json:"id"`
+// deleteCompany deletes a company of the caller's workspace, audits and announces it: the one
+// way a company is deleted, alone or in bulk (meta is the audit entry's). Its people stay,
+// without a company.
+func deleteCompany(ctx context.Context, tx pgx.Tx, p *auth.Principal, id uuid.UUID, meta map[string]any) error {
+	tag, err := tx.Exec(ctx, `DELETE FROM companies WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return httpx.NotFound("Company")
+	}
+	if err := audit.Log(ctx, tx, p, p.WorkspaceID, "company.deleted", "company", &id, meta); err != nil {
+		return err
+	}
+	_, err = events.Publish(ctx, tx, events.Event{WorkspaceID: p.WorkspaceID, Type: "company.deleted", Data: map[string]any{"company_id": id}})
+	return err
 }
 
 func registerCompanies(d *deps.Deps, api huma.API) {
@@ -174,32 +190,20 @@ func registerCompanies(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			extra, args, err := recordFilters(ctx, d.DB.Pool, p, domain.CompanyLabels, domain.FieldEntityCompany, "co", in.Tag, in.fields, in.fieldsErr, 7)
+			if in.fieldsErr != nil {
+				return nil, in.fieldsErr
+			}
+			where, args, err := companyFilter{Q: in.Q, Tag: in.Tag, Fields: in.fields}.where(ctx, d.DB.Pool, p)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			pg, err := pageOf(companySorts, in.Sort, "name", "co.id", func(c Company) uuid.UUID { return c.ID }, in.Cursor, len(args)+1)
 			if err != nil {
 				return nil, err
 			}
-			order := listOrder(in.Sort, companyOrders, "co.id")
-			if in.Sort == "name" {
-				order = "" // the default order, which keeps its keyset
-			}
-			var cur companyCursor
-			var offset offsetCursor
-			if order != "" {
-				if err := httpx.DecodeCursor(in.Cursor, &offset); err != nil {
-					return nil, err
-				}
-			} else if err := httpx.DecodeCursor(in.Cursor, &cur); err != nil {
-				return nil, err
-			}
-			tail := " ORDER BY co.name, co.id LIMIT $7"
-			if order != "" {
-				tail = " ORDER BY " + order + " LIMIT $7 OFFSET " + strconv.Itoa(max(offset.O, 0))
-			}
-			q := strings.TrimSpace(in.Q)
-			like := "%" + strings.TrimSuffix(likePrefix(q), "%") + "%"
-			rows, err := d.DB.Pool.Query(ctx, companySelect+` WHERE co.workspace_id = $1
-				AND ($2 = '' OR co.name ILIKE $3 OR co.domain::text ILIKE $3 OR co.fields_search @@ websearch_to_tsquery('simple', $2))
-				AND (NOT $4 OR (co.name, co.id) > ($5, $6))`+extra+tail, append([]any{p.WorkspaceID, q, like, in.Cursor != "" && order == "", cur.Name, cur.ID, in.Limit + 1}, args...)...)
+			args = append(args, pg.args...)
+			args = append(args, in.Limit+1)
+			rows, err := d.DB.Pool.Query(ctx, companySelect+where+pg.after+pg.orderBy()+" LIMIT $"+strconv.Itoa(len(args)), args...)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -207,12 +211,7 @@ func registerCompanies(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			page := httpx.NewPage(list, in.Limit, func(c Company) any {
-				if order != "" {
-					return offsetCursor{O: offset.O + in.Limit}
-				}
-				return companyCursor{Name: c.Name, ID: c.ID}
-			})
+			page := httpx.NewPage(list, in.Limit, pg.cursor)
 			return &struct{ Body httpx.Page[Company] }{page}, nil
 		})
 
@@ -340,20 +339,7 @@ func registerCompanies(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, err
 			}
-			err = d.DB.Tx(ctx, func(tx pgx.Tx) error {
-				tag, err := tx.Exec(ctx, `DELETE FROM companies WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id)
-				if err != nil {
-					return err
-				}
-				if tag.RowsAffected() == 0 {
-					return httpx.NotFound("Company")
-				}
-				if err := audit.Log(ctx, tx, p, p.WorkspaceID, "company.deleted", "company", &id, nil); err != nil {
-					return err
-				}
-				_, err = events.Publish(ctx, tx, events.Event{WorkspaceID: p.WorkspaceID, Type: "company.deleted", Data: map[string]any{"company_id": id}})
-				return err
-			})
+			err = d.DB.Tx(ctx, func(tx pgx.Tx) error { return deleteCompany(ctx, tx, p, id, nil) })
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}

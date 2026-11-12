@@ -21,6 +21,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/email"
 	"github.com/useopendesk/opendesk/internal/httpx"
+	"github.com/useopendesk/opendesk/internal/ids"
 	"github.com/useopendesk/opendesk/internal/plan"
 )
 
@@ -661,6 +662,72 @@ func TestAPIHandlingState(t *testing.T) {
 	}
 }
 
+// Spam never reaches Needs action, so counts give its unread conversations by account
+// (contracts/collab.md "Spam beside Needs action").
+func TestAPISpamCounts(t *testing.T) {
+	w := newWorld(t)
+	shared := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	own := w.account(w.agent, ProviderGoogle, VisibilityPrivate, Audience{})
+	sharedSpam, ownSpam := w.folder(shared, RoleSpam), w.folder(own, RoleSpam)
+	w.seedThread(shared, "First order", sharedSpam)
+	w.seedThread(shared, "Quote request", sharedSpam)
+	read, _ := w.seedThread(shared, "Seen already", sharedSpam)
+	w.seedThread(own, "Prize", ownSpam)
+	w.seedThread(shared, "In the inbox", w.folder(shared, RoleInbox))
+	mustExec(t, w.d, `UPDATE collab_threads SET unread = false WHERE id = $1`, read)
+
+	var counts CollabCounts
+	if st := doJSON(t, "GET", w.api(w.agent).URL+"/v1/collab/counts", nil, &counts); st != 200 || counts.Boxes.Spam != 3 ||
+		counts.Spam[shared.ID] != 2 || counts.Spam[own.ID] != 1 || counts.Boxes.Unread != 1 {
+		t.Fatalf("spam counts: %d %+v", st, counts)
+	}
+	// Another member sees the shared account's spam only.
+	counts = CollabCounts{}
+	if st := doJSON(t, "GET", w.api(w.agent2).URL+"/v1/collab/counts", nil, &counts); st != 200 || counts.Boxes.Spam != 2 ||
+		len(counts.Spam) != 1 || counts.Spam[shared.ID] != 2 {
+		t.Fatalf("other member's spam counts: %d %+v", st, counts)
+	}
+}
+
+// Turning handling on may put what is already in the inbox in Needs action, once (GH#430):
+// not a conversation the account answered last, not one outside the inbox, not one whose
+// latest message is older than 30 days.
+func TestHandlingMarksInbox(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	inbox, sent := w.folder(a, RoleInbox), w.folder(a, RoleSent)
+	waiting, _ := w.seedThread(a, "Waiting on us", inbox)
+	answered, _ := w.seedThread(a, "We replied", inbox)
+	archived, _ := w.seedThread(a, "Archived", sent)
+	old, _ := w.seedThread(a, "Last year", inbox)
+	mustExec(t, w.d, `UPDATE collab_threads SET last_message_at = now() - interval '31 days' WHERE id = $1`, old)
+	reply := ids.New()
+	mustExec(t, w.d, `INSERT INTO collab_messages (id, workspace_id, account_id, thread_id, remote_id, message_id, from_addr, to_addrs,
+		subject, snippet, body_html, body_text, sent_at) SELECT $1, workspace_id, account_id, id, 'm-reply', 'reply@example.com',
+		'{"email":"x@example.com"}'::jsonb, '[]'::jsonb, subject, 'Thanks', '<p>Thanks</p>', 'Thanks', now() + interval '1 minute'
+		FROM collab_threads WHERE id = $2`, reply, answered)
+	mustExec(t, w.d, `INSERT INTO collab_message_folders (message_id, folder_id) VALUES ($1, $2)`, reply, sent.ID)
+	srv := w.api(w.agent)
+	path := srv.URL + "/v1/collab/accounts/" + a.ID.String()
+
+	// Only with handling turning on.
+	if st := doJSON(t, "PATCH", path, map[string]any{"mark_inbox_needs_action": true}, nil); st != 422 {
+		t.Fatalf("without turning handling on: %d", st)
+	}
+	if st := doJSON(t, "PATCH", path, map[string]any{"handling_enabled": true, "mark_inbox_needs_action": true}, nil); st != 200 {
+		t.Fatalf("turn on and mark: %d", st)
+	}
+	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = $1 AND needs_action`, waiting); n != 1 {
+		t.Fatal("inbox conversation not marked")
+	}
+	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = ANY($1) AND needs_action`, []uuid.UUID{answered, archived, old}); n != 0 {
+		t.Fatal("answered, archived or old conversation marked")
+	}
+	if st := doJSON(t, "PATCH", path, map[string]any{"handling_enabled": true, "mark_inbox_needs_action": true}, nil); st != 422 {
+		t.Fatalf("handling already on: %d", st)
+	}
+}
+
 func TestHandlingStateFollowsNewMail(t *testing.T) {
 	w := newWorld(t)
 	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
@@ -707,6 +774,59 @@ func TestHandlingStateFollowsNewMail(t *testing.T) {
 	}
 	if err := w.d.DB.Pool.QueryRow(w.ctx, `SELECT needs_action FROM collab_threads WHERE account_id = $1`, a.ID).Scan(&needsAction); err != nil || needsAction {
 		t.Fatalf("outbound handling state: %v %t", err, needsAction)
+	}
+}
+
+// Mail taken out of Spam into the inbox of an account with handling on is in Needs action
+// again, from an action in opendesk or a move the sync sees; nowhere else.
+func TestOutOfSpamNeedsAction(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	mustExec(t, w.d, `UPDATE collab_accounts SET handling_enabled = true WHERE id = $1`, a.ID)
+	a, _ = loadAccount(w.ctx, w.d.DB.Pool, w.wid, a.ID)
+	off := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	spam, inbox := w.folder(a, RoleSpam), w.folder(a, RoleInbox)
+	notSpam, _ := w.seedThread(a, "Quote request", spam)
+	toInbox, _ := w.seedThread(a, "Bottles", spam)
+	toTrash, _ := w.seedThread(a, "Lottery", spam)
+	atProvider, atProviderMsg := w.seedThread(a, "Order", spam)
+	elsewhere, _ := w.seedThread(off, "Hello", w.folder(off, RoleSpam))
+	srv := w.api(w.agent)
+	act := func(action string, tids ...uuid.UUID) {
+		t.Helper()
+		if st := doJSON(t, "POST", srv.URL+"/v1/collab/threads/actions", map[string]any{"thread_ids": tids, "action": action}, nil); st != 200 {
+			t.Fatalf("%s: %d", action, st)
+		}
+	}
+	act("not_spam", notSpam, elsewhere)
+	act("inbox", toInbox)
+	act("trash", toTrash)
+	// Moved back to the inbox in Gmail itself: the sync sees its labels change.
+	p, err := w.s.newPass(w.ctx, w.d.DB.Pool, a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.batch(w.ctx, func(tx pgx.Tx) error {
+		m, err := scanStored(tx.QueryRow(w.ctx, `SELECT `+storedColumns+` FROM collab_messages m WHERE m.id = $1`, atProviderMsg))
+		if err != nil {
+			return err
+		}
+		return p.update(w.ctx, tx, m, state{Unread: true, FolderIDs: []uuid.UUID{inbox.ID}})
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for tid, want := range map[uuid.UUID]bool{notSpam: true, toInbox: true, atProvider: true, toTrash: false, elsewhere: false} {
+		var got bool
+		if err := w.d.DB.Pool.QueryRow(w.ctx, `SELECT needs_action FROM collab_threads WHERE id = $1`, tid).Scan(&got); err != nil || got != want {
+			t.Fatalf("thread %s needs_action = %t, want %t (%v)", tid, got, want, err)
+		}
+	}
+	// Taken out of the inbox and back is not new: Done stays done.
+	act("done", notSpam)
+	act("archive", notSpam)
+	act("inbox", notSpam)
+	if n := w.count(`SELECT count(*) FROM collab_threads WHERE id = $1 AND needs_action`, notSpam); n != 0 {
+		t.Fatalf("archive and back re-marked: %d", n)
 	}
 }
 

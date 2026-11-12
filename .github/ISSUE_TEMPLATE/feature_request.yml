@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest something opendesk should do, or do better.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search the open issues first. Describe the problem you have before the solution you want: it
+        helps us find the best fit, and it often turns up something simpler.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Who is affected and what they do today instead.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to build it?
+      description: A short note on your approach in this issue first saves everyone a rework.
+      options:
+        - Yes, I would send a pull request
+        - Maybe, with some guidance
+        - No, I am only suggesting it

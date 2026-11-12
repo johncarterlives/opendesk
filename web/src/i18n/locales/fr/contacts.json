@@ -185,7 +185,18 @@
     "blockedTitle": "Bloqué",
     "blockedAny": "Bloqué ou non",
     "blockedOnly": "Bloqués uniquement",
-    "notBlocked": "Non bloqués"
+    "notBlocked": "Non bloqués",
+    "fields": "Champ",
+    "fieldsTitle": "Filtrer par champ",
+    "hasValue": "A une valeur",
+    "isEmpty": "Est vide",
+    "clearField": "Retirer le filtre {{name}}",
+    "yes": "Oui",
+    "no": "Non",
+    "company": "Entreprise",
+    "noCompany": "Aucune entreprise",
+    "searchCompanies": "Rechercher une entreprise",
+    "noCompanies": "Aucune entreprise trouvée."
   },
   "sort": {
     "label": "Tri : {{by}}",
@@ -197,7 +208,9 @@
     "-tickets": "Le plus de tickets",
     "tickets": "Le moins de tickets",
     "-contacts": "Le plus de personnes",
-    "contacts": "Le moins de personnes"
+    "contacts": "Le moins de personnes",
+    "-updated": "Modifiés récemment",
+    "updated": "Modifiés il y a le plus longtemps"
   },
   "bulk": {
     "toolbar": "Actions pour les lignes sélectionnées",
@@ -241,6 +254,54 @@
     },
     "selectedWord_many": "sélectionnés",
     "updated_many": "{{count}} fiches mises à jour",
-    "deleted_many": "{{count}} fiches supprimées"
+    "deleted_many": "{{count}} fiches supprimées",
+    "setField": "Définir un champ",
+    "setFieldTitle": "Définir un champ",
+    "setFieldBody": "Choisissez un champ et une valeur pour {{target}}. Vider le champ retire sa valeur pour tous.",
+    "everyoneMatching": "tous les résultats",
+    "records_one": "{{count}} fiche",
+    "records_other": "{{count}} fiches",
+    "records_many": "{{count}} fiches",
+    "clearField": "Vider le champ",
+    "applyField": "Définir le champ",
+    "findField": "Rechercher un champ",
+    "noFields": "Aucun champ personnalisé pour cette liste pour l’instant.",
+    "chooseField": "Choisir un champ",
+    "invite": "Inviter au portail",
+    "inviteFrom": "Inviter depuis",
+    "invited_one": "{{count}} invitation envoyée",
+    "invited_other": "{{count}} invitations envoyées",
+    "invited_many": "{{count}} invitations envoyées",
+    "invitedSome_one": "{{count}} invitation envoyée, {{skipped}} ignorés (sans e-mail, bloqués ou ayant déjà accès)",
+    "invitedSome_other": "{{count}} invitations envoyées, {{skipped}} ignorés (sans e-mail, bloqués ou ayant déjà accès)",
+    "invitedSome_many": "{{count}} invitations envoyées, {{skipped}} ignorés (sans e-mail, bloqués ou ayant déjà accès)",
+    "inviteFailed": "Impossible d’envoyer les invitations"
+  },
+  "portal": {
+    "title": "Portail client",
+    "status": {
+      "none": "Aucun accès",
+      "invited": "Invité",
+      "active": "A accès"
+    },
+    "noAccessHint": "Ni invité, ni mot de passe choisi de lui-même.",
+    "linkOpen": "Un lien pour choisir un mot de passe a été envoyé. Il est valable jusqu’au {{date}}.",
+    "lastSignIn": "Dernière connexion {{when}}.",
+    "noRecentSignIn": "A accès. Aucune connexion récente.",
+    "withPassword": "Se connecte avec un mot de passe",
+    "withSso": "Se connecte via le fournisseur d’identité",
+    "invite": "Inviter au portail",
+    "newLink": "Envoyer un nouveau lien",
+    "brand": "Marque",
+    "sent": "Invitation envoyée à {{email}}",
+    "sendFailed": "Impossible d’envoyer l’invitation",
+    "remove": "Retirer l’accès",
+    "removeTitle": "Retirer l’accès au portail ?",
+    "removeBody": "{{name}} est déconnecté du portail, son mot de passe est supprimé et les liens ouverts ne fonctionnent plus. Sans blocage, un nouveau lien peut être demandé sur la page de connexion du portail. S’il se connecte via votre fournisseur d’identité, il peut toujours s’y connecter.",
+    "removed": "Accès au portail retiré",
+    "removeFailed": "Impossible de retirer l’accès",
+    "needsEmail": "Ajoutez une adresse e-mail pour inviter ce contact.",
+    "isBlocked": "Débloquez ce contact pour l’inviter.",
+    "ssoOnly": "Les clients se connectent via votre fournisseur d’identité, sans invitation."
   }
 }

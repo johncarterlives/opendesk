@@ -244,6 +244,8 @@ function applyInScope(qc: QueryClient, env: Envelope, ctx: ApplyContext): void {
     case "ticket.updated": {
       const t = d.ticket as Ticket;
       if (!t) return;
+      // A restore (changes: deleted_at) takes the ticket out of the trash.
+      if ((d.changes as string[] | undefined)?.includes("deleted_at")) void qc.invalidateQueries({ queryKey: qk.of("tickets", "deleted") });
       unmarkHidden(t.id);
       patchTicketEverywhere(qc, t, ctx.me);
       refreshCounts(qc);
@@ -254,6 +256,7 @@ function applyInScope(qc: QueryClient, env: Envelope, ctx: ApplyContext): void {
       const id = d.ticket_id as string;
       removeTicketEverywhere(qc, id);
       qc.removeQueries({ queryKey: qk.ticket(id) });
+      void qc.invalidateQueries({ queryKey: qk.of("tickets", "deleted") });
       refreshCounts(qc);
       return;
     }

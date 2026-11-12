@@ -241,7 +241,7 @@ function EditorScreen({ article }: { article: KbArticle | null }) {
   // The help center that shows it: its brand's, else the default brand's.
   const helpBrand = effectiveBrand ?? defaultBrand;
   const helpBase = helpBrand ? (helpBrand.help_center.enabled ? helpCenterHref(helpBrand) : null) : ws ? defaultHelpUrl(ws.slug) : null;
-  const publicUrl = current && status === "published" && helpBase ? `${helpBase}/a/${current.slug}` : null;
+  const publicUrl = current && status === "published" && helpBase ? `${helpBase}${current.path}` : null;
   const brandField = (
     <>
       <KbBrandPick
@@ -256,8 +256,9 @@ function EditorScreen({ article }: { article: KbArticle | null }) {
 
   const slugField = (
     <div className="flex items-center gap-1.5 rounded-md border border-line bg-sunken py-1 pl-2.5 pr-1">
-      <label htmlFor="kb-slug" className="mono shrink-0 text-xs text-fg-4">
-        /a/
+      <label htmlFor="kb-slug" className="mono shrink-0 truncate text-xs text-fg-4">
+        {/* Where it lives on the help center: in its collection, else at /a/. */}
+        {collection ? `/c/${collection.slug}/` : "/a/"}
       </label>
       <TextInput
         id="kb-slug"

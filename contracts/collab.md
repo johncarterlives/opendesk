@@ -244,8 +244,11 @@ Messages group into conversations (`MailThread`): Gmail threads, Microsoft `conv
 for IMAP the first message its `References` / `In-Reply-To` name that the account already has, else
 a new conversation. A conversation's state is its messages': unread when any is unread, starred when
 any is starred, in a folder when any message is. A shared account can also track `needs_action`
-locally. New incoming mail in its inbox sets it, a reply clears it, and drafts do not change it. It
-never changes the provider's message state. Such a conversation can also be snoozed ("Snooze").
+locally. New incoming mail in its inbox sets it, a reply clears it, and drafts do not change it.
+Mail taken out of Spam into the inbox sets it too, the same as new mail: `not_spam`, `inbox` or a
+move to the inbox in opendesk, or a move at the provider that the sync sees. Other moves back to
+the inbox (from Archive or Trash) leave it as it was. It never changes the provider's message
+state. Such a conversation can also be snoozed ("Snooze").
 
 ### Actions
 
@@ -291,6 +294,25 @@ action and comes back to it on its own.
 - `box=snoozed` lists snoozed conversations still in an inbox and `counts.boxes.snoozed` counts
   them. It is kept in opendesk only: the provider's message state, read state and folders do not
   change, and the conversation stays in the inbox.
+
+### Spam beside Needs action
+
+Mail stays out of Needs action while it is in spam (moving it out with Not spam puts it back, see
+"Conversations"), so mail the provider filed as spam never reaches Needs action or the AI queue
+until someone looks, however much it matters. A customer's first email is the usual case.
+On a shared account with handling on, the work view keeps spam in sight:
+
+- `counts.boxes.spam` counts the unread conversations in spam across the accounts the caller sees,
+  and `counts.spam` the same by account (only accounts with some, missing = 0). `collab.changed`
+  keeps them current like every other count.
+- The sidebar shows a Spam row after the work queues (Ready for review, Needs action, Snoozed)
+  while a handling account the caller sees has unread spam, and while that Spam is open, without
+  opening the folder bar's More. When one handling account has unread spam the row opens that
+  account's Spam and counts it; when several do, spam across every account the caller sees,
+  counting only those shared accounts with handling on (their sum in `spam`). Like the other rows it can be hidden, pinned and its number chosen
+  (`box:spam`).
+- Needs action and Ready for review say, above the list, how many unread conversations of the
+  handling accounts in view are in spam, with a link to them.
 
 ### Drafts
 
@@ -621,7 +643,8 @@ changes a model; what the client does with the feedback is its own business.
     a person sent (without the signature block and quoted history) are or are not the AI's;
   - `discarded`: a person discarded it;
   - `replaced`: a person sent another reply in the conversation while the draft waited;
-  - `abandoned`: a person marked the conversation done while the draft waited.
+  - `abandoned`: a person marked the conversation done while the draft waited. Putting it back in
+    Needs action (`needs_action`, which Undo sends) while the draft still waits unsent clears it.
 
   `sent_*` and `discarded` are final. A draft `replaced` or `abandoned` that is then sent or
   discarded takes that outcome. A draft sent or discarded outside opendesk has none.
@@ -773,6 +796,12 @@ interface MailThread {
   comment_count: number
   to_address: string | null    // the account's address other than its own the conversation was written to or sent from (an alias), newest first
   category: string | null      // its category key ("Categories"); null when the account's inbox is not split
+  ai_draft: {                  // the AI draft waiting for a person ("AI drafts", Ready for review); null otherwise
+    draft_id: string           //   the id the /v1/collab/drafts routes take: a list row sends, edits or discards it in place
+    drafted_by: string         //   the AI client's name ("AI draft by <name>")
+    snippet: string            //   its first lines
+    to: Address[]
+  } | null
 }
 
 interface MailMessage {
@@ -1101,7 +1130,7 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | POST | `/v1/collab/accounts/oauth/{provider}/start` | agent+ | `{visibility, shared_with? (at most 40 teams and people: it travels in the signed state; add more afterwards), name?, email? (login hint), account_id? (reconnect, manage), history?: {since: string \| null} (older mail to import once connected, as `PUT …/history`; left out, none; kept when the account already has an import)}` → `{url}`; sets the flow cookie (send with credentials). `422 provider_not_configured` |
 | GET | `/v1/collab/accounts/oauth/{provider}/callback` | provider | redirects to `APP_URL/settings/mail-accounts?connected=<id>` or `?error=<code>`: `oauth_state`, `access_denied`, `provider_error`, `account_conflict` (the address is already connected in this workspace by someone else), `feature_disabled`, `forbidden`, `internal` |
 | POST | `/v1/collab/accounts/imap` | agent+ | `{email, name?, display_name?, imap_host, imap_port, imap_tls, imap_username?, password, smtp_host, smtp_port, smtp_tls, smtp_username?, smtp_password?, visibility, shared_with?, history?}` → `MailAccount` (`history` as on the OAuth start). Both servers are tried first: `422 connection_failed` with `detail`. `409 account_conflict`. `422 imap_unavailable` with `COLLAB_IMAP` off |
-| PATCH | `/v1/collab/accounts/{id}` | manage | `{name?, display_name?, color?, signature_html?, visibility?, handling_enabled?, reply_all?, shared_with?, imap? {…same fields, password?, smtp_password?}, default_from?}` → `MailAccount`; a shared account's `shared_with` may be empty ("Who sees what"). `handling_enabled` is available on shared accounts only and clears when an account becomes private. `reply_all` is kept in opendesk only and applies to everyone answering from the account. `default_from` must be one of its addresses that can send (`422 validation_failed`) and is kept in opendesk (Gmail's own change of its default still comes in, "Addresses"); new IMAP settings are tried first. A changed `signature_html` or `display_name` that syncs `two_way` is made at Gmail first (sanitized): a refusal is `502 provider_error` and nothing of the change is saved. `read_only` and `none` save in opendesk only. A changed `display_name` stops a Microsoft account following its profile name. A `display_name` or `signature_html` with variables ("Who sends") is checked (`422 validation_failed`) and saved in opendesk only, never at Gmail |
+| PATCH | `/v1/collab/accounts/{id}` | manage | `{name?, display_name?, color?, signature_html?, visibility?, handling_enabled?, mark_inbox_needs_action?, reply_all?, shared_with?, imap? {…same fields, password?, smtp_password?}, default_from?}` → `MailAccount`; a shared account's `shared_with` may be empty ("Who sees what"). `handling_enabled` is available on shared accounts only and clears when an account becomes private. `mark_inbox_needs_action` goes only with `handling_enabled` turning on (`422 validation_failed` otherwise, so another save never puts back what was marked done) and puts the conversations now in its inbox whose latest message is from the last 30 days in Needs action, except snoozed ones and those whose latest message the account sent; in opendesk only, audit-logged with the number marked (GH#430). Turning handling off and on again offers it again: the web app asks, with the offer off unless chosen. `reply_all` is kept in opendesk only and applies to everyone answering from the account. `default_from` must be one of its addresses that can send (`422 validation_failed`) and is kept in opendesk (Gmail's own change of its default still comes in, "Addresses"); new IMAP settings are tried first. A changed `signature_html` or `display_name` that syncs `two_way` is made at Gmail first (sanitized): a refusal is `502 provider_error` and nothing of the change is saved. `read_only` and `none` save in opendesk only. A changed `display_name` stops a Microsoft account following its profile name. A `display_name` or `signature_html` with variables ("Who sends") is checked (`422 validation_failed`) and saved in opendesk only, never at Gmail |
 | POST | `/v1/collab/accounts/{id}/identities` | manage | Add an address ("Addresses"): `{email, display_name?, signature_html?, reply_to?}` → `MailAccount`. Microsoft and IMAP only (`422 identities_from_provider` for Gmail); `409 identity_conflict` for the account's own or an existing address; at most 50 |
 | PATCH | `/v1/collab/accounts/{id}/identities/{identity_id}` | manage | `{display_name?, signature_html?, reply_to? (hand-added only)}` → `MailAccount`. Saved in opendesk; a Gmail address's From name and signature are replaced by Gmail's when they next change there (`pull`) |
 | POST | `/v1/collab/accounts/{id}/identities/preview` | manage | `{email?, display_name, signature_html?}` → `{from_name, from, signature_html, from_name_problem, problems: TemplateProblem[]}`: what is typed, filled for the caller and checked, nothing saved ("Who sends"). `email` is the address (default the account's own); an empty `display_name` uses the account's |
@@ -1123,7 +1152,7 @@ account or conversation; "act": sees it and is agent or above; "manage": "Who se
 | PATCH | `/v1/collab/folders/{id}` | act | `{name?, color?: tone}`, at least one → `MailFolder`; at the provider first, then stored. `422` for a special folder; `color` only on a Gmail label or an Outlook category (`422 validation_error` otherwise); an Outlook category cannot be renamed (`422 rename_unsupported`) |
 | DELETE | `/v1/collab/folders/{id}` | act | → 204; its conversations stay in their other folders; `422` for a special folder |
 | GET | `/v1/collab/threads` | member | `?box=&account_id=&folder_id=&q=&to=&with=&category=&limit=(1..100, 50)&cursor=` → `Page<MailThread>`, newest first. `category`: one tab of the inbox ("Categories"), with `box=inbox` only (`422` otherwise). `to`: only conversations with that address on a message (From, To, Cc or where it was delivered), case-insensitive: one alias's mail. `box`: `inbox` (default), `unread`, `starred`, `sent`, `drafts`, `archive`, `trash`, `spam`, `all`, `shared`, `assigned`, `needs_action`, `snoozed` ("Snooze"), `ai_review` (conversations in an inbox whose draft an AI client saved and no person has saved, sent or discarded since: "Ready for review", "AI queue"). Without `account_id` it spans every account the caller sees (for `shared`, `assigned`, and `needs_action`, every conversation they see). `folder_id` replaces `box`. `unread` and `all` leave out trash and spam, `starred` leaves out trash, and `shared`, `assigned`, and `needs_action` count conversations still in an inbox. `archive` is the Archive folder, and for Gmail, which archives by removing `INBOX`, what is in none of inbox, trash, spam and drafts. `q` matches each message's subject, sender and text and the conversation's subject and participants ("Search"). `with`: only conversations with that person on a message, like `to`; without `account_id` it spans every conversation the caller sees, those shared with them on their own included ("People") |
-| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts, needs_action, snoozed, ai_review}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, addresses: Record<id, Record<address, number>>, categories: Record<account id, Record<key, number>>, ai_review: Record<account id, number>}`: unread conversations; `shared`, `assigned`, `needs_action`, `snoozed` and `ai_review` count those still in an inbox, `drafts` every draft conversation; `ai_review` (`boxes.ai_review` by account) lists only accounts with some (missing = 0); `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0); `categories`, for each split account, the unread conversations in its inbox by category key, `primary` included (missing = 0) |
+| GET | `/v1/collab/counts` | member | `{boxes: {inbox, unread, shared, assigned, drafts, needs_action, snoozed, ai_review, spam}: number, accounts: Record<id, number>, folders: Record<id, number>, assigned: Record<account id, number>, addresses: Record<id, Record<address, number>>, categories: Record<account id, Record<key, number>>, ai_review: Record<account id, number>, spam: Record<account id, number>}`: unread conversations; `shared`, `assigned`, `needs_action`, `snoozed` and `ai_review` count those still in an inbox, `drafts` every draft conversation, `spam` the unread ones in spam ("Spam beside Needs action"); `ai_review` and `spam` (`boxes.ai_review` and `boxes.spam` by account) list only accounts with some (missing = 0); `folders` lists only folders with unread conversations, and `assigned` (`boxes.assigned` by account) only accounts with some (missing = 0); `addresses`, for each account with addresses besides its own, the unread conversations in its inbox with each of its addresses (its own included, lower case) on a message, matched like `to=` (missing = 0); `categories`, for each split account, the unread conversations in its inbox by category key, `primary` included (missing = 0) |
 | GET | `/v1/collab/threads/{id}` | see | `MailThreadDetail` |
 | GET | `/v1/collab/person` | member | `?email=&exclude=&limit=` → `MailPerson` ("People"); `422 validation_failed` for an address that is not one |
 | POST | `/v1/collab/threads/actions` | act | `{thread_ids: string[1..100], action, folder_id?, category?, until?}` → `{threads: MailThread[]}`. `done`, `needs_action` and `snooze` are available only for a shared account with handling enabled and do not create a provider job; `snooze` needs `until` in the future ("Snooze"). Threads the caller cannot act on are `404` (all or nothing). `categorize` needs a `category` every one of their accounts has (`422 validation_failed`) |

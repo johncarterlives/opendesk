@@ -106,9 +106,12 @@ func CollectionBySlug(ctx context.Context, q db.Querier, hc HelpCenter, slug str
 	return c, publicList(arts), err
 }
 
-// ArticleBySlug returns a published article of the help center, or a not-found error.
+// ArticleBySlug returns a published article of the help center by its slug alone, or a
+// not-found error: the one in no collection, else the oldest with that slug. Its Path is where
+// it lives.
 func ArticleBySlug(ctx context.Context, q db.Querier, hc HelpCenter, slug string) (KbArticle, error) {
-	a, err := scanArticle(q.QueryRow(ctx, articleSelect+` WHERE a.workspace_id = $1 AND a.slug = $2 AND a.status = 'published' AND `+forBrand(3),
+	a, err := scanArticle(q.QueryRow(ctx, articleSelect+` WHERE a.workspace_id = $1 AND a.slug = $2 AND a.status = 'published' AND `+forBrand(3)+`
+		ORDER BY a.collection_id IS NOT NULL, a.created_at, a.id LIMIT 1`,
 		hc.WorkspaceID, slug, hc.BrandID))
 	return public(a), err
 }
@@ -139,6 +142,7 @@ func SearchHelpCenter(ctx context.Context, q db.Querier, hc HelpCenter, query st
 type SitemapEntry struct {
 	Kind      string // "collection" | "article" | "changelog"
 	Slug      string
+	Path      string // an article's (KbArticle.Path)
 	UpdatedAt time.Time
 }
 
@@ -148,14 +152,14 @@ const maxSitemap = 50000
 // Sitemap lists the help center's topics, published articles and public changelog entries,
 // each with when it last changed (a topic: its newest article).
 func Sitemap(ctx context.Context, q db.Querier, hc HelpCenter) ([]SitemapEntry, error) {
-	rows, err := q.Query(ctx, `SELECT 'collection', k.slug, max(a.updated_at) FROM kb_collections k
+	rows, err := q.Query(ctx, `SELECT 'collection', k.slug, '', max(a.updated_at) FROM kb_collections k
 			JOIN kb_articles a ON a.collection_id = k.id AND a.status = 'published' AND COALESCE(k.brand_id, a.brand_id, $1) = $1
 			WHERE k.workspace_id = $2 AND COALESCE(k.brand_id, $1) = $1 GROUP BY k.id, k.slug
 		UNION ALL
-		(SELECT 'article', a.slug, a.updated_at FROM kb_articles a
+		(SELECT 'article', a.slug, `+articlePath+`, a.updated_at FROM kb_articles a
 			WHERE a.workspace_id = $2 AND a.status = 'published' AND `+forBrand(1)+` ORDER BY a.updated_at DESC LIMIT $3)
 		UNION ALL
-		(SELECT 'changelog', e.slug, e.updated_at FROM changelog_entries e
+		(SELECT 'changelog', e.slug, '', e.updated_at FROM changelog_entries e
 			WHERE e.workspace_id = $2 AND e.status = 'published' AND e.published_at <= now() AND COALESCE(e.brand_id, $1) = $1
 			ORDER BY e.published_at DESC LIMIT 1000)`,
 		hc.BrandID, hc.WorkspaceID, maxSitemap-2000)
@@ -166,7 +170,7 @@ func Sitemap(ctx context.Context, q db.Querier, hc HelpCenter) ([]SitemapEntry, 
 	var out []SitemapEntry
 	for rows.Next() {
 		var e SitemapEntry
-		if err := rows.Scan(&e.Kind, &e.Slug, &e.UpdatedAt); err != nil {
+		if err := rows.Scan(&e.Kind, &e.Slug, &e.Path, &e.UpdatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, e)

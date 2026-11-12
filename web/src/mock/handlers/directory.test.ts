@@ -78,4 +78,29 @@ describe("mock people and companies lists", () => {
     expect(ws.companies.some((c) => c.id === target.id)).toBe(false);
     expect(ws.contacts.some((p) => p.company?.id === target.id)).toBe(false);
   });
+
+  it("sets and clears a custom field by id, selects by a field filter, and refuses a bad value whole", async () => {
+    const ws = db.workspaces[0];
+    const ids = ws.contacts.slice(0, 2).map((c) => c.id);
+    expect((await post("/v1/contacts/bulk", { ids, patch: { fields: { timezone: "Europe/Paris" } } })).body).toEqual({ updated: 2, deleted: 0 });
+    const tagged = await post("/v1/contacts/bulk", {
+      query: { fields: [{ key: "timezone", op: "eq", value: "Europe/Paris" }] },
+      patch: { add_tags: ["paris"] },
+    });
+    expect(tagged.body.updated).toBeGreaterThanOrEqual(2);
+    await post("/v1/contacts/bulk", { ids: ids.slice(0, 1), patch: { fields: { timezone: null } } });
+    expect(ws.contacts.find((c) => c.id === ids[0])!.fields.timezone).toBeUndefined();
+
+    const before = ws.contacts.map((c) => c.fields.nps);
+    expect((await post("/v1/contacts/bulk", { ids, patch: { fields: { nps: "lots" } } })).status).toBe(422);
+    expect((await post("/v1/contacts/bulk", { ids, patch: {} })).status).toBe(422);
+    expect(ws.contacts.map((c) => c.fields.nps)).toEqual(before);
+  });
+
+  it("lists people without a company and sorts by last update", async () => {
+    const none = await list<Contact>("/v1/contacts?company_id=none&limit=100");
+    expect(none.every((c) => !c.company)).toBe(true);
+    const updated = (await list<Contact>("/v1/contacts?sort=-updated&limit=100")).map((c) => Date.parse(c.updated_at));
+    expect(updated).toEqual([...updated].sort((a, b) => b - a));
+  });
 });

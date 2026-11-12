@@ -38,5 +38,5 @@ export async function requireTickets(qc: QueryClient) {
 export const TICKET_SETTINGS: ReadonlySet<string> = new Set([
   "/settings/tags", "/settings/custom-fields", "/settings/assignment", "/settings/triage", "/settings/business-hours",
   "/settings/saved-replies", "/settings/views", "/settings/sla", "/settings/automations", "/settings/mailboxes", "/settings/phone",
-  "/settings/support-channels", "/settings/routing", "/settings/brands", "/settings/email-design",
+  "/settings/support-channels", "/settings/routing", "/settings/brands", "/settings/email-design", "/settings/trash",
 ]);

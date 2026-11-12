@@ -183,8 +183,10 @@ Pull requests are welcome. Keep each one to a single logical change, and open an
 issue first for larger design or product changes. Read [`AGENTS.md`](AGENTS.md)
 and the files in [`contracts/`](contracts/) before changing an interface between
 parts. Before you open a PR, run `make lint` and `make test` for Go, and
-`pnpm typecheck` and `pnpm lint` in `web/`. See the
-[contributing guide](https://docs.opendesk.sh/contributing/).
+`pnpm typecheck` and `pnpm lint` in `web/`, or run `pnpm qa` in `qa/` for everything your branch changes.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md), the
+[contributing guide](https://docs.opendesk.sh/contributing/) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+Need help rather than a change? See [`SUPPORT.md`](SUPPORT.md).
 
 Logos, icons, colours and usage rules are in [`brand/`](brand/README.md).
 

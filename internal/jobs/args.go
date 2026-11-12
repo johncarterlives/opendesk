@@ -2,7 +2,11 @@
 // the owning area registers the worker (see internal/app). River runs them on Postgres.
 package jobs
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // Queues.
 const (
@@ -63,6 +67,18 @@ type SyncMailboxArgs struct {
 }
 
 func (SyncMailboxArgs) Kind() string { return "email.sync_mailbox" }
+
+// SentCopyArgs stores a copy of an email a mailbox sent in its IMAP sent folder (IMAP
+// APPEND). StorageKey holds the message as it went out; the job removes it. Owner: email.
+type SentCopyArgs struct {
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	MailboxID   uuid.UUID `json:"mailbox_id"`
+	StorageKey  string    `json:"storage_key"`
+	// SentAt is when the email went out: the copy's date in the folder.
+	SentAt time.Time `json:"sent_at"`
+}
+
+func (SentCopyArgs) Kind() string { return "email.sent_copy" }
 
 // Provider tidy-up actions (ProviderTidyArgs.Action).
 const (

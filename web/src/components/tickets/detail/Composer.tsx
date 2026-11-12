@@ -37,6 +37,7 @@ import { ComposerAiMenu, ComposerAiStatus, ComposerSources, useComposerAi } from
 import { SuggestedReplyCard } from "./SuggestedReply";
 import { SharedDraftBar } from "./SharedDraft";
 import { useReplyDraftSync } from "./replyDraft";
+import { replyRecipient } from "./replyRecipient";
 import { backToNote, deliver, hold, undoSeconds as undoSecondsFor, useUnsent, type Upload } from "./outbox";
 import { EmailChips, SavedReplyButton, UploadChip, uploadFiles } from "./composerParts";
 import { mergeReplyActions, ReplyActionChips, replyActionLabels } from "./ReplyActions";
@@ -60,6 +61,8 @@ type Mode = "reply" | "note" | "thread";
 type Draft = {
   mode: Mode;
   html: string;
+  /** Who a reply goes to, once the agent changes it; left out: the customer's reply address. */
+  to?: string[];
   cc: string[];
   bcc: string[];
   showCc: boolean;
@@ -108,6 +111,7 @@ export type ComposerHandle = {
 /** The optimistic copy of a reply or note this agent writes, shown until the server's arrives. */
 function useTempMessage(ticket: Ticket, ctx: TeamsCtx, personal?: PersonalSender) {
   const user = useSession((s) => s.user!);
+  const qc = useQueryClient();
   return (body: SendMessageBody, tempId: string): Message => {
     const own = body.kind === "reply" && body.from_account ? personal : undefined;
     const mb = body.kind === "reply" && !own ? ctx.mailbox(body.mailbox_id ?? ticket.mailbox_id) : undefined;
@@ -128,7 +132,10 @@ function useTempMessage(ticket: Ticket, ctx: TeamsCtx, personal?: PersonalSender
       mailbox_id: mb?.id ?? null,
       from_account:
         own && body.from_account ? { account_id: own.account.id, email: own.identity.email, reply_to: body.from_account.reply_to ?? "" } : null,
-      to: body.kind === "reply" && ticket.contact?.email ? [ticket.contact.email] : [],
+      to:
+        body.kind === "reply" && ticket.contact?.email
+          ? (body.to ?? [replyRecipient(ticket.contact.email, qc.getQueryData<Message[]>(qk.messages(ticket.id)))])
+          : [],
       cc: body.cc ?? [],
       bcc: body.bcc ?? [],
       attachments: [],
@@ -334,6 +341,7 @@ export const Composer = forwardRef<
   const me = useSession((s) => s.user!.id);
   const userName = useSession((s) => s.user!.name);
   const { data: workspace } = useQuery(q.workspace());
+  const { data: messages } = useQuery(q.messages(ticket.id));
   // Email replies wait a few seconds by default, chat replies go at once (settings).
   const undoSeconds = undoSecondsFor(workspace?.settings, ticket.channel);
   const sendThread = useSendThread(ticket);
@@ -443,7 +451,9 @@ export const Composer = forwardRef<
     (mode === "thread" && teams.mailbox(thread?.mailbox_id ?? ticket.mailbox_id)?.sending === "system_off");
   const threadReady = mode !== "thread" || !!thread || (draft.threadTo.length > 0 && !!draft.threadSubject.trim());
   // A forwarded email can go without words of its own.
-  const canSend = (!!draft.html || !!forwarding) && !busyUploads && !disabled && !ai.busy && !noSender && !filling && threadReady && !sendThread.isPending;
+  // A reply whose To the agent emptied waits for an address.
+  const noRecipient = mode === "reply" && draft.to?.length === 0;
+  const canSend = (!!draft.html || !!forwarding) && !noRecipient && !busyUploads && !disabled && !ai.busy && !noSender && !filling && threadReady && !sendThread.isPending;
 
   // The send button's moment: a check once it is out, or once a reply is on hold (its toast
   // and the timeline count down from there).
@@ -468,9 +478,10 @@ export const Composer = forwardRef<
     setDraft({
       mode: "reply",
       html,
+      to: unsent.to,
       cc: unsent.cc,
       bcc: unsent.bcc,
-      showCc: unsent.cc.length + unsent.bcc.length > 0,
+      showCc: !!unsent.to || unsent.cc.length + unsent.bcc.length > 0,
       mailboxId: unsent.mailboxId,
       fromAccount: unsent.fromAccount,
       fromNote: unsent.fromNote,
@@ -538,7 +549,7 @@ export const Composer = forwardRef<
       void backToNote(tempMessage({ kind: "note", body_html: draft.html }, `tmp-${Date.now().toString(36)}`), draft.fromNote, draft.html, attachments, me);
       uploads.forEach((u) => u.preview && URL.revokeObjectURL(u.preview));
       setUploads([]);
-      setDraft({ html: "", cc: [], bcc: [], showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, mode: "reply" });
+      setDraft({ html: "", to: undefined, cc: [], bcc: [], showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, mode: "reply" });
       editor.current?.clear();
       ai.dismissSources();
       return;
@@ -546,6 +557,7 @@ export const Composer = forwardRef<
     const body: SendMessageBody = {
       kind,
       body_html: draft.html,
+      to: reply && draft.to ? draft.to : undefined,
       cc: reply && draft.cc.length ? draft.cc : undefined,
       bcc: reply && draft.bcc.length ? draft.bcc : undefined,
       attachment_ids: uploads.filter((u) => u.attachment).map((u) => u.attachment!.id),
@@ -566,7 +578,7 @@ export const Composer = forwardRef<
       hold(
         temp,
         body,
-        { html: draft.html, cc: draft.cc, bcc: draft.bcc, mailboxId: draft.mailboxId, fromAccount: draft.fromAccount, uploads, fromNote: draft.fromNote },
+        { html: draft.html, to: draft.to, cc: draft.cc, bcc: draft.bcc, mailboxId: draft.mailboxId, fromAccount: draft.fromAccount, uploads, fromNote: draft.fromNote },
         me,
         undoSeconds,
         { warn },
@@ -578,7 +590,7 @@ export const Composer = forwardRef<
     setSentWith(status);
     setSent(true);
     setUploads([]);
-    setDraft({ html: "", cc: [], bcc: [], showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, ...(opts.as ? { mode: "reply" } : {}) });
+    setDraft({ html: "", to: undefined, cc: [], bcc: [], showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, ...(opts.as ? { mode: "reply" } : {}) });
     editor.current?.clear();
     ai.dismissSources();
     // A held reply's toast says what it will do; it sets the status only once it is sent.
@@ -600,7 +612,13 @@ export const Composer = forwardRef<
 
   const note = mode === "note";
   const threadMode = mode === "thread";
-  const recipient = ticket.contact?.email ?? ticket.contact?.name ?? t("composer.theCustomer");
+  const defaultTo = ticket.contact?.email ? replyRecipient(ticket.contact.email, messages) : undefined;
+  const recipient = draft.to?.length ? draft.to.join(", ") : (defaultTo ?? ticket.contact?.name ?? t("composer.theCustomer"));
+  // One click away in the To row: the customer's address and the Reply-To of their latest email.
+  const toSuggestions = useMemo(() => {
+    const last = [...(messages ?? [])].reverse().find((m) => m.direction === "inbound" && m.kind === "reply");
+    return [...new Set([defaultTo, ticket.contact?.email, last?.reply_to].filter((a): a is string => !!a).map((a) => a.toLowerCase()))];
+  }, [messages, defaultTo, ticket.contact?.email]);
   // An email reply: from one of my own addresses, or from a team address.
   const replyMailbox = teams.mailbox(replyMailboxId);
   const emailReply = mode === "reply" && (!!personalSender || (!!replyMailbox && (ticket.channel === "email" || !!ticket.mailbox_id)));
@@ -806,9 +824,14 @@ export const Composer = forwardRef<
             ) : ticket.channel === "chat" ? (
               <ChatReplyLine ticket={ticket} />
             ) : (
-              <span className="min-w-0 flex-1 truncate text-xs text-fg-3">
+              <button
+                type="button"
+                onClick={() => setDraft({ showCc: true })}
+                disabled={!emailReply || !defaultTo}
+                className="min-w-0 flex-1 truncate text-left text-xs text-fg-3 enabled:hover:text-fg"
+              >
                 {t("composer.to")} <span className="mono text-fg-2" data-ph-mask>{recipient}</span>
-              </span>
+              </button>
             )}
             {!note && !threadMode && (
               <button
@@ -831,6 +854,14 @@ export const Composer = forwardRef<
                 transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
                 className="overflow-hidden"
               >
+                {emailReply && defaultTo && (
+                  <EmailChips
+                    label={t("composer.to")}
+                    values={draft.to ?? [defaultTo]}
+                    onChange={(to) => setDraft({ to: to.length === 1 && to[0] === defaultTo ? undefined : to })}
+                    suggestions={toSuggestions}
+                  />
+                )}
                 <EmailChips label={t("composer.cc")} values={draft.cc} onChange={(cc) => setDraft({ cc })} />
                 <EmailChips label={t("composer.bcc")} values={draft.bcc} onChange={(bcc) => setDraft({ bcc })} />
               </motion.div>

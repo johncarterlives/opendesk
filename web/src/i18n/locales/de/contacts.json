@@ -183,7 +183,18 @@
     "blockedTitle": "Gesperrt",
     "blockedAny": "Gesperrt oder nicht",
     "blockedOnly": "Nur gesperrte",
-    "notBlocked": "Nicht gesperrt"
+    "notBlocked": "Nicht gesperrt",
+    "fields": "Feld",
+    "fieldsTitle": "Nach Feld filtern",
+    "hasValue": "Hat einen Wert",
+    "isEmpty": "Ist leer",
+    "clearField": "Filter {{name}} entfernen",
+    "yes": "Ja",
+    "no": "Nein",
+    "company": "Unternehmen",
+    "noCompany": "Kein Unternehmen",
+    "searchCompanies": "Unternehmen suchen",
+    "noCompanies": "Keine Unternehmen gefunden."
   },
   "sort": {
     "label": "Sortiert nach {{by}}",
@@ -195,7 +206,9 @@
     "-tickets": "Meiste Tickets",
     "tickets": "Wenigste Tickets",
     "-contacts": "Meiste Personen",
-    "contacts": "Wenigste Personen"
+    "contacts": "Wenigste Personen",
+    "-updated": "Zuletzt geändert",
+    "updated": "Am längsten nicht geändert"
   },
   "bulk": {
     "toolbar": "Aktionen für die ausgewählten Zeilen",
@@ -232,6 +245,51 @@
     "deleteAllBody": {
       "contacts": "Alle Personen, die zur Suche und den Filtern passen, werden endgültig gelöscht, höchstens 1000. Ihre Tickets bleiben ohne Kunden erhalten. Das lässt sich nicht rückgängig machen.",
       "companies": "Alle Unternehmen, die zur Suche und den Filtern passen, werden endgültig gelöscht, höchstens 1000. Ihre Personen bleiben ohne Unternehmen erhalten. Das lässt sich nicht rückgängig machen."
-    }
+    },
+    "setField": "Feld festlegen",
+    "setFieldTitle": "Ein Feld festlegen",
+    "setFieldBody": "Wähle ein Feld und einen Wert für {{target}}. Leeren entfernt den Wert des Felds bei allen.",
+    "everyoneMatching": "alle Treffer",
+    "records_one": "{{count}} Eintrag",
+    "records_other": "{{count}} Einträge",
+    "clearField": "Feld leeren",
+    "applyField": "Feld festlegen",
+    "findField": "Feld suchen",
+    "noFields": "Für diese Liste gibt es noch keine benutzerdefinierten Felder.",
+    "chooseField": "Feld wählen",
+    "invite": "Zum Portal einladen",
+    "inviteFrom": "Einladen von",
+    "invited_one": "{{count}} Einladung gesendet",
+    "invited_other": "{{count}} Einladungen gesendet",
+    "invitedSome_one": "{{count}} Einladung gesendet, {{skipped}} übersprungen (keine E-Mail, gesperrt oder schon mit Zugang)",
+    "invitedSome_other": "{{count}} Einladungen gesendet, {{skipped}} übersprungen (keine E-Mail, gesperrt oder schon mit Zugang)",
+    "inviteFailed": "Die Einladungen konnten nicht gesendet werden"
+  },
+  "portal": {
+    "title": "Kundenportal",
+    "status": {
+      "none": "Kein Zugang",
+      "invited": "Eingeladen",
+      "active": "Hat Zugang"
+    },
+    "noAccessHint": "Weder eingeladen noch ein eigenes Passwort gesetzt.",
+    "linkOpen": "Ein Link zum Festlegen des Passworts wurde gesendet. Er gilt bis {{date}}.",
+    "lastSignIn": "Zuletzt angemeldet {{when}}.",
+    "noRecentSignIn": "Hat Zugang. Keine Anmeldung in letzter Zeit.",
+    "withPassword": "Meldet sich mit Passwort an",
+    "withSso": "Meldet sich über den Identitätsanbieter an",
+    "invite": "Zum Portal einladen",
+    "newLink": "Neuen Link senden",
+    "brand": "Marke",
+    "sent": "Einladung an {{email}} gesendet",
+    "sendFailed": "Die Einladung konnte nicht gesendet werden",
+    "remove": "Zugang entfernen",
+    "removeTitle": "Portalzugang entfernen?",
+    "removeBody": "{{name}} wird vom Portal abgemeldet, das Passwort wird entfernt und offene Links funktionieren nicht mehr. Ohne Sperre lässt sich auf der Anmeldeseite des Portals ein neuer Link anfordern. Wer sich über Ihren Identitätsanbieter anmeldet, kann sich dort weiterhin anmelden.",
+    "removed": "Portalzugang entfernt",
+    "removeFailed": "Der Zugang konnte nicht entfernt werden",
+    "needsEmail": "Fügen Sie eine E-Mail-Adresse hinzu, um diesen Kontakt einzuladen.",
+    "isBlocked": "Heben Sie die Sperre auf, um diesen Kontakt einzuladen.",
+    "ssoOnly": "Kunden melden sich über Ihren Identitätsanbieter an, ohne Einladung."
   }
 }

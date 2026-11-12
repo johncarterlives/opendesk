@@ -421,6 +421,64 @@ func TestNotificationEmailRechecks(t *testing.T) {
 	}
 }
 
+// TestNotificationEmailSettled: a new_ticket or customer_replied email is dropped when the
+// ticket was taken care of before it went out (contracts/api.md "Notification preferences
+// and emails"); the notification stays in the app. An automatic reply does not count.
+func TestNotificationEmailSettled(t *testing.T) {
+	f := newNotifyFixture(t, "notifsettled")
+	reply := func(tid uuid.UUID, author, at string) {
+		f.exec(`INSERT INTO messages (id, workspace_id, ticket_id, kind, direction, author_type, created_at)
+			VALUES ($1, $2, $3, 'reply', 'outbound', $4, `+at+`)`, ids.New(), f.wid, tid, author)
+	}
+	waiting := func(id uuid.UUID) bool {
+		return f.count(`SELECT count(*) FROM notifications WHERE id = $1 AND emailed_at IS NULL AND email_due_at IS NOT NULL`, id) == 1
+	}
+
+	// Answered through the API after the notification (the bot of #446).
+	byAPI := f.ticket("Chat from a visitor", nil, nil)
+	apiNote := f.notify(hd.NotifyNewTicket, &byAPI, map[string]any{"channel": "chat"})
+	reply(byAPI, "api", "now() + interval '1 second'")
+
+	// Answered by a member.
+	byMember := f.ticket("Login trouble", nil, nil)
+	memberNote := f.notify(hd.NotifyCustomerReplied, &byMember, map[string]any{})
+	reply(byMember, "user", "now() + interval '1 second'")
+
+	// Taken by someone else, and solved.
+	taken := f.ticket("Invoice copy", nil, nil)
+	takenNote := f.notify(hd.NotifyNewTicket, &taken, map[string]any{"channel": "email"})
+	f.exec(`UPDATE tickets SET assignee_id = $2 WHERE id = $1`, taken, f.maya)
+	solved := f.ticket("Thanks!", nil, nil)
+	solvedNote := f.notify(hd.NotifyNewTicket, &solved, map[string]any{"channel": "email"})
+	f.exec(`UPDATE tickets SET status = 'solved', solved_at = now() WHERE id = $1`, solved)
+
+	// Still due: only an automatic reply, a reply from before the notification, and a
+	// customer reply on the user's own ticket that nobody answered yet.
+	auto := f.ticket("Where is my order", nil, nil)
+	autoNote := f.notify(hd.NotifyNewTicket, &auto, map[string]any{"channel": "email"})
+	reply(auto, "system", "now() + interval '1 second'")
+	earlier := f.ticket("Follow-up", nil, nil)
+	reply(earlier, "user", "now() - interval '1 minute'")
+	earlierNote := f.notify(hd.NotifyCustomerReplied, &earlier, map[string]any{})
+	mine := f.ticket("Mine", nil, &f.uid)
+	mineNote := f.notify(hd.NotifyCustomerReplied, &mine, map[string]any{})
+
+	f.send(later())
+	if len(f.mails()) != 1 {
+		t.Fatalf("mails: %d", len(f.mails()))
+	}
+	for name, id := range map[string]uuid.UUID{"api reply": apiNote, "member reply": memberNote, "assigned": takenNote, "solved": solvedNote} {
+		if f.count(`SELECT count(*) FROM notifications WHERE id = $1 AND email_due_at IS NULL AND emailed_at IS NULL AND read_at IS NULL`, id) != 1 {
+			t.Errorf("%s: email not dropped, or the notification left the app", name)
+		}
+	}
+	for name, id := range map[string]uuid.UUID{"automatic reply": autoNote, "reply before": earlierNote, "own ticket": mineNote} {
+		if waiting(id) || f.count(`SELECT count(*) FROM notifications WHERE id = $1 AND emailed_at IS NOT NULL`, id) != 1 {
+			t.Errorf("%s: not emailed", name)
+		}
+	}
+}
+
 // TestNotificationEmailDigest: a daily cadence waits for the digest hour, and a cadence
 // change moves what is already waiting.
 func TestNotificationEmailDigest(t *testing.T) {

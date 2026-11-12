@@ -70,6 +70,7 @@
     "aiClients": "AI clients",
     "webhooks": "Webhooks",
     "auditLog": "Audit log",
+    "trash": "Trash",
     "ai": "AI",
     "aiAgent": "AI agent",
     "agentBehaviour": "Agent behaviour",
@@ -153,6 +154,7 @@
     "aiClients": "AI clients",
     "webhooks": "Webhooks",
     "auditLog": "Audit log",
+    "trash": "Trash",
     "phone": "Phone",
     "pages": "Pages"
   },

@@ -41,6 +41,7 @@ import {
   Sparkles,
   Clock,
   Tag,
+  Trash2,
   Wrench,
   User,
   Users,
@@ -89,6 +90,7 @@ type NavPath =
   | "/settings/ai-clients"
   | "/settings/webhooks"
   | "/settings/audit-log"
+  | "/settings/trash"
   | "/settings/billing"
   | "/settings/ai"
   | "/settings/ai/agent"
@@ -178,7 +180,13 @@ const groups: { title: keyof typeof navigation.groups; items: { to: NavPath; lab
       { to: "/settings/webhooks", label: "webhooks", icon: <Webhook /> },
     ],
   },
-  { title: "admin", items: [{ to: "/settings/audit-log", label: "auditLog", icon: <ListChecks /> }] },
+  {
+    title: "admin",
+    items: [
+      { to: "/settings/audit-log", label: "auditLog", icon: <ListChecks /> },
+      { to: "/settings/trash", label: "trash", icon: <Trash2 /> },
+    ],
+  },
 ];
 
 /**

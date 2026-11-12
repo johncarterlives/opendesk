@@ -85,6 +85,7 @@
     "mentionTeammate": "Mention a teammate",
     "mergeSearch": "Search by subject, customer or #number",
     "remove": "Remove {{name}}",
+    "addAddress": "Add {{address}}",
     "openFile": "Open {{name}}"
   }
 }

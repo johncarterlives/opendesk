@@ -138,6 +138,7 @@
       "message": "W czym możemy pomóc?",
       "send": "Wyślij zgłoszenie",
       "limit": "Wysłano kilka zgłoszeń z rzędu. Poczekaj chwilę i spróbuj ponownie.",
+      "busy": "Właśnie napływa wiele zgłoszeń. Odczekaj chwilę i spróbuj ponownie.",
       "attach": "Wybierz pliki",
       "drop": "Upuść pliki tutaj lub wklej zrzut ekranu.",
       "remove": "Usuń {{name}}",

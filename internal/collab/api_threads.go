@@ -141,6 +141,8 @@ type CollabCounts struct {
 	Categories map[uuid.UUID]map[string]int `json:"categories"`
 	// AIReview: boxes.ai_review by account; an account without any is left out.
 	AIReview map[uuid.UUID]int `json:"ai_review"`
+	// Spam: boxes.spam by account; an account without any is left out.
+	Spam map[uuid.UUID]int `json:"spam"`
 }
 
 // CollabBoxCounts are unread conversations; assigned and shared: open ones (in an inbox).
@@ -153,6 +155,7 @@ type CollabBoxCounts struct {
 	NeedsAction int `json:"needs_action"`
 	Snoozed     int `json:"snoozed"`
 	AIReview    int `json:"ai_review" doc:"Conversations in an inbox with an AI draft waiting for a person (Ready for review)"`
+	Spam        int `json:"spam" doc:"Unread conversations in spam, which never reach Needs action or the AI queue"`
 }
 
 type threadIDInput struct {
@@ -404,6 +407,12 @@ func (s *service) registerThreadRoutes(api huma.API) {
 					if b.Action == ActionDone {
 						// Done without sending its AI draft: abandoned ("AI draft outcomes").
 						if err := settleDone(ctx, tx, list, p.UserID); err != nil {
+							return err
+						}
+					}
+					if b.Action == ActionNeedsAction {
+						// Back in Needs action with the draft still waiting: no longer abandoned.
+						if err := reopenAbandoned(ctx, tx, list); err != nil {
 							return err
 						}
 					}
@@ -681,7 +690,7 @@ func (s *service) detailResponse(ctx context.Context, p *auth.Principal, id uuid
 // counts are the sidebar's numbers for the caller.
 func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (CollabCounts, error) {
 	out := CollabCounts{Accounts: map[uuid.UUID]int{}, Folders: map[uuid.UUID]int{}, Assigned: map[uuid.UUID]int{}, Addresses: map[uuid.UUID]map[string]int{},
-		Categories: map[uuid.UUID]map[string]int{}, AIReview: map[uuid.UUID]int{}}
+		Categories: map[uuid.UUID]map[string]int{}, AIReview: map[uuid.UUID]int{}, Spam: map[uuid.UUID]int{}}
 	inAccounts := `t.workspace_id = $1 AND t.account_id IN ` + visibleAccountsSQL("$2")
 	// Ready for review, by account; boxes.ai_review is their sum.
 	rows, err := q.Query(ctx, `SELECT t.account_id, count(*) FROM collab_threads t WHERE `+inAccounts+` AND `+boxSQL(BoxAIReview, "$2")+`
@@ -694,6 +703,19 @@ func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (
 	}
 	for _, n := range out.AIReview {
 		out.Boxes.AIReview += n
+	}
+	// Unread in spam, by account; boxes.spam is their sum. Spam never reaches Needs action or
+	// the AI queue, so a handling account shows it beside them (contracts/collab.md "Spam beside Needs action").
+	rows, err = q.Query(ctx, `SELECT t.account_id, count(*) FROM collab_threads t WHERE `+inAccounts+` AND t.unread AND `+boxSQL(BoxSpam, "$2")+`
+		GROUP BY t.account_id`, p.WorkspaceID, p.UserID)
+	if err != nil {
+		return out, err
+	}
+	if out.Spam, err = collectCounts(rows); err != nil {
+		return out, err
+	}
+	for _, n := range out.Spam {
+		out.Boxes.Spam += n
 	}
 	err = q.QueryRow(ctx, `SELECT
 		(SELECT count(*) FROM collab_threads t WHERE `+inAccounts+` AND t.unread AND t.folder_ids && `+inboxSQL+`),

@@ -157,6 +157,7 @@
     "connection": "Connection",
     "testConnection": "Test connection",
     "lastSyncFailed": "Last sync failed",
+    "foldersSkipped": "Some folders were not read",
     "lastSynced": "Last synced",
     "never": "Never",
     "forwardingInstant": "Forwarded mail arrives as soon as it is sent.",
@@ -1040,5 +1041,31 @@
       "step4": "Tick the summary and transcription events (they need Voys Intelligence), then click Opslaan.",
       "step5": "Make a test call: the connection says Receiving calls as soon as it comes in."
     }
+  },
+  "folders": {
+    "title": "Folders",
+    "description": "opendesk takes mail from these folders on your IMAP server. Choose the folders your server's rules file support mail into, such as mail to an alias. A message in several of them becomes one ticket message.",
+    "inbox": "Inbox",
+    "choose": "Choose folders",
+    "done": "Done",
+    "failed": "Could not list the folders",
+    "retry": "Try again",
+    "hint": "Choose up to {{max}} folders. Changes apply when you save.",
+    "full": "{{max}} folders is the most a mailbox reads. Untick one to choose another.",
+    "saveFirst": "Save the server settings first, then choose folders.",
+    "special": {
+      "sent": "Sent mail",
+      "drafts": "Drafts",
+      "trash": "Trash",
+      "junk": "Spam",
+      "all": "All mail"
+    }
+  },
+  "sentCopy": {
+    "title": "Keep sent email on the server",
+    "hint": "Save a copy of each email this mailbox sends in a folder on your IMAP server, as your mail app does, so your mailbox has the whole conversation.",
+    "folder": "Folder for sent email",
+    "choose": "Choose a folder",
+    "loading": "Loading folders…"
   }
 }

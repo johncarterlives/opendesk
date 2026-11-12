@@ -3,7 +3,7 @@ title: Contributing
 description: Set up opendesk for development and send your first change.
 ---
 
-opendesk is open source under the Apache-2.0 license at [github.com/useopendesk/opendesk](https://github.com/useopendesk/opendesk). Issues, discussions and pull requests are welcome.
+opendesk is open source under the Apache-2.0 license at [github.com/useopendesk/opendesk](https://github.com/useopendesk/opendesk). Issues, discussions and pull requests are welcome. Everyone taking part follows the [Code of Conduct](https://github.com/useopendesk/opendesk/blob/main/CODE_OF_CONDUCT.md).
 
 ## The repository
 
@@ -48,6 +48,8 @@ make web         # the web app on :5173
 ## Commits and pull requests
 
 Commit messages are one line, such as `feat: add CSAT comment to the ticket sidebar`. Keep pull requests focused, explain why the change is needed, and include tests where they make sense. CI runs the build, tests, linters and dependency audits.
+
+Open an issue with the bug report or feature request form before a larger change. The pull request template asks for the problem, what changes, notes and the QA you ran, and links the issue with `Fixes #123`. Run `pnpm qa` in `qa/` first: it runs CI's checks for the areas your branch changes. For help rather than a change, see [Getting help](https://github.com/useopendesk/opendesk/blob/main/SUPPORT.md).
 
 ## Documentation
 

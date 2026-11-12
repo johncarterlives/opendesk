@@ -532,7 +532,7 @@ func (r *triggerRun) apply(ctx context.Context, a automation, f facts) ([]string
 	// for a ticket about to vanish), and nothing else runs on the ticket after it.
 	if slices.ContainsFunc(a.Actions, func(act hd.Action) bool { return act.Type == "delete_ticket" }) {
 		r.gone = true
-		return nil, deleteTicket(ctx, r.tx, r.wid, r.tid)
+		return nil, deleteTicket(ctx, r.tx, r.wid, r.tid, nil, actor)
 	}
 	// Merging wins over the rest: when the ticket joins an earlier one, no other step of
 	// the automation runs on it. With nothing to merge into, the other steps run as usual.
@@ -710,7 +710,9 @@ func (r *triggerRun) addMessage(ctx context.Context, act hd.Action, f facts) err
 		if err != nil || !ok {
 			return err
 		}
-		nm.To = []string{*f.contactEmail}
+		if nm.To, err = domain.ReplyRecipients(ctx, r.tx, r.wid, r.tid, f.contactEmail, []string{*f.contactEmail}); err != nil {
+			return err
+		}
 		nm.FromEmail, nm.FromName = str(mbEmail), str(mbName)
 		nm.DeliveryStatus = "pending"
 	}
