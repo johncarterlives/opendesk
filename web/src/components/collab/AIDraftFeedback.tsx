@@ -7,7 +7,7 @@ import { MessageSquareText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api/endpoints";
-import type { AIDraftFeedbackReason, MailMessage } from "@/lib/api/types";
+import type { AIDraftFeedbackReason, AIDraftRef, MailMessage } from "@/lib/api/types";
 import { escapeHtml } from "@/lib/collab/html";
 import { qk } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -47,12 +47,23 @@ export function AIDraftFeedback({ m }: { m: MailMessage }) {
         <MessageSquareText className="size-3" />
         {d.has_feedback ? t("aiFeedback.edit") : t("aiFeedback.give")}
       </button>
-      <FeedbackDialog m={m} open={open} onOpenChange={setOpen} />
+      <AIDraftFeedbackDialog draft={d} threadId={m.thread_id} open={open} onOpenChange={setOpen} />
     </span>
   );
 }
 
-function FeedbackDialog({ m, open, onOpenChange }: { m: MailMessage; open: boolean; onOpenChange: (o: boolean) => void }) {
+/** Feedback on one AI draft, sent or still waiting. Saving never changes the mail. */
+export function AIDraftFeedbackDialog({
+  draft,
+  threadId,
+  open,
+  onOpenChange,
+}: {
+  draft: AIDraftRef;
+  threadId: string;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const { t } = useTranslation("collab");
   const qc = useQueryClient();
   const [reason, setReason] = useState<AIDraftFeedbackReason | undefined>();
@@ -67,13 +78,13 @@ function FeedbackDialog({ m, open, onOpenChange }: { m: MailMessage; open: boole
 
   const save = useMutation({
     mutationFn: (r: AIDraftFeedbackReason) =>
-      api.collab.aiDraftFeedback(m.ai_draft!.id, {
+      api.collab.aiDraftFeedback(draft.id, {
         reason: r,
         note: note.trim() || undefined,
         better_answer_html: better.trim() ? textHtml(better) : undefined,
       }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: qk.mailThread(m.thread_id) });
+      void qc.invalidateQueries({ queryKey: qk.mailThread(threadId) });
       toast.success(t("toast.aiFeedbackSaved"));
       onOpenChange(false);
     },
@@ -85,7 +96,7 @@ function FeedbackDialog({ m, open, onOpenChange }: { m: MailMessage; open: boole
       open={open}
       onOpenChange={onOpenChange}
       title={t("aiFeedback.title")}
-      description={t("aiFeedback.description", { name: m.ai_draft?.client ?? "" })}
+      description={t("aiFeedback.description", { name: draft.client })}
       footer={
         <>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>

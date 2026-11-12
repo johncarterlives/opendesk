@@ -1,12 +1,15 @@
-import { PencilLine } from "lucide-react";
+import { MessageSquareText, PencilLine } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MailMessage } from "@/lib/api/types";
+import { AIDraftFeedbackDialog } from "./AIDraftFeedback";
 
-/** A conversation draft; an AI draft can be taken into an open composer. */
+/** A conversation draft; an AI draft can be taken into an open composer, and given feedback before anyone sends it. */
 export function DraftRow({ m, composing, onOpen }: { m: MailMessage; composing: boolean; onOpen: () => void }) {
   const { t } = useTranslation("collab");
+  const [feedback, setFeedback] = useState(false);
   const to = [...m.to, ...m.cc].map((a) => a.name || a.email).join(", ");
-  return (
+  const row = (
     <button
       type="button"
       onClick={onOpen}
@@ -28,5 +31,24 @@ export function DraftRow({ m, composing, onOpen }: { m: MailMessage; composing: 
         {m.drafted_by_ai && composing ? t("thread.useDraft") : t("composer.editDraft")}
       </span>
     </button>
+  );
+  const d = m.ai_draft;
+  if (!d) return row;
+  // Beside the row, not inside it: a button can't hold another button.
+  return (
+    <div className="flex flex-col gap-1">
+      {row}
+      <div className="flex justify-end text-[11.5px]">
+        <button
+          type="button"
+          onClick={() => setFeedback(true)}
+          className="inline-flex shrink-0 items-center gap-1 rounded-sm px-1 text-fg-3 outline-none hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)]"
+        >
+          <MessageSquareText className="size-3" />
+          {d.has_feedback ? t("aiFeedback.edit") : t("aiFeedback.give")}
+        </button>
+      </div>
+      <AIDraftFeedbackDialog draft={d} threadId={m.thread_id} open={feedback} onOpenChange={setFeedback} />
+    </div>
   );
 }
