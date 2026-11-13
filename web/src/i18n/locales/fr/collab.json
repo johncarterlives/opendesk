@@ -831,6 +831,8 @@
     },
     "note": "Note (facultatif)",
     "notePlaceholder": "Que devrait-il faire autrement ?",
+    "noteCount": "{{used}}/{{max}} caractères",
+    "noteFull": "Limite atteinte : le texte au-delà est coupé. Mettez la réponse elle-même dans Meilleure réponse.",
     "better": "Meilleure réponse (facultatif)",
     "betterPlaceholder": "Ce que vous auriez répondu",
     "privacy": "Seul le client IA qui a écrit ce brouillon lit votre note et votre réponse.",

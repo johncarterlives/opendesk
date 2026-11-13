@@ -68,6 +68,8 @@ describe("Collab AI draft feedback", () => {
     await act(async () => container.querySelector("button")?.click());
     const dialog = document.querySelector("[role=dialog]");
     expect(dialog?.textContent).toContain("Feedback on this AI draft");
+    expect(dialog?.textContent).toContain("0/2,000 characters");
+    expect(dialog?.textContent).not.toContain("Limit reached");
     const save = [...(dialog?.querySelectorAll("button") ?? [])].find((b) => b.textContent === "Save feedback");
     expect(save?.disabled).toBe(true);
   });
