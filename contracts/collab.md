@@ -655,7 +655,7 @@ changes a model; what the client does with the feedback is its own business.
   (`{id, client, outcome, has_feedback}`), even after a person took it over.
 - **Feedback** from a person, which never blocks a send: `PUT /v1/collab/ai-drafts/{id}/feedback`
   (agent or above, who sees the conversation; never a key) `{reason: wrong_facts | wrong_tone |
-  missing_info | should_not_answer | other, note? (≤1000), better_answer_html? (sanitized like
+  missing_info | should_not_answer | other, note? (≤2000), better_answer_html? (sanitized like
   mail)}` → `204`. Saving again replaces it. It is audit-logged (`collab.ai_draft_feedback`) with
   the reason, never the words.
 - **The feed**: `GET /v1/collab/ai-drafts/outcomes?cursor&limit (1..200, 50)` for a `collab:draft`

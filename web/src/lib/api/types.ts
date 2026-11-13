@@ -3391,7 +3391,7 @@ export type AIDraftFeedbackReason = "wrong_facts" | "wrong_tone" | "missing_info
 
 export type AIDraftFeedbackBody = {
   reason: AIDraftFeedbackReason;
-  /** At most 1,000 characters. */
+  /** At most 2,000 characters. */
   note?: string;
   /** Sanitized like mail. */
   better_answer_html?: string;

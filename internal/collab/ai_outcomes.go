@@ -35,7 +35,7 @@ const (
 	OutcomeAbandoned     = "abandoned"
 
 	maxClientRef      = 200
-	maxFeedbackNote   = 1000
+	maxFeedbackNote   = 2000
 	outcomesDefault   = 50
 	outcomesMax       = 200
 	outcomesPerMinute = 60
@@ -353,7 +353,7 @@ func (s *service) registerOutcomeRoutes(api huma.API) {
 			ID   string `path:"id" doc:"The AI draft (ai_draft.id on its message)"`
 			Body struct {
 				Reason           string `json:"reason" enum:"wrong_facts,wrong_tone,missing_info,should_not_answer,other"`
-				Note             string `json:"note,omitempty" maxLength:"1000"`
+				Note             string `json:"note,omitempty" maxLength:"2000"`
 				BetterAnswerHTML string `json:"better_answer_html,omitempty" maxLength:"100000"`
 			}
 		}) (*struct{}, error) {

@@ -17,7 +17,7 @@ import { Select } from "@/components/ui/select";
 import { toast } from "@/components/ui/toast";
 
 const reasons: AIDraftFeedbackReason[] = ["wrong_facts", "wrong_tone", "missing_info", "should_not_answer", "other"];
-const noteMax = 1000;
+const noteMax = 2000;
 
 const textHtml = (text: string) =>
   text
