@@ -83,7 +83,7 @@ export function PropertyMenu({ db, prop, view, trigger, canEdit, onSave, onSort,
     >
       <P.Trigger asChild>{trigger}</P.Trigger>
       <P.Portal>
-        <P.Content align="start" sideOffset={4} collisionPadding={8} className={cn(floatingPanel, "max-h-[min(560px,var(--radix-popover-content-available-height))] w-[272px] overflow-y-auto p-1")} onClick={(e) => e.stopPropagation()}>
+        <P.Content align="start" sideOffset={4} collisionPadding={8} className={cn(floatingPanel, "max-h-[min(560px,calc(var(--radix-popover-content-available-height)/var(--od-zoom,1)))] w-[272px] overflow-y-auto p-1")} onClick={(e) => e.stopPropagation()}>
           {pane === "type" ? (
             <>
               <button type="button" className={row} onClick={() => setPane("main")}>

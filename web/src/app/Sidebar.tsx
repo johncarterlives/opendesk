@@ -829,7 +829,7 @@ export function WorkspaceSwitcher() {
           <ChevronsUpDown className="size-3.5 shrink-0 text-fg-4 transition-colors group-hover:text-fg-2" />
         </button>
       </MenuTrigger>
-      <MenuContent align="start" className="max-h-[min(560px,var(--radix-dropdown-menu-content-available-height))] w-[264px] overflow-y-auto">
+      <MenuContent align="start" className="max-h-[min(560px,calc(var(--radix-dropdown-menu-content-available-height)/var(--od-zoom,1)))] w-[264px] overflow-y-auto">
         {spaces && (
           <>
             <SwitcherSpaces spaces={spaces} picked={space?.id ?? null} starters={starters.list} />

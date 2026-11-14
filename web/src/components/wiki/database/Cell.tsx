@@ -63,7 +63,7 @@ export function Cell({ prop, row, ctx, canEdit, onChange, onAddOption, variant =
           side="bottom"
           sideOffset={variant === "table" ? -32 : 4}
           collisionPadding={8}
-          className={cn(floatingPanel, "min-w-[var(--radix-popover-trigger-width)] overflow-hidden p-0")}
+          className={cn(floatingPanel, "min-w-[calc(var(--radix-popover-trigger-width)/var(--od-zoom,1))] overflow-hidden p-0")}
           onClick={(e) => e.stopPropagation()}
         >
           <CellEditor prop={prop} row={row} ctx={ctx} onChange={onChange} onAddOption={onAddOption} onClose={() => setOpen(false)} />

@@ -48,7 +48,7 @@ export function Select<V extends string>({
         </S.Icon>
       </S.Trigger>
       <S.Portal>
-        <S.Content position="popper" sideOffset={6} collisionPadding={8} className={cn(floatingPanel, "max-h-[320px] min-w-[var(--radix-select-trigger-width)] origin-[var(--radix-select-content-transform-origin)] p-1")}>
+        <S.Content position="popper" sideOffset={6} collisionPadding={8} className={cn(floatingPanel, "max-h-[320px] min-w-[calc(var(--radix-select-trigger-width)/var(--od-zoom,1))] origin-[var(--radix-select-content-transform-origin)] p-1")}>
           <S.Viewport>
             {options.map((o) => (
               <S.Item

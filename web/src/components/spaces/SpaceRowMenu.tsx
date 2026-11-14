@@ -96,7 +96,7 @@ export const SpaceRowMenu = forwardRef<HTMLElement, SpaceRowMenuProps>(function 
           <ChevronRight />
         </K.SubTrigger>
         <K.Portal>
-          <K.SubContent sideOffset={6} collisionPadding={8} className={cn(floatingPanel, "max-h-[min(360px,var(--radix-popper-available-height))] min-w-[180px] overflow-y-auto p-1")}>
+          <K.SubContent sideOffset={6} collisionPadding={8} className={cn(floatingPanel, "max-h-[min(360px,calc(var(--radix-popper-available-height)/var(--od-zoom,1)))] min-w-[180px] overflow-y-auto p-1")}>
             {children}
           </K.SubContent>
         </K.Portal>

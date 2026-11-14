@@ -25,7 +25,7 @@ function Pop({ trigger, children, width = 320, open, onOpenChange }: { trigger: 
     <P.Root open={open} onOpenChange={onOpenChange}>
       <P.Trigger asChild>{trigger}</P.Trigger>
       <P.Portal>
-        <P.Content align="end" sideOffset={6} collisionPadding={8} style={{ width }} className={cn(floatingPanel, "max-h-[min(480px,var(--radix-popover-content-available-height))] overflow-y-auto p-1.5")} onClick={(e) => e.stopPropagation()}>
+        <P.Content align="end" sideOffset={6} collisionPadding={8} style={{ width }} className={cn(floatingPanel, "max-h-[min(480px,calc(var(--radix-popover-content-available-height)/var(--od-zoom,1)))] overflow-y-auto p-1.5")} onClick={(e) => e.stopPropagation()}>
           {children}
         </P.Content>
       </P.Portal>

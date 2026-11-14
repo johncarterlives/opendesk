@@ -28,6 +28,7 @@ import { updateUser, useRole, useSession } from "@/lib/session";
 import { useTheme, type ThemePref } from "@/lib/theme";
 import { setConversationLayout, useConversationLayout } from "@/lib/conversationLayout";
 import { setConversationWidth, useConversationWidth, type ConversationWidth } from "@/lib/conversationWidth";
+import { setTextSize, useTextSize, type TextSize } from "@/lib/textSize";
 import { setTicketPropertiesPlace, useTicketPropertiesPlace, type TicketPropertiesPlace } from "@/lib/ticketPropertiesPlace";
 import { setNextTicketAfterSend, useNextTicketAfterSend } from "@/lib/nextTicket";
 import { setAlwaysShowImages, useAlwaysShowImages } from "@/lib/alwaysShowImages";
@@ -180,6 +181,7 @@ export default function Profile() {
         <div className="border-b border-line-soft py-3">
           <ThemeCards />
         </div>
+        <TextSizeSetting />
         <AssigneeSetting />
         <LastNoteSetting />
         <ConversationLayout />
@@ -295,7 +297,28 @@ function ConversationLayout() {
   );
 }
 
-/** How wide the conversation is: a readable measure, or the whole width of the ticket. */
+/** How large the app reads: scales the whole interface. Stored per browser, like the theme. */
+function TextSizeSetting() {
+  const { t } = useTranslation("settings");
+  const size = useTextSize();
+  return (
+    <Row label={t("profile.textSize.label")} description={t("profile.textSize.hint")} htmlFor="text-size">
+      <Select<TextSize>
+        id="text-size"
+        aria-label={t("profile.textSize.label")}
+        value={size}
+        onChange={setTextSize}
+        className="w-48"
+        options={[
+          { value: "default", label: t("profile.textSize.default") },
+          { value: "large", label: t("profile.textSize.large") },
+          { value: "larger", label: t("profile.textSize.larger") },
+        ]}
+      />
+    </Row>
+  );
+}
+
 function ConversationWidthSetting() {
   const { t } = useTranslation("settings");
   const width = useConversationWidth();

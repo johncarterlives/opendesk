@@ -391,7 +391,7 @@ export function FolderBar({
           </MenuTrigger>
           <MenuContent
             align="start"
-            className="max-h-[min(480px,var(--radix-dropdown-menu-content-available-height))] w-[232px] overflow-y-auto"
+            className="max-h-[min(480px,calc(var(--radix-dropdown-menu-content-available-height)/var(--od-zoom,1)))] w-[232px] overflow-y-auto"
             onCloseAutoFocus={(e) => {
               if (opening.current) e.preventDefault();
             }}

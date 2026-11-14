@@ -277,6 +277,13 @@
       "label": "Disposition en conversation",
       "hint": "Les messages du client à gauche, les réponses et notes de votre équipe à droite, comme dans un chat. Pleine largeur sur un écran étroit."
     },
+    "textSize": {
+      "label": "Taille du texte",
+      "hint": "Agrandit tout opendesk pour une lecture plus facile, sur ce navigateur. Le zoom du navigateur fonctionne aussi.",
+      "default": "Par défaut",
+      "large": "Grande",
+      "larger": "Très grande"
+    },
     "conversationWidth": {
       "label": "Largeur de la conversation",
       "hint": "Limitée garde les messages et la zone de réponse à une largeur facile à lire sur un grand écran. Pleine largeur leur laisse toute la largeur du ticket.",

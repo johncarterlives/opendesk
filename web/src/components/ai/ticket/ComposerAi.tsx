@@ -335,7 +335,7 @@ export function ComposerAiMenu({ ai, hasDraft, disabled }: { ai: ComposerAi; has
                       </M.SubTrigger>
                       <M.Portal>
                         <M.SubContent sideOffset={6} collisionPadding={8}
-                          className={cn(floatingPanel, "max-h-[min(360px,var(--radix-popper-available-height))] min-w-[180px] overflow-y-auto p-1")}>
+                          className={cn(floatingPanel, "max-h-[min(360px,calc(var(--radix-popper-available-height)/var(--od-zoom,1)))] min-w-[180px] overflow-y-auto p-1")}>
                           {ai.targets.map((l) => (
                             <Item key={l} onSelect={() => ai.translate(l)}>
                               {capitalized(languageName(l, uiLanguage()))}

@@ -310,7 +310,7 @@ export function BlockHandle({ editor, onCopyLink }: { editor: Editor; onCopyLink
                     <span className="flex-1">{t("editor.handle.color")}</span>
                   </M.SubTrigger>
                   <M.Portal>
-                    <M.SubContent sideOffset={6} className="z-50 max-h-[min(420px,var(--radix-dropdown-menu-content-available-height))] min-w-[200px] overflow-y-auto rounded-lg border border-line bg-raised p-1 shadow-pop animate-pop-in">
+                    <M.SubContent sideOffset={6} className="z-50 max-h-[min(420px,calc(var(--radix-dropdown-menu-content-available-height)/var(--od-zoom,1)))] min-w-[200px] overflow-y-auto rounded-lg border border-line bg-raised p-1 shadow-pop animate-pop-in">
                       <ColorItems
                         node={block.node}
                         onText={(tone) =>
