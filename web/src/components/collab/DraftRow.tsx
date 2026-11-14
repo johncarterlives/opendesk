@@ -38,7 +38,9 @@ export function DraftRow({ m, composing, onOpen }: { m: MailMessage; composing: 
   return (
     <div className="flex flex-col gap-1">
       {row}
-      <div className="flex justify-end text-[11.5px]">
+      <div className="flex items-center justify-end gap-1.5 text-[11.5px]">
+        {/* A person saved over it, so the tag reads "Draft": still say which AI wrote it. */}
+        {!m.drafted_by_ai && <span className="truncate text-fg-4">{t("aiFeedback.from", { name: d.client })}</span>}
         <button
           type="button"
           onClick={() => setFeedback(true)}

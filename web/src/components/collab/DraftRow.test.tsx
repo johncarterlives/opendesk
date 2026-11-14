@@ -91,8 +91,16 @@ describe("Collab DraftRow", () => {
 
     await render(draft("Ollie", { id: "ai-1", client: "Ollie", outcome: null, has_feedback: true }));
     expect(container.textContent).toContain("Edit feedback");
+    expect(container.textContent).not.toContain("From AI draft by");
+
+    // A person saved over it: the tag reads "Draft", the line under it still names the AI.
+    await render(draft(undefined, { id: "ai-1", client: "Ollie", outcome: null, has_feedback: false }));
+    expect(container.querySelector("button > span")?.textContent).toBe("Draft");
+    expect(container.textContent).toContain("From AI draft by Ollie");
+    expect([...container.querySelectorAll("button")].some((b) => b.textContent === "Give feedback")).toBe(true);
 
     await render(draft());
     expect(container.textContent).not.toContain("feedback");
+    expect(container.textContent).not.toContain("From AI draft by");
   });
 });
