@@ -70,6 +70,7 @@
     "aiClients": "Clients IA",
     "webhooks": "Webhooks",
     "auditLog": "Journal d’audit",
+    "trash": "Corbeille",
     "ai": "IA",
     "aiAgent": "Agent IA",
     "agentBehaviour": "Comportement de l’agent",
@@ -153,6 +154,7 @@
     "aiClients": "Clients IA",
     "webhooks": "Webhooks",
     "auditLog": "Journal d’audit",
+    "trash": "Corbeille",
     "phone": "Téléphone",
     "pages": "Pages"
   },

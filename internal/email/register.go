@@ -31,6 +31,7 @@ func RegisterWorkers(d *deps.Deps, w *river.Workers) {
 	s := newService(d)
 	river.AddWorker(w, &syncDueWorker{s: s})
 	river.AddWorker(w, &syncMailboxWorker{s: s})
+	river.AddWorker(w, &sentCopyWorker{s: s})
 	river.AddWorker(w, &processInboundWorker{s: s})
 	river.AddWorker(w, &sendMessageWorker{s: s})
 	river.AddWorker(w, &sendTicketEmailWorker{s: s})

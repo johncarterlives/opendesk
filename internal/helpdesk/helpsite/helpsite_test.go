@@ -19,6 +19,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/deps"
 	"github.com/useopendesk/opendesk/internal/helpdesk/hdtest"
 	"github.com/useopendesk/opendesk/internal/helpdesk/helpsite"
+	"github.com/useopendesk/opendesk/internal/helpdesk/kb"
 )
 
 type site struct {
@@ -35,7 +36,10 @@ const passed = "passed to the API"
 // newSite seeds a help center with a topic, two articles and a draft, and serves the
 // help site in front of a stand-in for the rest of the API.
 func newSite(t *testing.T, configure func(s *site)) *site {
-	e := hdtest.New(t, func(d *deps.Deps, _ huma.API, r chi.Router) { helpsite.Register(d, r) })
+	e := hdtest.New(t, func(d *deps.Deps, api huma.API, r chi.Router) {
+		helpsite.Register(d, r)
+		kb.Register(d, api, r)
+	})
 	s := &site{Env: e, ws: e.NewWorkspace()}
 	e.Scalar(`SELECT id FROM brands WHERE workspace_id = $1 AND is_default`, &s.brandID, s.ws.ID)
 	e.Scalar(`SELECT slug FROM brands WHERE id = $1`, &s.slug, s.brandID)
@@ -95,10 +99,12 @@ func (s *site) req(t *testing.T, method, host, path, body string, headers ...str
 	return resp{res.StatusCode, res.Header, string(b)}
 }
 
-func (s *site) articleSlug(t *testing.T) string {
-	var slug string
-	s.Scalar(`SELECT slug FROM kb_articles WHERE id = $1`, &slug, s.article)
-	return slug
+// articlePath is the article's address on the help center (/c/<collection>/<slug>).
+func (s *site) articlePath(t *testing.T) string {
+	var path string
+	s.Scalar(`SELECT COALESCE('/c/' || k.slug || '/', '/a/') || a.slug FROM kb_articles a LEFT JOIN kb_collections k ON k.id = a.collection_id
+		WHERE a.id = $1`, &path, s.article)
+	return path
 }
 
 func TestPathModeRendersTheHelpCenter(t *testing.T) {
@@ -128,8 +134,8 @@ func TestPathModeRendersTheHelpCenter(t *testing.T) {
 		t.Fatalf("revalidation %d", again.status)
 	}
 
-	slug := s.articleSlug(t)
-	art := s.get(t, "app.test", "/help/"+s.slug+"/a/"+slug)
+	path := s.articlePath(t)
+	art := s.get(t, "app.test", "/help/"+s.slug+path)
 	if art.status != 200 || !strings.Contains(art.body, "Refund a payment") || !strings.Contains(art.body, "<strong>Billing</strong>") ||
 		strings.Contains(art.body, "alert(1)") || !strings.Contains(art.body, `src="http://api.test/v1/attachments/`) ||
 		!strings.Contains(art.body, "Change your plan") || !strings.Contains(art.body, `"@type":"Article"`) ||
@@ -161,7 +167,7 @@ func TestPathModeRendersTheHelpCenter(t *testing.T) {
 	}
 
 	sm := s.get(t, "app.test", "/help/"+s.slug+"/sitemap.xml")
-	if sm.status != 200 || !strings.Contains(sm.body, "<loc>"+base+"/a/"+slug+"</loc>") || strings.Contains(sm.body, "draft-") ||
+	if sm.status != 200 || !strings.Contains(sm.body, "<loc>"+base+path+"</loc>") || strings.Contains(sm.body, "draft-") ||
 		!strings.Contains(sm.body, "<loc>"+base+"/c/billing-") {
 		t.Fatalf("sitemap\n%s", sm.body)
 	}
@@ -285,8 +291,8 @@ func TestBehindTheEdgeProxy(t *testing.T) {
 	}
 
 	// The page's script counts a view.
-	slug := s.articleSlug(t)
-	page := s.get(t, "api.test", "/a/"+slug, "OD-Help-Host", host, "OD-Help-Secret", secret)
+	path := s.articlePath(t)
+	page := s.get(t, "api.test", path, "OD-Help-Host", host, "OD-Help-Secret", secret)
 	if !strings.Contains(page.body, `data-views="http://`+host+`/_help/views"`) {
 		t.Fatalf("views url\n%s", page.body)
 	}
@@ -299,7 +305,7 @@ func TestBehindTheEdgeProxy(t *testing.T) {
 	if views != 1 {
 		t.Fatalf("views %d", views)
 	}
-	if r := s.req(t, http.MethodPost, "api.test", "/a/"+slug, "", "OD-Help-Host", host, "OD-Help-Secret", secret); r.status != 405 {
+	if r := s.req(t, http.MethodPost, "api.test", path, "", "OD-Help-Host", host, "OD-Help-Secret", secret); r.status != 405 {
 		t.Fatalf("post to a page %d", r.status)
 	}
 }
@@ -307,7 +313,7 @@ func TestBehindTheEdgeProxy(t *testing.T) {
 func TestStructuredDataIsValidJSON(t *testing.T) {
 	s := newSite(t, func(s *site) { s.D.Cfg.ServeWeb = true })
 	s.Exec(`UPDATE kb_articles SET title = $2 WHERE id = $1`, s.article, `Refunds </script><script>alert(1)</script>`)
-	r := s.get(t, "app.test", "/help/"+s.slug+"/a/"+s.articleSlug(t))
+	r := s.get(t, "app.test", "/help/"+s.slug+s.articlePath(t))
 	m := regexp.MustCompile(`(?s)<script type="application/ld\+json">(.*?)</script>`).FindStringSubmatch(r.body)
 	if m == nil {
 		t.Fatal("no structured data")

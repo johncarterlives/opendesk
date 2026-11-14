@@ -70,6 +70,7 @@
     "aiClients": "KI-Clients",
     "webhooks": "Webhooks",
     "auditLog": "Audit-Log",
+    "trash": "Papierkorb",
     "ai": "KI",
     "aiAgent": "KI-Agent",
     "agentBehaviour": "Agentenverhalten",
@@ -153,6 +154,7 @@
     "aiClients": "KI-Clients",
     "webhooks": "Webhooks",
     "auditLog": "Audit-Log",
+    "trash": "Papierkorb",
     "phone": "Telefon",
     "pages": "Seiten"
   },

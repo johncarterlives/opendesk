@@ -8,7 +8,6 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humachi"
-	"github.com/google/uuid"
 
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/deps"
@@ -118,31 +117,35 @@ func registerPublic(d *deps.Deps, api huma.API) {
 		})
 
 	huma.Register(api, huma.Operation{OperationID: "public-help-article", Method: http.MethodGet,
-		Path: "/v1/public/help/{workspace_slug}/articles/{slug}", Summary: "Help center article", Description: "Counts a view.",
-		Tags: tags, Security: public1, Middlewares: limited},
+		Path: "/v1/public/help/{workspace_slug}/articles/{slug}", Summary: "Help center article",
+		Description: "Counts a view. Slugs are unique per collection: `collection` picks the article in that collection; without it, the article in no collection, else the oldest with that slug.",
+		Tags:        tags, Security: public1, Middlewares: limited},
 		func(ctx context.Context, in *struct {
-			WSSlug string `path:"workspace_slug"`
-			Slug   string `path:"slug"`
+			WSSlug     string `path:"workspace_slug"`
+			Slug       string `path:"slug"`
+			Collection string `query:"collection" maxLength:"200" doc:"The slug of the article's collection"`
 		}) (*articleOut, error) {
 			hc, err := helpCenter(ctx, d, in.WSSlug)
 			if err != nil {
 				return nil, err
 			}
-			var id uuid.UUID
-			err = d.DB.Pool.QueryRow(ctx, `UPDATE kb_articles a SET views = views + 1
-				WHERE a.workspace_id = $1 AND a.slug = $2 AND a.status = 'published' AND `+forBrand(3)+` RETURNING a.id`,
-				hc.WorkspaceID, in.Slug, hc.BrandID).Scan(&id)
+			var a KbArticle
+			if in.Collection != "" {
+				a, err = ArticleIn(ctx, d.DB.Pool, hc, in.Collection, in.Slug)
+			} else {
+				a, err = ArticleBySlug(ctx, d.DB.Pool, hc, in.Slug)
+			}
 			if db.IsNotFound(err) {
 				return nil, httpx.NotFound("Article")
 			}
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			a, err := loadArticle(ctx, d.DB.Pool, hc.WorkspaceID, id)
-			if err != nil {
+			if err := d.DB.Pool.QueryRow(ctx, `UPDATE kb_articles SET views = views + 1 WHERE workspace_id = $1 AND id = $2 RETURNING views`,
+				hc.WorkspaceID, a.ID).Scan(&a.Views); err != nil && !db.IsNotFound(err) {
 				return nil, httpx.Wrap(err)
 			}
-			return &articleOut{public(a)}, nil
+			return &articleOut{a}, nil
 		})
 
 	huma.Register(api, huma.Operation{OperationID: "public-help-search", Method: http.MethodGet,

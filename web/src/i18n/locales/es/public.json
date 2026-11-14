@@ -136,6 +136,7 @@
       "message": "¿Cómo podemos ayudarte?",
       "send": "Enviar solicitud",
       "limit": "Has enviado varias solicitudes seguidas. Espera un rato e inténtalo de nuevo.",
+      "busy": "Ahora mismo llegan muchas solicitudes. Espera un rato y vuelve a intentarlo.",
       "attach": "Elegir archivos",
       "drop": "Suelta archivos aquí o pega una captura de pantalla.",
       "remove": "Quitar {{name}}",

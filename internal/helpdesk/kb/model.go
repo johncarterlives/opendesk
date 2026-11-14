@@ -39,6 +39,9 @@ type KbArticle struct {
 	PublishedAt  *time.Time      `json:"published_at"`
 	UpdatedAt    time.Time       `json:"updated_at"`
 	BrandID      *uuid.UUID      `json:"brand_id" doc:"The brand whose help center shows it; null = every brand. An article in a collection with a brand follows the collection's"`
+	// Path is where the article lives on a help center, after its address:
+	// /c/<collection slug>/<slug>, or /a/<slug> outside any collection.
+	Path string `json:"path" doc:"The article's address on a help center, after the help center's own: /c/<collection slug>/<slug>, or /a/<slug> in no collection"`
 }
 
 // collectionSelect counts every article, or only published ones when $published is true.
@@ -85,15 +88,18 @@ func loadCollection(ctx context.Context, q db.Querier, wid, id uuid.UUID) (KbCol
 }
 
 const articleSelect = `SELECT a.id, a.collection_id, a.title, a.slug, a.excerpt, a.body_html, a.status, a.views,
-	a.published_at, a.updated_at, u.id, u.name, u.email, u.avatar_url, a.brand_id
+	a.published_at, a.updated_at, u.id, u.name, u.email, u.avatar_url, a.brand_id, ` + articlePath + `
 FROM kb_articles a LEFT JOIN users u ON u.id = a.author_id`
+
+// articlePath is the help-center path of the article a (KbArticle.Path).
+const articlePath = `COALESCE('/c/' || (SELECT pc.slug FROM kb_collections pc WHERE pc.id = a.collection_id) || '/', '/a/') || a.slug`
 
 func scanArticle(row pgx.Row) (KbArticle, error) {
 	var a KbArticle
 	var uID *uuid.UUID
 	var uName, uEmail, uAvatar *string
 	err := row.Scan(&a.ID, &a.CollectionID, &a.Title, &a.Slug, &a.Excerpt, &a.BodyHTML, &a.Status, &a.Views,
-		&a.PublishedAt, &a.UpdatedAt, &uID, &uName, &uEmail, &uAvatar, &a.BrandID)
+		&a.PublishedAt, &a.UpdatedAt, &uID, &uName, &uEmail, &uAvatar, &a.BrandID, &a.Path)
 	if err != nil {
 		return a, err
 	}

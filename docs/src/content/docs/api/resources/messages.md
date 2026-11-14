@@ -50,6 +50,7 @@ type Message = {
   delivery_status: "none" | "pending" | "sent" | "failed" | "bounced";
   delivery_error: string;
   reply_to: string;
+  reply_address: string;
   auth_failed: boolean;
   form_sender: string;
   created_at: string;
@@ -63,7 +64,7 @@ type Message = {
 
 `body_html` is sanitized before storage. For inbound email, quoted history is trimmed from the body and `has_quoted` is true; fetch `/v1/messages/{id}/original` for the full text.
 
-Inbound email also carries what the sender checks found. `reply_to` is the `Reply-To` the message named when it differs from `from_email`. `auth_failed` is true when its `From` failed DMARC at a trusted receiving server: treat the message as unverified. `form_sender` is set when the message came through a trusted website contact form (see [Mailboxes](/api/resources/mailboxes/#contact-forms)); `from_email` is then the visitor. The widget never receives these three.
+Inbound email also carries what the sender checks found. `reply_to` is the `Reply-To` the message named when it differs from `from_email`. `reply_address` is that `Reply-To` when replies go there: it is at the sender's own organisation (`alerts@updates.example.com` asking for answers at `ana@example.com`) and the sender passed authentication. Otherwise it is empty and replies go to `from_email`. `auth_failed` is true when its `From` failed DMARC at a trusted receiving server: treat the message as unverified. `form_sender` is set when the message came through a trusted website contact form (see [Mailboxes](/api/resources/mailboxes/#contact-forms)); `from_email` is then the visitor. The widget never receives these.
 
 ## Send a reply
 
@@ -81,6 +82,8 @@ curl https://api.opendesk.sh/v1/tickets/1042/messages \
 ```
 
 A reply's [template variables](/guides/email-templates/variables/), such as `{{ contact.first_name }}`, are filled in when it is created, with you as the agent (an API key has none, so the agent variables are empty, unless it [speaks as a bot](/api/resources/api-keys-webhooks/#speak-as-a-bot): the bot is then the agent). The stored message is what the customer gets. Notes are never filled.
+
+`to` picks who an email reply goes to, sent as written (at most 20 addresses). Left out, it goes to the customer's reply address: their address, or the `reply_address` of their latest email. The ticket's contact does not change.
 
 `status` sets the ticket status in the same step. A reply on an email ticket is queued for delivery through the mailbox; watch `delivery_status` change from `pending` to `sent` (or `failed` or `bounced`) through the `message.updated` event.
 

@@ -2,7 +2,7 @@
 // addresses, files, the saved replies button.
 
 import { i18n } from "@/i18n";
-import { Loader2, MessageSquareText, Paperclip, X } from "lucide-react";
+import { Loader2, MessageSquareText, Paperclip, Plus, X } from "lucide-react";
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
 import type { SavedReply } from "@/lib/api/types";
@@ -143,7 +143,20 @@ export function AttachButton({ onFiles }: { onFiles: (files: FileList) => void }
 const emailRe = /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/;
 
 /** Addresses as chips (Cc, Bcc, a side conversation's To): typed, pasted or split on commas. */
-export function EmailChips({ label, values, onChange, wide }: { label: string; values: string[]; onChange: (v: string[]) => void; wide?: boolean }) {
+export function EmailChips({
+  label,
+  values,
+  onChange,
+  wide,
+  suggestions,
+}: {
+  label: string;
+  values: string[];
+  onChange: (v: string[]) => void;
+  wide?: boolean;
+  /** Addresses offered one click away, until they are in the list. */
+  suggestions?: string[];
+}) {
   const { t } = useTranslation("indicators");
   const [text, setText] = useState("");
   const commit = () => {
@@ -181,6 +194,21 @@ export function EmailChips({ label, values, onChange, wide }: { label: string; v
           placeholder={values.length ? "" : "name@example.com"}
           className="h-6 min-w-[120px] flex-1 bg-transparent text-[12.5px] outline-none placeholder:text-fg-4"
         />
+        {suggestions
+          ?.filter((s) => !values.some((v) => v.toLowerCase() === s.toLowerCase()))
+          .map((s) => (
+            <button
+              key={s}
+              type="button"
+              aria-label={t("tickets.addAddress", { address: s })}
+              onClick={() => onChange([...values, s])}
+              className="mono inline-flex h-5 items-center gap-1 rounded-sm border border-dashed border-line px-1.5 text-[11.5px] text-fg-3 transition-colors hover:border-line-strong hover:text-fg"
+              data-ph-mask
+            >
+              <Plus className="size-3" />
+              {s}
+            </button>
+          ))}
       </div>
     </div>
   );

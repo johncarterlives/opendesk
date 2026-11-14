@@ -101,6 +101,8 @@ export type WsData = {
   companies: Company[];
   tickets: Ticket[];
   deletedTickets: Set<string>;
+  /** When and by whom each deleted ticket went, for the trash (GET /v1/tickets/deleted). */
+  deletedTicketInfo: Map<string, { at: string; by: string | null }>;
   /** Tickets merged into another: source id → the ticket it went into. */
   mergedInto: Map<string, string>;
   messages: Message[];

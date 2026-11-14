@@ -788,6 +788,7 @@ function accountOut(ws: WsData, a: Account): MailAccount {
     ...rest,
     owner: userRef(ownerId),
     can_manage: manage,
+    shared_with: manage ? a.shared_with : { ...a.shared_with, invited: undefined },
     unread: unreadInbox(ws, a.id),
     imap: manage ? a.imap : undefined,
     identities: identitiesOut(ws, a),
@@ -910,6 +911,8 @@ function threadOut(ws: WsData, t: ThreadMeta): MailThread {
     comment_count: t.comments.length,
     to_address: people.map((p) => p.email.toLowerCase()).find((e) => aliases.has(e)) ?? null,
     category: categoryOf(ws, t),
+    // The demo has no AI client drafting, so no conversation has an AI draft waiting.
+    ai_draft: null,
   };
 }
 
@@ -1103,6 +1106,10 @@ function counts(ws: WsData) {
   const assignedOpen = all.filter((t) => t.assignees.some((a) => a.id === me) && inRole(s, t, "inbox"));
   const assigned: Record<string, number> = {};
   for (const t of assignedOpen) assigned[t.account_id] = (assigned[t.account_id] ?? 0) + 1;
+  // Unread in spam by account, only accounts with some (contracts/collab.md "Spam beside Needs action").
+  const spamUnread = mine.filter((t) => t.unread && inRole(s, t, "spam"));
+  const spam: Record<string, number> = {};
+  for (const t of spamUnread) spam[t.account_id] = (spam[t.account_id] ?? 0) + 1;
   return {
     boxes: {
       inbox: inbox.filter((t) => t.unread).length,
@@ -1113,6 +1120,7 @@ function counts(ws: WsData) {
       needs_action: mine.filter((t) => t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
       snoozed: mine.filter((t) => !!t.snoozed_until && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
       ai_review: 0,
+      spam: spamUnread.length,
     },
     accounts,
     folders,
@@ -1120,6 +1128,7 @@ function counts(ws: WsData) {
     assigned,
     categories,
     ai_review: {},
+    spam,
   };
 }
 
@@ -1168,9 +1177,14 @@ function requireManage(ws: WsData, a: Account) {
   if (!((!!a.ownerId && a.ownerId === db.meId) || (a.visibility === "shared" && isAdmin(ws, db.meId)))) throw new HttpError(403, "forbidden", "Only whoever connected this account can change it.");
 }
 
-function audienceFrom(v: unknown): MailAudience {
+function audienceFrom(v: unknown, ws?: WsData): MailAudience {
   if (!isRecord(v)) return emptyAudience();
-  return { everyone: v.everyone === true, team_ids: strArr(v.team_ids) ?? [], user_ids: strArr(v.user_ids) ?? [] };
+  const out: MailAudience = { everyone: v.everyone === true, team_ids: strArr(v.team_ids) ?? [], user_ids: strArr(v.user_ids) ?? [] };
+  // Pending invitations an account is shared with (GH#447); dropped with Everyone, as on the server.
+  const invited = Array.isArray(v.invited) ? v.invited.filter(isRecord).map((x) => String(x.id)) : [];
+  const pending = ws && !out.everyone ? ws.invitations.filter((i) => invited.includes(i.id)).map((i) => ({ id: i.id, email: i.email })) : [];
+  if (pending.length) out.invited = pending;
+  return out;
 }
 
 function applyAction(ws: WsData, t: ThreadMeta, action: MailThreadAction, folderId?: string, until?: string) {
@@ -1190,6 +1204,11 @@ function applyAction(ws: WsData, t: ThreadMeta, action: MailThreadAction, folder
     t.needsAction = false;
     t.snoozedUntil = until;
     return;
+  }
+  // Out of Spam into the inbox of an account with handling on: in Needs action again, as new mail (contracts/collab.md "Conversations").
+  if ((action === "not_spam" || action === "inbox") && a.visibility === "shared" && a.handling_enabled && ms.some((m) => !m.draft && m.folder_ids.includes(rid("spam")))) {
+    t.needsAction = true;
+    t.snoozedUntil = undefined;
   }
   for (const m of ms) {
     switch (action) {
@@ -1291,7 +1310,7 @@ export function registerCollab() {
       owner: userRef(me),
       ownerId: me,
       visibility: b.visibility === "shared" ? "shared" : "private",
-      shared_with: b.visibility === "shared" ? audienceFrom(b.shared_with) : emptyAudience(),
+      shared_with: b.visibility === "shared" ? audienceFrom(b.shared_with, ctx.ws) : emptyAudience(),
       handling_enabled: false,
       reply_all: false,
       signature_html: "",
@@ -1366,12 +1385,27 @@ export function registerCollab() {
       a.defaultFrom = b.default_from.trim().toLowerCase() === a.email.toLowerCase() ? "" : b.default_from.trim().toLowerCase();
     }
     if (b.visibility === "private" || b.visibility === "shared") a.visibility = b.visibility;
+    const wasHandling = a.handling_enabled;
     if (typeof b.handling_enabled === "boolean") {
       if (a.visibility !== "shared") throw invalid("Handling state is available on shared accounts.");
       a.handling_enabled = b.handling_enabled;
     }
+    // Only with handling turning on: the inbox now, mail from the last 30 days, except what the account answered last (GH#430).
+    if (b.mark_inbox_needs_action === true) {
+      if (wasHandling || !a.handling_enabled) throw invalid("mark_inbox_needs_action goes with turning handling_enabled on.");
+      const s = state(ctx.ws);
+      const inbox = roleIdOf(s, a.id, "inbox");
+      const sent = roleIdOf(s, a.id, "sent");
+      for (const t of s.threads.values()) {
+        if (t.account_id !== a.id || t.needsAction || t.snoozedUntil) continue;
+        const ms = msgsOf(s, t.id).filter((m) => !m.draft);
+        const last = ms.at(-1);
+        const recent = !!last && Date.parse(last.sent_at) > Date.now() - 30 * DAY;
+        if (last && recent && ms.some((m) => !!inbox && m.folder_ids.includes(inbox)) && !(sent && last.folder_ids.includes(sent))) t.needsAction = true;
+      }
+    }
     if (typeof b.reply_all === "boolean") a.reply_all = b.reply_all;
-    if (b.shared_with !== undefined) a.shared_with = audienceFrom(b.shared_with);
+    if (b.shared_with !== undefined) a.shared_with = audienceFrom(b.shared_with, ctx.ws);
     if (a.visibility === "private") {
       a.shared_with = emptyAudience();
       a.handling_enabled = false;

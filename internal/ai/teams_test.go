@@ -16,14 +16,14 @@ import (
 
 func TestArticleURLUsesTheBrandHelpCenter(t *testing.T) {
 	s := &Service{d: &deps.Deps{Cfg: &config.Config{AppURL: "https://app.test"}}}
-	if got := s.articleURL(nil, "acme-eu", "reset-password"); got != "https://app.test/help/acme-eu/a/reset-password" {
+	if got := s.articleURL(nil, "acme-eu", "/a/reset-password"); got != "https://app.test/help/acme-eu/a/reset-password" {
 		t.Fatalf("article url %q", got)
 	}
 	s.d.Cfg.HelpDomain = "help.test"
-	if got := s.articleURL(nil, "acme-eu", "reset-password"); got != "https://acme-eu.help.test/a/reset-password" {
+	if got := s.articleURL(nil, "acme-eu", "/a/reset-password"); got != "https://acme-eu.help.test/a/reset-password" {
 		t.Fatalf("article url on the help domain %q", got)
 	}
-	if got := s.articleURL(map[string]string{"acme-eu": "support.acme.eu"}, "acme-eu", "reset-password"); got != "https://support.acme.eu/a/reset-password" {
+	if got := s.articleURL(map[string]string{"acme-eu": "support.acme.eu"}, "acme-eu", "/a/reset-password"); got != "https://support.acme.eu/a/reset-password" {
 		t.Fatalf("article url on a custom domain %q", got)
 	}
 }
@@ -86,8 +86,9 @@ func TestKBRetrievalIsPerBrand(t *testing.T) {
 	}
 	urlOf := func(slug string, article uuid.UUID) string {
 		var a string
-		e.Scalar(`SELECT slug FROM kb_articles WHERE id = $1`, &a, article)
-		return e.D.Cfg.AppURL + "/help/" + slug + "/a/" + a
+		e.Scalar(`SELECT COALESCE('/c/' || k.slug || '/', '/a/') || a.slug FROM kb_articles a LEFT JOIN kb_collections k ON k.id = a.collection_id
+			WHERE a.id = $1`, &a, article)
+		return e.D.Cfg.AppURL + "/help/" + slug + a
 	}
 
 	// The default brand's tickets see shared articles only, linked on its help center.

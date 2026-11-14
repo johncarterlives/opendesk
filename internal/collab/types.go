@@ -80,7 +80,20 @@ type Audience struct {
 	Everyone bool        `json:"everyone"`
 	TeamIDs  []uuid.UUID `json:"team_ids"`
 	UserIDs  []uuid.UUID `json:"user_ids"`
+	// Invited is, on an account, people invited to the workspace who get it when they
+	// accept (GH#447): pending invitations by id; the email is filled in on the way out.
+	Invited []Invitee `json:"invited,omitempty"`
 }
+
+// Invitee is a pending invitation an account is shared with. Email is filled in on the
+// way out and ignored on the way in.
+type Invitee struct {
+	ID    uuid.UUID `json:"id"`
+	Email string    `json:"email,omitempty"`
+}
+
+// maxInvited bounds the pending invitations one account is shared with.
+const maxInvited = 50
 
 // Empty reports an audience of nobody.
 func (a Audience) Empty() bool { return !a.Everyone && len(a.TeamIDs) == 0 && len(a.UserIDs) == 0 }
@@ -248,6 +261,21 @@ type MailThread struct {
 	// Category is its category key (contracts/collab.md "Categories"); null when the
 	// account's inbox is not split.
 	Category *string `json:"category"`
+	// AIDraft is the draft an AI client saved last and no person has taken over, sent or
+	// discarded, so a list can show it and act on it in place (GH#430); null otherwise.
+	AIDraft *ThreadAIDraft `json:"ai_draft"`
+}
+
+// ThreadAIDraft is a conversation's waiting AI draft, as a list row shows it.
+type ThreadAIDraft struct {
+	// DraftID is the id the /v1/collab/drafts routes take.
+	DraftID uuid.UUID `json:"draft_id"`
+	// DraftedBy is the AI client's name ("AI draft by <name>").
+	DraftedBy string `json:"drafted_by"`
+	// Snippet is the draft's first lines.
+	Snippet string `json:"snippet"`
+	// To is who it goes to.
+	To []Address `json:"to"`
 }
 
 type MailMessage struct {

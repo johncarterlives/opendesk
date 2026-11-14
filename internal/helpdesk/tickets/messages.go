@@ -30,6 +30,7 @@ type MessageInput struct {
 	Kind          string            `json:"kind" enum:"reply,note"`
 	Direction     string            `json:"direction,omitempty" enum:"inbound,outbound" doc:"Default outbound. inbound (replies only) stores the message as the ticket's contact's own words, as if they had emailed it; nothing is sent"`
 	BodyHTML      string            `json:"body_html" maxLength:"500000"`
+	To            []string          `json:"to,omitempty" maxItems:"20" doc:"Email replies: who it goes to; left out: the customer's reply address (their address, or the Reply-To of their latest email at their own organisation)"`
 	Cc            []string          `json:"cc,omitempty" maxItems:"20"`
 	Bcc           []string          `json:"bcc,omitempty" maxItems:"20"`
 	AttachmentIDs []string          `json:"attachment_ids,omitempty" maxItems:"20"`
@@ -365,7 +366,16 @@ func PostMessage(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principal
 		if err != nil {
 			return domain.Message{}, err
 		}
-		nm.To, nm.Cc, nm.Bcc = []string{*contactEmail}, cc, bcc
+		to, err := cleanEmails(b.To)
+		if err != nil {
+			return domain.Message{}, err
+		}
+		if len(to) == 0 {
+			if to, err = domain.ReplyRecipients(ctx, tx, wid, tid, contactEmail, []string{*contactEmail}); err != nil {
+				return domain.Message{}, err
+			}
+		}
+		nm.To, nm.Cc, nm.Bcc = to, cc, bcc
 		nm.FromEmail, nm.FromName = str(mailboxEmail), str(mailboxName)
 		nm.MailboxID = mailboxID
 		if personal != nil {
@@ -374,8 +384,8 @@ func PostMessage(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principal
 		}
 		nm.DeliveryStatus = "pending"
 		nm.BodyHTML, nm.BodyText = withSignOff(nm.BodyHTML, nm.BodyText, bot)
-	} else if len(b.Cc)+len(b.Bcc) > 0 {
-		return domain.Message{}, httpx.Validation("cc and bcc apply only to email replies")
+	} else if len(b.To)+len(b.Cc)+len(b.Bcc) > 0 {
+		return domain.Message{}, httpx.Validation("to, cc and bcc apply only to email replies")
 	}
 	asKeyBot(&nm, p, bot)
 	if actor.UserID != nil && nm.FromName == "" {
@@ -578,8 +588,8 @@ func postInbound(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principal
 	if b.Kind != "reply" {
 		return domain.Message{}, httpx.Validation("an inbound message is a reply, not a note")
 	}
-	if strings.TrimSpace(b.MailboxID) != "" || strings.TrimSpace(b.FromNoteID) != "" || b.FromAccount != nil || len(b.Cc)+len(b.Bcc) > 0 {
-		return domain.Message{}, httpx.Validation("an inbound message takes no mailbox_id, from_note_id, from_account, cc or bcc")
+	if strings.TrimSpace(b.MailboxID) != "" || strings.TrimSpace(b.FromNoteID) != "" || b.FromAccount != nil || len(b.To)+len(b.Cc)+len(b.Bcc) > 0 {
+		return domain.Message{}, httpx.Validation("an inbound message takes no mailbox_id, from_note_id, from_account, to, cc or bcc")
 	}
 	var subject, channel string
 	var contactID *uuid.UUID

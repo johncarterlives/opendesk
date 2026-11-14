@@ -134,6 +134,7 @@
       "message": "Sizə necə kömək edə bilərik?",
       "send": "Sorğunu göndər",
       "limit": "Ardıcıl bir neçə sorğu göndərdiniz. Bir az gözləyin və yenidən cəhd edin.",
+      "busy": "Hazırda çoxlu sorğu daxil olur. Bir az gözləyin və yenidən cəhd edin.",
       "attach": "Fayl seç",
       "drop": "Faylları bura buraxın və ya ekran görüntüsü yapışdırın.",
       "remove": "{{name}} faylını sil",

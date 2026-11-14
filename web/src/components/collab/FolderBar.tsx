@@ -5,7 +5,7 @@
 
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronLeft, ChevronRight, Pin, SlidersHorizontal, X } from "lucide-react";
-import { Fragment, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, Fragment, useLayoutEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ContextMenu,
@@ -24,6 +24,7 @@ import { boxTabNumbers, folderNumbers, type RowNumbers } from "@/lib/collab/badg
 import { accountName, buildFolderTree, flattenWithout, hasBox, isTabBox, TAB_BOXES } from "@/lib/collab/boxes";
 import { useSaveSidebarPrefs } from "@/lib/collab/hooks";
 import { isTab, MAX_TABS, pickCount, setBadge, tabBadge, tabId, tabsFor, toggleTab, type MailTab } from "@/lib/collab/sidebarPrefs";
+import { dropOverCls, useThreadDrop } from "@/lib/collab/threadDrag";
 import { cn } from "@/lib/cn";
 import { AccountDot, boxIcon, FolderGlyph } from "./bits";
 import { CustomizeTabs } from "./CustomizeTabs";
@@ -58,6 +59,33 @@ type BarItem = {
   /** A label the tab is (it takes a colour from its menu). */
   folder?: MailFolder;
 };
+
+/** A tab that opens its box or folder; conversations dragged from the list drop on it (lib/collab/threadDrag.ts). */
+const TabLink = forwardRef<HTMLAnchorElement, { item: BarItem; link: NonNullable<BarItem["link"]> } & HTMLAttributes<HTMLAnchorElement>>(function TabLink(
+  { item: x, link, className, ...rest },
+  ref,
+) {
+  const drop = useThreadDrop({ box: link.box, account: link.search.account, folder: link.search.folder });
+  return (
+    <Link
+      ref={ref}
+      {...rest}
+      {...drop.props}
+      to="/mail/$box/{-$threadId}"
+      params={{ box: link.box, threadId: undefined }}
+      search={link.search}
+      aria-current={x.active ? "page" : undefined}
+      title={x.title}
+      className={cn(tabCls, "rounded-md", x.active ? "font-medium text-fg" : "text-fg-3 hover:text-fg-2", drop.over && dropOverCls, className)}
+    >
+      <Underline active={x.active}>
+        {x.icon}
+        <span className="max-w-[160px] truncate">{x.label}</span>
+        <TabCount n={x.count} />
+      </Underline>
+    </Link>
+  );
+});
 
 /** The tab's own menu: its number, removing it, and the dialog. */
 function TabMenu({
@@ -326,20 +354,7 @@ export function FolderBar({
             {items.map((x) =>
               x.link ? (
                 <TabMenu key={x.id} id={x.id} label={x.label} prefs={prefs} onChange={change} onCustomize={() => setCustomizing(true)} removable colorFolder={x.folder} provider={providerOf(x.folder)}>
-                  <Link
-                    to="/mail/$box/{-$threadId}"
-                    params={{ box: x.link.box, threadId: undefined }}
-                    search={x.link.search}
-                    aria-current={x.active ? "page" : undefined}
-                    title={x.title}
-                    className={cn(tabCls, x.active ? "font-medium text-fg" : "text-fg-3 hover:text-fg-2")}
-                  >
-                    <Underline active={x.active}>
-                      {x.icon}
-                      <span className="max-w-[160px] truncate">{x.label}</span>
-                      <TabCount n={x.count} />
-                    </Underline>
-                  </Link>
+                  <TabLink item={x} link={x.link} />
                 </TabMenu>
               ) : (
                 <TabMenu

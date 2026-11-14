@@ -105,7 +105,7 @@
     "published": "Publication",
     "updated": "Mise à jour",
     "url": "URL",
-    "urlHint": "L’adresse de cet article dans votre centre d’aide. La modifier rend les anciens liens invalides."
+    "urlHint": "L’adresse de cet article dans votre centre d’aide. Si vous la modifiez, les anciens liens mènent ici."
   },
   "editor": {
     "notFound": "Article introuvable",

@@ -453,6 +453,11 @@ func (s *service) saveOAuthMailbox(ctx context.Context, p *auth.Principal, provi
 			if err != nil {
 				return err
 			}
+			if resetCursor {
+				if err := forgetFolderCursors(ctx, tx, existing, true); err != nil {
+					return err
+				}
+			}
 		} else {
 			typ = "mailbox.created"
 			if err := s.d.Plan.CheckMailbox(ctx, tx, wid); err != nil {

@@ -184,3 +184,68 @@ func TestBulkCompanies(t *testing.T) {
 	e.Do("POST", "/v1/companies/bulk", ws.Viewer.As(ws), map[string]any{"ids": cs, "delete": true}).Want(t, 403)
 	e.Do("POST", "/v1/companies/bulk", a, map[string]any{"ids": []string{ids.New().String()}, "delete": true}).Want(t, 404)
 }
+
+// A custom field is set and cleared in bulk, and a field filter selects the records.
+func TestBulkFields(t *testing.T) {
+	e := hdtest.New(t, contacts.Register)
+	ws := e.NewWorkspace()
+	a := ws.Agent.As(ws)
+	e.Exec(`INSERT INTO custom_fields (workspace_id, entity, key, name, type) VALUES ($1, 'contact', 'segment', 'Segment', 'text'),
+		($1, 'company', 'seats', 'Seats', 'number')`, ws.ID)
+	var people []string
+	for i := range 4 {
+		id := ids.New()
+		e.Exec(`INSERT INTO contacts (id, workspace_id, name, email) VALUES ($1, $2, $3, $4)`, id, ws.ID, fmt.Sprintf("p%d", i), fmt.Sprintf("p%d@example.com", i))
+		people = append(people, id.String())
+	}
+	segment := func(v string) int {
+		return count(e, `SELECT count(*) FROM contacts WHERE workspace_id = $1 AND fields->>'segment' = $2`, ws.ID, v)
+	}
+
+	var out bulkOut
+	e.Do("POST", "/v1/contacts/bulk", a, map[string]any{"ids": people[:3], "patch": map[string]any{"fields": map[string]any{"segment": "Enterprise"}}}).Want(t, 200).JSON(t, &out)
+	if out.Updated != 3 || segment("Enterprise") != 3 {
+		t.Fatalf("set %+v, %d", out, segment("Enterprise"))
+	}
+	// The list's field filter is the selection.
+	e.Do("POST", "/v1/contacts/bulk", a, map[string]any{"query": map[string]any{"fields": []map[string]any{{"key": "segment", "op": "eq", "value": "Enterprise"}}},
+		"patch": map[string]any{"add_tags": []string{"big"}}}).Want(t, 200).JSON(t, &out)
+	if out.Updated != 3 {
+		t.Fatalf("by field %+v", out)
+	}
+	e.Do("POST", "/v1/contacts/bulk", a, map[string]any{"ids": people[:1], "patch": map[string]any{"fields": map[string]any{"segment": nil}}}).Want(t, 200)
+	if segment("Enterprise") != 2 || count(e, `SELECT count(*) FROM contacts WHERE id = $1 AND fields ? 'segment'`, people[0]) != 0 {
+		t.Fatal("not cleared")
+	}
+
+	// Refusals change nothing: a field of companies, an unknown one, a field filter that is not one, an empty patch.
+	e.Do("POST", "/v1/contacts/bulk", a, map[string]any{"ids": people, "patch": map[string]any{"fields": map[string]any{"seats": 3}, "add_tags": []string{"x"}}}).Want(t, 422)
+	e.Do("POST", "/v1/contacts/bulk", a, map[string]any{"ids": people, "patch": map[string]any{"fields": map[string]any{"nope": "x"}}}).Want(t, 422)
+	e.Do("POST", "/v1/contacts/bulk", a, map[string]any{"query": map[string]any{"fields": []map[string]any{{"key": "nope", "op": "eq", "value": "x"}}}, "delete": true}).Want(t, 422)
+	e.Do("POST", "/v1/contacts/bulk", a, map[string]any{"ids": people, "patch": map[string]any{}}).Want(t, 422)
+	if count(e, `SELECT count(*) FROM contact_tags ct JOIN tags t ON t.id = ct.tag_id WHERE t.workspace_id = $1 AND t.name = 'x'`, ws.ID) != 0 ||
+		count(e, `SELECT count(*) FROM contacts WHERE workspace_id = $1`, ws.ID) != 4 {
+		t.Fatal("a refused request changed contacts")
+	}
+	// Each record is audited and announced.
+	if n := count(e, `SELECT count(*) FROM audit_logs WHERE workspace_id = $1 AND action = 'contact.updated' AND data->>'bulk' = 'true'`, ws.ID); n != 7 {
+		t.Fatalf("%d updates audited", n)
+	}
+	if n := count(e, `SELECT count(*) FROM events WHERE workspace_id = $1 AND type = 'contact.updated'`, ws.ID); n != 7 {
+		t.Fatalf("%d updates announced", n)
+	}
+
+	// Companies: a number set by filter, then cleared.
+	for _, n := range []string{"Acme", "Apex"} {
+		e.Exec(`INSERT INTO companies (id, workspace_id, name) VALUES ($1, $2, $3)`, ids.New(), ws.ID, n)
+	}
+	e.Do("POST", "/v1/companies/bulk", a, map[string]any{"query": map[string]any{"q": "acme"}, "patch": map[string]any{"fields": map[string]any{"seats": 40}}}).Want(t, 200).JSON(t, &out)
+	if out.Updated != 1 || count(e, `SELECT count(*) FROM companies WHERE workspace_id = $1 AND fields->>'seats' = '40'`, ws.ID) != 1 {
+		t.Fatalf("company field %+v", out)
+	}
+	e.Do("POST", "/v1/companies/bulk", a, map[string]any{"query": map[string]any{"fields": []map[string]any{{"key": "seats", "op": "set", "value": ""}}}, "delete": true}).Want(t, 200).JSON(t, &out)
+	if out.Deleted != 1 || count(e, `SELECT count(*) FROM companies WHERE workspace_id = $1`, ws.ID) != 1 {
+		t.Fatalf("company delete by field %+v", out)
+	}
+	e.Do("POST", "/v1/companies/bulk", a, map[string]any{"query": map[string]any{}, "patch": map[string]any{"fields": map[string]any{"seats": "many"}}}).Want(t, 422)
+}

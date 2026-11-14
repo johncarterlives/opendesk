@@ -1,4 +1,25 @@
 {
+  "trash": {
+    "title": "Papierkorb",
+    "what": "den Papierkorb",
+    "description": "Gelöschte Tickets, die neuesten zuerst, mit Angabe, wer sie wann gelöscht hat. Wiederherstellen holt ein Ticket so zurück, wie es war, mit seiner Unterhaltung, in Listen, Ansichten und Suche.",
+    "search": "Nach Nummer oder Betreff suchen",
+    "empty": "Der Papierkorb ist leer",
+    "emptyHint": "Ein Ticket, das jemand löscht, erscheint hier, und ein Admin kann es zurückholen.",
+    "emptyFiltered": "Kein gelöschtes Ticket passt",
+    "noSubject": "(kein Betreff)",
+    "messages": "Nachrichten: {{n}}",
+    "deletedAt": "gelöscht {{when}}",
+    "byMember": "von {{name}}",
+    "byKey": "vom API-Schlüssel {{name}}",
+    "byUnknown": "von einer Automatisierung, oder bevor das erfasst wurde",
+    "merged": "In #{{number}} zusammengeführt: die Unterhaltung ist dort",
+    "restore": "Wiederherstellen",
+    "restoreHint": "Das Ticket so zurückholen, wie es war",
+    "restored": "Ticket #{{number}} wiederhergestellt",
+    "open": "Öffnen",
+    "failed": "Das Ticket konnte nicht wiederhergestellt werden"
+  },
   "cancel": "Abbrechen",
   "apiKeys": {
     "title": "API-Schlüssel",

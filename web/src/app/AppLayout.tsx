@@ -308,8 +308,9 @@ export function AppLayout() {
   useShortcuts({
     "global.palette": () => shell.palette(!useShell.getState().paletteOpen),
     "global.help": () => shell.shortcuts(),
+    // c follows the header's primary action: mail on the mail pages or without Tickets.
     "global.new": () => {
-      if (onMail) compose.open();
+      if (onMail || (collab.enabled && !ticketsOn)) compose.open();
       else if (ticketsOn && !onNewTicket) shell.newTicket();
     },
   });

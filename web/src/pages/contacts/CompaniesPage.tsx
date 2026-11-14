@@ -16,6 +16,7 @@ import { DirectoryBulkBar } from "@/components/contacts/DirectoryBulkBar";
 import { DirectoryFilters } from "@/components/contacts/DirectoryFilters";
 import { HeaderCheck, RowCheck } from "@/components/contacts/RowCheck";
 import { useSelection } from "@/components/contacts/useSelection";
+import { companyFilter, isFiltered } from "@/lib/directorySort";
 import { DirectoryNav } from "@/components/contacts/DirectoryNav";
 import { CompanyDrawer } from "@/components/contacts/CompanyDrawer";
 import { CompanyGlyph, Labels, labelsOf } from "@/components/contacts/bits";
@@ -52,10 +53,12 @@ export default function CompaniesPage() {
     void navigate({ search: { ...search, q: debounced || undefined }, replace: true });
   }, [debounced, search, navigate]);
 
-  const list = useInfiniteQuery(q.companies({ q: search.q, tag: search.tag, sort: search.sort }));
+  const filter = companyFilter(search);
+  const filtered = isFiltered(search);
+  const list = useInfiniteQuery(q.companies({ ...filter, sort: search.sort }));
   const rows = list.data?.pages.flatMap((p) => p.data) ?? [];
-  // A selection belongs to this list: another search or label drops it.
-  const selection = useSelection(JSON.stringify([search.q, search.tag]));
+  // A selection belongs to this list: another search or filter drops it.
+  const selection = useSelection(JSON.stringify(filter));
   const allTicked = rows.length > 0 && rows.every((r) => selection.has(r.id));
   const sentinel = useSentinel(() => {
     if (list.hasNextPage && !list.isFetchingNextPage) void list.fetchNextPage();
@@ -96,17 +99,11 @@ export default function CompaniesPage() {
       </PageHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        <DirectoryFilters
-          scope="companies"
-          tag={search.tag}
-          onTag={(tag) => void navigate({ search: { ...search, tag } })}
-          sort={search.sort}
-          onSort={(sort) => void navigate({ search: { ...search, sort } })}
-        />
+        <DirectoryFilters scope="companies" search={search} onSearch={(next) => void navigate({ search: next })} />
 
         {!list.isLoading && rows.length > 0 && (
           <StatStrip>
-            <Stat label={t("stat.companies")} value={<><AnimatedNumber value={rows.length} />{list.hasNextPage ? "+" : ""}</>} sub={search.q || search.tag ? t("stat.matching") : t("stat.inDirectory")} />
+            <Stat label={t("stat.companies")} value={<><AnimatedNumber value={rows.length} />{list.hasNextPage ? "+" : ""}</>} sub={filtered ? t("stat.matching") : t("stat.inDirectory")} />
             <Stat label={t("stat.linkedPeople")} value={<AnimatedNumber value={linked} />} sub={t("stat.linkedHint")} />
             <Stat label={t("stat.withDomain")} value={<AnimatedNumber value={withDomain} />} sub={t("stat.withDomainHint")} />
             <Stat
@@ -134,7 +131,7 @@ export default function CompaniesPage() {
         ) : list.error ? (
           <EmptyState lit={3} title={t("error.companiesTitle")} description={errorMessage(list.error)} action={<Button onClick={() => void list.refetch()}>{t("retry")}</Button>} />
         ) : rows.length === 0 ? (
-          search.q || search.tag ? (
+          filtered ? (
             <EmptyState
               art="search"
               ghost={<GhostList variant="table" />}
@@ -144,10 +141,10 @@ export default function CompaniesPage() {
                 <Button
                   onClick={() => {
                     setTerm("");
-                    void navigate({ search: { ...search, q: undefined, tag: undefined } });
+                    void navigate({ search: { sort: search.sort } });
                   }}
                 >
-                  {search.tag ? t("clearFilters") : t("clearSearch")}
+                  {search.tag || search.fields ? t("clearFilters") : t("clearSearch")}
                 </Button>
               }
               tips={[{ label: t("tips.spelling") }, { label: t("tips.tryDomain") }]}
@@ -215,7 +212,7 @@ export default function CompaniesPage() {
       </div>
 
       {canEdit && (
-        <DirectoryBulkBar scope="companies" selection={selection} query={{ q: search.q, tag: search.tag }} canSelectMore={allTicked && (!!list.hasNextPage || !!search.q || !!search.tag)} />
+        <DirectoryBulkBar scope="companies" selection={selection} query={filter} canSelectMore={allTicked && (!!list.hasNextPage || filtered)} matching={list.hasNextPage ? undefined : rows.length} />
       )}
 
       <CompanyDrawer companyId={companyId ?? null} onClose={() => void open(undefined)} />

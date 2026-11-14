@@ -140,7 +140,9 @@ export function articleUrl(ws: WsData, a: Pick<KbArticle, "slug" | "brand_id" | 
   const col = a.collection_id ? ws.collections.find((c) => c.id === a.collection_id) : undefined;
   const id = col?.brand_id ?? a.brand_id ?? null;
   const b = (id && ws.brands.find((x) => x.id === id)) || defaultBrand(ws);
-  return b ? helpPageUrl(b, `/a/${a.slug}`) : `${defaultHelpUrl(ws.workspace.slug)}/a/${a.slug}`;
+  // Where it lives: in its collection, else at /a/ (contracts/api.md "Knowledge base").
+  const path = col ? `/c/${col.slug}/${a.slug}` : `/a/${a.slug}`;
+  return b ? helpPageUrl(b, path) : `${defaultHelpUrl(ws.workspace.slug)}${path}`;
 }
 
 export function brandOut(ws: WsData, b: Brand): Brand {

@@ -21,6 +21,15 @@ export const MAX_FILE_BYTES = 10 << 20;
 
 type Item = { key: string; name: string; size: number; image: boolean; preview?: string; state: "uploading" | "done" | "error"; id?: string; problem?: "too_big" | "upload_failed" };
 
+/** What a refused request says: the customer's own hourly limit, the help center's limit for everyone, or a
+ * portal that was turned off while the form was open (contracts/customer-portal.md "Starting a request"). */
+function failure(error: unknown) {
+  if (isApiError(error, "rate_limited")) return "portal.new.limit" as const;
+  if (isApiError(error, "portal_busy")) return "portal.new.busy" as const;
+  if (isApiError(error, "not_found")) return "portal.unavailable" as const;
+  return "portal.error" as const;
+}
+
 let seq = 0;
 const size = (bytes: number) => (bytes < 1 << 20 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1 << 20)).toFixed(1)} MB`);
 
@@ -92,7 +101,7 @@ export function NewRequest({ slug }: { slug: string }) {
       <Link to="/portal/$slug" params={{ slug }} className={`mb-5 inline-block text-sm ${publicTextLink}`}>{t("portal.back_requests")}</Link>
       <h1 className="text-pretty text-2xl font-semibold">{t("portal.new.title")}</h1>
       <form className="mt-6 flex flex-col gap-4" onSubmit={submit} onPaste={onPaste}>
-        {create.isError && <Notice>{isApiError(create.error, "rate_limited") ? t("portal.new.limit") : t("portal.error")}</Notice>}
+        {create.isError && <Notice>{t(failure(create.error))}</Notice>}
         <label className="text-sm font-medium">
           {t("portal.new.subject")}
           <TextInput className="mt-1.5" name="subject" maxLength={200} required value={subject} onChange={(e) => setSubject(e.target.value)} />

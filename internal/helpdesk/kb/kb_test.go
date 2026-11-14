@@ -232,6 +232,20 @@ func TestPublicHelpCenter(t *testing.T) {
 		t.Fatalf("views %d author %+v", got.Views, got.Author)
 	}
 
+	// The same slug in another collection: one article, counted once; `collection` picks.
+	twin := createArticle(t, e, agent, map[string]any{"title": "Billing invoices", "slug": titled.Slug, "body_html": "<p>Twin.</p>",
+		"status": "published", "collection_id": empty.ID})
+	e.Do("GET", base+"/articles/"+titled.Slug, none, nil).Want(t, 200).JSON(t, &got)
+	if got.ID != titled.ID || got.Views != 3 {
+		t.Fatalf("by slug alone %s views %d", got.ID, got.Views)
+	}
+	e.Do("GET", base+"/articles/"+titled.Slug+"?collection="+empty.Slug, none, nil).Want(t, 200).JSON(t, &got)
+	if got.ID != twin.ID || got.Views != 1 {
+		t.Fatalf("in collection %s views %d", got.ID, got.Views)
+	}
+	e.Do("GET", base+"/articles/"+titled.Slug+"?collection=nope", none, nil).Want(t, 404)
+	e.Exec(`DELETE FROM kb_articles WHERE id = $1`, twin.ID)
+
 	var res []article
 	e.Do("GET", base+"/search?q=billing", none, nil).Want(t, 200).JSON(t, &res)
 	if len(res) != 2 || res[0].ID != titled.ID || res[1].ID != bodied.ID {

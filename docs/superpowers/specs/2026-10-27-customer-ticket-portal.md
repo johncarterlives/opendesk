@@ -20,7 +20,7 @@ Issue #149 asks for contacts to have an account without receiving a generated pa
 - A customer can list, read, and reply only to tickets whose `workspace_id` and `contact_id` both match the authenticated identity. A ticket belonging to another contact or workspace returns `404`.
 - Lists omit deleted and spam tickets and use bounded cursor pagination.
 - Portal conversation responses contain only public replies: no notes, internal threads, activities, hidden agent fields, deleted or purged content, or failed sender-check messages. Return text, not stored HTML.
-- Customer replies are plain text, converted with the existing safe text-to-HTML helper, and written through `domain.AddMessage` in the regular transaction/event path. Do not provide ticket creation, status changes, CCs, file uploads, or organization-wide visibility in this release.
+- Customer replies are plain text, converted with the existing safe text-to-HTML helper, and written through `domain.AddMessage` in the regular transaction/event path. Do not provide status changes, CCs or organization-wide visibility in this release. Starting a request with files came after this spec; the contract ([customer portal](../../../contracts/customer-portal.md#starting-a-request)) describes it.
 
 ## Identity and security
 

@@ -40,6 +40,7 @@ func Register(d *deps.Deps, api huma.API, r chi.Router) {
 		return httpx.HasTag(op, "Customer portal") && op.OperationID != "customer-portal-config"
 	}))
 	s := &service{d: d}
+	s.registerInvites(api)
 	op := s.operation("customer-portal-config", http.MethodGet, "/v1/public/help/{workspace_slug}/portal/config", "Customer portal brand", true)
 	huma.Register(api, op, func(ctx context.Context, in *struct {
 		Slug string `path:"workspace_slug"`

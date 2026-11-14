@@ -12,6 +12,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/audit"
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/billing"
+	"github.com/useopendesk/opendesk/internal/collab"
 	"github.com/useopendesk/opendesk/internal/crypto"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/domain"
@@ -116,6 +117,20 @@ func (s *svc) registerInvitations(api huma.API) {
 				if member {
 					return httpx.E(409, "already_member", "This person is already a member.")
 				}
+				// Inviting the same address again replaces the invitation; the shared mail
+				// accounts it carried move to the new one (contracts/collab.md "Who sees what").
+				rows, err := tx.Query(ctx, `SELECT id FROM invitations WHERE workspace_id = $1 AND email = $2 AND accepted_at IS NULL`, p.WorkspaceID, email)
+				if err != nil {
+					return err
+				}
+				replaced, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+				if err != nil {
+					return err
+				}
+				kept, err := collab.TakeInvitedShares(ctx, tx, p.WorkspaceID, replaced)
+				if err != nil {
+					return err
+				}
 				if _, err := tx.Exec(ctx, `DELETE FROM invitations WHERE workspace_id = $1 AND email = $2 AND accepted_at IS NULL`, p.WorkspaceID, email); err != nil {
 					return err
 				}
@@ -131,6 +146,9 @@ func (s *svc) registerInvitations(api huma.API) {
 				if _, err := tx.Exec(ctx, `INSERT INTO invitations (id, workspace_id, email, role, token_hash, token_enc, invited_by, expires_at)
 					VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, id, p.WorkspaceID, email, role, crypto.HashToken(token), sealed, p.ActorUserID(),
 					time.Now().Add(inviteTTL)); err != nil {
+					return err
+				}
+				if err := kept.Restore(ctx, tx, p.WorkspaceID, id); err != nil {
 					return err
 				}
 				var wsName, inviter string
@@ -367,6 +385,10 @@ func (s *svc) registerInvitations(api huma.API) {
 				if err != nil {
 					return err
 				}
+				// Shared mail accounts they were invited to are theirs now (GH#447).
+				if _, err := collab.ApplyInvitedShares(ctx, tx, wid, id, p.UserID); err != nil {
+					return err
+				}
 				// A token that only ever went by the invitation email proves the address; a
 				// link an admin copied and sent another way does not (as at sign-up).
 				if !copied {
@@ -420,13 +442,20 @@ type openedInvitation struct {
 func (s *svc) openInvitation(ctx context.Context, tx pgx.Tx, wid, id uuid.UUID) (openedInvitation, error) {
 	var inv openedInvitation
 	var sealed []byte
-	err := tx.QueryRow(ctx, `SELECT email, role, token_enc FROM invitations
-		WHERE id = $1 AND workspace_id = $2 AND accepted_at IS NULL FOR UPDATE`, id, wid).Scan(&inv.email, &inv.role, &sealed)
+	var expired bool
+	err := tx.QueryRow(ctx, `SELECT email, role, token_enc, expires_at <= now() FROM invitations
+		WHERE id = $1 AND workspace_id = $2 AND accepted_at IS NULL FOR UPDATE`, id, wid).Scan(&inv.email, &inv.role, &sealed, &expired)
 	if db.IsNotFound(err) {
 		return inv, httpx.NotFound("Invitation")
 	}
 	if err != nil {
 		return inv, err
+	}
+	// The shared mail accounts of an expired invitation dropped out (contracts/collab.md).
+	if expired {
+		if err := collab.DropInvitedShares(ctx, tx, wid, id); err != nil {
+			return inv, err
+		}
 	}
 	if sealed != nil {
 		if plain, err := s.d.Box.Open(sealed); err == nil {

@@ -86,6 +86,7 @@
     "mentionTeammate": "Mentionner un collègue",
     "mergeSearch": "Rechercher par objet, client ou numéro",
     "remove": "Retirer {{name}}",
+    "addAddress": "Ajouter {{address}}",
     "openFile": "Ouvrir {{name}}"
   }
 }

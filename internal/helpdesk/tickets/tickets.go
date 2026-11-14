@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/useopendesk/opendesk/internal/audit"
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/deps"
@@ -469,7 +470,7 @@ func registerTickets(d *deps.Deps, api huma.API) {
 				if err != nil {
 					return err
 				}
-				return deleteTicket(ctx, tx, p.WorkspaceID, id)
+				return deleteTicket(ctx, tx, p.WorkspaceID, id, p, actorOf(p))
 			})
 			if err != nil {
 				return nil, httpx.Wrap(err)
@@ -543,7 +544,7 @@ func registerTickets(d *deps.Deps, api huma.API) {
 					}
 					seen[id] = true
 					if in.Body.Delete {
-						if err := deleteTicket(ctx, tx, p.WorkspaceID, id); err != nil {
+						if err := deleteTicket(ctx, tx, p.WorkspaceID, id, p, actorOf(p)); err != nil {
 							return err
 						}
 						out.Deleted++
@@ -966,12 +967,35 @@ func createTicket(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principa
 	return domain.LoadTicket(ctx, tx, wid, t.ID)
 }
 
-func deleteTicket(ctx context.Context, tx pgx.Tx, wid, id uuid.UUID) error {
-	if _, err := tx.Exec(ctx, `UPDATE tickets SET deleted_at = now(), updated_at = now() WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL`,
-		wid, id); err != nil {
+// deleteTicket soft-deletes a ticket: it leaves every list, view and search and waits in the
+// trash (trash.go), where an admin can restore it. by is the member or API key that deleted it,
+// recorded on the ticket and in the audit log; nil for an automation. actor signs the "deleted"
+// entry on its timeline, seen once it is restored.
+func deleteTicket(ctx context.Context, tx pgx.Tx, wid, id uuid.UUID, by *auth.Principal, actor Actor) error {
+	var user, key *uuid.UUID
+	if by != nil {
+		user, key = by.ActorUserID(), by.ActorAPIKeyID()
+	}
+	var number int64
+	err := tx.QueryRow(ctx, `UPDATE tickets SET deleted_at = now(), updated_at = now(), deleted_by = $3, deleted_by_api_key_id = $4
+		WHERE workspace_id = $1 AND id = $2 AND deleted_at IS NULL RETURNING number`, wid, id, user, key).Scan(&number)
+	if db.IsNotFound(err) {
+		return nil // already deleted
+	}
+	if err != nil {
 		return err
 	}
-	_, err := events.Publish(ctx, tx, events.Event{WorkspaceID: wid, Type: "ticket.deleted", TicketID: &id, Data: map[string]any{"ticket_id": id}})
+	data := map[string]any{"number": number}
+	if by == nil {
+		data["actor"] = "automation"
+	}
+	if err := audit.Log(ctx, tx, by, wid, "ticket.deleted", "ticket", &id, data); err != nil {
+		return err
+	}
+	if _, err := domain.LogActivity(ctx, tx, wid, id, actor.Type, actor.UserID, "deleted", maps.Clone(actor.Meta)); err != nil {
+		return err
+	}
+	_, err = events.Publish(ctx, tx, events.Event{WorkspaceID: wid, Type: "ticket.deleted", TicketID: &id, Data: map[string]any{"ticket_id": id}})
 	return err
 }
 

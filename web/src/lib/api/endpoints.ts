@@ -96,13 +96,16 @@ function bulkQuery(q: TicketBulkQuery) {
 	return { ...q, spam: q.spam === true ? "true" : q.spam === false ? "false" : q.spam, merged: q.merged === true ? "true" : q.merged === false ? "false" : q.merged };
 }
 
-export type ContactSort = "-created" | "created" | "name" | "-name" | "-tickets" | "tickets";
-export type CompanySort = "name" | "-name" | "created" | "-created" | "contacts" | "-contacts";
+export type ContactSort = "-created" | "created" | "name" | "-name" | "-tickets" | "tickets" | "-updated" | "updated";
+export type CompanySort = "name" | "-name" | "created" | "-created" | "contacts" | "-contacts" | "-updated" | "updated";
 export type ContactListQuery = ListQuery & { q?: string; company_id?: string; tag?: string; blocked?: "true" | "false"; sort?: ContactSort; fields?: T.FieldFilter[] };
 /** What POST /v1/contacts/bulk and /v1/companies/bulk act on: ids (up to 100) or the list's filters. */
 export type DirectoryBulkTarget<Q> = { ids: string[] } | { query: Q };
-export type ContactBulkQuery = { q?: string; company_id?: string; tag?: string; blocked?: "true" | "false" };
-export type CompanyBulkQuery = { q?: string; tag?: string };
+/** The People list's filters; `company_id: "none"` is the people without a company. */
+export type ContactBulkQuery = { q?: string; company_id?: string; tag?: string; blocked?: "true" | "false"; fields?: T.FieldFilter[] };
+export type CompanyBulkQuery = { q?: string; tag?: string; fields?: T.FieldFilter[] };
+/** A bulk patch's custom fields, merged into each record; null clears one. */
+export type DirectoryBulkPatch = { add_tags?: string[]; remove_tags?: string[]; fields?: T.FieldValuesPatch };
 export type BulkResult = { updated: number; deleted: number };
 export type CompanyListQuery = ListQuery & { q?: string; tag?: string; sort?: CompanySort; fields?: T.FieldFilter[] };
 
@@ -139,6 +142,8 @@ export type CreateTicketBody = {
 export type SendMessageBody = {
   kind: "reply" | "note";
   body_html: string;
+  /** Email replies: who it goes to; left out, the customer's reply address. */
+  to?: string[];
   cc?: string[];
   bcc?: string[];
   attachment_ids?: string[];
@@ -351,7 +356,7 @@ export const api = {
     dismiss: () => http.post<void>("/v1/onboarding/dismiss"),
   },
   invitations: {
-    list: () => http.get<T.Page<T.Invitation>>("/v1/invitations"),
+    list: (q?: ListQuery) => http.get<T.Page<T.Invitation>>("/v1/invitations", { query: q }),
     create: (b: { email: string; role: T.Role }) => http.create<T.Invitation>("/v1/invitations", b),
     revoke: (id: string) => http.del(`/v1/invitations/${id}`),
     link: (id: string) => http.post<{ url: string; expires_at: string }>(`/v1/invitations/${id}/link`),
@@ -589,6 +594,10 @@ export const api = {
     get: (id: string) => http.get<T.Ticket>(`/v1/tickets/${encodeURIComponent(id)}`),
     update: (id: string, patch: T.TicketPatch) => http.patch<T.Ticket>(`/v1/tickets/${id}`, patch),
     delete: (id: string) => http.del(`/v1/tickets/${id}`),
+    /** The trash, admins only: deleted tickets, newest first. */
+    deleted: (q: { limit?: number; before?: string | null; q?: string }) =>
+      http.get<{ data: T.DeletedTicket[]; next_before?: string }>("/v1/tickets/deleted", { query: { limit: q.limit, before: q.before || undefined, q: q.q || undefined } }),
+    restore: (id: string) => http.post<T.Ticket>(`/v1/tickets/${encodeURIComponent(id)}/restore`),
     bulk: (b: ({ ids: string[] } | { query: TicketBulkQuery }) & { patch?: T.TicketPatch; delete?: true }) =>
       http.post<{ data: T.Ticket[]; updated: number; deleted: number } | undefined>("/v1/tickets/bulk", "query" in b ? { ...b, query: bulkQuery(b.query) } : b),
     merge: (id: string, into_id: string) => http.post<T.Ticket>(`/v1/tickets/${id}/merge`, { into_id }),
@@ -650,18 +659,26 @@ export const api = {
     tickets: (id: string, q?: ListQuery) => http.get<T.Page<T.Ticket>>(`/v1/contacts/${id}/tickets`, { query: q }),
     /** Merges the contact into another (admin): its tickets, messages and addresses become `into`'s, and it is removed. */
     merge: (id: string, into: string) => http.post<T.Contact>(`/v1/contacts/${id}/merge`, { into }),
-    bulk: (b: DirectoryBulkTarget<ContactBulkQuery> & ({ delete: true } | { patch: { add_tags?: string[]; remove_tags?: string[]; company_id?: string | null } })) =>
+    bulk: (b: DirectoryBulkTarget<ContactBulkQuery> & ({ delete: true } | { patch: DirectoryBulkPatch & { company_id?: string | null } })) =>
       http.post<BulkResult>("/v1/contacts/bulk", b),
     /** Extra addresses (contracts/api.md "Contact emails"); each answers with the contact. */
     addEmail: (id: string, email: string) => http.post<T.Contact>(`/v1/contacts/${id}/emails`, { email }),
     removeEmail: (id: string, email: string) => http.del<T.Contact>(`/v1/contacts/${id}/emails/${encodeURIComponent(email)}`),
     makePrimaryEmail: (id: string, email: string) => http.post<T.Contact>(`/v1/contacts/${id}/emails/${encodeURIComponent(email)}/make-primary`),
+    /** Customer portal access (contracts/customer-portal.md "Invitations"). */
+    portal: (id: string) => http.get<T.PortalAccess>(`/v1/contacts/${id}/portal`),
+    /** Emails a one-time link to choose a portal password, valid 7 days (422 no_email, contact_blocked, help_center_off, brand_required, password_sign_in_off; 429). */
+    invitePortal: (id: string, brandId?: string) => http.post<T.PortalAccess>(`/v1/contacts/${id}/portal/invite`, brandId ? { brand_id: brandId } : {}),
+    /** Up to 100 contacts at once; who could not be invited is counted, not refused. */
+    invitePortalBulk: (ids: string[], brandId?: string) => http.post<T.PortalBulkInvite>("/v1/contacts/portal/invite", brandId ? { ids, brand_id: brandId } : { ids }),
+    /** Removes the portal password, ends portal sessions and closes open links. */
+    removePortal: (id: string) => http.del<void>(`/v1/contacts/${id}/portal`),
     ...pictureRoutes<T.Contact>("/v1/contacts"),
   },
   companies: {
     ...crud<T.Company, Partial<Pick<T.Company, "name" | "domain" | "external_id" | "notes" | "custom">> & LabelWrites>("/v1/companies"),
     search: (q: CompanyListQuery) => http.get<T.Page<T.Company>>("/v1/companies", { query: listQuery(q) }),
-    bulk: (b: DirectoryBulkTarget<CompanyBulkQuery> & ({ delete: true } | { patch: { add_tags?: string[]; remove_tags?: string[] } })) =>
+    bulk: (b: DirectoryBulkTarget<CompanyBulkQuery> & ({ delete: true } | { patch: DirectoryBulkPatch })) =>
       http.post<BulkResult>("/v1/companies/bulk", b),
     ...pictureRoutes<T.Company>("/v1/companies"),
   },
@@ -791,10 +808,12 @@ export const api = {
     update: (b: Partial<T.WidgetSettings>) => http.patch<T.WidgetSettings>("/v1/widget/settings", b),
   },
   mailboxes: {
-    ...crud<T.Mailbox, Partial<CreateMailboxBody> & Partial<Pick<T.Mailbox, "signature_html" | "auto_reply_enabled" | "auto_reply_subject" | "auto_reply_html" | "status" | "ai_answers" | "ai_answers_mode" | "ai_answers_outside_hours" | "trusted_form_senders" | "keep_automatic_mail" | "personal_replies">> & { bot_id?: string | null; alias_settings?: Record<string, T.AliasSettingsInput> }>("/v1/mailboxes"),
+    ...crud<T.Mailbox, Partial<CreateMailboxBody> & Partial<Pick<T.Mailbox, "signature_html" | "auto_reply_enabled" | "auto_reply_subject" | "auto_reply_html" | "status" | "ai_answers" | "ai_answers_mode" | "ai_answers_outside_hours" | "trusted_form_senders" | "keep_automatic_mail" | "personal_replies" | "imap_folders" | "imap_sent_folder">> & { bot_id?: string | null; alias_settings?: Record<string, T.AliasSettingsInput> }>("/v1/mailboxes"),
     create: (b: CreateMailboxBody) => http.create<T.Mailbox>("/v1/mailboxes", b),
     test: (id: string) => http.post<T.MailboxTest>(`/v1/mailboxes/${id}/test`),
     usage: (id: string) => http.get<T.MailboxUsage>(`/v1/mailboxes/${id}/usage`),
+    /** Signs in to the IMAP server and lists the folders it can read (422 not_imap, 422 imap_failed with the server's reason). */
+    imapFolders: (id: string) => http.get<T.ImapFolders>(`/v1/mailboxes/${id}/imap-folders`),
     /** Reads Gmail's send-as list again (422 send_as_unreadable for a send-only connection). */
     checkSendAs: (id: string) => http.post<T.Mailbox>(`/v1/mailboxes/${id}/send-as/check`),
     /**
@@ -1103,6 +1122,8 @@ export type CollabAccountPatch = {
   signature_html?: string;
   visibility?: "private" | "shared";
   handling_enabled?: boolean;
+  /** With handling_enabled turning on: put what is in the inbox now in Needs action (once). */
+  mark_inbox_needs_action?: boolean;
   reply_all?: boolean;
   shared_with?: T.MailAudience;
   imap?: Partial<T.MailImapSettings> & { password?: string; smtp_password?: string };

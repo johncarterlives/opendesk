@@ -101,6 +101,9 @@
     "clear": "Auswahl aufheben",
     "loadMore": "Weitere werden geladen",
     "noSubject": "(kein Betreff)",
+    "aiDraftEdit": "Bearbeiten",
+    "aiDraftSendHint": "Diesen Entwurf so senden",
+    "aiDraftEditHint": "Die Unterhaltung mit diesem Entwurf im Editor öffnen",
     "me": "ich",
     "draft": "Entwurf",
     "select": "Unterhaltung von {{name}} auswählen",
@@ -149,6 +152,9 @@
     "anyAddress": "Alle Adressen",
     "with": "Mit",
     "anyone": "Alle",
+    "spamHint_one": "{{count}} ungelesene Unterhaltung im Spam. Spam kommt nie in die Arbeitsliste: Prüfe, dass sie nicht von einem Kunden ist.",
+    "spamHint_other": "{{count}} ungelesene Unterhaltungen im Spam. Spam kommt nie in die Arbeitsliste: Prüfe, dass keine von einem Kunden ist.",
+    "spamOpen": "Spam öffnen",
     "searchCoverage": "Durchsucht E-Mails seit {{date}}",
     "searchImport": "Ältere E-Mails importieren",
     "storageFull": "Neue E-Mails warten beim Anbieter: Der Collab-Speicher des Workspace ist voll.",
@@ -188,7 +194,17 @@
     "folderCreated": "Ordner erstellt",
     "labelsUnsupported": "Nur Gmail-Konten haben Labels",
     "createLabel": "Label erstellen",
-    "labelCreated": "Label erstellt"
+    "labelCreated": "Label erstellt",
+    "snooze": "Zurückstellen",
+    "assignTo": "Zuweisen an…",
+    "shareWith": "Teilen mit…",
+    "moveTo": "Verschieben nach…",
+    "labelAs": "Label zuweisen…",
+    "newTab": "In neuem Tab öffnen"
+  },
+  "drop": {
+    "otherAccount": "Diese Unterhaltungen liegen in einem anderen Konto.",
+    "noHandling": "„Zu erledigen“ gibt es nur für geteilte Konten mit aktivierter Bearbeitung."
   },
   "toast": {
     "archived_one": "Unterhaltung archiviert",
@@ -203,6 +219,16 @@
     "inboxed_other": "{{count}} Unterhaltungen in den Posteingang verschoben",
     "notSpam_one": "Unterhaltung in den Posteingang verschoben",
     "notSpam_other": "{{count}} Unterhaltungen in den Posteingang verschoben",
+    "done_one": "Unterhaltung als erledigt markiert",
+    "done_other": "{{count}} Unterhaltungen als erledigt markiert",
+    "needsAction_one": "Unterhaltung als zu erledigen markiert",
+    "needsAction_other": "{{count}} Unterhaltungen als zu erledigen markiert",
+    "labeled_one": "Label {{folder}} hinzugefügt",
+    "labeled_other": "Label {{folder}} zu {{count}} Unterhaltungen hinzugefügt",
+    "assignedToYou_one": "Unterhaltung dir zugewiesen",
+    "assignedToYou_other": "{{count}} Unterhaltungen dir zugewiesen",
+    "starred_one": "Unterhaltung markiert",
+    "starred_other": "{{count}} Unterhaltungen markiert",
     "undo": "Rückgängig",
     "failed": "Das hat nicht geklappt. Nichts wurde geändert.",
     "syncing": "{{name}} wird synchronisiert",
@@ -364,7 +390,19 @@
     "summaryTeams_other": "{{count}} Teams",
     "summaryPeople_one": "{{count}} Person",
     "summaryPeople_other": "{{count}} Personen",
-    "summaryNobody": "Noch niemand hinzugefügt"
+    "summaryInvited_one": "{{count}} eingeladen",
+    "summaryInvited_other": "{{count}} eingeladen",
+    "summaryNobody": "Noch niemand hinzugefügt",
+    "createTeam": "Team erstellen",
+    "teamCreated": "Team {{name}} erstellt",
+    "teamCreateFailed": "Das Team wurde nicht erstellt",
+    "invite": "Einladen",
+    "inviteHint": "Geben Sie eine E-Mail-Adresse ein, um jemanden einzuladen. Das Konto wird geteilt, sobald die Person beitritt.",
+    "inviteNeedsEmail": "Geben Sie eine E-Mail-Adresse ein, um jemanden einzuladen",
+    "invited": "Einladung an {{email}} gesendet",
+    "alreadyInvited": "{{email}} ist bereits eingeladen und erhält dieses Konto beim Beitritt.",
+    "inviteFailed": "Die Einladung wurde nicht gesendet",
+    "invitedMark": "eingeladen"
   },
   "accounts": {
     "title": "E-Mail-Konten",
@@ -508,6 +546,14 @@
       "read_only": "Aus Gmail gelesen. Verbinde das Konto neu, um ihn von hier aus in Gmail zu ändern.",
       "microsoft": "Folgt deinem Microsoft-Profil, bis du ihn hier änderst.",
       "none": "Dieser Name liegt in opendesk."
+    },
+    "handling": {
+      "title": "Bearbeitung",
+      "hint": "Trenne die Arbeit im geteilten Postfach von gelesenen und ungelesenen E-Mails",
+      "enabled": "Zu erledigende Unterhaltungen verfolgen",
+      "enabledHint": "Neue eingehende E-Mails sind zu erledigen, bis jemand sie als erledigt markiert. Das ändert nichts an den E-Mails bei deinem Anbieter.",
+      "markInbox": "Mit dem aktuellen Posteingang beginnen",
+      "markInboxHint": "Markiert die Unterhaltungen im Posteingang aus den letzten 30 Tagen als zu erledigen, außer denen, auf die du zuletzt geantwortet hast. Sonst sind nur E-Mails zu erledigen, die ab jetzt eintreffen."
     },
     "ooo": {
       "title": "Abwesenheitsnotiz",

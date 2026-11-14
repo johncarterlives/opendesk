@@ -183,6 +183,21 @@ export type HelpDomainRecord = { type: "TXT" | "CNAME"; name: string; value: str
 export type PortalAuthMode = "local" | "oidc" | "local_and_oidc";
 /** What GET /v1/brands/{id}/portal/auth returns (admin). The client secret is never returned. */
 export type PortalAuthSettings = { mode: PortalAuthMode; issuer: string; client_id: string; secret_configured: boolean; create_contacts: boolean };
+/** A brand whose help center is on: where a portal invitation can lead (contracts/customer-portal.md "Invitations"). */
+export type PortalBrand = { id: string; name: string; slug: string; auth_mode: PortalAuthMode; default: boolean };
+/** A contact's customer portal access, as members see it. */
+export type PortalAccess = {
+  /** active: a password or a provider sign-in; invited: a password link that is still open; none: neither. */
+  status: "none" | "invited" | "active";
+  password: boolean;
+  sso: boolean;
+  invited_at: string | null;
+  invite_expires_at: string | null;
+  last_sign_in_at: string | null;
+  brands: PortalBrand[];
+};
+/** What one bulk invitation did: skipped counts by reason (no_email, blocked, active, rate_limited, not_found). */
+export type PortalBulkInvite = { sent: number; skipped: Partial<Record<"no_email" | "blocked" | "active" | "rate_limited" | "not_found", number>> };
 export type PortalRelinkAuthorization = { id: string; brand_id: string; contact_id: string; expires_at: string };
 export type Brand = {
   id: string;
@@ -520,6 +535,8 @@ export type Message = {
   mailbox_id?: string | null;
   /** Inbound email: the Reply-To it named when that differs from from_email, else "". Agents only. */
   reply_to?: string;
+  /** Inbound email: where replies to it go instead of from_email (its reply_to, at the sender's own organisation), else "". Agents only. */
+  reply_address?: string;
   /** Inbound email: its From failed DMARC at a trusted receiving server. Shown as unverified. Agents only. */
   auth_failed?: boolean;
   /** Inbound email: the trusted contact form address it came through; from_email is then the visitor. Agents only. */
@@ -957,6 +974,17 @@ export type ProviderSendAs = {
 export type AliasSettingsInput = { display_name?: string; signature_html?: string; brand_id?: string | null; send_as?: AliasSendAs };
 /** accounts: any of the member's addresses, shared accounts only, or addresses at the mailbox's own domains. */
 export type MailboxPersonalReplies = { enabled: boolean | null; reply_to: "address" | "mailbox" | null; accounts: "any" | "shared" | "domain" };
+/** A folder on a mailbox's IMAP server it can read (GET /v1/mailboxes/{id}/imap-folders). */
+export type ImapFolder = {
+  /** The folder's name on the server, as imap_folders takes it. */
+  name: string;
+  /** The name with / between levels, for showing. */
+  path: string;
+  /** What the server says the folder is for (SPECIAL-USE), or "". */
+  special: "" | "inbox" | "sent" | "drafts" | "trash" | "junk" | "archive" | "all" | "flagged" | "important";
+};
+export type ImapFolders = { folders: ImapFolder[]; selected: string[] };
+
 export type Mailbox = {
   id: string;
   name: string;
@@ -998,6 +1026,10 @@ export type Mailbox = {
   trusted_form_senders?: string[];
   /** Mail marked automatic (Auto-Submitted, Precedence: bulk) is taken in instead of dropped; nothing automatic answers it. */
   keep_automatic_mail?: boolean;
+  /** The IMAP folders a mailbox that reads over IMAP takes mail from; empty reads INBOX alone (admins only). */
+  imap_folders?: string[];
+  /** The IMAP folder a copy of each email the mailbox sends over SMTP or through opendesk is kept in; "" keeps none (admins only). */
+  imap_sent_folder?: string;
   signature_html: string;
   auto_reply_enabled: boolean;
   auto_reply_subject: string;
@@ -1043,6 +1075,8 @@ export type KbArticle = {
   views: number;
   published_at: string | null;
   updated_at: string;
+  /** Its address on a help center, after the help center's own: /c/<collection slug>/<slug>, or /a/<slug> in no collection. */
+  path: string;
 };
 
 /** A product update the help center publishes at /changelog (contracts/api.md "Changelog"). */
@@ -1444,6 +1478,23 @@ export type WebhookDelivery = {
   duration_ms: number | null;
   created_at: string;
 };
+/** A row of the trash (GET /v1/tickets/deleted): a deleted ticket, who deleted it and when. */
+export type DeletedTicket = {
+  id: string;
+  number: number;
+  subject: string;
+  status: TicketStatus;
+  channel: string;
+  contact: { id: string; name: string; email?: string } | null;
+  message_count: number;
+  deleted_at: string;
+  /** The member who deleted it; null for an API key, an automation, or a ticket deleted before this was recorded. */
+  deleted_by: { id: string; name: string; email?: string } | null;
+  deleted_by_api_key: { id: string; name: string } | null;
+  /** Set when the ticket was merged into another: its conversation lives there, and it is not restored. */
+  merged_into_number: number | null;
+};
+
 export type AuditLog = {
   id: string;
   actor: { type: "user" | "api_key" | "system"; user: UserRef | null; api_key_id: string | null };
@@ -2987,7 +3038,13 @@ export type TicketVariables = { values: Record<string, string>; signature_html: 
 
 // ─── Collab: shared and private mail accounts (contracts/collab.md) ─────────
 
-export type MailAudience = { everyone: boolean; team_ids: string[]; user_ids: string[] };
+export type MailAudience = {
+  everyone: boolean;
+  team_ids: string[];
+  user_ids: string[];
+  /** On an account: people invited to the workspace who get it when they accept (pending invitations; email read-only). */
+  invited?: { id: string; email?: string }[];
+};
 export type MailAddress = { name: string; email: string };
 export type MailProvider = "google" | "microsoft" | "imap";
 export type MailTls = "tls" | "starttls";
@@ -3254,6 +3311,18 @@ export type MailThread = {
   to_address?: string | null;
   /** Its category key (contracts/collab.md "Categories"); null when its account's inbox is not split. */
   category?: string | null;
+  /** The AI draft waiting for a person (Ready for review); null otherwise. */
+  ai_draft?: MailThreadAIDraft | null;
+};
+
+export type MailThreadAIDraft = {
+  /** The id the /v1/collab/drafts routes take. */
+  draft_id: string;
+  /** The AI client's name ("AI draft by <name>"). */
+  drafted_by: string;
+  /** Its first lines. */
+  snippet: string;
+  to: MailAddress[];
 };
 
 export type MailAttachment = {
@@ -3494,8 +3563,8 @@ export type MailThreadAction =
   | "snooze";
 
 export type MailCounts = {
-  /** Unread conversations; assigned, shared, needs_action, snoozed and ai_review: open ones. */
-  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number; snoozed?: number; ai_review?: number };
+  /** Unread conversations; assigned, shared, needs_action, snoozed and ai_review: open ones; spam: unread ones in spam. */
+  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number; snoozed?: number; ai_review?: number; spam?: number };
   accounts: Record<string, number>;
   folders: Record<string, number>;
   /** By account with aliases, then address (its own included): unread conversations in its inbox with it on a message; missing = 0. */
@@ -3506,6 +3575,8 @@ export type MailCounts = {
   categories?: Record<string, Record<string, number>>;
   /** boxes.ai_review by account; only accounts with some. */
   ai_review?: Record<string, number>;
+  /** boxes.spam by account: unread conversations in spam; only accounts with some (contracts/collab.md "Spam beside Needs action"). */
+  spam?: Record<string, number>;
 };
 
 /** `collab.changed` event data. */

@@ -50,7 +50,7 @@ import { publish } from "../gateway";
 import { chunk, del, forbidden, get, HttpError, invalid, notFound, patch, post, put, respond, s, sse, type Ctx } from "../router";
 import { reserve, spend } from "../aiBalance";
 import { htmlToText, rewriteText, textToParagraphs } from "./aiTicket";
-import { kbBrandRef, recountCollections, uniqueSlug } from "./resources";
+import { kbBrandRef, recountCollections, sameCollection, uniqueSlug } from "./resources";
 import { canSeeTicket, roleIn, teamRole } from "../teams";
 import { findTicket } from "../tickets";
 import { ago, DAY, escapeHtml, HOUR, markdownToHtml, MIN, NOW, nowIso, parseUUID, slugify, stripHtml, uuid } from "../util";
@@ -2188,7 +2188,7 @@ function registerDesk() {
       brand_id: kbBrandRef(ctx, ctx.body.brand_id),
       collection_id: collection,
       title,
-      slug: uniqueSlug(ctx.ws.articles, slugify(title)),
+      slug: uniqueSlug(sameCollection(ctx.ws, collection), slugify(title)),
       excerpt: stripHtml(html).replace(/\s+/g, " ").trim().slice(0, 300),
       body_html: html,
       status: "draft",
@@ -2196,6 +2196,7 @@ function registerDesk() {
       views: 0,
       published_at: null,
       updated_at: nowIso(),
+      path: "",
     };
     ctx.ws.articles.unshift(a);
     recountCollections(ctx.ws);

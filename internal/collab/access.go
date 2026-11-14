@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -150,7 +151,24 @@ func loadAudience(ctx context.Context, q db.Querier, wid uuid.UUID, accountID, t
 			out.UserIDs = append(out.UserIDs, *user)
 		}
 	}
-	return out, rows.Err()
+	if err := rows.Err(); err != nil || accountID == nil {
+		return out, err
+	}
+	rows.Close()
+	// People invited who have not accepted yet (an accepted one has become a share).
+	inv, err := q.Query(ctx, `SELECT i.id, i.email::text FROM collab_invited_shares s JOIN invitations i ON i.id = s.invitation_id
+		WHERE s.workspace_id = $1 AND s.account_id = $2 AND i.accepted_at IS NULL AND i.expires_at > now() ORDER BY s.created_at, i.id`, wid, *accountID)
+	if err != nil {
+		return out, err
+	}
+	out.Invited, err = pgx.CollectRows(inv, func(r pgx.CollectableRow) (Invitee, error) {
+		var i Invitee
+		return i, r.Scan(&i.ID, &i.Email)
+	})
+	if len(out.Invited) == 0 {
+		out.Invited = nil
+	}
+	return out, err
 }
 
 // checkAudience refuses teams and people that are not the workspace's, and drops repeats.
@@ -186,6 +204,38 @@ func checkAudience(ctx context.Context, q db.Querier, wid uuid.UUID, a Audience)
 			return out, errUnknownMember
 		}
 	}
+	// Pending invitations of the workspace; with Everyone they get it anyway on joining.
+	if !a.Everyone {
+		for _, i := range a.Invited {
+			if !slices.ContainsFunc(out.Invited, func(x Invitee) bool { return x.ID == i.ID }) {
+				out.Invited = append(out.Invited, Invitee{ID: i.ID})
+			}
+		}
+	}
+	if len(out.Invited) > maxInvited {
+		return out, errAudienceTooLarge
+	}
+	if len(out.Invited) > 0 {
+		// An invitation accepted, revoked or expired since it was picked drops out quietly:
+		// the editor or the connect flow may have started before.
+		inviteIDs := make([]uuid.UUID, 0, len(out.Invited))
+		for _, i := range out.Invited {
+			inviteIDs = append(inviteIDs, i.ID)
+		}
+		rows, err := q.Query(ctx, `SELECT id FROM invitations WHERE workspace_id = $1 AND id = ANY($2)
+			AND accepted_at IS NULL AND expires_at > now()`, wid, inviteIDs)
+		if err != nil {
+			return out, err
+		}
+		pending, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+		if err != nil {
+			return out, err
+		}
+		out.Invited = slices.DeleteFunc(out.Invited, func(i Invitee) bool { return !slices.Contains(pending, i.ID) })
+	}
+	if len(out.Invited) == 0 {
+		out.Invited = nil
+	}
 	return out, nil
 }
 
@@ -212,6 +262,85 @@ func saveAudience(ctx context.Context, tx pgx.Tx, wid uuid.UUID, accountID, thre
 	}
 	for _, id := range a.UserIDs {
 		if err := insert(false, nil, &id); err != nil {
+			return err
+		}
+	}
+	if accountID == nil {
+		if len(a.Invited) > 0 {
+			return errInvitedThread
+		}
+		return nil
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM collab_invited_shares WHERE workspace_id = $1 AND account_id = $2`, wid, *accountID); err != nil {
+		return err
+	}
+	for _, i := range a.Invited {
+		if _, err := tx.Exec(ctx, `INSERT INTO collab_invited_shares (account_id, invitation_id, workspace_id, shared_by)
+			VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`, *accountID, i.ID, wid, by); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ApplyInvitedShares gives a person who just accepted an invitation, in tx, the shared
+// accounts they were invited to (GH#447), and returns how many. An account made private
+// meanwhile is skipped. The pending shares go either way.
+func ApplyInvitedShares(ctx context.Context, tx pgx.Tx, wid, invitationID, userID uuid.UUID) (int64, error) {
+	tag, err := tx.Exec(ctx, `INSERT INTO collab_shares (id, workspace_id, account_id, everyone, user_id, shared_by)
+		SELECT gen_random_uuid(), s.workspace_id, s.account_id, false, $3, s.shared_by
+		FROM collab_invited_shares s JOIN collab_accounts a ON a.id = s.account_id AND a.visibility = 'shared'
+		WHERE s.workspace_id = $1 AND s.invitation_id = $2
+		ON CONFLICT DO NOTHING`, wid, invitationID, userID)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM collab_invited_shares WHERE workspace_id = $1 AND invitation_id = $2`, wid, invitationID); err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
+}
+
+// DropInvitedShares removes the accounts an invitation is shared with, in tx: an expired
+// invitation given new days (resent, link copied) does not bring them back.
+func DropInvitedShares(ctx context.Context, tx pgx.Tx, wid, invitationID uuid.UUID) error {
+	_, err := tx.Exec(ctx, `DELETE FROM collab_invited_shares WHERE workspace_id = $1 AND invitation_id = $2`, wid, invitationID)
+	return err
+}
+
+// InvitedShares is the accounts pending invitations are shared with, read before those
+// invitations are replaced (inviting the same address again) so the new one keeps them.
+type InvitedShares []invitedShare
+
+type invitedShare struct {
+	accountID uuid.UUID
+	sharedBy  *uuid.UUID
+	createdAt time.Time
+}
+
+// TakeInvitedShares reads the accounts the invitations are shared with, in tx. Those of an
+// expired invitation have dropped out and stay out.
+func TakeInvitedShares(ctx context.Context, tx pgx.Tx, wid uuid.UUID, invitationIDs []uuid.UUID) (InvitedShares, error) {
+	if len(invitationIDs) == 0 {
+		return nil, nil
+	}
+	rows, err := tx.Query(ctx, `SELECT DISTINCT ON (s.account_id) s.account_id, s.shared_by, s.created_at FROM collab_invited_shares s
+		JOIN invitations i ON i.id = s.invitation_id AND i.expires_at > now()
+		WHERE s.workspace_id = $1 AND s.invitation_id = ANY($2) ORDER BY s.account_id, s.created_at`, wid, invitationIDs)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (invitedShare, error) {
+		var s invitedShare
+		return s, r.Scan(&s.accountID, &s.sharedBy, &s.createdAt)
+	})
+}
+
+// Restore puts the shares on the invitation that replaced theirs, in tx.
+func (shares InvitedShares) Restore(ctx context.Context, tx pgx.Tx, wid, invitationID uuid.UUID) error {
+	for _, s := range shares {
+		if _, err := tx.Exec(ctx, `INSERT INTO collab_invited_shares (account_id, invitation_id, workspace_id, shared_by, created_at)
+			VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`, s.accountID, invitationID, wid, s.sharedBy, s.createdAt); err != nil {
 			return err
 		}
 	}

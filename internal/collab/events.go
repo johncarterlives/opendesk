@@ -114,13 +114,15 @@ var (
 	errAudienceTooLarge = httpx.E(422, "validation_error", "Share with at most 50 teams and 200 people.")
 	errUnknownTeam      = httpx.E(422, "validation_error", "A team you chose is not in this workspace.")
 	errUnknownMember    = httpx.E(422, "validation_error", "A person you chose is not in this workspace.")
-	errLabels           = httpx.E(422, "labels_unsupported", "IMAP accounts have no labels. Move the conversation to a folder instead.")
-	errMoveToCategory   = httpx.E(422, "validation_error", "An Outlook category is a label: add it with Label, or move to a folder.")
-	errFolderColor      = httpx.E(422, "validation_error", "Only Gmail labels and Outlook categories have colours.")
-	errCategoryRename   = httpx.E(422, "rename_unsupported", "Outlook categories cannot be renamed. Create a new one instead.")
-	errSpecialFolder    = httpx.E(422, "special_folder", "This folder belongs to the mail provider and cannot be changed.")
-	errIMAPOff          = httpx.E(422, "imap_unavailable", "IMAP accounts are not available on this instance.")
-	errConflict         = httpx.E(409, "account_conflict", "This address is already connected in this workspace.")
+	// Invitations (GH#447): on accounts only.
+	errInvitedThread  = httpx.E(422, "validation_error", "Share a conversation with people once they have joined.")
+	errLabels         = httpx.E(422, "labels_unsupported", "IMAP accounts have no labels. Move the conversation to a folder instead.")
+	errMoveToCategory = httpx.E(422, "validation_error", "An Outlook category is a label: add it with Label, or move to a folder.")
+	errFolderColor    = httpx.E(422, "validation_error", "Only Gmail labels and Outlook categories have colours.")
+	errCategoryRename = httpx.E(422, "rename_unsupported", "Outlook categories cannot be renamed. Create a new one instead.")
+	errSpecialFolder  = httpx.E(422, "special_folder", "This folder belongs to the mail provider and cannot be changed.")
+	errIMAPOff        = httpx.E(422, "imap_unavailable", "IMAP accounts are not available on this instance.")
+	errConflict       = httpx.E(409, "account_conflict", "This address is already connected in this workspace.")
 )
 
 // errReconnect means the provider refused the stored grant or password: connect it again.

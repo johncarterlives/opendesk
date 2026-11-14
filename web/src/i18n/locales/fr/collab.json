@@ -105,6 +105,9 @@
     "clear": "Effacer la sélection",
     "loadMore": "Chargement de la suite",
     "noSubject": "(sans objet)",
+    "aiDraftEdit": "Modifier",
+    "aiDraftSendHint": "Envoyer ce brouillon tel quel",
+    "aiDraftEditHint": "Ouvrir la conversation avec ce brouillon dans l’éditeur",
     "me": "moi",
     "draft": "Brouillon",
     "select": "Sélectionner la conversation de {{name}}",
@@ -151,7 +154,11 @@
     },
     "toAlias": "Écrit à {{email}}, l’une de vos adresses",
     "writtenTo": "Écrit à",
-    "anyAddress": "Toutes les adresses"
+    "anyAddress": "Toutes les adresses",
+    "spamHint_one": "{{count}} conversation non lue dans les spams. Les spams n’arrivent jamais dans À traiter : vérifiez qu’elle ne vient pas d’un client.",
+    "spamHint_other": "{{count}} conversations non lues dans les spams. Les spams n’arrivent jamais dans À traiter : vérifiez qu’aucune ne vient d’un client.",
+    "spamHint_many": "{{count}} conversations non lues dans les spams. Les spams n’arrivent jamais dans À traiter : vérifiez qu’aucune ne vient d’un client.",
+    "spamOpen": "Ouvrir les spams"
   },
   "action": {
     "archive": "Archiver",
@@ -188,7 +195,17 @@
     "folderCreated": "Dossier créé",
     "labelsUnsupported": "Seuls les comptes Gmail disposent d’étiquettes",
     "createLabel": "Créer l’étiquette",
-    "labelCreated": "Étiquette créée"
+    "labelCreated": "Étiquette créée",
+    "snooze": "Mettre en pause",
+    "assignTo": "Attribuer à…",
+    "shareWith": "Partager avec…",
+    "moveTo": "Déplacer vers…",
+    "labelAs": "Ajouter l’étiquette…",
+    "newTab": "Ouvrir dans un nouvel onglet"
+  },
+  "drop": {
+    "otherAccount": "Ces conversations sont dans un autre compte.",
+    "noHandling": "« À traiter » concerne les comptes partagés avec le suivi activé."
   },
   "toast": {
     "archived_one": "Conversation archivée",
@@ -212,6 +229,21 @@
     "snoozed_other": "{{count}} conversations mises en pause",
     "snoozed_many": "{{count}} conversations mises en pause",
     "notSpam_many": "{{count}} conversations déplacées vers la boîte de réception",
+    "done_one": "Conversation marquée comme traitée",
+    "done_other": "{{count}} conversations marquées comme traitées",
+    "done_many": "{{count}} conversations marquées comme traitées",
+    "needsAction_one": "Conversation marquée comme à traiter",
+    "needsAction_other": "{{count}} conversations marquées comme à traiter",
+    "needsAction_many": "{{count}} conversations marquées comme à traiter",
+    "labeled_one": "Étiquette {{folder}} ajoutée",
+    "labeled_other": "Étiquette {{folder}} ajoutée à {{count}} conversations",
+    "labeled_many": "Étiquette {{folder}} ajoutée à {{count}} conversations",
+    "assignedToYou_one": "Conversation qui vous est attribuée",
+    "assignedToYou_other": "{{count}} conversations qui vous sont attribuées",
+    "assignedToYou_many": "{{count}} conversations qui vous sont attribuées",
+    "starred_one": "Conversation suivie",
+    "starred_other": "{{count}} conversations suivies",
+    "starred_many": "{{count}} conversations suivies",
     "undo": "Annuler",
     "failed": "L’action a échoué. Rien n’a changé.",
     "syncing": "Synchronisation de {{name}}",
@@ -378,7 +410,20 @@
     "summaryPeople_one": "{{count}} personne",
     "summaryPeople_other": "{{count}} personnes",
     "summaryPeople_many": "{{count}} personnes",
-    "summaryNobody": "Personne pour l’instant"
+    "summaryInvited_one": "{{count}} invitée",
+    "summaryInvited_other": "{{count}} invitées",
+    "summaryInvited_many": "{{count}} invitées",
+    "summaryNobody": "Personne pour l’instant",
+    "createTeam": "Créer l’équipe",
+    "teamCreated": "Équipe {{name}} créée",
+    "teamCreateFailed": "L’équipe n’a pas été créée",
+    "invite": "Inviter",
+    "inviteHint": "Saisissez une adresse e-mail pour inviter quelqu’un. Ce compte lui est partagé quand il rejoint l’espace.",
+    "inviteNeedsEmail": "Saisissez une adresse e-mail pour inviter quelqu’un",
+    "invited": "Invitation envoyée à {{email}}",
+    "alreadyInvited": "{{email}} est déjà invité et aura ce compte en rejoignant l’espace.",
+    "inviteFailed": "L’invitation n’a pas été envoyée",
+    "invitedMark": "invité"
   },
   "accounts": {
     "title": "Comptes de messagerie",
@@ -488,7 +533,9 @@
       "title": "Traitement",
       "hint": "Distinguez le travail de la boîte partagée des messages lus et non lus",
       "enabled": "Suivre les conversations à traiter",
-      "enabledHint": "Les nouveaux messages entrants restent à traiter jusqu’à ce qu’une personne les marque comme traités. Cela ne modifie pas les messages chez votre fournisseur."
+      "enabledHint": "Les nouveaux messages entrants restent à traiter jusqu’à ce qu’une personne les marque comme traités. Cela ne modifie pas les messages chez votre fournisseur.",
+      "markInbox": "Partir de la boîte de réception actuelle",
+      "markInboxHint": "Mettre à traiter les conversations de la boîte de réception des 30 derniers jours, sauf celles auxquelles vous avez répondu en dernier. Sinon, seuls les messages qui arrivent désormais sont à traiter."
     },
     "server": "Paramètres du serveur",
     "serverHint": "Les nouveaux paramètres sont testés avant d’être enregistrés",

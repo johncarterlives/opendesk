@@ -513,13 +513,14 @@ func storedSummary(custom map[string]any) StoredSummary {
 }
 
 // articleURL is the public help center link of an article on a brand's help center:
-// on its active custom domain (hosts, by brand slug) when it has one.
-func (s *Service) articleURL(hosts map[string]string, brandSlug, articleSlug string) string {
+// on its active custom domain (hosts, by brand slug) when it has one. path is the article's
+// address there (kb.KbArticle.Path), made of slugs.
+func (s *Service) articleURL(hosts map[string]string, brandSlug, path string) string {
 	base := s.d.Cfg.HelpCenterURL(url.PathEscape(brandSlug))
 	if h := hosts[brandSlug]; h != "" {
 		base = "https://" + h
 	}
-	return base + "/a/" + url.PathEscape(articleSlug)
+	return base + path
 }
 
 // helpHosts maps the workspace's brand slugs to their active help center domains.
