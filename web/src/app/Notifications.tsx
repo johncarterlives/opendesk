@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { AlarmClock, AtSign, Bell, BellOff, Mail, ChevronRight, CornerDownLeft, CreditCard, Gauge, Hand, Import, Inbox, KeyRound, MailX, MessageSquareText, MessagesSquare, Moon, Settings2, Sparkles, TimerOff, TriangleAlert, UserPlus, UsersRound } from "lucide-react";
+import { AlarmClock, AtSign, Bell, BellOff, CalendarX, Mail, ChevronRight, CornerDownLeft, CreditCard, Gauge, Hand, Import, Inbox, KeyRound, MailX, MessageSquareText, MessagesSquare, Moon, Settings2, Sparkles, TimerOff, TriangleAlert, UserPlus, UsersRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -32,6 +32,7 @@ const kind: Record<Notification["type"], { icon: React.ReactNode; tone: Tone }> 
   customer_replied: { icon: <CornerDownLeft />, tone: "teal" },
   thread_replied: { icon: <MessagesSquare />, tone: "cyan" },
   sla_breached: { icon: <TimerOff />, tone: "red" },
+  scheduled_reply_failed: { icon: <CalendarX />, tone: "red" },
   ai_handoff: { icon: <Hand />, tone: AI_TONE },
   ai_cap_reached: { icon: <Gauge />, tone: AI_TONE },
   ai_balance_low: { icon: <Sparkles />, tone: "amber" },
@@ -137,6 +138,8 @@ export function describe(n: Notification, t: TFunction<"shell">): string {
     }
     case "sla_breached":
       return t("notifications.type.sla");
+    case "scheduled_reply_failed":
+      return t("notifications.type.scheduledReplyFailed");
     case "ai_handoff":
       return contact ? t("notifications.type.handoff", { who: contact }) : t("notifications.type.handoffAnon");
     case "ai_cap_reached":

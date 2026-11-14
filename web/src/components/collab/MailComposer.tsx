@@ -114,7 +114,8 @@ export type MailComposerProps = {
   suggestions?: MailAddress[];
   autoFocus?: boolean;
   onSent?: (m: MailMessage) => void;
-  onDiscard?: () => void;
+  /** removed settles true once the stored draft is deleted, false when that failed. */
+  onDiscard?: (removed: Promise<boolean>) => void;
   /** The draft it is saved as, each time that changes (the conversation hides it while it is open here). */
   onDraftId?: (id: string | null) => void;
 };
@@ -401,14 +402,21 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
           return next;
         }, true);
       const id = draftIdRef.current;
+      let removed = Promise.resolve(true);
       if (id) {
         qc.setQueriesData<MailThreadDetail>({ queryKey: qk.of("collab", "thread") }, (old) => (old ? { ...old, messages: old.messages.filter((x) => x.id !== id) } : old));
-        api.collab.drafts.remove(id).then(
-          () => void qc.invalidateQueries({ queryKey: qk.mailThreadLists }),
-          (e) => toast.error(e, t("composer.discardFailed")),
+        removed = api.collab.drafts.remove(id).then(
+          () => {
+            void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+            return true;
+          },
+          (e) => {
+            toast.error(e, t("composer.discardFailed"));
+            return false;
+          },
         );
       }
-      onDiscard?.();
+      onDiscard?.(removed);
     };
     const dirty = !!draftIdRef.current || !isBlankHtml(withoutSignature(draft.html)) || uploads.length > 0;
     if (!dirty) return clear();

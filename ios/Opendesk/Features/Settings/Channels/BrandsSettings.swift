@@ -340,6 +340,6 @@ final class BrandsStore {
 
     nonisolated static let locales: [(String, String)] = [
         ("en", "English"), ("es", "Español"), ("fr", "Français"), ("de", "Deutsch"), ("pt", "Português"), ("it", "Italiano"),
-        ("nl", "Nederlands"), ("pl", "Polski"), ("ja", "日本語"), ("zh-CN", "简体中文"), ("ko", "한국어"), ("tr", "Türkçe"), ("az", "Azərbaycanca"), ("ar", "العربية"),
+        ("nl", "Nederlands"), ("pl", "Polski"), ("cs", "Čeština"), ("ja", "日本語"), ("zh-CN", "简体中文"), ("ko", "한국어"), ("tr", "Türkçe"), ("az", "Azərbaycanca"), ("ar", "العربية"),
     ]
 }

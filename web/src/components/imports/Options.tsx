@@ -64,7 +64,9 @@ export function OptionsForm({
                   ? articles !== null
                     ? t("options.articlesHint", { count: articles, n: number(articles) })
                     : t("options.articlesHintUnknown")
-                  : source === "helpscout"
+                  : source === "freescout"
+                    ? t("options.articlesUnsupported")
+                    : source === "helpscout"
                     ? t("options.articlesNoDocs")
                     : t("options.articlesNone")
               }

@@ -9,7 +9,7 @@ enum NotificationStyle {
         case "mentioned", "collab_mention", "wiki_mention": .indigo
         case "customer_replied", "wiki_comment": .teal
         case "thread_replied", "team_joined": .cyan
-        case "sla_breached", "ai_balance_out", "auto_recharge_failed", "ai_key_failed", "support_channel_unhealthy": .red
+        case "sla_breached", "scheduled_reply_failed", "ai_balance_out", "auto_recharge_failed", "ai_key_failed", "support_channel_unhealthy": .red
         case "ai_handoff", "ai_cap_reached": .violet
         case "ai_balance_low", "wiki_reminder": .amber
         default: .gray

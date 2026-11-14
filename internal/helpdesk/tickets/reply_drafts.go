@@ -2,6 +2,7 @@ package tickets
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -30,6 +31,10 @@ type ReplyDraft struct {
 	BodyHTML    string              `json:"body_html"`
 	Attachments []domain.Attachment `json:"attachments"`
 	UpdatedAt   time.Time           `json:"updated_at"`
+	// Schedule is when and how it goes out, if it is scheduled (scheduled_replies.go).
+	Schedule *ScheduledSend `json:"schedule" doc:"When and how the reply goes out, if you scheduled it; null otherwise"`
+	// SendError is why a scheduled send did not go out; the draft stayed.
+	SendError string `json:"send_error" doc:"Why the reply did not go out at its scheduled time, or empty"`
 }
 
 // ReplyDraftInput is PUT /v1/tickets/{id}/reply-draft. Without text, an image or a file it
@@ -45,13 +50,23 @@ const ReplyDraftRetention = 30 * 24 * time.Hour
 func loadReplyDraft(ctx context.Context, q db.Querier, wid, tid, uid uuid.UUID) (*ReplyDraft, error) {
 	d := ReplyDraft{TicketID: tid, Attachments: []domain.Attachment{}}
 	var ids []uuid.UUID
-	err := q.QueryRow(ctx, `SELECT body_html, attachment_ids, updated_at FROM ticket_reply_drafts
-		WHERE workspace_id = $1 AND ticket_id = $2 AND user_id = $3`, wid, tid, uid).Scan(&d.BodyHTML, &ids, &d.UpdatedAt)
+	var sendAt *time.Time
+	var request []byte
+	err := q.QueryRow(ctx, `SELECT body_html, attachment_ids, updated_at, send_at, send_request, send_error FROM ticket_reply_drafts
+		WHERE workspace_id = $1 AND ticket_id = $2 AND user_id = $3`, wid, tid, uid).Scan(&d.BodyHTML, &ids, &d.UpdatedAt, &sendAt, &request, &d.SendError)
 	if db.IsNotFound(err) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
+	}
+	if sendAt != nil && request != nil {
+		var in MessageInput
+		if err := json.Unmarshal(request, &in); err != nil {
+			return nil, err
+		}
+		s := ScheduledSend{SendAt: *sendAt}.from(in)
+		d.Schedule = &s
 	}
 	if len(ids) > 0 {
 		// Only files still there: a purged upload is dropped from the draft.
@@ -134,8 +149,17 @@ func registerReplyDrafts(d *deps.Deps, api huma.API) {
 				if err != nil {
 					return err
 				}
+				// A scheduled reply goes out as it was scheduled: cancel it to change it.
+				var scheduled bool
+				if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM ticket_reply_drafts WHERE workspace_id = $1 AND ticket_id = $2
+					AND user_id = $3 AND send_at IS NOT NULL)`, p.WorkspaceID, tid, p.UserID).Scan(&scheduled); err != nil {
+					return err
+				}
+				if scheduled {
+					return httpx.E(http.StatusConflict, "reply_scheduled", "This reply is scheduled. Cancel the schedule to change it.")
+				}
 				if empty {
-					_, err := tx.Exec(ctx, `DELETE FROM ticket_reply_drafts WHERE workspace_id = $1 AND ticket_id = $2 AND user_id = $3`,
+					_, err := tx.Exec(ctx, `DELETE FROM ticket_reply_drafts WHERE workspace_id = $1 AND ticket_id = $2 AND user_id = $3 AND send_at IS NULL`,
 						p.WorkspaceID, tid, p.UserID)
 					return err
 				}
@@ -145,7 +169,7 @@ func registerReplyDrafts(d *deps.Deps, api huma.API) {
 				if _, err := tx.Exec(ctx, `INSERT INTO ticket_reply_drafts (ticket_id, user_id, workspace_id, body_html, body_text, attachment_ids)
 					VALUES ($1, $2, $3, $4, $5, $6)
 					ON CONFLICT (ticket_id, user_id) DO UPDATE SET body_html = EXCLUDED.body_html, body_text = EXCLUDED.body_text,
-						attachment_ids = EXCLUDED.attachment_ids, updated_at = now()`,
+						attachment_ids = EXCLUDED.attachment_ids, updated_at = now() WHERE ticket_reply_drafts.send_at IS NULL`,
 					tid, p.UserID, p.WorkspaceID, html, text, attIDs); err != nil {
 					return err
 				}
@@ -171,7 +195,7 @@ func registerReplyDrafts(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			if _, err := d.DB.Pool.Exec(ctx, `DELETE FROM ticket_reply_drafts WHERE workspace_id = $1 AND ticket_id = $2 AND user_id = $3`,
+			if _, err := d.DB.Pool.Exec(ctx, `DELETE FROM ticket_reply_drafts WHERE workspace_id = $1 AND ticket_id = $2 AND user_id = $3 AND send_at IS NULL`,
 				p.WorkspaceID, tid, p.UserID); err != nil {
 				return nil, httpx.Wrap(err)
 			}

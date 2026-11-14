@@ -47,6 +47,10 @@
     "csv": {
       "with": "Any helpdesk",
       "blurb": "An export from any other helpdesk, one row per ticket or per message."
+    },
+    "freescout": {
+      "with": "Instance URL and API key",
+      "blurb": "Conversations from every mailbox, with replies, internal notes, attachments and customers."
     }
   },
   "steps": {
@@ -233,7 +237,8 @@
     "noLabel": "No label",
     "mailbox": "Reply from",
     "mailboxHint": "Replies to imported email tickets go out from this mailbox.",
-    "noMailbox": "Choose when replying"
+    "noMailbox": "Choose when replying",
+    "articlesUnsupported": "The FreeScout API does not expose knowledge base articles."
   },
   "summary": {
     "lead": "This brings over {{what}}.",

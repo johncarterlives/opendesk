@@ -1,0 +1,13 @@
+{
+  "actions": {
+    "cancel": "Zrušit",
+    "save": "Uložit",
+    "close": "Zavřít",
+    "retry": "Zkusit znovu",
+    "apply": "Použít",
+    "copy": "Kopírovat",
+    "back": "Zpět",
+    "continue": "Pokračovat"
+  },
+  "aboutCost": "přibližně {{cost}}"
+}

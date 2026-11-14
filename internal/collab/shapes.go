@@ -273,9 +273,10 @@ func threadsOut(ctx context.Context, q db.Querier, list []*threadRow) ([]MailThr
 // threadAIDrafts is each conversation's newest draft an AI client saved and no person has
 // taken over (saving clears ai_api_key_id, "AI drafts"), as aiDraftSQL selects them.
 func threadAIDrafts(ctx context.Context, q db.Querier, tids []uuid.UUID) (map[uuid.UUID]*ThreadAIDraft, error) {
-	rows, err := q.Query(ctx, `SELECT DISTINCT ON (thread_id) thread_id, id, COALESCE(ai_client, ''), snippet, to_addrs
-		FROM collab_messages WHERE thread_id = ANY($1) AND draft AND ai_api_key_id IS NOT NULL
-		ORDER BY thread_id, sent_at DESC, id DESC`, tids)
+	rows, err := q.Query(ctx, `SELECT DISTINCT ON (m.thread_id) m.thread_id, m.id, COALESCE(m.ai_client, ''), m.snippet, m.to_addrs, d.id
+		FROM collab_messages m LEFT JOIN collab_ai_drafts d ON d.draft_message_id = m.id
+		WHERE m.thread_id = ANY($1) AND m.draft AND m.ai_api_key_id IS NOT NULL
+		ORDER BY m.thread_id, m.sent_at DESC, m.id DESC`, tids)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +285,7 @@ func threadAIDrafts(ctx context.Context, q db.Querier, tids []uuid.UUID) (map[uu
 	for rows.Next() {
 		var tid uuid.UUID
 		d := &ThreadAIDraft{}
-		if err := rows.Scan(&tid, &d.DraftID, &d.DraftedBy, &d.Snippet, &d.To); err != nil {
+		if err := rows.Scan(&tid, &d.DraftID, &d.DraftedBy, &d.Snippet, &d.To, &d.RecordID); err != nil {
 			return nil, err
 		}
 		if d.To == nil {

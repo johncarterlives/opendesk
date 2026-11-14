@@ -139,6 +139,31 @@ func TestAIDraftOutcomes(t *testing.T) {
 			}
 		}
 	}
+	// The discarded draft stays reachable on its conversation for feedback (GH#437); a
+	// replaced draft still waiting is the draft itself.
+	var d2Rec uuid.UUID
+	for _, o := range pg.Data {
+		if o.DraftID == d2.ID {
+			d2Rec = o.ID
+		}
+	}
+	var gone MailThreadDetail
+	if st := doJSON(t, "GET", human.URL+"/v1/collab/threads/"+threads[2].String(), nil, &gone); st != 200 ||
+		len(gone.UnusedAIDrafts) != 1 || gone.UnusedAIDrafts[0].ID != d2Rec || gone.UnusedAIDrafts[0].Outcome == nil ||
+		*gone.UnusedAIDrafts[0].Outcome != OutcomeDiscarded || gone.UnusedAIDrafts[0].HasFeedback {
+		t.Fatalf("discarded draft on its conversation: %d %+v", st, gone.UnusedAIDrafts)
+	}
+	var waiting MailThreadDetail
+	if st := doJSON(t, "GET", human.URL+"/v1/collab/threads/"+threads[3].String(), nil, &waiting); st != 200 || len(waiting.UnusedAIDrafts) != 0 {
+		t.Fatalf("replaced draft still waiting: %d %+v", st, waiting.UnusedAIDrafts)
+	}
+	if st := doJSON(t, "PUT", human.URL+"/v1/collab/ai-drafts/"+d2Rec.String()+"/feedback", map[string]any{"reason": "should_not_answer"}, nil); st != 204 {
+		t.Fatalf("feedback on a discarded draft: %d", st)
+	}
+	if st := doJSON(t, "GET", human.URL+"/v1/collab/threads/"+threads[2].String(), nil, &gone); st != 200 || !gone.UnusedAIDrafts[0].HasFeedback {
+		t.Fatalf("discarded draft after feedback: %+v", gone.UnusedAIDrafts)
+	}
+	pg = feed(bot.URL, "")
 	cursor := pg.Data[len(pg.Data)-1].Cursor
 	if more := feed(bot.URL, cursor); len(more.Data) != 0 {
 		t.Fatalf("past the last cursor: %+v", more.Data)

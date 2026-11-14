@@ -169,7 +169,7 @@ struct WSWorkspaceInfo: Decodable, Sendable {
 enum WSLocales {
     static let all: [(code: String, name: String)] = [
         ("en", "English"), ("es", "Español"), ("fr", "Français"), ("de", "Deutsch"), ("pt", "Português"),
-        ("it", "Italiano"), ("nl", "Nederlands"), ("pl", "Polski"), ("ja", "日本語"), ("zh-CN", "简体中文"),
+        ("it", "Italiano"), ("nl", "Nederlands"), ("pl", "Polski"), ("cs", "Čeština"), ("ja", "日本語"), ("zh-CN", "简体中文"),
         ("ko", "한국어"), ("tr", "Türkçe"), ("az", "Azərbaycan dili"), ("ar", "العربية"),
     ]
 

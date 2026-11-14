@@ -4,7 +4,7 @@ export const SITE = {
   url: 'https://opendesk.sh',
   tagline: 'The open-source helpdesk and team inbox',
   description:
-    'opendesk is the open-source helpdesk and team inbox: shared support inboxes, team mail with private and shared accounts, live chat in 14 languages, AI drafts and translation, a knowledge base, automations, SLAs, reports and a public API, all updating live across your team. Free to start, or self-host it in one command.',
+    'opendesk is the open-source helpdesk and team inbox: shared support inboxes, team mail with private and shared accounts, live chat in 15 languages, AI drafts and translation, a knowledge base, automations, SLAs, reports and a public API, all updating live across your team. Free to start, or self-host it in one command.',
 } as const;
 
 export const LINKS = {
@@ -51,7 +51,7 @@ export const NAV = [
 // The Product menu in the header and the feature anchors on /features.
 export const PRODUCT_NAV = [
   { icon: 'inbox', href: '/features/#inbox', title: 'Shared inbox', desc: 'Every mailbox and channel in one queue.' },
-  { icon: 'chat', href: '/features/#chat', title: 'Live chat', desc: 'A light widget that speaks 14 languages.' },
+  { icon: 'chat', href: '/features/#chat', title: 'Live chat', desc: 'A light widget that speaks 15 languages.' },
   { icon: 'sparkles', href: '/features/#ai', title: 'AI', desc: 'Drafts, summaries, triage and translation.' },
   { icon: 'book', href: '/features/#knowledge-base', title: 'Knowledge base', desc: 'A help center customers search themselves.' },
   { icon: 'zap', href: '/features/#automations', title: 'Automations and SLAs', desc: 'Rules and targets that run on arrival.' },

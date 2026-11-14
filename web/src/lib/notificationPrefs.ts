@@ -23,6 +23,7 @@ export const NOTIFICATION_DEFAULTS: Record<NotificationType, { group: Notificati
   customer_replied: { group: "tickets", defaults: on },
   thread_replied: { group: "tickets", defaults: on },
   sla_breached: { group: "tickets", defaults: on },
+  scheduled_reply_failed: { group: "tickets", defaults: on },
   ai_handoff: { group: "tickets", defaults: on },
   team_joined: { group: "team", defaults: { email: false, push: false, desktop: true } },
   // Collab mail (contracts/collab.md "Notifications"): everywhere by default, like the ticket ones.
@@ -49,6 +50,7 @@ export const NOTIFICATION_ORDER: NotificationType[] = [
   "customer_replied",
   "thread_replied",
   "sla_breached",
+  "scheduled_reply_failed",
   "ai_handoff",
   "team_joined",
   "collab_assigned",

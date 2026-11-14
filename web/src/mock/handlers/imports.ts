@@ -21,10 +21,11 @@ import { HttpError, del, forbidden, get, invalid, notFound, post, respond, type 
 import { ensureTags, newTicket } from "../tickets";
 import { nowIso, pick, uuid } from "../util";
 
-const names: Record<ImportSource, string> = { zendesk: "Zendesk", helpscout: "Help Scout", freshdesk: "Freshdesk", intercom: "Intercom", front: "Front", csv: "CSV" };
+const names: Record<ImportSource, string> = { zendesk: "Zendesk", helpscout: "Help Scout", freescout: "FreeScout", freshdesk: "Freshdesk", intercom: "Intercom", front: "Front", csv: "CSV" };
 const required: Record<Exclude<ImportSource, "csv">, string[]> = {
   zendesk: ["subdomain", "email", "token"],
   helpscout: ["app_id", "app_secret"],
+  freescout: ["url", "api_key"],
   freshdesk: ["domain", "api_key"],
   intercom: ["token"],
   front: ["token"],
@@ -57,6 +58,10 @@ function account(src: ImportSource, creds: Record<string, string>) {
       return { name: nice, url: `https://${sub}.freshdesk.com` };
     case "helpscout":
       return { name: "Acme Inc.", url: "https://secure.helpscout.net" };
+    case "freescout": {
+      const url = new URL(creds.url.trim());
+      return { name: url.hostname, url: url.href.replace(/\/+$/, "") };
+    }
     case "intercom":
       return { name: "Acme", url: "https://app.intercom.com" };
     case "front":
@@ -71,6 +76,19 @@ function checkCreds(src: ImportSource, creds: Record<string, string> = {}) {
   for (const f of required[src]) {
     if (!creds[f]?.trim()) {
       throw new HttpError(422, "validation_failed", `Enter the ${f.replace("_", " ")}.`, { errors: [{ location: `body.credentials.${f}`, message: "Required" }] });
+    }
+  }
+  if (src === "freescout") {
+    let url: URL | undefined;
+    try {
+      url = new URL(creds.url.trim());
+    } catch {
+      // The field error below also covers malformed URLs.
+    }
+    if (!url || url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
+      throw new HttpError(422, "validation_failed", "Enter the FreeScout HTTPS instance URL, including its subdirectory.", {
+        errors: [{ location: "body.credentials.url", message: "Use an HTTPS URL without credentials, a query or a fragment." }],
+      });
     }
   }
   if (Object.values(creds).some((v) => /bad/i.test(v))) {
@@ -138,7 +156,7 @@ function check(ws: WsData, b: ImportCheckBody): ImportCheck {
     ...ws.teams.slice(0, 2).map((t, i) => ({ id: `g${i}`, name: t.name, team_id: t.id })),
     { id: "g8", name: "Tier 2", team_id: null },
   ];
-  const hasArticles = b.source !== "front" && (b.source !== "freshdesk" || !/nokb/i.test(b.credentials?.domain ?? ""));
+  const hasArticles = b.source !== "front" && b.source !== "freescout" && (b.source !== "freshdesk" || !/nokb/i.test(b.credentials?.domain ?? ""));
   return {
     account: account(b.source, b.credentials ?? {}),
     totals: { tickets: b.source === "intercom" ? null : 1_284, articles: hasArticles ? 46 : null },
@@ -305,7 +323,7 @@ function drive(ws: WsData, x: Import) {
         stateOf(ws).expiring.delete(x.id);
         x.status = "paused";
         x.needs_credentials = true;
-        x.last_error = "Zendesk answered 401 Unauthorized.";
+        x.last_error = `${names[x.source]} answered 401 Unauthorized.`;
         x.updated_at = nowIso();
         publishImport(ws, x);
         return stop(ws, x.id);

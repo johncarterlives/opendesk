@@ -276,6 +276,8 @@ type ThreadAIDraft struct {
 	Snippet string `json:"snippet"`
 	// To is who it goes to.
 	To []Address `json:"to"`
+	// RecordID is its AI draft record, which feedback on it names; null when none was kept.
+	RecordID *uuid.UUID `json:"record_id"`
 }
 
 type MailMessage struct {
@@ -367,6 +369,9 @@ type MailThreadDetail struct {
 	// AISkips are the AI keys that looked at the conversation in the queue and handed it
 	// back with skip since its last message, with their reason ("AI queue").
 	AISkips []AISkip `json:"ai_skips"`
+	// UnusedAIDrafts are the conversation's AI drafts that were discarded, replaced or
+	// abandoned and are gone, so feedback on them stays reachable ("AI draft outcomes").
+	UnusedAIDrafts []UnusedAIDraft `json:"unused_ai_drafts"`
 }
 
 // AISkip is an AI key skipping a conversation: "<client> skipped: <reason>".
@@ -374,6 +379,12 @@ type AISkip struct {
 	Client string    `json:"client"`
 	Reason string    `json:"reason"`
 	At     time.Time `json:"at"`
+}
+
+// UnusedAIDraft is an AI draft a person did not use, with when that was known.
+type UnusedAIDraft struct {
+	AIDraftRef
+	OutcomeAt time.Time `json:"outcome_at"`
 }
 
 // ThreadTicket names a conversation's ticket.

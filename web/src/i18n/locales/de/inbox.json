@@ -633,7 +633,26 @@
     "chatReply": "Im Chat · per E-Mail, falls der Besucher gegangen ist",
     "chatReplyHint": "Ihre Antwort erscheint sofort im Chat des Besuchers. Hat er die Seite verlassen (2 Minuten ohne Aktivität), geht sie eine Minute später zusätzlich an seine E-Mail-Adresse, außer er kommt zurück.",
     "chatReplyHere": "Im Chat",
-    "chatReplyAway": "Im Chat · per E-Mail, falls er sie nicht liest"
+    "chatReplyAway": "Im Chat · per E-Mail, falls er sie nicht liest",
+    "sendLater": "Später senden",
+    "scheduleHint": "Wähle einen Zeitpunkt zwischen einer Minute und einem Jahr ab jetzt ({{zone}}).",
+    "scheduleReply": "Antwort planen",
+    "sendDate": "Sendedatum",
+    "sendTime": "Sendezeit",
+    "scheduledFor": "Geplant für {{time}}",
+    "sendNow": "Jetzt senden",
+    "changeTime": "Zeit ändern",
+    "cancelSchedule": "Planung abbrechen",
+    "scheduleReview": "Prüfe Erwähnungen und Platzhalter, bevor du diese Antwort planst.",
+    "scheduleFailed": "Die geplante Antwort wurde nicht gesendet.",
+    "scheduleError": {
+      "merged": "Das Ticket wurde mit einem anderen zusammengeführt, daher wurde die Antwort nicht gesendet.",
+      "not_visible": "Das Ticket ist nicht mehr da oder du kannst es nicht mehr sehen, daher wurde die Antwort nicht gesendet.",
+      "cannot_send_from": "Du kannst nicht mehr von dieser Adresse senden, daher wurde die Antwort nicht gesendet. Wähle eine andere Adresse und sende sie erneut.",
+      "member_gone": "Du kannst auf dieses Ticket nicht mehr antworten, daher wurde die Antwort nicht gesendet.",
+      "refused": "Die Antwort konnte zum geplanten Zeitpunkt nicht so gesendet werden, wie sie geschrieben war. Prüfe sie und sende sie erneut.",
+      "failed": "Die geplante Antwort konnte nicht gesendet werden. Sende sie erneut."
+    }
   },
   "sharedDraft": {
     "label": "Geteilter Entwurf",

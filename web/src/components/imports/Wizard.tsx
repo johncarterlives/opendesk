@@ -211,7 +211,7 @@ export function ImportWizard({ source, onClose, onStarted }: { source: ImportSou
                   <aside className="flex flex-col gap-3 text-[12px] leading-[18px] text-fg-3">
                     <p className="font-medium text-fg-2">{t("wizard.whatComes")}</p>
                     <ul className="flex flex-col gap-1.5">
-                      {(["conversations", "people", "articles", "quiet"] as const).map((k) => (
+                      {(["conversations", "people", "articles", "quiet"] as const).filter((k) => source !== "freescout" || k !== "articles").map((k) => (
                         <li key={k} className="flex gap-2">
                           <Check className="mt-0.5 size-3 shrink-0 text-tone-green" aria-hidden />
                           {t(`wizard.facts.${k}`)}

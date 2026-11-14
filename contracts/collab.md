@@ -257,6 +257,11 @@ right away) and, except for the local handling actions, at the provider by the j
 (`jobs.CollabApplyArgs`), retried with backoff. If the provider refuses for good, the next sync
 brings back the provider's state.
 
+A request takes up to 100 conversations. The web app's list has a master checkbox above it (one
+click selects the conversations loaded, one more every conversation of the box, folder, tab or
+search in view, up to 1000; clearing the selection or leaving the list stops it) and sends a longer selection as one request per hundred, in order; selecting never
+changes mail, an action does.
+
 | action | Gmail | Microsoft | IMAP |
 | --- | --- | --- | --- |
 | `read` / `unread` | remove / add `UNREAD` | `isRead` | `\Seen` |
@@ -671,9 +676,12 @@ changes a model; what the client does with the feedback is its own business.
   stored without being read; left out on a save again keeps the last one.
 - **On messages**: `ai_draft` names the AI draft a draft is, or a sent message was sent from
   (`{id, client, outcome, has_feedback}`), even after a person took it over.
+- **On the conversation**: `unused_ai_drafts` lists its AI drafts that were `discarded`,
+  `replaced` or `abandoned` and whose draft is gone, so a person can still give feedback on a
+  draft that was not used (GH#437). A replaced or abandoned draft still waiting is the draft itself.
 - **Feedback** from a person, which never blocks a send: `PUT /v1/collab/ai-drafts/{id}/feedback`
   (agent or above, who sees the conversation; never a key) `{reason: wrong_facts | wrong_tone |
-  missing_info | should_not_answer | other, note? (≤1000), better_answer_html? (sanitized like
+  missing_info | should_not_answer | other, note? (≤2000), better_answer_html? (sanitized like
   mail)}` → `204`. Saving again replaces it. It is audit-logged (`collab.ai_draft_feedback`) with
   the reason, never the words.
 - **The feed**: `GET /v1/collab/ai-drafts/outcomes?cursor&limit (1..200, 50)` for a `collab:draft`
@@ -819,6 +827,7 @@ interface MailThread {
     drafted_by: string         //   the AI client's name ("AI draft by <name>")
     snippet: string            //   its first lines
     to: Address[]
+    record_id: string | null   //   its AI draft record ("AI draft outcomes"): feedback names it once the draft is discarded
   } | null
 }
 
@@ -907,6 +916,7 @@ interface MailThreadDetail {
   can_act: boolean
   ticket: { id: string; number: number; subject: string } | null  // the ticket it answered or was answered from, when the caller sees it ("Answering tickets")
   ai_skips: { client: string; reason: string; at: string }[]  // AI keys that skipped it since its last message, newest first ("AI notes")
+  unused_ai_drafts: (AIDraftRef & { outcome_at: string })[]  // AI drafts discarded, replaced or abandoned and gone, oldest first ("AI draft outcomes")
 }
 
 interface CollabStatus {

@@ -262,6 +262,7 @@ var summaryLabels = map[string][2]string{
 	"customer_replied":          {"reply", "replies"},
 	"thread_replied":            {"side conversation answer", "side conversation answers"},
 	"sla_breached":              {"missed target", "missed targets"},
+	"scheduled_reply_failed":    {"scheduled reply not sent", "scheduled replies not sent"},
 	"ai_handoff":                {"handoff", "handoffs"},
 	"team_joined":               {"team change", "team changes"},
 	"collab_assigned":           {"conversation assigned", "conversations assigned"},
@@ -295,7 +296,7 @@ func summary(notes []Note, now time.Time, loc *time.Location, clock string) stri
 		count[k]++
 	}
 	var parts []string
-	for _, k := range []string{"assigned", "new_ticket", "mentioned", "customer_replied", "thread_replied", "sla_breached", "ai_handoff", "collab_assigned", "collab_mention", "wiki_mention", "wiki_comment", "wiki_reminder", "team_joined", "import_finished", "support_channel_unhealthy", "ai_billing", "other"} {
+	for _, k := range []string{"assigned", "new_ticket", "mentioned", "customer_replied", "thread_replied", "sla_breached", "scheduled_reply_failed", "ai_handoff", "collab_assigned", "collab_mention", "wiki_mention", "wiki_comment", "wiki_reminder", "team_joined", "import_finished", "support_channel_unhealthy", "ai_billing", "other"} {
 		n := count[k]
 		if n == 0 {
 			continue
@@ -497,6 +498,10 @@ func describe(n Note) copyOf {
 		short := strings.Replace(what, "The ", "", 1)
 		return copyOf{title: capitalize(short) + " missed", subject: capitalize(short) + " missed on", heading: capitalize(short) + " missed",
 			intro: []string{what + " of a ticket assigned to you has passed."}, meta: "Assigned to you"}
+	case "scheduled_reply_failed":
+		return copyOf{title: "Your scheduled reply was not sent", subject: "Your scheduled reply was not sent on", heading: "Your scheduled reply was not sent",
+			intro: []string{scheduledReplyReason(str(n.Data, "reason")), "It is back in your reply box as a draft, with its words and files."},
+			meta:  "Kept as your draft", cta: "Open opendesk", subjectTail: true}
 	case "ai_handoff":
 		if str(n.Data, "via") == "contact" {
 			who := or(contact, "A customer")
@@ -584,6 +589,7 @@ var TypeLabels = map[string]string{
 	"customer_replied":          "customer replies",
 	"thread_replied":            "answers in your side conversations",
 	"sla_breached":              "SLA breaches",
+	"scheduled_reply_failed":    "scheduled replies that were not sent",
 	"ai_handoff":                "handoffs to a person",
 	"team_joined":               "team changes",
 	"collab_assigned":           "conversations assigned to you",
@@ -685,7 +691,7 @@ func toneOf(n Note) string {
 		return "#14B8A6"
 	case "new_ticket":
 		return "#22C55E"
-	case "sla_breached", "ai_balance_out", "auto_recharge_failed", "ai_key_failed", "support_channel_unhealthy":
+	case "sla_breached", "scheduled_reply_failed", "ai_balance_out", "auto_recharge_failed", "ai_key_failed", "support_channel_unhealthy":
 		return "#EF4444"
 	case "ai_handoff", "ai_cap_reached":
 		return "#8B5CF6"
@@ -849,6 +855,23 @@ func providerName(p string) string {
 		return "TypeSafe"
 	}
 	return "AI provider"
+}
+
+// scheduledReplyReason says why a scheduled reply did not go out (its draft's send_error).
+func scheduledReplyReason(code string) string {
+	switch code {
+	case "merged":
+		return "The ticket was merged into another, so the reply was not sent."
+	case "not_visible":
+		return "The ticket is gone or you can no longer see it, so the reply was not sent."
+	case "cannot_send_from":
+		return "You can no longer send from the address it was to go out from, so the reply was not sent."
+	case "member_gone":
+		return "You can no longer reply on this ticket, so the reply was not sent."
+	case "refused":
+		return "The reply could no longer be sent as it was written when it was due."
+	}
+	return "The reply could not be sent when it was due."
 }
 
 // snippet is the notification's short plain-text excerpt, when it has one.

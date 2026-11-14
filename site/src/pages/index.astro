@@ -41,13 +41,13 @@ const faq = [
   { q: 'What is the difference between Cloud and self-hosted?', a: 'Only who runs it. Both have every feature. Cloud is free for one mailbox and one member, and $' + PRO_PRICE + ' per user a month for unlimited everything. Self-hosted is free and unlimited on your own servers, with your own AI key or a local model.' },
   { q: 'Which channels does it support?', a: 'Email forwarded from any provider, with replies sent from your own address through Gmail, Microsoft 365 or your SMTP server, plus a live chat widget for your site and a public help center. Everything arrives as tickets in one shared inbox.' },
   { q: 'Does the AI train on my customers’ messages?', a: 'No. Customer content is sent to the AI provider only to run the feature you asked for, and it is never used to train models. Admins can turn AI off for the whole workspace.' },
-  { q: 'Can my customers write in their own language?', a: 'Yes. The widget and help center come in 14 languages, and messages and drafts translate both ways, so agents read and reply in their language while customers get theirs.' },
+  { q: 'Can my customers write in their own language?', a: 'Yes. The widget and help center come in 15 languages, and messages and drafts translate both ways, so agents read and reply in their language while customers get theirs.' },
   { q: 'Can I move my data out?', a: 'Yes. Everything is available through the REST API, and self-hosted data sits in Postgres in a schema you can read. You can move from Cloud to your own servers on the same code.' },
 ];
 
 const strip = [
   ['mail', 'Google Workspace'], ['mail', 'Microsoft 365'], ['server', 'SMTP'], ['at', 'Forwarding'],
-  ['chat', 'Live chat'], ['book', 'Help center'], ['languages', '14 languages'], ['sparkles', 'Ollie'],
+  ['chat', 'Live chat'], ['book', 'Help center'], ['languages', '15 languages'], ['sparkles', 'Ollie'],
   ['plug', 'MCP tools'], ['braces', 'REST API'], ['webhook', 'Webhooks'], ['laptop', 'Desktop'], ['smartphone', 'iPhone'],
 ] as const;
 

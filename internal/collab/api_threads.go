@@ -660,8 +660,12 @@ func (s *service) threadDetail(ctx context.Context, q db.Querier, p *auth.Princi
 	if err != nil {
 		return out, err
 	}
+	unused, err := unusedAIDrafts(ctx, q, p.WorkspaceID, t.ID)
+	if err != nil {
+		return out, err
+	}
 	return MailThreadDetail{Thread: threads[0], Messages: messages, Comments: comments, Shares: shares, CanAct: canAct(p),
-		Account: account, Ticket: ticket, AISkips: skips}, nil
+		Account: account, Ticket: ticket, AISkips: skips, UnusedAIDrafts: unused}, nil
 }
 
 // threadAISkips are the skips of a conversation still in force (no new mail since), by

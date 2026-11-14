@@ -17,7 +17,7 @@ import i18n, { type BackendModule, type ReadCallback } from "i18next";
 import { initReactI18next } from "react-i18next";
 import { en, NAMESPACES, type Namespace } from "./resources";
 
-export const SUPPORTED = ["en", "es", "fr", "de", "pt", "it", "nl", "pl", "ja", "zh-CN", "ko", "tr", "az", "ar"] as const;
+export const SUPPORTED = ["en", "es", "fr", "de", "pt", "it", "nl", "pl", "cs", "ja", "zh-CN", "ko", "tr", "az", "ar"] as const;
 export type Locale = (typeof SUPPORTED)[number];
 export const RTL: ReadonlySet<string> = new Set(["ar"]);
 
@@ -31,6 +31,7 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   it: "Italiano",
   nl: "Nederlands",
   pl: "Polski",
+  cs: "Čeština",
   ja: "日本語",
   "zh-CN": "简体中文",
   ko: "한국어",

@@ -68,6 +68,17 @@ type SyncMailboxArgs struct {
 
 func (SyncMailboxArgs) Kind() string { return "email.sync_mailbox" }
 
+// ScheduledReplyArgs sends a member's scheduled reply draft when it is due. SendAt is the time
+// it was scheduled for: a draft rescheduled or cancelled since is left alone. Owner: helpdesk.
+type ScheduledReplyArgs struct {
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	TicketID    uuid.UUID `json:"ticket_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	SendAt      time.Time `json:"send_at"`
+}
+
+func (ScheduledReplyArgs) Kind() string { return "helpdesk.scheduled_reply" }
+
 // SentCopyArgs stores a copy of an email a mailbox sent in its IMAP sent folder (IMAP
 // APPEND). StorageKey holds the message as it went out; the job removes it. Owner: email.
 type SentCopyArgs struct {

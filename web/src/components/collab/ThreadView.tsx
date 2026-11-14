@@ -41,7 +41,7 @@ import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, 
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { api } from "@/lib/api/endpoints";
-import type { MailFolder, MailMessage, MailThreadAction, MailThreadDetail } from "@/lib/api/types";
+import type { AIDraftRef, MailFolder, MailMessage, MailThreadAction, MailThreadDetail } from "@/lib/api/types";
 import { isApiError } from "@/lib/api/client";
 import { patchThreads } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
@@ -62,6 +62,7 @@ import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/compo
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
+import { AIDraftFeedbackDialog, UnusedAIDraft } from "./AIDraftFeedback";
 import { AccountDot, LabelPill } from "./bits";
 import { CommentBar, Comments, Count, type CommentBarHandle } from "./Comments";
 import { DraftRow } from "./DraftRow";
@@ -180,6 +181,9 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   const [commentThread, setCommentThread] = useState<string | null>(null);
   // The stored draft the composer continues, and the draft it saves to (hidden from the conversation while open).
   const [editing, setEditing] = useState<MailMessage | null>(null);
+  // An AI draft just discarded: feedback on it, offered from the toast, never required.
+  const [discardedAI, setDiscardedAI] = useState<AIDraftRef | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [composerDraftId, setComposerDraftId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // The newest message is open unless folded by hand.
@@ -311,6 +315,17 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   }));
 
   useEffect(() => setCommentThread(null), [threadId]);
+
+  // A discard that finishes after the conversation changed offers no feedback on it.
+  const shownThread = useRef<string | null>(threadId);
+  useEffect(() => {
+    shownThread.current = threadId;
+    setDiscardedAI(null);
+    setFeedbackOpen(false);
+    return () => {
+      shownThread.current = null;
+    };
+  }, [threadId]);
 
   useEffect(() => {
     if (commentMode && detail?.can_act) commentBar.current?.focus();
@@ -706,6 +721,8 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
               </span>
             </p>
           ))}
+          {canAct && detail.unused_ai_drafts?.map((d) => <UnusedAIDraft key={d.id} draft={d} threadId={th.id} />)}
+          {discardedAI && <AIDraftFeedbackDialog draft={discardedAI} threadId={th.id} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
 
           <AnimatePresence initial={false}>
             {detail.comments.length > 0 && (
@@ -741,9 +758,18 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                     setEditing(null);
                     setComposerDraftId(null);
                   }}
-                  onDiscard={() => {
+                  onDiscard={(removed) => {
+                    const ai = editing.ai_draft;
                     setEditing(null);
                     setComposerDraftId(null);
+                    if (!ai) return;
+                    void removed.then((ok) => {
+                      if (!ok || shownThread.current !== threadId) return;
+                      setDiscardedAI(ai);
+                      toast.success(t("aiFeedback.discardedToast", { name: ai.client }), {
+                        action: { label: t("aiFeedback.why"), onClick: () => setFeedbackOpen(true) },
+                      });
+                    });
                   }}
                 />
               ) : composer ? (

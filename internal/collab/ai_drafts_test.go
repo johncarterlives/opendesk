@@ -100,7 +100,7 @@ func TestAIClientDrafts(t *testing.T) {
 	}
 	// Its row carries the draft, so it can be sent, edited or discarded in place (GH#430).
 	if p := list.Data[0].AIDraft; p == nil || p.DraftID != d.ID || p.DraftedBy != "Local drafter" || !strings.Contains(p.Snippet, "1.90") ||
-		len(p.To) != 1 || p.To[0].Email != "frank@example.com" {
+		len(p.To) != 1 || p.To[0].Email != "frank@example.com" || d2.AIDraft == nil || p.RecordID == nil || *p.RecordID != d2.AIDraft.ID {
 		t.Fatalf("row preview: %+v", list.Data[0].AIDraft)
 	}
 

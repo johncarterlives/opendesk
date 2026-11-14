@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
+import type { AIDraftRef, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
 import { api } from "@/lib/api/endpoints";
 import { inverseAction, leavesList, listPlace, UNDOABLE } from "@/lib/collab/actions";
 import { accountName, boxForRole, isMailBox, mailListQuery, type MailSearch } from "@/lib/collab/boxes";
@@ -43,7 +43,7 @@ import { cachedFolders } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
 import { addressNumbers } from "@/lib/collab/badges";
 import { accountCategories, categoryTabs, PRIMARY, ruleSender } from "@/lib/collab/categories";
-import { assignChanges, useAllFolders, useAssignThreads, useCanAct, useMailAccounts, useSidebarPrefs, useThreadAction } from "@/lib/collab/hooks";
+import { assignChanges, useAllFolders, useAssignThreads, useCanAct, useMailAccounts, useSelectEvery, useSidebarPrefs, useThreadAction } from "@/lib/collab/hooks";
 import { type ComposeMode } from "@/lib/collab/recipients";
 import { identitiesOf, ownEmails as ownEmailsOf } from "@/lib/collab/identities";
 import { startThreadDrag, takeThreadDrops, type ThreadDropTarget } from "@/lib/collab/threadDrag";
@@ -62,12 +62,14 @@ import { Select } from "@/components/ui/select";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
+import { AIDraftFeedbackDialog } from "@/components/collab/AIDraftFeedback";
 import { AccountDot, boxIcon, FolderGlyph } from "@/components/collab/bits";
 import { canOfferCategories, CategoryOffer, CategoryTabs, useCategorySettingsTarget } from "@/components/collab/CategoryTabs";
 import { FolderBar } from "@/components/collab/FolderBar";
 import { SearchCoverage, SpamBesideWork, StorageFullBanner } from "@/components/collab/MailNotices";
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "@/components/collab/pickers";
 import { ListShareDialog, SnoozeItems } from "@/components/collab/ThreadMenu";
+import { SelectAllBar } from "@/components/collab/SelectAllBar";
 import { ThreadRow, type AIDraftAction } from "@/components/collab/ThreadRow";
 import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { useConfirm } from "@/components/ui/confirm";
@@ -246,6 +248,16 @@ export default function MailPage() {
     [threads],
   );
 
+  /** Every conversation of the box, folder, tab or search in view (the master checkbox's second step). */
+  const every = useSelectEvery(list, listKey, setSelected);
+  /** Clears the selection, and stops selecting every conversation so it never comes back. */
+  const clearSelection = () => {
+    every.stop();
+    setSelected(new Set());
+  };
+  /** The master checkbox: every loaded conversation, or none when any is selected or the rest is loading. */
+  const toggleAll = () => (selected.size || every.running ? clearSelection() : setSelected(new Set(threads.map((x) => x.id))));
+
   const move = (d: 1 | -1) => {
     const i = Math.max(0, Math.min(threads.length - 1, focusIdx + d));
     setFocusIdx(i);
@@ -365,6 +377,9 @@ export default function MailPage() {
   // Only the conversation Edit opened takes the draft into its composer, once.
   useEffect(() => setEditAI((id) => (id && id !== openId ? null : id)), [openId]);
   const [draftBusy, setDraftBusy] = useState<Set<string>>(new Set());
+  // An AI draft just discarded from its row: feedback on it, offered from the toast, as the composer's discard does.
+  const [discardedAI, setDiscardedAI] = useState<{ draft: AIDraftRef; threadId: string } | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const busyDraft = useCallback((id: string, on: boolean) => setDraftBusy((s) => {
     const next = new Set(s);
     if (on) next.add(id);
@@ -396,7 +411,15 @@ export default function MailPage() {
         );
       };
       if (a === "send") return run(() => api.collab.drafts.send(d.draft_id), () => toast.success(t("toast.sent", { email: accountsById.get(x.account_id)?.email ?? "" })), t("composer.sendFailed"));
-      confirm.show(t("composer.discardDraftConfirm"), () => run(() => api.collab.drafts.remove(d.draft_id), () => undefined, t("composer.discardFailed")), {
+      const discarded = () => {
+        if (!d.record_id) return;
+        setFeedbackOpen(false);
+        setDiscardedAI({ draft: { id: d.record_id, client: d.drafted_by, outcome: "discarded", has_feedback: false }, threadId: x.id });
+        toast.success(t("aiFeedback.discardedToast", { name: d.drafted_by }), {
+          action: { label: t("aiFeedback.why"), onClick: () => setFeedbackOpen(true) },
+        });
+      };
+      confirm.show(t("composer.discardDraftConfirm"), () => run(() => api.collab.drafts.remove(d.draft_id), discarded, t("composer.discardFailed")), {
         title: t("composer.discardDraftTitle"),
         confirmLabel: t("composer.discard"),
         danger: true,
@@ -755,7 +778,7 @@ export default function MailPage() {
     "mail.people": () => openId && threadRef.current?.people(),
     "mail.search": () => searchRef.current?.focus(),
     "mail.escape": () => {
-      if (selected.size) setSelected(new Set());
+      if (selected.size || every.running) clearSelection();
       else if (openId) close();
     },
     "mail.selectAll": () => !openId && setSelected(new Set(threads.map((x) => x.id))),
@@ -995,6 +1018,20 @@ export default function MailPage() {
         )}
         {shareId && <ListShareDialog threadId={shareId} onClose={() => setShareId(null)} />}
 
+        {discardedAI && <AIDraftFeedbackDialog draft={discardedAI.draft} threadId={discardedAI.threadId} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
+        {canAct && !noAccounts && threads.length > 0 && (
+          <SelectAllBar
+            loaded={threads.length}
+            selected={selected.size}
+            hasMore={!!list.hasNextPage}
+            loading={every.running}
+            scope={category ? (tabs.find((c) => c.key === category)?.name ?? title) : title}
+            matching={!!query.q}
+            onToggle={toggleAll}
+            onSelectEvery={() => void every.start()}
+          />
+        )}
+
         <div ref={listRef} role="listbox" aria-label={t("list.label")} aria-multiselectable className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {noAccounts ? (
             <EmptyState
@@ -1118,7 +1155,7 @@ export default function MailPage() {
               </BulkButton>
             )}
             <span className="flex-1" />
-            <BulkButton label={t("list.clear")} shortcut="escape" onClick={() => setSelected(new Set())}>
+            <BulkButton label={t("list.clear")} shortcut="escape" onClick={clearSelection}>
               <X />
             </BulkButton>
           </div>

@@ -637,7 +637,26 @@
     "chatReply": "In the chat · by email if the visitor has left",
     "chatReplyHint": "Your reply appears live in the visitor's chat. If they have left the page (no activity for 2 minutes), it is also sent to their email address a minute later, unless they come back.",
     "chatReplyHere": "In the chat",
-    "chatReplyAway": "In the chat · by email if they don't read it"
+    "chatReplyAway": "In the chat · by email if they don't read it",
+    "sendLater": "Send later",
+    "scheduleHint": "Choose a time between a minute and a year from now ({{zone}}).",
+    "scheduleReply": "Schedule reply",
+    "sendDate": "Send date",
+    "sendTime": "Send time",
+    "scheduledFor": "Scheduled for {{time}}",
+    "sendNow": "Send now",
+    "changeTime": "Change time",
+    "cancelSchedule": "Cancel schedule",
+    "scheduleReview": "Review mentions and placeholders before scheduling this reply.",
+    "scheduleFailed": "The scheduled reply was not sent.",
+    "scheduleError": {
+      "merged": "The ticket was merged into another, so the reply was not sent.",
+      "not_visible": "The ticket is gone or you can no longer see it, so the reply was not sent.",
+      "cannot_send_from": "You can no longer send from this address, so the reply was not sent. Pick another address and send it again.",
+      "member_gone": "You can no longer reply on this ticket, so the reply was not sent.",
+      "refused": "The reply could no longer be sent as it was written when it was due. Check it and send it again.",
+      "failed": "The scheduled reply could not be sent. Send it again."
+    }
   },
   "sharedDraft": {
     "label": "Shared draft",

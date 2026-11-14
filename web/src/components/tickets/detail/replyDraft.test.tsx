@@ -104,4 +104,15 @@ describe("useReplyDraftSync", () => {
     expect(replyDraft.get).not.toHaveBeenCalled();
     expect(replyDraft.save).not.toHaveBeenCalled();
   });
+  it("does not autosave over a scheduled reply", async () => {
+    const d = { ...saved("<p>Scheduled</p>"), schedule: { send_at: new Date(Date.now() + 3600000).toISOString(), cc: [], bcc: [], status: null, mailbox_id: "" } };
+    replyDraft.get.mockResolvedValue({ draft: d });
+    const { rerender } = await setup({ ticketId: "scheduled", html: "" });
+    await waitFor(() => expect(settled).toBe(true));
+    await rerender({ ticketId: "scheduled", html: "<p>Changed</p>" });
+    await wait(1000);
+    expect(replyDraft.save).not.toHaveBeenCalled();
+    expect(replyDraft.discard).not.toHaveBeenCalled();
+  });
+
 });

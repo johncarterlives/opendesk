@@ -80,6 +80,7 @@ view to its owner.
 | `activity.created`       | agents     | —                                     | `{ "ticket_id": "...", "activity": Activity }` |
 | `activity.updated`       | agents     | —                                     | `{ "ticket_id": "...", "activity": Activity }`: a call entry followed its call (contracts/phone.md "Timeline"); the only activity that changes |
 | `thread.created` / `thread.updated` | agents | — | `{ "ticket_id": "...", "thread": Thread }` (contracts/api.md "Threads"): started; a message written or answered, closed or reopened |
+| `reply_draft.updated` | agents | `user:<uid>` alone (`Users`) | `{ "ticket_id": "...", "draft": ReplyDraft \| null }` (contracts/api.md "Reply drafts"): the member's own reply draft changed because a scheduled reply was scheduled, moved, cancelled, sent (`null`) or kept with its `send_error` |
 | `ticket_draft.updated` | agents | — | `{ "ticket_id": "...", "draft": Draft \| null }` (contracts/api.md "Drafts"): the ticket's shared draft was staged or replaced; `null` once it was sent, discarded or replaced by a reply going out |
 | `contact.created` / `contact.updated` / `contact.deleted` | agents | — | `{ "contact": Contact }` / `{ "contact_id" }`. `contact.updated` also when a picture is uploaded, removed or found automatically |
 | `company.created` / `company.updated` / `company.deleted` | agents | — | `{ "company": Company }` / `{ "company_id" }` |

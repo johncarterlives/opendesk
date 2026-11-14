@@ -15,6 +15,7 @@ import type {
   Notification,
   Page,
   Procedure,
+  ReplyDraft,
   SuggestedReply,
   Team,
   Thread,
@@ -292,6 +293,13 @@ function applyInScope(qc: QueryClient, env: Envelope, ctx: ApplyContext): void {
         if (s.status === "pending") return s;
         return old && old.id !== s.id ? old : null;
       });
+      return;
+    }
+    case "reply_draft.updated": {
+      // My own reply draft changed elsewhere: a scheduled reply went out, was kept or moved.
+      const tid = d.ticket_id as string | undefined;
+      if (!tid) return;
+      qc.setQueryData<ReplyDraft | null>(qk.replyDraft(tid), (d.draft as ReplyDraft | null) ?? null);
       return;
     }
     case "ticket_draft.updated": {

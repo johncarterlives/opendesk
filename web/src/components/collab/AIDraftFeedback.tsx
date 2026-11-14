@@ -1,13 +1,14 @@
-// Feedback on a sent message that began as an AI draft (contracts/collab.md "AI draft
-// outcomes"): what was wrong with the draft and, optionally, a better answer. The key that
-// wrote the draft reads it back from its outcome feed; opendesk itself trains nothing.
+// Feedback on an AI draft (contracts/collab.md "AI draft outcomes"): on a sent message that
+// began as one, or on one a person discarded, replaced or abandoned. What was wrong with the
+// draft and, optionally, a better answer. The key that wrote the draft reads it back from
+// its outcome feed; opendesk itself trains nothing.
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquareText } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api/endpoints";
-import type { AIDraftFeedbackReason, MailMessage } from "@/lib/api/types";
+import type { AIDraftFeedbackReason, AIDraftRef, MailMessage } from "@/lib/api/types";
 import { escapeHtml } from "@/lib/collab/html";
 import { qk } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { Select } from "@/components/ui/select";
 import { toast } from "@/components/ui/toast";
 
 const reasons: AIDraftFeedbackReason[] = ["wrong_facts", "wrong_tone", "missing_info", "should_not_answer", "other"];
-const noteMax = 1000;
+const noteMax = 2000;
 
 const textHtml = (text: string) =>
   text
@@ -29,14 +30,33 @@ const textHtml = (text: string) =>
 /** The line under a sent message's header: which AI drafted it, and a way to say how it did. */
 export function AIDraftFeedback({ m }: { m: MailMessage }) {
   const { t } = useTranslation("collab");
-  const [open, setOpen] = useState(false);
   const d = m.ai_draft;
   if (!d || m.draft) return null;
   const how = d.outcome === "sent_unchanged" ? t("aiFeedback.asWritten") : d.outcome === "sent_edited" ? t("aiFeedback.edited") : "";
+  return <FeedbackLine draft={d} threadId={m.thread_id} how={how} />;
+}
+
+/**
+ * A conversation's AI draft that was not used (discarded, replaced or abandoned) and is
+ * gone: the same line, so feedback on it stays reachable (GH#437).
+ */
+export function UnusedAIDraft({ draft, threadId }: { draft: AIDraftRef; threadId: string }) {
+  const { t } = useTranslation("collab");
+  const how = draft.outcome === "discarded" ? t("aiFeedback.discarded") : draft.outcome === "replaced" ? t("aiFeedback.replaced") : t("aiFeedback.abandoned");
+  return (
+    <div className="flex min-h-7 items-center px-1 text-[11.5px]">
+      <FeedbackLine draft={draft} threadId={threadId} how={how} />
+    </div>
+  );
+}
+
+function FeedbackLine({ draft, threadId, how }: { draft: AIDraftRef; threadId: string; how: string }) {
+  const { t } = useTranslation("collab");
+  const [open, setOpen] = useState(false);
   return (
     <span className="inline-flex max-w-full items-center gap-1.5 text-fg-4">
       <span data-text className="cursor-text select-text truncate">
-        {t("aiFeedback.from", { name: d.client })}
+        {t("aiFeedback.from", { name: draft.client })}
         {how && ` · ${how}`}
       </span>
       <button
@@ -45,35 +65,50 @@ export function AIDraftFeedback({ m }: { m: MailMessage }) {
         className="inline-flex shrink-0 items-center gap-1 rounded-sm px-1 text-fg-3 outline-none hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)]"
       >
         <MessageSquareText className="size-3" />
-        {d.has_feedback ? t("aiFeedback.edit") : t("aiFeedback.give")}
+        {draft.has_feedback ? t("aiFeedback.edit") : t("aiFeedback.give")}
       </button>
-      <FeedbackDialog m={m} open={open} onOpenChange={setOpen} />
+      <AIDraftFeedbackDialog draft={draft} threadId={threadId} open={open} onOpenChange={setOpen} />
     </span>
   );
 }
 
-function FeedbackDialog({ m, open, onOpenChange }: { m: MailMessage; open: boolean; onOpenChange: (o: boolean) => void }) {
-  const { t } = useTranslation("collab");
+/** Feedback on one AI draft, sent, waiting or gone; `defaultReason` preselects a reason (a discard suggests "should not answer"). Saving never changes the mail. */
+export function AIDraftFeedbackDialog({
+  draft,
+  threadId,
+  open,
+  onOpenChange,
+  defaultReason,
+}: {
+  draft: AIDraftRef;
+  threadId: string;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  defaultReason?: AIDraftFeedbackReason;
+}) {
+  const { t, i18n } = useTranslation("collab");
   const qc = useQueryClient();
   const [reason, setReason] = useState<AIDraftFeedbackReason | undefined>();
   const [note, setNote] = useState("");
   const [better, setBetter] = useState("");
+  const noteCountId = useId();
+  const full = note.length >= noteMax;
   useEffect(() => {
     if (!open) return;
-    setReason(undefined);
+    setReason(defaultReason);
     setNote("");
     setBetter("");
-  }, [open]);
+  }, [open, defaultReason]);
 
   const save = useMutation({
     mutationFn: (r: AIDraftFeedbackReason) =>
-      api.collab.aiDraftFeedback(m.ai_draft!.id, {
+      api.collab.aiDraftFeedback(draft.id, {
         reason: r,
         note: note.trim() || undefined,
         better_answer_html: better.trim() ? textHtml(better) : undefined,
       }),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: qk.mailThread(m.thread_id) });
+      void qc.invalidateQueries({ queryKey: qk.mailThread(threadId) });
       toast.success(t("toast.aiFeedbackSaved"));
       onOpenChange(false);
     },
@@ -85,7 +120,7 @@ function FeedbackDialog({ m, open, onOpenChange }: { m: MailMessage; open: boole
       open={open}
       onOpenChange={onOpenChange}
       title={t("aiFeedback.title")}
-      description={t("aiFeedback.description", { name: m.ai_draft?.client ?? "" })}
+      description={t("aiFeedback.description", { name: draft.client })}
       footer={
         <>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
@@ -110,7 +145,25 @@ function FeedbackDialog({ m, open, onOpenChange }: { m: MailMessage; open: boole
         </label>
         <label className="flex flex-col gap-1.5 text-[12.5px] font-medium">
           {t("aiFeedback.note")}
-          <Textarea value={note} maxLength={noteMax} rows={3} onChange={(e) => setNote(e.target.value)} placeholder={t("aiFeedback.notePlaceholder")} />
+          <Textarea
+            value={note}
+            maxLength={noteMax}
+            rows={3}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t("aiFeedback.notePlaceholder")}
+            aria-describedby={noteCountId}
+          />
+          {/* The limit is visible before saving: a pasted note past it is cut off, not refused. */}
+          <span id={noteCountId} className="flex justify-end gap-2 text-[11.5px] font-normal">
+            {full && (
+              <span role="status" className="mr-auto text-danger-fg">
+                {t("aiFeedback.noteFull")}
+              </span>
+            )}
+            <span className={`mono tabular-nums ${full ? "text-danger-fg" : "text-fg-4"}`}>
+              {t("aiFeedback.noteCount", { used: note.length.toLocaleString(i18n.language), max: noteMax.toLocaleString(i18n.language) })}
+            </span>
+          </span>
         </label>
         <label className="flex flex-col gap-1.5 text-[12.5px] font-medium">
           {t("aiFeedback.better")}

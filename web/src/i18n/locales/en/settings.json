@@ -700,6 +700,10 @@
         "label": "SLA breaches",
         "hint": "A ticket assigned to you misses a target"
       },
+      "scheduled_reply_failed": {
+        "label": "Scheduled replies not sent",
+        "hint": "A reply you scheduled could not go out and is back in your drafts"
+      },
       "ai_handoff": {
         "label": "Handoffs to a person",
         "hint": "Ollie hands a conversation to the team"

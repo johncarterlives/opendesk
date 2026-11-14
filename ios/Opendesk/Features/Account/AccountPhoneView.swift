@@ -29,7 +29,7 @@ struct AccountPhoneView: View {
     private var kinds: [NotificationKind] {
         let admin = env.session.isAdmin
         let order: [NotificationKind] = [
-            .assigned, .newTicket, .mentioned, .customerReplied, .threadReplied, .slaBreached, .aiHandoff,
+            .assigned, .newTicket, .mentioned, .customerReplied, .threadReplied, .slaBreached, .scheduledReplyFailed, .aiHandoff,
             .collabAssigned, .collabMention, .wikiMention, .wikiComment, .wikiReminder, .teamJoined,
             .aiCapReached, .aiKeyFailed, .aiBalanceLow, .aiBalanceOut, .autoRechargeFailed, .importFinished, .supportChannelUnhealthy,
         ]

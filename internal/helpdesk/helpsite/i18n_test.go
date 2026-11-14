@@ -39,6 +39,7 @@ func TestPlurals(t *testing.T) {
 		{"fr", 0, "one", ""}, {"fr", 1, "one", ""}, {"fr", 2, "other", ""},
 		{"pt", 0, "one", ""}, {"de", 1, "one", ""},
 		{"pl", 1, "one", "1 artykuł"}, {"pl", 3, "few", "3 artykuły"}, {"pl", 5, "many", "5 artykułów"}, {"pl", 12, "many", ""}, {"pl", 22, "few", ""},
+		{"cs", 1, "one", "1 článek"}, {"cs", 3, "few", "3 články"}, {"cs", 5, "other", "5 článků"}, {"cs", 0, "other", ""}, {"cs", 22, "other", ""},
 		{"ar", 0, "zero", ""}, {"ar", 2, "two", ""}, {"ar", 5, "few", ""}, {"ar", 11, "many", ""}, {"ar", 100, "other", ""},
 		{"ja", 1, "other", ""}, {"zh-CN", 5, "other", ""},
 	}

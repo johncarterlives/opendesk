@@ -87,6 +87,8 @@ func Previews(s Site, now time.Time) []Preview {
 		{Name: "notify-mentioned", Title: "Notification: mentioned", Mail: Notifications(s, batch("instant", []Note{mentioned}, 0))},
 		{Name: "notify-customer-replied", Title: "Notification: customer replied", Mail: Notifications(s, batch("instant", []Note{replied}, 0))},
 		{Name: "notify-sla-breached", Title: "Notification: SLA breached", Mail: Notifications(s, batch("instant", []Note{sla}, 0))},
+		{Name: "notify-scheduled-reply-failed", Title: "Notification: scheduled reply not sent", Mail: Notifications(s, batch("instant", []Note{
+			ticket("scheduled_reply_failed", t1110, 1110, "Refund for a double charge", map[string]any{"reason": "cannot_send_from"}, ago(2))}, 0))},
 		{Name: "notify-ai-handoff", Title: "Notification: handoff to a person", Mail: Notifications(s, batch("instant", []Note{handoff}, 0))},
 		{Name: "notify-team-joined", Title: "Notification: team joined", Mail: Notifications(s, batch("instant", []Note{plain("team_joined", map[string]any{
 			"team": map[string]any{"id": team.String(), "name": "Billing", "private": true}, "user": map[string]any{"name": "Alex Kim"}})}, 0))},
