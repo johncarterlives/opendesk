@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/useopendesk/opendesk/internal/audit"
@@ -44,16 +45,18 @@ type imapPatch struct {
 type updateAccountInput struct {
 	ID   string `path:"id"`
 	Body struct {
-		Name            *string    `json:"name,omitempty" maxLength:"254" doc:"How the sidebar names it; \"\" resets to the address"`
-		DisplayName     *string    `json:"display_name,omitempty" maxLength:"200" doc:"The From name of its mail; may name the sender: {agent}, {agent_first}, {mailbox}, {workspace}"`
-		Color           *string    `json:"color,omitempty" enum:"gray,red,orange,amber,green,teal,blue,indigo,violet,pink"`
-		SignatureHTML   *string    `json:"signature_html,omitempty"`
-		Visibility      *string    `json:"visibility,omitempty" enum:"private,shared"`
-		HandlingEnabled *bool      `json:"handling_enabled,omitempty" doc:"Track work separately from unread for this shared account"`
-		ReplyAll        *bool      `json:"reply_all,omitempty" doc:"Reply answers everyone on the message by default, for everyone who answers from this account"`
-		SharedWith      *Audience  `json:"shared_with,omitempty"`
-		IMAP            *imapPatch `json:"imap,omitempty"`
-		DefaultFrom     *string    `json:"default_from,omitempty" maxLength:"254" doc:"The address new mail goes out from: the account's own or one of its usable addresses"`
+		Name            *string `json:"name,omitempty" maxLength:"254" doc:"How the sidebar names it; \"\" resets to the address"`
+		DisplayName     *string `json:"display_name,omitempty" maxLength:"200" doc:"The From name of its mail; may name the sender: {agent}, {agent_first}, {mailbox}, {workspace}"`
+		Color           *string `json:"color,omitempty" enum:"gray,red,orange,amber,green,teal,blue,indigo,violet,pink"`
+		SignatureHTML   *string `json:"signature_html,omitempty"`
+		Visibility      *string `json:"visibility,omitempty" enum:"private,shared"`
+		HandlingEnabled *bool   `json:"handling_enabled,omitempty" doc:"Track work separately from unread for this shared account"`
+		// MarkInbox is the one-time offer when handling turns on (GH#430).
+		MarkInbox   bool       `json:"mark_inbox_needs_action,omitempty" doc:"With handling_enabled turning on: put the conversations now in its inbox with mail from the last 30 days in Needs action, except those it answered last"`
+		ReplyAll    *bool      `json:"reply_all,omitempty" doc:"Reply answers everyone on the message by default, for everyone who answers from this account"`
+		SharedWith  *Audience  `json:"shared_with,omitempty"`
+		IMAP        *imapPatch `json:"imap,omitempty"`
+		DefaultFrom *string    `json:"default_from,omitempty" maxLength:"254" doc:"The address new mail goes out from: the account's own or one of its usable addresses"`
 	}
 }
 
@@ -185,6 +188,12 @@ func (s *service) registerAccountRoutes(api huma.API) {
 			} else if visibility == VisibilityPrivate && a.HandlingEnabled {
 				a.HandlingEnabled, changed = false, append(changed, "handling_enabled")
 			}
+			// Marking the inbox goes only with handling turning on, and only when asked for: an
+			// ordinary save never puts back in Needs action what someone marked done since.
+			markInbox := b.MarkInbox
+			if markInbox && !(a.HandlingEnabled && slices.Contains(changed, "handling_enabled")) {
+				return nil, httpx.Validation("mark_inbox_needs_action goes with turning handling_enabled on.")
+			}
 			if b.ReplyAll != nil && *b.ReplyAll != a.ReplyAll {
 				a.ReplyAll, changed = *b.ReplyAll, append(changed, "reply_all")
 			}
@@ -270,9 +279,24 @@ func (s *service) registerAccountRoutes(api huma.API) {
 						return err
 					}
 				}
+				marked := int64(0)
+				if markInbox {
+					if marked, err = markInboxNeedsAction(ctx, tx, p.WorkspaceID, a.ID); err != nil {
+						return err
+					}
+				}
 				if len(changed) > 0 {
-					if err := audit.Log(ctx, tx, p, p.WorkspaceID, "collab.account_updated", "collab_account", &a.ID,
-						map[string]any{"fields": changed}); err != nil {
+					data := map[string]any{"fields": changed}
+					if markInbox {
+						data["needs_action_marked"] = marked
+					}
+					if err := audit.Log(ctx, tx, p, p.WorkspaceID, "collab.account_updated", "collab_account", &a.ID, data); err != nil {
+						return err
+					}
+				}
+				if marked > 0 {
+					// One change of the account's lists and counts, not one per conversation.
+					if err := s.publishChanged(ctx, tx, p.WorkspaceID, &a.ID, nil, true); err != nil {
 						return err
 					}
 				}
@@ -425,4 +449,26 @@ func (s *service) patchIMAP(a *accountRow, in *imapPatch) (accountConfig, creden
 		return cfg, creds, httpx.Validation("Enter the password again to use it with a new server.")
 	}
 	return cfg, creds, nil
+}
+
+// markInboxRecent is how recent a conversation's latest message must be for turning handling
+// on to put it in Needs action: older mail is history, and the AI queue would draft it first.
+const markInboxRecent = 30 * 24 * time.Hour
+
+// markInboxNeedsAction puts the account's conversations now in its inbox in Needs action,
+// as new mail would have, in tx: only those with mail from the last 30 days, not one whose
+// latest message the account sent (it waits on the other side), nor a snoozed one. It
+// returns how many it marked (GH#430).
+func markInboxNeedsAction(ctx context.Context, tx pgx.Tx, wid, accountID uuid.UUID) (int64, error) {
+	tag, err := tx.Exec(ctx, `UPDATE collab_threads t SET needs_action = true, updated_at = now()
+		WHERE t.workspace_id = $1 AND t.account_id = $2 AND NOT t.needs_action AND t.snoozed_until IS NULL
+			AND t.last_message_at > $3
+			AND t.folder_ids && ARRAY(SELECT id FROM collab_folders WHERE account_id = $2 AND role = 'inbox')
+			AND NOT EXISTS (SELECT 1 FROM collab_message_folders mf JOIN collab_folders f ON f.id = mf.folder_id AND f.role = 'sent'
+				WHERE mf.message_id = (SELECT m.id FROM collab_messages m WHERE m.thread_id = t.id AND NOT m.draft
+					ORDER BY m.sent_at DESC, m.id DESC LIMIT 1))`, wid, accountID, time.Now().Add(-markInboxRecent))
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
 }

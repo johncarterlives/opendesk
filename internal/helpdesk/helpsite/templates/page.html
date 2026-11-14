@@ -118,7 +118,7 @@
 <ul class="rows{{if .Compact}} compact{{end}}">
   {{- range $i, $a := .Articles}}
   <li class="rise {{$.Delay $i}}">
-    <a class="row" href="{{$.Page.Link (printf "/a/%s" $a.Slug)}}">
+    <a class="row" href="{{$.Page.Link $a.Path}}">
       <span class="row-icon">{{template "filetext"}}</span>
       <span class="row-main">
         <span class="row-title"><bdi>{{$a.Title}}</bdi></span>

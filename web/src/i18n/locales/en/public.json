@@ -134,6 +134,7 @@
       "message": "How can we help?",
       "send": "Send request",
       "limit": "You have sent several requests in a row. Wait a while and try again.",
+      "busy": "Many requests are arriving right now. Wait a while and try again.",
       "attach": "Choose files",
       "drop": "Drop files here or paste a screenshot.",
       "remove": "Remove {{name}}",

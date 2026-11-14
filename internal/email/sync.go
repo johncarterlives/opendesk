@@ -2,7 +2,9 @@ package email
 
 import (
 	"context"
+	"errors"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/emersion/go-imap/v2"
@@ -73,8 +75,9 @@ type candidate struct {
 	size int64
 }
 
-// syncMailbox runs one pass over INBOX. Failures are recorded on the mailbox (with a
-// safe message and backoff) rather than retried by River; the periodic job tries again.
+// syncMailbox runs one pass over the folders the mailbox reads (INBOX unless it chose
+// others). Failures are recorded on the mailbox (with a safe message and backoff) rather
+// than retried by River; the periodic job tries again.
 func (s *service) syncMailbox(ctx context.Context, id uuid.UUID) (err error) {
 	m, err := scanMailbox(s.d.DB.Pool.QueryRow(ctx, `SELECT `+mailboxColumns+` FROM mailboxes WHERE id = $1`, id))
 	if err != nil {
@@ -106,26 +109,95 @@ func (s *service) syncMailbox(ctx context.Context, id uuid.UUID) (err error) {
 	defer sess.Close()
 	c := sess.c
 
-	sd, err := c.Select("INBOX", &imap.SelectOptions{ReadOnly: true}).Wait()
+	// Each folder in turn, INBOX first. INBOX's cursor is the mailbox's own and is stored
+	// with the pass. A folder the server refuses to open is skipped and named in last_error;
+	// the others are still read.
+	inbox := folderCursor{m.UIDValidity, m.LastUID}
+	ingested := 0
+	var skipped []string
+	for _, name := range m.folders() {
+		cur, err := s.loadFolderCursor(ctx, m, name)
+		if err != nil {
+			return err
+		}
+		next, n, err := s.syncFolder(ctx, c, m, name, cur)
+		ingested += n
+		if rec, ok := err.(errSyncRecorded); ok {
+			return rec.err // recorded on the mailbox; the next pass tries again
+		}
+		if skip, ok := err.(errFolderSkipped); ok {
+			s.log.Info("mailbox folder skipped", "mailbox_id", m.ID, "workspace_id", m.WorkspaceID, "reason", skip.msg)
+			skipped = append(skipped, skip.msg)
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		// Saved as each folder is done, so a later folder's failure keeps this one's progress.
+		if name == inboxFolder {
+			inbox = next
+		}
+		if err := s.saveCursor(ctx, m, name, next); err != nil {
+			return err
+		}
+	}
+	if err := s.setSyncOK(ctx, m, inbox.validity, inbox.lastUID, strings.Join(skipped, " ")); err != nil {
+		return err
+	}
+	s.log.Debug("mailbox synced", "mailbox_id", m.ID, "workspace_id", m.WorkspaceID,
+		"folders", len(m.folders()), "new_messages", ingested, "duration", time.Since(start))
+	return nil
+}
+
+// syncFolder reads one folder from its cursor and answers the cursor to store and how many
+// messages it took in. A failure the server caused is recorded on the mailbox (with the
+// folder's progress saved) and ends the pass without an error, except a refused SELECT of a
+// folder other than INBOX, which is errFolderSkipped; storage or database trouble is returned
+// for River to log.
+func (s *service) syncFolder(ctx context.Context, c *imapclient.Client, m *mailboxRow, name string, cur folderCursor) (folderCursor, int, error) {
+	what := "opening INBOX"
+	if name != inboxFolder {
+		what = "opening the folder " + name
+	}
+	// fail records a failure; a listing failure saves nothing, as before a folder's first read.
+	fail := func(err error) (folderCursor, int, error) {
+		return cur, 0, errSyncRecorded{s.recordSyncError(ctx, m, err)}
+	}
+	// failAt also keeps the messages already taken in: the cursor stops at the last one.
+	failAt := func(sel selectInfo, cursor uint32, n int, err error) (folderCursor, int, error) {
+		if e := s.saveCursor(ctx, m, name, folderCursor{int64(sel.Validity), int64(cursor)}); e != nil {
+			return cur, n, e
+		}
+		return cur, n, errSyncRecorded{s.recordSyncError(ctx, m, err)}
+	}
+	sd, err := c.Select(name, &imap.SelectOptions{ReadOnly: true}).Wait()
 	if err != nil {
-		return s.recordSyncError(ctx, m, opError("opening INBOX", err))
+		var refused *imap.Error
+		if name != inboxFolder && errors.As(err, &refused) {
+			// Renamed or removed on the server: the connection is fine, the other folders are read.
+			return cur, 0, errFolderSkipped{safeError(opError(what, err))}
+		}
+		return fail(opError(what, err))
 	}
 	sel := selectInfo{Validity: sd.UIDValidity, UIDNext: uint32(sd.UIDNext), Exists: sd.NumMessages}
-	initial, upToDate := planSync(uint32(m.UIDValidity), uint32(m.LastUID), sel)
-	lastUID := uint32(m.LastUID)
+	done := func(lastUID uint32, n int) (folderCursor, int, error) {
+		return folderCursor{int64(sel.Validity), int64(lastUID)}, n, nil
+	}
+	initial, upToDate := planSync(uint32(cur.validity), uint32(cur.lastUID), sel)
+	lastUID := uint32(cur.lastUID)
 	if initial {
 		lastUID = 0
 	}
 	if upToDate {
-		return s.finishSync(ctx, m, sel, finalCursor(initial, lastUID, sel, true), 0, start)
+		return done(finalCursor(initial, lastUID, sel, true), 0)
 	}
-	if initial && m.UIDValidity == 0 && m.Config.SyncStart == SyncStartNew {
+	if initial && cur.validity == 0 && m.Config.SyncStart == SyncStartNew {
 		// Only mail that arrives from now on: the cursor starts at the end of the folder.
 		last, err := lastFolderUID(c, sel)
 		if err != nil {
-			return s.recordSyncError(ctx, m, opError("listing messages", err))
+			return fail(opError("listing messages", err))
 		}
-		return s.finishSync(ctx, m, sel, last, 0, start)
+		return done(last, 0)
 	}
 
 	var cands []candidate
@@ -138,7 +210,7 @@ func (s *service) syncMailbox(ctx context.Context, id uuid.UUID) (err error) {
 		set.AddRange(from, sel.Exists)
 		msgs, err := c.Fetch(set, &imap.FetchOptions{UID: true, InternalDate: true, RFC822Size: true}).Collect()
 		if err != nil {
-			return s.recordSyncError(ctx, m, opError("listing messages", err))
+			return fail(opError("listing messages", err))
 		}
 		since := time.Now().Add(-initialWindow)
 		for _, msg := range msgs {
@@ -151,7 +223,7 @@ func (s *service) syncMailbox(ctx context.Context, id uuid.UUID) (err error) {
 		set.AddRange(imap.UID(lastUID+1), 0) // lastUID+1:*
 		msgs, err := c.Fetch(set, &imap.FetchOptions{UID: true, RFC822Size: true}).Collect()
 		if err != nil {
-			return s.recordSyncError(ctx, m, opError("listing new messages", err))
+			return fail(opError("listing new messages", err))
 		}
 		sizes := map[uint32]int64{}
 		uids := make([]uint32, 0, len(msgs))
@@ -180,8 +252,7 @@ func (s *service) syncMailbox(ctx context.Context, id uuid.UUID) (err error) {
 		set.AddNum(imap.UID(cand.uid))
 		msgs, err := c.Fetch(set, &imap.FetchOptions{UID: true, BodySection: []*imap.FetchItemBodySection{{Peek: true}}}).Collect()
 		if err != nil {
-			_ = s.saveProgress(ctx, m, int64(sel.Validity), int64(cursor))
-			return s.recordSyncError(ctx, m, opError("fetching a message", err))
+			return failAt(sel, cursor, ingested, opError("fetching a message", err))
 		}
 		var raw []byte
 		for _, msg := range msgs {
@@ -191,14 +262,40 @@ func (s *service) syncMailbox(ctx context.Context, id uuid.UUID) (err error) {
 		}
 		if len(raw) > 0 && len(raw) <= maxRawBytes {
 			if _, _, err := s.ingest(ctx, m, raw, "", nil, viaMailbox); err != nil {
-				_ = s.saveProgress(ctx, m, int64(sel.Validity), int64(cursor))
-				return err // storage or database trouble: let River log it
+				_ = s.saveCursor(ctx, m, name, folderCursor{int64(sel.Validity), int64(cursor)})
+				return cur, ingested, err // storage or database trouble: let River log it
 			}
 			ingested++
 		}
 		cursor = cand.uid
 	}
-	return s.finishSync(ctx, m, sel, finalCursor(initial, cursor, sel, complete), ingested, start)
+	return done(finalCursor(initial, cursor, sel, complete), ingested)
+}
+
+// errSyncRecorded is a folder failure already recorded on the mailbox: the pass ends and
+// the periodic job tries again. err is what recording it returned (nil when it was stored).
+type errSyncRecorded struct{ err error }
+
+func (e errSyncRecorded) Error() string {
+	if e.err != nil {
+		return e.err.Error()
+	}
+	return "sync failure recorded"
+}
+
+// errFolderSkipped is a folder other than INBOX the server refused to open: the pass goes on
+// without it and msg, safe to show, is kept on the mailbox.
+type errFolderSkipped struct{ msg string }
+
+func (e errFolderSkipped) Error() string { return e.msg }
+
+// saveCursor stores a folder's progress after a failure part way: INBOX on the mailbox,
+// another folder in its row.
+func (s *service) saveCursor(ctx context.Context, m *mailboxRow, name string, c folderCursor) error {
+	if name == inboxFolder {
+		return s.saveProgress(ctx, m, c.validity, c.lastUID)
+	}
+	return s.saveFolderCursor(ctx, m, name, c)
 }
 
 // lastFolderUID is the UID of the newest message in the folder: UIDNEXT-1, or read from
@@ -218,16 +315,6 @@ func lastFolderUID(c *imapclient.Client, sel selectInfo) (uint32, error) {
 		last = max(last, uint32(msg.UID))
 	}
 	return last, nil
-}
-
-// finishSync records a successful pass and logs it at debug level.
-func (s *service) finishSync(ctx context.Context, m *mailboxRow, sel selectInfo, lastUID uint32, ingested int, start time.Time) error {
-	if err := s.setSyncOK(ctx, m, int64(sel.Validity), int64(lastUID)); err != nil {
-		return err
-	}
-	s.log.Debug("mailbox synced", "mailbox_id", m.ID, "workspace_id", m.WorkspaceID,
-		"last_uid", lastUID, "new_messages", ingested, "duration", time.Since(start))
-	return nil
 }
 
 func (s *service) recordSyncError(ctx context.Context, m *mailboxRow, err error) error {

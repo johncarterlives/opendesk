@@ -134,6 +134,7 @@
       "message": "Wie können wir helfen?",
       "send": "Anfrage senden",
       "limit": "Sie haben mehrere Anfragen hintereinander gesendet. Warten Sie eine Weile und versuchen Sie es erneut.",
+      "busy": "Gerade gehen viele Anfragen ein. Warten Sie eine Weile und versuchen Sie es erneut.",
       "attach": "Dateien auswählen",
       "drop": "Dateien hierher ziehen oder einen Screenshot einfügen.",
       "remove": "{{name}} entfernen",

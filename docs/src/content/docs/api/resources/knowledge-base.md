@@ -32,8 +32,11 @@ type KbArticle = {
   views: number;
   published_at: string | null;
   updated_at: string;
+  path: string; // its address on a help center: /c/<collection slug>/<slug>, or /a/<slug> in no collection
 };
 ```
+
+An article's `slug` only needs to be unique within its collection. Add `path` to the help center's address to link to an article. When a slug or collection changes, the old address redirects to the new one.
 
 ## Publish an article
 
@@ -51,7 +54,7 @@ curl https://api.opendesk.sh/v1/kb/articles \
   }'
 ```
 
-`body_html` is sanitized before storage.
+`body_html` is sanitized before storage. A slug another article of the same collection uses is refused with `409`.
 
 ## Events
 

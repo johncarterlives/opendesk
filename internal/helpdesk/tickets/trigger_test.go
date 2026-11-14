@@ -358,6 +358,9 @@ func TestAutomationDeletesTicket(t *testing.T) {
 	if !deleted {
 		t.Fatal("form ticket not deleted")
 	}
+	if n := countRows(t, e, `SELECT count(*) FROM activities WHERE ticket_id = $1 AND type = 'deleted' AND actor_type = 'automation' AND data->>'automation_id' = $2`, form.ID, del.String()); n != 1 {
+		t.Fatalf("automation's delete on the timeline %d", n)
+	}
 	var replies int
 	e.Scalar(`SELECT count(*) FROM messages WHERE ticket_id = $1 AND author_type = 'system'`, &replies, form.ID)
 	if replies != 0 {

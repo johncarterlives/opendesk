@@ -225,6 +225,7 @@ func registerCollections(d *deps.Deps, api huma.API) {
 						return err
 					}
 				}
+				oldSlug := cur.Slug
 				if b.Slug != nil {
 					if cur.Slug, err = pickSlug(ctx, tx, "kb_collections", p.WorkspaceID, b.Slug, cur.Name, &id); err != nil {
 						return err
@@ -247,6 +248,12 @@ func registerCollections(d *deps.Deps, api huma.API) {
 				if _, err := tx.Exec(ctx, `UPDATE kb_collections SET name = $3, slug = $4, description = $5, position = $6, brand_id = $7, updated_at = now()
 					WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id, cur.Name, cur.Slug, cur.Description, cur.Position, cur.BrandID); err != nil {
 					return slugConflict(err)
+				}
+				// Its old address, and so its articles' (/c/<old>/<slug>), leads to it now.
+				if oldSlug != cur.Slug {
+					if err := redirectCollection(ctx, tx, p.WorkspaceID, "/c/"+oldSlug, id); err != nil {
+						return err
+					}
 				}
 				if c, err = loadCollection(ctx, tx, p.WorkspaceID, id); err != nil {
 					return err
@@ -275,6 +282,9 @@ func registerCollections(d *deps.Deps, api huma.API) {
 				return nil, err
 			}
 			err = d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				if err := releaseArticles(ctx, tx, p.WorkspaceID, id); err != nil {
+					return err
+				}
 				tag, err := tx.Exec(ctx, `DELETE FROM kb_collections WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id)
 				if err != nil {
 					return err
@@ -290,4 +300,40 @@ func registerCollections(d *deps.Deps, api huma.API) {
 			}
 			return nil, nil
 		})
+}
+
+// releaseArticles takes the articles out of a collection about to be deleted, one at a time:
+// each keeps its slug where no article outside a collection has it, else takes a free one,
+// and its old address (/c/<collection>/<slug>) leads to its new one.
+func releaseArticles(ctx context.Context, tx pgx.Tx, wid, collection uuid.UUID) error {
+	rows, err := tx.Query(ctx, `SELECT a.id, a.slug, k.slug FROM kb_articles a JOIN kb_collections k ON k.id = a.collection_id
+		WHERE a.workspace_id = $1 AND a.collection_id = $2 ORDER BY a.created_at, a.id FOR UPDATE OF a`, wid, collection)
+	if err != nil {
+		return err
+	}
+	type moving struct {
+		id               uuid.UUID
+		slug, collection string
+	}
+	list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (moving, error) {
+		var m moving
+		return m, r.Scan(&m.id, &m.slug, &m.collection)
+	})
+	if err != nil {
+		return err
+	}
+	for _, m := range list {
+		slug, err := freeArticleSlug(ctx, tx, wid, nil, m.slug, &m.id)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `UPDATE kb_articles SET collection_id = NULL, slug = $3, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
+			wid, m.id, slug); err != nil {
+			return err
+		}
+		if err := redirectArticle(ctx, tx, wid, articlePathOf(m.collection, m.slug), m.id); err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -159,6 +159,7 @@
     "connection": "Connexion",
     "testConnection": "Tester la connexion",
     "lastSyncFailed": "Échec de la dernière synchronisation",
+    "foldersSkipped": "Certains dossiers n’ont pas été lus",
     "lastSynced": "Dernière synchronisation",
     "never": "Jamais",
     "forwardingInstant": "Le courrier transféré arrive dès son envoi.",
@@ -1020,5 +1021,31 @@
       "step4": "Cochez les événements de résumé et de transcription (ils demandent Voys Intelligence), puis cliquez sur Opslaan.",
       "step5": "Passez un appel de test : la connexion indique Reçoit les appels dès qu’il arrive."
     }
+  },
+  "folders": {
+    "title": "Dossiers",
+    "description": "opendesk récupère les e-mails de ces dossiers sur votre serveur IMAP. Choisissez les dossiers où les règles de votre serveur classent les e-mails du support, par exemple ceux envoyés à un alias. Un message présent dans plusieurs d’entre eux devient un seul message de ticket.",
+    "inbox": "Boîte de réception",
+    "choose": "Choisir les dossiers",
+    "done": "Terminé",
+    "failed": "Impossible de lister les dossiers",
+    "retry": "Réessayer",
+    "hint": "Choisissez jusqu’à {{max}} dossiers. Les changements s’appliquent à l’enregistrement.",
+    "full": "Une boîte lit au plus {{max}} dossiers. Décochez-en un pour en choisir un autre.",
+    "saveFirst": "Enregistrez d’abord les réglages du serveur, puis choisissez les dossiers.",
+    "special": {
+      "sent": "Envoyés",
+      "drafts": "Brouillons",
+      "trash": "Corbeille",
+      "junk": "Spam",
+      "all": "Tous les messages"
+    }
+  },
+  "sentCopy": {
+    "title": "Garder les e-mails envoyés sur le serveur",
+    "hint": "Enregistre une copie de chaque e-mail envoyé par cette boîte dans un dossier de votre serveur IMAP, comme votre logiciel de messagerie, pour que votre boîte contienne toute la conversation.",
+    "folder": "Dossier des e-mails envoyés",
+    "choose": "Choisir un dossier",
+    "loading": "Chargement des dossiers…"
   }
 }

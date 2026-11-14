@@ -42,18 +42,16 @@ type contactWriteBody struct {
 
 type contactOut struct{ Body domain.Contact }
 
-// contactOrders are the sorts a list can ask for, by their `sort` value.
-var contactOrders = map[string]string{
-	"-created": "ct.created_at", "created": "ct.created_at",
-	"name": "lower(ct.name)", "-name": "lower(ct.name)",
-	"tickets":  "(SELECT count(*) FROM tickets tk WHERE tk.contact_id = ct.id AND tk.deleted_at IS NULL)",
-	"-tickets": "(SELECT count(*) FROM tickets tk WHERE tk.contact_id = ct.id AND tk.deleted_at IS NULL)",
-}
-
-type contactCursor struct {
-	T  time.Time `json:"t"`
-	ID uuid.UUID `json:"id"`
-}
+// contactSorts are the orders the People list can take, by their `sort` value; newest first is
+// the default. The ticket count is the one ContactSelect reads.
+var contactSorts = func() map[string]listSort[domain.Contact] {
+	created := timeSort("ct.created_at", func(c domain.Contact) time.Time { return c.CreatedAt })
+	updated := timeSort("ct.updated_at", func(c domain.Contact) time.Time { return c.UpdatedAt })
+	name := nameSort("ct.name", func(c domain.Contact) string { return c.Name })
+	tickets := countSort("(SELECT count(*) FROM tickets tk WHERE tk.contact_id = ct.id AND tk.deleted_at IS NULL)", func(c domain.Contact) int { return c.TicketCount })
+	return map[string]listSort[domain.Contact]{"-created": created, "created": created, "-updated": updated, "updated": updated,
+		"name": name, "-name": name, "-tickets": tickets, "tickets": tickets}
+}()
 
 type ticketCursor struct {
 	T  time.Time `json:"t"`
@@ -174,6 +172,24 @@ func uniqueErr(err error) error {
 	return err
 }
 
+// deleteContact deletes a contact of the caller's workspace, audits and announces it: the one
+// way a contact is deleted, alone or in bulk (meta is the audit entry's). Its tickets stay,
+// without a contact.
+func deleteContact(ctx context.Context, tx pgx.Tx, p *auth.Principal, id uuid.UUID, meta map[string]any) error {
+	tag, err := tx.Exec(ctx, `DELETE FROM contacts WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return httpx.NotFound("Contact")
+	}
+	if err := audit.Log(ctx, tx, p, p.WorkspaceID, "contact.deleted", "contact", &id, meta); err != nil {
+		return err
+	}
+	_, err = events.Publish(ctx, tx, events.Event{WorkspaceID: p.WorkspaceID, Type: "contact.deleted", Data: map[string]any{"contact_id": id}})
+	return err
+}
+
 func registerContacts(d *deps.Deps, api huma.API) {
 	huma.Register(api, op("list-contacts", http.MethodGet, "/v1/contacts", "List contacts", "Contacts", 0),
 		func(ctx context.Context, in *contactListIn) (*struct{ Body httpx.Page[domain.Contact] }, error) {
@@ -181,50 +197,21 @@ func registerContacts(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			extra, args, err := recordFilters(ctx, d.DB.Pool, p, domain.ContactLabels, domain.FieldEntityContact, "ct", in.Tag, in.fields, in.fieldsErr, 7)
+			if in.fieldsErr != nil {
+				return nil, in.fieldsErr
+			}
+			f := contactFilter{Q: in.Q, CompanyID: in.CompanyID, Tag: in.Tag, Blocked: in.Blocked, Fields: in.fields}
+			where, args, err := f.where(ctx, d.DB.Pool, p)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			pg, err := pageOf(contactSorts, in.Sort, "-created", "ct.id", func(c domain.Contact) uuid.UUID { return c.ID }, in.Cursor, len(args)+1)
 			if err != nil {
 				return nil, err
 			}
-			switch in.Blocked {
-			case "true":
-				extra += " AND ct.blocked"
-			case "false":
-				extra += " AND NOT ct.blocked"
-			}
-			// A requested sort pages by position; the default (newest first) keeps its keyset.
-			order := listOrder(in.Sort, contactOrders, "ct.id")
-			var cur contactCursor
-			var offset offsetCursor
-			if order != "" {
-				if err := httpx.DecodeCursor(in.Cursor, &offset); err != nil {
-					return nil, err
-				}
-			} else if err := httpx.DecodeCursor(in.Cursor, &cur); err != nil {
-				return nil, err
-			}
-			var companyID *uuid.UUID
-			if in.CompanyID != "" {
-				id, err := hd.ParseRef(in.CompanyID, "company_id")
-				if err != nil {
-					return nil, err
-				}
-				companyID = &id
-			}
-			var curT *time.Time
-			if in.Cursor != "" && order == "" {
-				curT = &cur.T
-			}
-			tail := " ORDER BY ct.created_at DESC, ct.id DESC LIMIT $7"
-			if order != "" {
-				tail = " ORDER BY " + order + " LIMIT $7 OFFSET " + strconv.Itoa(max(offset.O, 0))
-			}
-			q := strings.TrimSpace(in.Q)
-			rows, err := d.DB.Pool.Query(ctx, domain.ContactSelect+` WHERE ct.workspace_id = $1
-				AND ($2 = '' OR ct.search @@ websearch_to_tsquery('simple', $2) OR ct.fields_search @@ websearch_to_tsquery('simple', $2)
-					OR ct.email::text ILIKE $3 OR ct.name ILIKE $3 OR `+domain.ExtraEmailLikeSQL("lower($3)")+`)
-				AND ($4::uuid IS NULL OR ct.company_id = $4)
-				AND ($5::timestamptz IS NULL OR (ct.created_at, ct.id) < ($5, $6))`+extra+tail,
-				append([]any{p.WorkspaceID, q, likePrefix(q), companyID, curT, cur.ID, in.Limit + 1}, args...)...)
+			args = append(args, pg.args...)
+			args = append(args, in.Limit+1)
+			rows, err := d.DB.Pool.Query(ctx, domain.ContactSelect+where+pg.after+pg.orderBy()+" LIMIT $"+strconv.Itoa(len(args)), args...)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -232,12 +219,7 @@ func registerContacts(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			page := httpx.NewPage(list, in.Limit, func(c domain.Contact) any {
-				if order != "" {
-					return offsetCursor{O: offset.O + in.Limit}
-				}
-				return contactCursor{T: c.CreatedAt, ID: c.ID}
-			})
+			page := httpx.NewPage(list, in.Limit, pg.cursor)
 			return &struct{ Body httpx.Page[domain.Contact] }{page}, nil
 		})
 
@@ -399,20 +381,7 @@ func registerContacts(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, err
 			}
-			err = d.DB.Tx(ctx, func(tx pgx.Tx) error {
-				tag, err := tx.Exec(ctx, `DELETE FROM contacts WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id)
-				if err != nil {
-					return err
-				}
-				if tag.RowsAffected() == 0 {
-					return httpx.NotFound("Contact")
-				}
-				if err := audit.Log(ctx, tx, p, p.WorkspaceID, "contact.deleted", "contact", &id, nil); err != nil {
-					return err
-				}
-				_, err = events.Publish(ctx, tx, events.Event{WorkspaceID: p.WorkspaceID, Type: "contact.deleted", Data: map[string]any{"contact_id": id}})
-				return err
-			})
+			err = d.DB.Tx(ctx, func(tx pgx.Tx) error { return deleteContact(ctx, tx, p, id, nil) })
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}

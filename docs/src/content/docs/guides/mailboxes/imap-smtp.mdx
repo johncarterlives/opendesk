@@ -76,6 +76,28 @@ Paste the app password, or the mailbox's password, and click **Connect**. opende
 
 A mailbox that receives over IMAP first brings in the last 7 days of its inbox, up to 200 emails, then new email as it arrives. Under **Start with**, choose **Only new email** to begin with what arrives from now on instead, for example when your history came over with an [import](/guides/importing/). Older email in the inbox is never brought in.
 
+### Read other folders
+
+By default opendesk reads the inbox. When your server's rules file support mail into folders of its own, for example mail to an alias that goes straight to an archive folder, choose those folders as well. This works for any mailbox that reads over IMAP, including Google and Microsoft mailboxes connected to sync.
+
+1. Open the mailbox in **Settings**, **Mailboxes**, and go to **Folders**.
+2. Click **Choose folders**. opendesk signs in to the server and lists its folders.
+3. Tick the folders to read, up to 10, and click **Save changes**. Untick **Inbox** to stop reading the inbox.
+
+Each folder is read from the point you add it, as the inbox was when you connected: the last 7 days, or only new mail when the mailbox started with new mail. A message filed in several of the folders becomes one ticket message. Sent mail, drafts, trash, spam and Gmail's All mail are marked in the list: reading them would turn your own replies and junk into tickets. The inbox is always read first. If a folder is renamed or removed on the server, opendesk keeps reading the other folders and the mailbox names the folder it could not open until you choose again. A folder you untick and tick again later, the inbox included, is read as a new one. Changing the IMAP server or account keeps your choice, and each folder is read again as on a new connection.
+
+### Keep sent email on the server
+
+When replies go out through your SMTP server, or through opendesk, the mail server keeps no copy of them, so your mailbox in other mail apps shows only one side of each conversation. A mailbox that reads over IMAP can keep a copy of everything it sends, as a mail app does:
+
+1. Open the mailbox in **Settings**, **Mailboxes**, and go to **Sending**.
+2. Turn on **Keep sent email on the server**. opendesk picks the server's Sent folder; choose another folder if you like.
+3. Click **Save changes**.
+
+Each email goes into the folder, marked read and dated when it was sent, a moment after it is sent: replies, side conversations, auto-replies and satisfaction surveys. opendesk signs in to the IMAP server briefly for each copy. If the server refuses the folder, opendesk tries again a few times and then gives that copy up; the email itself was sent either way. Mailboxes that send with Google or Microsoft already keep their sent email, so they do not offer this.
+
+Some SMTP servers save what they send in the Sent folder themselves, such as Gmail's SMTP (`smtp.gmail.com`) and Microsoft 365 (`smtp.office365.com`). Leave this off for those, or each email is kept twice.
+
 ## Providers
 
 | Provider | Password | Where to make an app password | IMAP | SMTP |

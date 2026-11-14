@@ -21,6 +21,7 @@ func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	api.UseMiddleware(httpx.TicketsGate(d.DB.Pool, func(op *huma.Operation) bool { return httpx.HasTag(op, "Tickets") || httpx.HasTag(op, "Reports") }))
 	registerChatAssigner(d)
 	registerTickets(d, api)
+	registerTrash(d, api)
 	registerMessages(d, api)
 	registerDrafts(d, api)
 	registerReplyDrafts(d, api)

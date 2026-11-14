@@ -24,6 +24,11 @@ import (
 // whole instance: a session otherwise opens tickets without limit.
 const newRequestsPerHour = 10
 
+// workspaceRequestsPerHour bounds the requests all of a workspace's customers start together,
+// counted for the whole instance, so many accounts cannot flood one inbox through the portal.
+// A variable so a test can reach it.
+var workspaceRequestsPerHour = 500
+
 // These projections contain only the customer's request and public conversation.
 // Agent-only ticket and message fields never enter a portal response.
 type customerTicket struct {
@@ -181,6 +186,10 @@ func (s *service) registerTickets(api huma.API) {
 		}
 		if err := s.limit(ctx, "new-ticket:"+p.WorkspaceID.String()+":"+p.ContactID.String(), newRequestsPerHour, time.Hour); err != nil {
 			return nil, err
+		}
+		// Counted after the customer's own limit, so one customer cannot use up the workspace's.
+		if !s.d.Limiter.Shared(ctx, "customer-portal:new-ticket-workspace:"+p.WorkspaceID.String(), workspaceRequestsPerHour, time.Hour) {
+			return nil, httpx.E(http.StatusTooManyRequests, "portal_busy", "This help center is receiving many requests. Wait a while and try again.")
 		}
 		var out customerTicket
 		err = s.d.DB.Tx(ctx, func(tx pgx.Tx) error {

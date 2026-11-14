@@ -77,6 +77,20 @@ describe("the portal's new request form", () => {
     expect(host.querySelector<HTMLInputElement>('input[name="subject"]')!.value).toBe("Again");
   });
 
+  it.each([
+    ["the help center's limit for everyone", "portal_busy", 429, "Many requests are arriving right now"],
+    ["a portal turned off while the form was open", "not_found", 404, "This help center is not available"],
+  ])("says what happened for %s, and keeps what was written", async (_, code, status, message) => {
+    vi.spyOn(customerPortal, "create").mockRejectedValue(new ApiError({ status, code }));
+    const host = await mount();
+    await fill(host, "Help", "Please");
+    await submit(host);
+    await vi.waitFor(() => expect(host.textContent).toContain(message));
+    expect(host.textContent).not.toContain("several requests in a row");
+    expect(navigate).not.toHaveBeenCalled();
+    expect(host.querySelector<HTMLTextAreaElement>('textarea[name="body"]')!.value).toBe("Please");
+  });
+
   it("shows the general message for any other failure", async () => {
     vi.spyOn(customerPortal, "create").mockRejectedValue(new ApiError({ status: 500 }));
     const host = await mount();

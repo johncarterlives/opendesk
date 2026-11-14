@@ -235,6 +235,10 @@ function describe(a: Activity, t: TFunction<"inbox">, { teams, members, tags, fi
       return { icon: <ShieldAlert />, text: line("activity.spam") };
     case "unmarked_spam":
       return { icon: <ShieldAlert />, text: line("activity.unspam") };
+    case "deleted":
+      return { icon: <Trash2 />, text: line("activity.ticketDeleted") };
+    case "restored":
+      return { icon: <Undo2 />, text: line("activity.ticketRestored") };
     case "custom_updated":
       return { icon: <ArrowRightLeft />, text: Array.isArray(d.keys) ? line("activity.customKeys", { keys: (d.keys as string[]).join(", ") }) : line("activity.custom") };
     case "merged": {

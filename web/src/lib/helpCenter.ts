@@ -8,7 +8,7 @@ import { appOrigin, config } from "./config";
 
 type HelpBrand = Pick<Brand, "slug" | "help_center">;
 
-/** A page of a brand's help center: "" is its home, "/a/<slug>" an article, "/c/<slug>" a topic. */
+/** A page of a brand's help center: "" is its home, an article's path (KbArticle.path) an article, "/c/<slug>" a topic. */
 export function helpCenterHref(brand: Pick<Brand, "help_center">, path = ""): string {
   return brand.help_center.url.replace(/\/+$/, "") + path;
 }

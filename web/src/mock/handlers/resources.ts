@@ -2,6 +2,7 @@
 // knowledge base, mailboxes and the public help center / CSAT pages.
 
 import { registerPortalRoutes } from "./portal";
+import { registerPortalInviteRoutes } from "./portalInvites";
 import type {
   Action,
   Automation,
@@ -9,6 +10,8 @@ import type {
   Company,
   Condition,
   Contact,
+  FieldValues,
+  ImapFolder,
   KbArticle,
   KbCollection,
   Mailbox,
@@ -26,7 +29,7 @@ import { viewIconDef } from "@/components/tickets/viewIcons";
 import { chatReachable, db, userRef, type WsData } from "../db";
 import { publish } from "../gateway";
 import { HttpError, del, forbidden, get, invalid, notFound, paginate, patch, post, required, respond, s, strArr, type Ctx } from "../router";
-import { applyLabels, canCreateLabels, fieldFiltersFromQuery, fieldsText, matchFields, mergeFields } from "../labels";
+import { applyLabels, canCreateLabels, fieldFiltersFromQuery, fieldsText, matchFields, mergeFields, type FieldFilterIn } from "../labels";
 import { addActivity, publishTicketUpdated, sortTickets } from "../tickets";
 import { isRecord, nowIso, randomToken, slugify, uuid } from "../util";
 import { aiOff } from "./ai";
@@ -82,18 +85,40 @@ function recordFilter<R extends Contact | Company>(ctx: Ctx, entity: "contact" |
   return list.filter((r) => (!tag || r.tags.some((x) => x.name.toLowerCase() === tag)) && matchFields(ctx.ws, entity, r.fields, ff));
 }
 
+/** A bulk request's `query.fields`, read as the list reads `field.<key>[op]`. */
+function bulkFieldFilters(ws: WsData, entity: "contact" | "company", query: Record<string, unknown>): FieldFilterIn[] {
+  const params = new URLSearchParams();
+  for (const f of Array.isArray(query.fields) ? query.fields : []) if (isRecord(f)) params.append(`field.${String(f.key)}[${String(f.op)}]`, String(f.value ?? ""));
+  return fieldFiltersFromQuery(ws, entity, params);
+}
+
+/** A bulk patch's custom fields for every row, checked before any row changes (all or nothing). */
+function bulkFields<R extends Contact | Company>(ws: WsData, entity: "contact" | "company", rows: R[], patch: Record<string, unknown>): Map<R, FieldValues> {
+  const out = new Map<R, FieldValues>();
+  if (!isRecord(patch.fields) || Object.keys(patch.fields).length === 0) return out;
+  for (const r of rows) out.set(r, mergeFields(ws, entity, r.fields, patch.fields as Record<string, unknown>).next);
+  return out;
+}
+
+/** Whether a bulk patch changes nothing: no labels, no fields and no company. */
+function emptyPatch(p: Record<string, unknown>): boolean {
+  const none = (v: unknown) => v === undefined || (Array.isArray(v) && v.length === 0) || (isRecord(v) && Object.keys(v).length === 0);
+  return none(p.add_tags) && none(p.remove_tags) && none(p.fields) && !("company_id" in p);
+}
+
 function syncContactRefs(ws: WsData, c: Contact) {
   for (const t of ws.tickets) if (t.contact?.id === c.id) t.contact = { id: c.id, email: c.email, name: c.name, avatar_url: c.avatar_url };
 }
 
 export function registerResources() {
   registerPortalRoutes();
+  registerPortalInviteRoutes();
   // Contacts.
   get("/v1/contacts", (ctx) => {
     const q = (ctx.query.get("q") ?? "").toLowerCase().trim();
     const company = ctx.query.get("company_id");
     let list = ctx.ws.contacts;
-    if (company) list = list.filter((c) => c.company?.id === company);
+    if (company) list = list.filter((c) => (company === "none" ? !c.company : c.company?.id === company));
     list = recordFilter(ctx, "contact", list);
     const blocked = ctx.query.get("blocked");
     if (blocked) list = list.filter((c) => c.blocked === (blocked === "true"));
@@ -107,8 +132,10 @@ export function registerResources() {
       "-name": (a, b) => byName(b, a),
       tickets: (a, b) => a.ticket_count - b.ticket_count,
       "-tickets": (a, b) => b.ticket_count - a.ticket_count,
+      updated: (a, b) => Date.parse(a.updated_at) - Date.parse(b.updated_at),
+      "-updated": (a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at),
     };
-    list = list.slice().sort(order[sort] ?? ((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)));
+    list = list.slice().sort(order[sort] ?? order["-created"]);
     const page = paginate(ctx, list);
     return { ...page, data: page.data.map((c) => contactOut(ctx.ws, c)) };
   });
@@ -156,6 +183,7 @@ export function registerResources() {
     const hasQuery = isRecord(ctx.body.query);
     if ((ctx.body.delete === true) === isRecord(ctx.body.patch)) throw invalid("send either patch or delete: true");
     if ((ids?.length ?? 0) === 0 === !hasQuery) throw invalid("send either ids or query");
+    if (isRecord(ctx.body.patch) && emptyPatch(ctx.body.patch)) throw invalid("the patch changes nothing");
     if (ids) {
       if (ids.length > 100) throw invalid("ids: at most 100");
       const found = ids.map((id) => rows.find((r) => r.id === id));
@@ -169,12 +197,14 @@ export function registerResources() {
   post("/v1/contacts/bulk", (ctx) => {
     const query = isRecord(ctx.body.query) ? ctx.body.query : {};
     const needle = String(query.q ?? "").toLowerCase().trim();
+    const ff = bulkFieldFilters(ctx.ws, "contact", query);
     const rows = bulkRows(
       ctx,
       ctx.ws.contacts,
       (c) =>
         (!needle || [c.name, c.email ?? "", ...c.emails, c.company?.name ?? "", c.phone, fieldsText(c.fields)].join(" ").toLowerCase().includes(needle)) &&
-        (!query.company_id || c.company?.id === query.company_id) &&
+        (!query.company_id || (query.company_id === "none" ? !c.company : c.company?.id === query.company_id)) &&
+        matchFields(ctx.ws, "contact", c.fields, ff) &&
         (!query.tag || c.tags.some((x) => x.name.toLowerCase() === String(query.tag).toLowerCase())) &&
         (!query.blocked || c.blocked === (query.blocked === "true")),
       "Contact",
@@ -187,8 +217,10 @@ export function registerResources() {
     }
     const patch = ctx.body.patch as Record<string, unknown>;
     const sub = { ...ctx, body: { add_tags: patch.add_tags, remove_tags: patch.remove_tags } } as Ctx;
+    const fields = bulkFields(ctx.ws, "contact", rows, patch);
     for (const c of rows) {
       writeLabels(sub, "contacts", c);
+      c.fields = fields.get(c) ?? c.fields;
       if ("company_id" in patch) setCompany(ctx.ws, c, patch.company_id);
       c.updated_at = nowIso();
       syncContactRefs(ctx.ws, c);
@@ -281,6 +313,8 @@ export function registerResources() {
       "-created": (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
       contacts: (a, b) => size(a) - size(b),
       "-contacts": (a, b) => size(b) - size(a),
+      updated: (a, b) => Date.parse(a.updated_at) - Date.parse(b.updated_at),
+      "-updated": (a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at),
     };
     list = list.slice().sort(order[ctx.query.get("sort") ?? ""] ?? byName);
     const page = paginate(ctx, list);
@@ -332,11 +366,13 @@ export function registerResources() {
   post("/v1/companies/bulk", (ctx) => {
     const query = isRecord(ctx.body.query) ? ctx.body.query : {};
     const needle = String(query.q ?? "").toLowerCase().trim();
+    const ff = bulkFieldFilters(ctx.ws, "company", query);
     const rows = bulkRows(
       ctx,
       ctx.ws.companies,
       (c) =>
         (!needle || [c.name, c.domain, fieldsText(c.fields)].join(" ").toLowerCase().includes(needle)) &&
+        matchFields(ctx.ws, "company", c.fields, ff) &&
         (!query.tag || c.tags.some((x) => x.name.toLowerCase() === String(query.tag).toLowerCase())),
       "Company",
     );
@@ -349,8 +385,10 @@ export function registerResources() {
     }
     const patch = ctx.body.patch as Record<string, unknown>;
     const sub = { ...ctx, body: { add_tags: patch.add_tags, remove_tags: patch.remove_tags } } as Ctx;
+    const fields = bulkFields(ctx.ws, "company", rows, patch);
     for (const c of rows) {
       writeLabels(sub, "companies", c);
+      c.fields = fields.get(c) ?? c.fields;
       c.updated_at = nowIso();
       publish(ctx.ws, "company.updated", { company: companyOut(ctx.ws, c) });
     }
@@ -538,9 +576,16 @@ export function registerResources() {
       assign(row, ctx.body, ["name", "description", "position"]);
       if (s(ctx, "slug")) row.slug = uniqueSlug(ctx.ws.collections.filter((c) => c !== row), slugify(s(ctx, "slug")!));
       if ("brand_id" in ctx.body) row.brand_id = kbBrandRef(ctx, ctx.body.brand_id);
+      for (const a of ctx.ws.articles) if (a.collection_id === row.id) a.path = articlePath(ctx.ws, a);
     },
     beforeDelete: (ctx, row) => {
-      for (const a of ctx.ws.articles) if (a.collection_id === row.id) a.collection_id = null;
+      // Its articles leave it one at a time, each at a slug free outside any collection.
+      for (const a of ctx.ws.articles)
+        if (a.collection_id === row.id) {
+          a.slug = uniqueSlug(sameCollection(ctx.ws, null, a), a.slug);
+          a.collection_id = null;
+          a.path = articlePath(ctx.ws, a);
+        }
     },
   });
 
@@ -570,7 +615,7 @@ export function registerResources() {
       brand_id: kbBrandRef(ctx, ctx.body.brand_id),
       collection_id: s(ctx, "collection_id") ?? null,
       title,
-      slug: uniqueSlug(ctx.ws.articles, slugify(s(ctx, "slug") || title)),
+      slug: uniqueSlug(sameCollection(ctx.ws, s(ctx, "collection_id") ?? null), slugify(s(ctx, "slug") || title)),
       excerpt: s(ctx, "excerpt") ?? "",
       body_html: s(ctx, "body_html") ?? "",
       status,
@@ -578,6 +623,7 @@ export function registerResources() {
       views: 0,
       published_at: status === "published" ? nowIso() : null,
       updated_at: nowIso(),
+      path: "",
     };
     ctx.ws.articles.unshift(a);
     recountCollections(ctx.ws);
@@ -588,9 +634,15 @@ export function registerResources() {
     const a = findArticle(ctx);
     if ("title" in ctx.body && !s(ctx, "title")?.trim()) throw invalid("Title can't be empty");
     assign(a, ctx.body, ["title", "excerpt", "body_html"]);
-    if ("collection_id" in ctx.body) a.collection_id = s(ctx, "collection_id") || null;
+    if ("collection_id" in ctx.body) {
+      const to = s(ctx, "collection_id") || null;
+      // Moving keeps the slug, so it must be free in the collection it moves to.
+      if (to !== a.collection_id && !s(ctx, "slug") && sameCollection(ctx.ws, to, a).some((x) => x.slug === a.slug))
+        throw new HttpError(409, "conflict", "another article in that collection already uses this slug: change the slug as you move it");
+      a.collection_id = to;
+    }
     if ("brand_id" in ctx.body) a.brand_id = kbBrandRef(ctx, ctx.body.brand_id);
-    if (s(ctx, "slug")) a.slug = uniqueSlug(ctx.ws.articles.filter((x) => x !== a), slugify(s(ctx, "slug")!));
+    if (s(ctx, "slug")) a.slug = uniqueSlug(sameCollection(ctx.ws, a.collection_id ?? null, a), slugify(s(ctx, "slug")!));
     const status = s(ctx, "status");
     if (status === "published" || status === "draft") {
       if (status === "published" && a.status !== "published") a.published_at = nowIso();
@@ -671,6 +723,8 @@ export function registerResources() {
     patchConnection(ctx, m);
     patchMailboxAI(ctx, m);
     patchFormSenders(ctx, m);
+    patchImapFolders(ctx, m);
+    patchSentFolder(ctx, m);
     if (typeof ctx.body.keep_automatic_mail === "boolean") m.keep_automatic_mail = ctx.body.keep_automatic_mail;
     if ("bot_id" in ctx.body) m.bot_id = checkBotId(ctx.ws, ctx.body.bot_id);
     if (ctx.body.password || ctx.body.smtp_password) {
@@ -693,6 +747,11 @@ export function registerResources() {
     checkSendAs(m, nowIso());
     publish(ctx.ws, "mailbox.updated", { mailbox: m });
     return respond(200, m);
+  });
+  get("/v1/mailboxes/:id/imap-folders", (ctx) => {
+    const m = findMailbox(ctx);
+    if (!readsImap(m)) throw new HttpError(422, "not_imap", "Only a mailbox that reads its inbox over IMAP has folders to choose.");
+    return respond(200, { folders: MOCK_IMAP_FOLDERS, selected: m.imap_folders?.length ? m.imap_folders : ["INBOX"] });
   });
   get("/v1/mailboxes/:id/usage", (ctx) => {
     const m = findMailbox(ctx);
@@ -797,7 +856,11 @@ export function registerResources() {
   });
   get("/v1/public/help/:slug/articles/:aslug", (ctx) => {
     const { ws, brand } = publicBrand(ctx);
-    const a = publicArticles(ws, brand).find((x) => x.slug === ctx.params.aslug);
+    // Slugs are unique per collection: `collection` picks one, else the one in no collection, else the first.
+    const cslug = ctx.query.get("collection");
+    const col = cslug ? ws.collections.find((c) => c.slug === cslug) : undefined;
+    const same = publicArticles(ws, brand).filter((x) => x.slug === ctx.params.aslug);
+    const a = cslug ? same.find((x) => col && x.collection_id === col.id) : (same.find((x) => !x.collection_id) ?? same[0]);
     if (!a) throw notFound("Article");
     a.views++;
     return a;
@@ -906,7 +969,18 @@ export function uniqueSlug(rows: { slug: string }[], base: string): string {
 
 export function recountCollections(ws: WsData) {
   for (const c of ws.collections) c.article_count = ws.articles.filter((a) => a.collection_id === c.id).length;
+  for (const a of ws.articles) a.path = articlePath(ws, a);
 }
+
+/** Where an article lives on a help center (contracts/api.md "Knowledge base"). */
+export function articlePath(ws: WsData, a: Pick<KbArticle, "slug" | "collection_id">): string {
+  const col = a.collection_id ? ws.collections.find((c) => c.id === a.collection_id) : undefined;
+  return col ? `/c/${col.slug}/${a.slug}` : `/a/${a.slug}`;
+}
+
+/** The articles a slug must be unique among: those of the same collection (or of none). */
+export const sameCollection = (ws: WsData, collection: string | null, except?: KbArticle) =>
+  ws.articles.filter((x) => (x.collection_id ?? null) === collection && x !== except);
 
 /** Ollie's email answers on a mailbox (contracts/agent.md "Email"): only while AI is on. */
 function patchMailboxAI(ctx: Ctx, m: Mailbox) {
@@ -939,6 +1013,56 @@ function patchFormSenders(ctx: Ctx, m: Mailbox) {
     if (e === m.email || m.aliases.includes(e)) throw invalid("A form sender cannot be the mailbox's own address or one of its aliases.");
   }
   m.trusted_form_senders = clean;
+}
+
+/** A mailbox that reads its inbox over IMAP: generic IMAP, or a Google or Microsoft sync (not the API). */
+const readsImap = (m: Mailbox) =>
+  m.inbound_kind === "imap" || ((m.inbound_kind === "google" || m.inbound_kind === "microsoft") && m.config.oauth_grant !== "api");
+
+/** The folders the mock's IMAP servers have (contracts/api.md "Mailboxes"). */
+const MOCK_IMAP_FOLDERS: ImapFolder[] = [
+  { name: "INBOX", path: "INBOX", special: "inbox" },
+  { name: "Archive", path: "Archive", special: "archive" },
+  { name: "Drafts", path: "Drafts", special: "drafts" },
+  { name: "Junk", path: "Junk", special: "junk" },
+  { name: "Sent", path: "Sent", special: "sent" },
+  { name: "Support", path: "Support", special: "" },
+  { name: "Support.Billing", path: "Support/Billing", special: "" },
+  { name: "Support.Partners", path: "Support/Partners", special: "" },
+  { name: "Trash", path: "Trash", special: "trash" },
+];
+
+/** imap_sent_folder: "" keeps no copy; a folder (not INBOX) for a mailbox that reads over IMAP and sends over SMTP or through opendesk. */
+function patchSentFolder(ctx: Ctx, m: Mailbox) {
+  if (!("imap_sent_folder" in ctx.body)) return;
+  if (typeof ctx.body.imap_sent_folder !== "string") throw invalid("imap_sent_folder must be text");
+  const name = ctx.body.imap_sent_folder.trim();
+  if ([...name].length > 255 || /\p{Cc}/u.test(name)) throw invalid("A folder name must be plain text of at most 255 characters.");
+  if (name.toUpperCase() === "INBOX") throw invalid("Keep sent email in a folder other than the inbox.");
+  if (name === (m.imap_sent_folder ?? "")) return;
+  if (name && !(readsImap(m) && (m.outbound_kind === "smtp" || m.outbound_kind === "system")))
+    throw invalid("Only a mailbox that reads its inbox over IMAP and sends over SMTP or through opendesk keeps sent email in a folder.");
+  m.imap_sent_folder = name;
+}
+
+/** imap_folders: at most 10 names, INBOX in any case is INBOX, INBOX alone is stored empty. */
+function patchImapFolders(ctx: Ctx, m: Mailbox) {
+  if (!("imap_folders" in ctx.body)) return;
+  const list = strArr(ctx.body.imap_folders);
+  if (!list) throw invalid("imap_folders must be a list");
+  const clean: string[] = [];
+  for (const raw of list) {
+    let name = raw.trim();
+    if (!name) continue;
+    if (name.toUpperCase() === "INBOX") name = "INBOX";
+    if ([...name].length > 255 || /\p{Cc}/u.test(name)) throw invalid("A folder name must be plain text of at most 255 characters.");
+    if (!clean.includes(name)) clean.push(name);
+  }
+  if (clean.length > 10) throw invalid("A mailbox can read at most 10 folders.");
+  const next = clean.length === 1 && clean[0] === "INBOX" ? [] : clean;
+  if (JSON.stringify(next) === JSON.stringify(m.imap_folders ?? [])) return;
+  if (!readsImap(m)) throw invalid("Only a mailbox that reads its inbox over IMAP has folders to choose.");
+  m.imap_folders = next;
 }
 
 /** Mailbox passwords, write-only as in the API: the mock checks sign-ins against them. */
@@ -1037,6 +1161,8 @@ export function mailbox(ws: WsData, init: Pick<Mailbox, "name" | "email" | "disp
     alias_teams: {},
     trusted_form_senders: [],
     keep_automatic_mail: false,
+    imap_folders: [],
+    imap_sent_folder: "",
     from_name_format: "{agent} at {mailbox}",
     private: !!init.team_id && !!ws.teams.find((t) => t.id === init.team_id)?.private,
     id: uuid(),

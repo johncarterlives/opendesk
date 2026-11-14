@@ -469,7 +469,7 @@ zone holds that no domain does. Every status change publishes `brand.updated`.
 | path | |
 | --- | --- |
 | `/` | title, search, topics (collections) and popular articles |
-| `/c/<collection slug>` · `/a/<article slug>` | a topic, an article (with the rest of its topic) |
+| `/c/<collection slug>` · `/c/<collection slug>/<article slug>` · `/a/<article slug>` | a topic; an article in it (with the rest of its topic); an article in no topic |
 | `/search?q=` | up to 20 published articles |
 | `/changelog` · `/changelog/<entry slug>` · `/changelog/feed.xml` | the brand's and shared published changelog entries, newest first, 10 a page (`?page=`, `?category=`); one entry; an Atom feed of the latest 30. The header links the changelog, and the home page shows the latest three, once there is one |
 | `/sitemap.xml` · `/robots.txt` | every published article, topic and changelog entry of the brand |
@@ -481,6 +481,11 @@ zone holds that no domain does. Every status change publishes `brand.updated`.
   written.
 - Pages carry a canonical URL on the help center's `url`, Open Graph and JSON-LD (`WebSite` with a
   search action, `BreadcrumbList`, `Article`, `BlogPosting` for a changelog entry), and `Cache-Control: public, max-age=60`.
+- An article lives where its topic is (`KbArticle.path`, contracts/api.md "Knowledge base"). An address that is no
+  longer one answers `301` to where the article or topic is now, keeping `?lang=`: an article's address before its
+  slug or topic changed, a topic's before its slug changed (and its articles' under it), an article's in a topic
+  that was deleted, and `/a/<slug>` for an article that was in a topic when articles moved under their topic (the
+  address it had before, recorded then). Anything else is a `404` page. The sitemap and canonical URLs use `path`.
 - `<slug>.<HELP_DOMAIN>` and `/help/<slug>/*` on the instance's own hosts answer `301` to the help center's `url` when that
   is elsewhere (`/help/<slug>/c/x` → `/c/x`). A brand whose help center is off, or an unknown host or
   path, is a `404` page.

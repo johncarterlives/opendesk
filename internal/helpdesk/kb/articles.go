@@ -230,6 +230,9 @@ func registerArticles(d *deps.Deps, api huma.API) {
 				if err != nil {
 					return err
 				}
+				// The address before this change, kept as a redirect when it moves.
+				before := cur.Path
+				prevCollection := cur.CollectionID
 				if b.CollectionID != nil {
 					if cur.CollectionID, err = collectionRef(ctx, tx, p.WorkspaceID, *b.CollectionID); err != nil {
 						return err
@@ -240,9 +243,19 @@ func registerArticles(d *deps.Deps, api huma.API) {
 						return err
 					}
 				}
-				if b.Slug != nil {
-					if cur.Slug, err = pickSlug(ctx, tx, "kb_articles", p.WorkspaceID, b.Slug, cur.Title, &id); err != nil {
+				switch {
+				case b.Slug != nil:
+					if cur.Slug, err = pickArticleSlug(ctx, tx, p.WorkspaceID, cur.CollectionID, b.Slug, cur.Title, &id); err != nil {
 						return err
+					}
+				case !sameCollection(prevCollection, cur.CollectionID):
+					// Moving keeps the slug, so it must be free in the collection it moves to.
+					taken, err := articleSlugTaken(ctx, tx, p.WorkspaceID, cur.CollectionID, cur.Slug, &id)
+					if err != nil {
+						return err
+					}
+					if taken {
+						return httpx.Conflict("another article in that collection already uses this slug: change the slug as you move it")
 					}
 				}
 				// A derived excerpt follows the body; one written by hand stays until replaced.
@@ -278,6 +291,11 @@ func registerArticles(d *deps.Deps, api huma.API) {
 				}
 				if a, err = loadArticle(ctx, tx, p.WorkspaceID, id); err != nil {
 					return err
+				}
+				if a.Path != before {
+					if err := redirectArticle(ctx, tx, p.WorkspaceID, before, id); err != nil {
+						return err
+					}
 				}
 				// Reindexes a published article; unpublishing removes its embeddings.
 				if err := hd.EnqueueAIEmbed(ctx, tx, d.Jobs, d.Cfg, p.WorkspaceID, "article", id); err != nil {
@@ -358,7 +376,7 @@ func createArticle(ctx context.Context, d *deps.Deps, p *auth.Principal, b kbArt
 				return err
 			}
 		}
-		slug, err := pickSlug(ctx, tx, "kb_articles", p.WorkspaceID, &b.Slug, title, nil)
+		slug, err := pickArticleSlug(ctx, tx, p.WorkspaceID, cid, &b.Slug, title, nil)
 		if err != nil {
 			return err
 		}
@@ -380,4 +398,9 @@ func createArticle(ctx context.Context, d *deps.Deps, p *auth.Principal, b kbArt
 		return err
 	})
 	return a, err
+}
+
+// sameCollection reports two collection references that name the same collection, or none.
+func sameCollection(a, b *uuid.UUID) bool {
+	return (a == nil && b == nil) || (a != nil && b != nil && *a == *b)
 }

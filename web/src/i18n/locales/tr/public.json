@@ -134,6 +134,7 @@
       "message": "Size nasıl yardımcı olabiliriz?",
       "send": "Talebi gönder",
       "limit": "Art arda birkaç talep gönderdiniz. Bir süre bekleyip tekrar deneyin.",
+      "busy": "Şu anda çok sayıda talep geliyor. Biraz bekleyip tekrar deneyin.",
       "attach": "Dosya seç",
       "drop": "Dosyaları buraya bırakın veya bir ekran görüntüsü yapıştırın.",
       "remove": "{{name}} dosyasını kaldır",

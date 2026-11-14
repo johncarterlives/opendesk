@@ -160,7 +160,7 @@ func (s *service) startOAuth(ctx context.Context, in *oauthStartInput) (*oauthSt
 		if err != nil {
 			return nil, err
 		}
-		if len(audience.TeamIDs)+len(audience.UserIDs) > maxConnectAudience {
+		if len(audience.TeamIDs)+len(audience.UserIDs)+len(audience.Invited) > maxConnectAudience {
 			return nil, httpx.E(422, "validation_error", "Share with fewer teams and people while connecting, then add the rest in the account's settings.")
 		}
 		name, err := accountName(b.Name)
@@ -242,6 +242,9 @@ func encodeAudience(a Audience) string {
 	for _, id := range a.UserIDs {
 		parts = append(parts, "u:"+id.String())
 	}
+	for _, i := range a.Invited {
+		parts = append(parts, "i:"+i.ID.String())
+	}
 	return strings.Join(parts, ",")
 }
 
@@ -258,6 +261,10 @@ func decodeAudience(s string) Audience {
 		case strings.HasPrefix(part, "u:"):
 			if id, err := uuid.Parse(part[2:]); err == nil {
 				a.UserIDs = append(a.UserIDs, id)
+			}
+		case strings.HasPrefix(part, "i:"):
+			if id, err := uuid.Parse(part[2:]); err == nil {
+				a.Invited = append(a.Invited, Invitee{ID: id})
 			}
 		}
 	}

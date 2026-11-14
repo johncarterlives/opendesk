@@ -21,8 +21,7 @@ import { atLeast, bootSession, currentMembership, openLinkedWorkspace } from "./
 import { stripWorkspaceParam, workspaceParam } from "./lib/workspaceParam";
 import { queryClient } from "./lib/queryClient";
 import { q } from "./lib/queries";
-import type { CompanySort, ContactSort } from "./lib/api/endpoints";
-import { COMPANY_SORTS, PEOPLE_SORTS } from "./lib/directorySort";
+import { companyFilter, parseCompanySearch, parsePeopleSearch, peopleFilter } from "./lib/directorySort";
 import { productHome, productsOf, requireTickets, TICKET_SETTINGS } from "./lib/products";
 import { folderById, listQuery, parseInboxSearch, teamQuery } from "./lib/folders";
 import { viewOrTicket } from "./lib/viewLink";
@@ -453,20 +452,14 @@ const newTicketRoute = createRoute({
 const contactsRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/contacts/{-$contactId}",
-  validateSearch: (s: Record<string, unknown>): { q?: string; company?: string; tag?: string; blocked?: "true" | "false"; sort?: ContactSort } => ({
-    q: str(s.q),
-    company: str(s.company),
-    tag: str(s.tag),
-    blocked: s.blocked === "true" || s.blocked === "false" ? s.blocked : undefined,
-    sort: PEOPLE_SORTS.find((v) => v === s.sort),
-  }),
+  validateSearch: parsePeopleSearch,
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     if (params.contactId) {
       void context.queryClient.prefetchQuery(q.contact(params.contactId));
       void context.queryClient.prefetchQuery(q.contactTickets(params.contactId));
     }
-    return context.queryClient.ensureInfiniteQueryData(q.contacts({ q: deps.q, company_id: deps.company, tag: deps.tag, blocked: deps.blocked, sort: deps.sort }));
+    return context.queryClient.ensureInfiniteQueryData(q.contacts({ ...peopleFilter(deps), sort: deps.sort }));
   },
   component: page(() => import("./pages/contacts/ContactsPage")),
   staticData: { title: "contacts" },
@@ -475,14 +468,14 @@ const contactsRoute = createRoute({
 const companiesRoute = createRoute({
   getParentRoute: () => appLayout,
   path: "/companies/{-$companyId}",
-  validateSearch: (s: Record<string, unknown>): { q?: string; tag?: string; sort?: CompanySort } => ({ q: str(s.q), tag: str(s.tag), sort: COMPANY_SORTS.find((v) => v === s.sort) }),
+  validateSearch: parseCompanySearch,
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     if (params.companyId) {
       void context.queryClient.prefetchQuery(q.company(params.companyId));
       void context.queryClient.prefetchInfiniteQuery(q.contacts({ company_id: params.companyId }));
     }
-    return context.queryClient.ensureInfiniteQueryData(q.companies({ q: deps.q, tag: deps.tag, sort: deps.sort }));
+    return context.queryClient.ensureInfiniteQueryData(q.companies({ ...companyFilter(deps), sort: deps.sort }));
   },
   component: page(() => import("./pages/contacts/CompaniesPage")),
   staticData: { title: "companies" },
@@ -1038,6 +1031,9 @@ const sWebhookDetail = createRoute({
 const sAudit = settingsPage("/audit-log", "auditLog", () => import("./pages/settings/AuditLog"), (qc) =>
   qc.ensureInfiniteQueryData(q.auditLogs()),
 );
+const sTrash = settingsPage("/trash", "trash", () => import("./pages/settings/Trash"), (qc) =>
+  qc.ensureInfiniteQueryData(q.deletedTickets()),
+);
 
 const sBilling = createRoute({
   getParentRoute: () => settingsLayout,
@@ -1228,6 +1224,7 @@ const routeTree = rootRoute.addChildren([
       sWebhooks,
       sWebhookDetail,
       sAudit,
+      sTrash,
       sBilling,
       sAi,
       sAgent,

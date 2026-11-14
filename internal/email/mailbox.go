@@ -230,6 +230,12 @@ type Mailbox struct {
 	BrandID uuid.UUID `json:"brand_id"`
 	// Aliases are other addresses that deliver into this mailbox.
 	Aliases []string `json:"aliases"`
+	// IMAPFolders are the folders a mailbox that reads over IMAP takes mail from; empty
+	// reads INBOX alone. Admins only.
+	IMAPFolders []string `json:"imap_folders" doc:"The IMAP folders the mailbox takes mail from; empty reads INBOX alone"`
+	// IMAPSentFolder is the IMAP folder a copy of each email the mailbox sends is kept in;
+	// empty keeps none. Admins only.
+	IMAPSentFolder string `json:"imap_sent_folder" doc:"The IMAP folder a copy of each email the mailbox sends over SMTP is kept in; empty keeps none"`
 	// AliasTeams are the aliases whose new tickets go to a team of their own instead of TeamID.
 	AliasTeams map[string]uuid.UUID `json:"alias_teams" doc:"An alias to the team its new tickets go to, instead of team_id"`
 	// AliasSettings are each alias's own identity; every alias has an entry.
@@ -312,7 +318,7 @@ const mailboxColumns = `id, workspace_id, name, email, display_name, inbound_kin
 	status, last_error, last_synced_at, imap_uid_validity, imap_last_uid, sync_failures, created_at,
 	ai_answers, ai_answers_mode, ai_answers_outside_hours, brand_id, aliases, from_name_format,
 	EXISTS (SELECT 1 FROM teams pt WHERE pt.id = mailboxes.team_id AND pt.private), trusted_form_senders, bot_id, alias_teams,
-	last_received_at, alias_settings, provider_send_as, personal_replies, keep_automatic_mail`
+	last_received_at, alias_settings, provider_send_as, personal_replies, keep_automatic_mail, imap_folders, imap_sent_folder`
 
 func scanMailbox(row pgx.Row) (*mailboxRow, error) {
 	var m mailboxRow
@@ -321,7 +327,7 @@ func scanMailbox(row pgx.Row) (*mailboxRow, error) {
 		&m.AutoReplySubject, &m.AutoReplyHTML, &m.Status, &m.LastError, &m.LastSyncedAt, &m.UIDValidity, &m.LastUID,
 		&m.SyncFailures, &m.CreatedAt, &m.AIAnswers, &m.AIAnswersMode, &m.AIAnswersOutsideHours, &m.BrandID, &m.Aliases,
 		&m.FromNameFormat, &m.Private, &m.TrustedFormSenders, &m.BotID, &m.AliasTeams, &m.LastReceivedAt,
-		&m.AliasSettings, &m.sendAs, &m.PersonalReplies, &m.KeepAutomaticMail)
+		&m.AliasSettings, &m.sendAs, &m.PersonalReplies, &m.KeepAutomaticMail, &m.IMAPFolders, &m.IMAPSentFolder)
 	if err != nil {
 		return nil, err
 	}
@@ -331,6 +337,9 @@ func scanMailbox(row pgx.Row) (*mailboxRow, error) {
 	}
 	if m.TrustedFormSenders == nil {
 		m.TrustedFormSenders = []string{}
+	}
+	if m.IMAPFolders == nil {
+		m.IMAPFolders = []string{}
 	}
 	if m.AliasTeams == nil {
 		m.AliasTeams = map[string]uuid.UUID{}
@@ -547,6 +556,8 @@ func (s *service) api(m *mailboxRow, withConfig bool, a access) Mailbox {
 	if !withConfig {
 		out.Config = MailboxConfig{}
 		out.TrustedFormSenders = []string{}
+		out.IMAPFolders = []string{}
+		out.IMAPSentFolder = ""
 	}
 	return out
 }
@@ -642,20 +653,25 @@ func (s *service) setSyncError(ctx context.Context, m *mailboxRow, msg string) e
 	})
 }
 
-// setSyncOK records a successful sync; it publishes mailbox.updated only when the
-// mailbox leaves the error state.
-func (s *service) setSyncOK(ctx context.Context, m *mailboxRow, validity, lastUID int64) error {
+// setSyncOK records a successful sync. warning is what the pass skipped (a folder the
+// server refused to open), kept in last_error while the mailbox stays active; "" clears it.
+// It publishes mailbox.updated only when the mailbox leaves the error state or the warning
+// changed.
+func (s *service) setSyncOK(ctx context.Context, m *mailboxRow, validity, lastUID int64, warning string) error {
+	warning = truncate(warning, 300)
 	return s.d.DB.Tx(ctx, func(tx pgx.Tx) error {
-		var prevStatus string
+		var prevStatus, prevErr string
 		err := tx.QueryRow(ctx, `UPDATE mailboxes m SET status = CASE WHEN m.status = 'error' THEN 'active' ELSE m.status END,
-			last_error = '', sync_failures = 0, next_sync_at = NULL, last_synced_at = now(),
-			imap_uid_validity = $3, imap_last_uid = $4, updated_at = now()
-			FROM (SELECT status FROM mailboxes WHERE id = $2 FOR NO KEY UPDATE) old
-			WHERE m.workspace_id = $1 AND m.id = $2 RETURNING old.status`, m.WorkspaceID, m.ID, validity, lastUID).Scan(&prevStatus)
+			last_error = $5, sync_failures = 0, next_sync_at = NULL, last_synced_at = now(),
+			imap_uid_validity = CASE WHEN `+readsInboxSQL+` THEN $3 ELSE 0 END,
+			imap_last_uid = CASE WHEN `+readsInboxSQL+` THEN $4 ELSE 0 END, updated_at = now()
+			FROM (SELECT status, last_error FROM mailboxes WHERE id = $2 FOR NO KEY UPDATE) old
+			WHERE m.workspace_id = $1 AND m.id = $2 RETURNING old.status, old.last_error`,
+			m.WorkspaceID, m.ID, validity, lastUID, warning).Scan(&prevStatus, &prevErr)
 		if err != nil {
 			return err
 		}
-		if prevStatus == "error" {
+		if prevStatus == "error" || prevErr != warning {
 			return s.publishMailbox(ctx, tx, m.WorkspaceID, m.ID, "mailbox.updated")
 		}
 		return nil
@@ -665,7 +681,8 @@ func (s *service) setSyncOK(ctx context.Context, m *mailboxRow, validity, lastUI
 // saveProgress persists the UID cursor mid-pass so a failure later in the batch
 // does not re-fetch what was already ingested.
 func (s *service) saveProgress(ctx context.Context, m *mailboxRow, validity, lastUID int64) error {
-	_, err := s.d.DB.Pool.Exec(ctx, `UPDATE mailboxes SET imap_uid_validity = $3, imap_last_uid = $4 WHERE workspace_id = $1 AND id = $2`,
+	_, err := s.d.DB.Pool.Exec(ctx, `UPDATE mailboxes SET imap_uid_validity = $3, imap_last_uid = $4
+		WHERE workspace_id = $1 AND id = $2 AND `+readsInboxSQL,
 		m.WorkspaceID, m.ID, validity, lastUID)
 	return err
 }

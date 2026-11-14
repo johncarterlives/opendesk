@@ -1,6 +1,10 @@
 package emails
 
-import "github.com/useopendesk/opendesk/internal/mailer"
+import (
+	"fmt"
+
+	"github.com/useopendesk/opendesk/internal/mailer"
+)
 
 // CustomerPortalReset lets an existing contact choose their own portal password.
 func CustomerPortalReset(s Site, brand, link string) mailer.Mail {
@@ -21,5 +25,18 @@ func CustomerPortalPasswordChanged(s Site, brand, link string) mailer.Mail {
 		Intro:  []string{"Your password for the customer portal of " + brand + " was changed. Every session was signed out.", "If this was not you, request a new password link now and contact the support team."},
 		Button: &mailer.Button{Label: "Open customer portal", URL: link},
 		Footer: mailer.Footer{Reason: "You get this email whenever your customer portal password changes.", Contact: s.Contact},
+	})
+}
+
+// CustomerPortalInvite invites a contact to the customer portal of brand with a one-time
+// link to choose a password (contracts/customer-portal.md "Invitations").
+func CustomerPortalInvite(s Site, brand, link string, days int) mailer.Mail {
+	return s.build(mailer.Email{
+		Subject: "You're invited to the customer portal of " + brand, Preheader: "Choose a password to follow your requests online.",
+		Eyebrow: brand, Heading: "Follow your requests online",
+		Intro:  []string{"The team at " + brand + " invited you to its customer portal, where you can see your support requests, follow their progress and reply to them."},
+		Button: &mailer.Button{Label: "Choose your password", URL: link},
+		Outro:  []string{fmt.Sprintf("The link works for %d days and only once. After that, ask for a new link on the portal's sign-in page.", days)},
+		Footer: mailer.Footer{Reason: "You get this email because the support team of " + brand + " invited this address. If you do not want an account, ignore it and nothing changes.", Contact: s.Contact},
 	})
 }

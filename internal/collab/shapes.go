@@ -140,6 +140,10 @@ func (s *service) accountsOut(ctx context.Context, q db.Querier, p *auth.Princip
 			if m.SharedWith, err = loadAudience(ctx, q, p.WorkspaceID, &id, nil); err != nil {
 				return nil, err
 			}
+			// Invited people's addresses are for whoever manages the account, as invitations are.
+			if !m.CanManage {
+				m.SharedWith.Invited = nil
+			}
 		}
 		if a.Provider == ProviderIMAP && m.CanManage {
 			c := a.Config

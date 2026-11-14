@@ -100,7 +100,7 @@
     "published": "Veröffentlicht",
     "updated": "Aktualisiert",
     "url": "URL",
-    "urlHint": "Die Adresse dieses Artikels in deinem Hilfecenter. Wenn du sie änderst, funktionieren alte Links nicht mehr."
+    "urlHint": "Die Adresse dieses Artikels in deinem Hilfecenter. Wenn du sie änderst, führen alte Links hierher."
   },
   "editor": {
     "notFound": "Artikel nicht gefunden",

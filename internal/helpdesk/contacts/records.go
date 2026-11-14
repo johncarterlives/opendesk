@@ -31,10 +31,10 @@ func (f *fieldParams) Resolve(ctx huma.Context) []error {
 type contactListIn struct {
 	httpx.ListParams
 	Q         string `query:"q" maxLength:"200" doc:"Search name, email, phone and custom field values"`
-	CompanyID string `query:"company_id" doc:"Only contacts of this company"`
+	CompanyID string `query:"company_id" doc:"Only contacts of this company; none for those without one"`
 	Tag       string `query:"tag" maxLength:"50" doc:"Label name"`
 	Blocked   string `query:"blocked" enum:"true,false," doc:"Only blocked contacts, or only those who are not"`
-	Sort      string `query:"sort" enum:"-created,created,name,-name,-tickets,tickets," doc:"Newest first by default"`
+	Sort      string `query:"sort" enum:"-created,created,name,-name,-tickets,tickets,-updated,updated," doc:"Newest first by default"`
 	fieldParams
 }
 
@@ -42,38 +42,75 @@ type companyListIn struct {
 	httpx.ListParams
 	Q    string `query:"q" maxLength:"200" doc:"Search name, domain and custom field values"`
 	Tag  string `query:"tag" maxLength:"50" doc:"Label name"`
-	Sort string `query:"sort" enum:"name,-name,-created,created,-contacts,contacts," doc:"By name, A to Z, by default"`
+	Sort string `query:"sort" enum:"name,-name,-created,created,-contacts,contacts,-updated,updated," doc:"By name, A to Z, by default"`
 	fieldParams
 }
 
-// offsetCursor pages a list sorted by something other than its default order. The default
-// orders page by key; these are for a person looking through a list, so a position is enough.
-type offsetCursor struct {
-	O int `json:"o"`
+// contactFilter is the People list's filters: the list's query parameters, and the `query` of a
+// bulk request, which acts on exactly what the list shows for them.
+type contactFilter struct {
+	Q         string           `json:"q,omitempty" maxLength:"200"`
+	CompanyID string           `json:"company_id,omitempty" doc:"A company id, or none for people without one"`
+	Tag       string           `json:"tag,omitempty" maxLength:"50"`
+	Blocked   string           `json:"blocked,omitempty" enum:"true,false,"`
+	Fields    []hd.FieldFilter `json:"fields,omitempty" maxItems:"20" doc:"Custom field filters, as the list's field.<key>[op]"`
 }
 
-// listOrder is the ORDER BY of a requested sort ("" or the default: the caller's own keyset
-// order), with a tie-break on the id so every page of it is stable. Only fixed text from
-// the table below reaches the query.
-func listOrder(sort string, orders map[string]string, id string) string {
-	order, ok := orders[sort]
-	if !ok {
-		return ""
+// where is the filter's WHERE clause on contacts ct, from $1 (the workspace) on.
+func (f contactFilter) where(ctx context.Context, q db.Querier, p *auth.Principal) (string, []any, error) {
+	var companyID *uuid.UUID
+	noCompany := f.CompanyID == "none"
+	if f.CompanyID != "" && !noCompany {
+		id, err := hd.ParseRef(f.CompanyID, "company_id")
+		if err != nil {
+			return "", nil, err
+		}
+		companyID = &id
 	}
-	dir := " ASC"
-	if strings.HasPrefix(sort, "-") {
-		dir = " DESC"
+	text := strings.TrimSpace(f.Q)
+	args := []any{p.WorkspaceID, text, likePrefix(text), companyID}
+	extra, more, err := recordFilters(ctx, q, p, domain.ContactLabels, domain.FieldEntityContact, "ct", f.Tag, f.Fields, len(args))
+	if err != nil {
+		return "", nil, err
 	}
-	return order + dir + ", " + id + dir
+	if noCompany {
+		extra += " AND ct.company_id IS NULL"
+	}
+	switch f.Blocked {
+	case "true":
+		extra += " AND ct.blocked"
+	case "false":
+		extra += " AND NOT ct.blocked"
+	}
+	return ` WHERE ct.workspace_id = $1
+		AND ($2 = '' OR ct.search @@ websearch_to_tsquery('simple', $2) OR ct.fields_search @@ websearch_to_tsquery('simple', $2)
+			OR ct.email::text ILIKE $3 OR ct.name ILIKE $3 OR ` + domain.ExtraEmailLikeSQL("lower($3)") + `)
+		AND ($4::uuid IS NULL OR ct.company_id = $4)` + extra, append(args, more...), nil
+}
+
+// companyFilter is the Companies list's filters, as contactFilter.
+type companyFilter struct {
+	Q      string           `json:"q,omitempty" maxLength:"200"`
+	Tag    string           `json:"tag,omitempty" maxLength:"50"`
+	Fields []hd.FieldFilter `json:"fields,omitempty" maxItems:"20" doc:"Custom field filters, as the list's field.<key>[op]"`
+}
+
+// where is the filter's WHERE clause on companies co, from $1 (the workspace) on.
+func (f companyFilter) where(ctx context.Context, q db.Querier, p *auth.Principal) (string, []any, error) {
+	text := strings.TrimSpace(f.Q)
+	args := []any{p.WorkspaceID, text, "%" + strings.TrimSuffix(likePrefix(text), "%") + "%"}
+	extra, more, err := recordFilters(ctx, q, p, domain.CompanyLabels, domain.FieldEntityCompany, "co", f.Tag, f.Fields, len(args))
+	if err != nil {
+		return "", nil, err
+	}
+	return ` WHERE co.workspace_id = $1
+		AND ($2 = '' OR co.name ILIKE $3 OR co.domain::text ILIKE $3 OR co.fields_search @@ websearch_to_tsquery('simple', $2))` + extra, append(args, more...), nil
 }
 
 // recordFilters builds the extra " AND ..." clauses for label and custom field filters on
 // alias, binding parameters from $next.
 func recordFilters(ctx context.Context, q db.Querier, p *auth.Principal, kind domain.LabelKind, entity, alias, tag string,
-	ff []hd.FieldFilter, ffErr error, last int) (string, []any, error) {
-	if ffErr != nil {
-		return "", nil, ffErr
-	}
+	ff []hd.FieldFilter, last int) (string, []any, error) {
 	var args []any
 	arg := func(v any) string {
 		args = append(args, v)

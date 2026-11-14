@@ -147,3 +147,70 @@ func TestCompanyListSort(t *testing.T) {
 	}
 	e.Do("GET", "/v1/companies?sort=nope", a, nil).Want(t, 422)
 }
+
+// Every sort pages by key: a record added before the page read so far, or one deleted after
+// it, neither repeats nor skips a record on the next page, and equal values all come through.
+func TestDirectoryListPagesByKey(t *testing.T) {
+	e := hdtest.New(t, contacts.Register)
+	ws := e.NewWorkspace()
+	a := ws.Agent.As(ws)
+	for _, n := range []string{"Adam", "bea", "cleo", "Dora"} {
+		e.Exec(`INSERT INTO contacts (id, workspace_id, name, email) VALUES ($1, $2, $3, $4)`, ids.New(), ws.ID, n, n+"@example.com")
+	}
+	var first struct {
+		Data       []named `json:"data"`
+		NextCursor *string `json:"next_cursor"`
+	}
+	e.Do("GET", "/v1/contacts?sort=name&limit=2", a, nil).Want(t, 200).JSON(t, &first)
+	if len(first.Data) != 2 || first.Data[1].Name != "bea" || first.NextCursor == nil {
+		t.Fatalf("first page %+v", first)
+	}
+	// Someone adds "Aaron" (before the cursor) and deletes "cleo" (after it).
+	e.Exec(`INSERT INTO contacts (id, workspace_id, name, email) VALUES ($1, $2, 'Aaron', 'aaron@example.com')`, ids.New(), ws.ID)
+	e.Exec(`DELETE FROM contacts WHERE workspace_id = $1 AND name = 'cleo'`, ws.ID)
+	var next struct {
+		Data []named `json:"data"`
+	}
+	e.Do("GET", "/v1/contacts?sort=name&limit=2&cursor="+url.QueryEscape(*first.NextCursor), a, nil).Want(t, 200).JSON(t, &next)
+	if len(next.Data) != 1 || next.Data[0].Name != "Dora" {
+		t.Fatalf("second page %+v", next.Data)
+	}
+	// A cursor belongs to its sort.
+	e.Do("GET", "/v1/contacts?sort=-tickets&cursor="+url.QueryEscape(*first.NextCursor), a, nil).Want(t, 400)
+
+	// Ties: five people with one name and no tickets, one to a page, each read once.
+	for range 5 {
+		e.Exec(`INSERT INTO contacts (id, workspace_id, name, email, created_at) VALUES ($1, $2, 'Same', $3, '2026-01-01T00:00:00Z')`, ids.New(), ws.ID, ids.New().String()+"@example.com")
+	}
+	for _, sort := range []string{"name", "-name", "tickets", "-tickets", "created", "-created", "updated", "-updated"} {
+		got := listNames(t, e, a, "/v1/contacts?sort="+sort, 1)
+		if len(got) != 9 || len(slices.Compact(slices.Sorted(slices.Values(got)))) != 5 {
+			t.Errorf("sort %q read %v", sort, got)
+		}
+	}
+
+	// People without a company.
+	co := ids.New()
+	e.Exec(`INSERT INTO companies (id, workspace_id, name) VALUES ($1, $2, 'Acme')`, co, ws.ID)
+	e.Exec(`UPDATE contacts SET company_id = $2 WHERE workspace_id = $1 AND name <> 'Same'`, ws.ID, co)
+	if got := listNames(t, e, a, "/v1/contacts?company_id=none&sort=name", 10); len(got) != 5 {
+		t.Errorf("no company: %v", got)
+	}
+	if got := listNames(t, e, a, "/v1/contacts?company_id="+co.String()+"&sort=name", 10); !slices.Equal(got, []string{"Aaron", "Adam", "bea", "Dora"}) {
+		t.Errorf("company: %v", got)
+	}
+
+	// Companies page by key too, in every order.
+	for i := range 4 {
+		e.Exec(`INSERT INTO companies (id, workspace_id, name) VALUES ($1, $2, $3)`, ids.New(), ws.ID, []string{"beta", "Beta", "gamma", "beta"}[i])
+	}
+	for _, sort := range []string{"", "name", "-name", "contacts", "-contacts", "created", "-created", "updated", "-updated"} {
+		path := "/v1/companies"
+		if sort != "" {
+			path += "?sort=" + sort
+		}
+		if got := listNames(t, e, a, path, 1); len(got) != 5 {
+			t.Errorf("companies sort %q read %v", sort, got)
+		}
+	}
+}
