@@ -7,11 +7,12 @@ import { AppMark } from "@/components/appmark";
 import type { ItemState } from "@/components/settings2/bits";
 import type { Tone } from "@/lib/tones";
 
-export const SOURCES: ImportSource[] = ["zendesk", "helpscout", "freshdesk", "intercom", "front", "csv"];
+export const SOURCES: ImportSource[] = ["zendesk", "helpscout", "freescout", "freshdesk", "intercom", "front", "csv"];
 
 export const sourceName: Record<ImportSource, string> = {
   zendesk: "Zendesk",
   helpscout: "Help Scout",
+  freescout: "FreeScout",
   freshdesk: "Freshdesk",
   intercom: "Intercom",
   front: "Front",
@@ -63,6 +64,21 @@ export const credentialFields: Record<Exclude<ImportSource, "csv">, CredentialFi
       help: "https://developer.helpscout.com/docs-api/",
     },
   ],
+  freescout: [
+    {
+      key: "url",
+      label: "Instance URL",
+      hint: "Your FreeScout HTTPS address, including its subdirectory if it has one.",
+      placeholder: "https://support.company.com/freescout",
+    },
+    {
+      key: "api_key",
+      label: "API key",
+      hint: "Requires the FreeScout API & Webhooks module. Use a key with read access to all mailboxes and users.",
+      secret: true,
+      help: "https://api-docs.freescout.net/",
+    },
+  ],
   freshdesk: [
     { key: "domain", label: "Freshdesk address", hint: "The part before .freshdesk.com in your Freshdesk links.", suffix: ".freshdesk.com", placeholder: "acme" },
     {
@@ -105,7 +121,7 @@ export const credentialFields: Record<Exclude<ImportSource, "csv">, CredentialFi
 
 export const defaultCredentials = (src: ImportSource): Record<string, string> => (src === "intercom" ? { region: "us" } : {});
 
-const markTone: Record<ImportSource, Tone> = { zendesk: "green", helpscout: "blue", freshdesk: "teal", intercom: "indigo", front: "purple", csv: "gray" };
+const markTone: Record<ImportSource, Tone> = { zendesk: "green", helpscout: "blue", freescout: "blue", freshdesk: "teal", intercom: "indigo", front: "purple", csv: "gray" };
 
 /** A source's logo, or a sheet for a CSV file. */
 export function SourceMark({ source, size = "md", className }: { source: ImportSource; size?: "sm" | "md" | "lg"; className?: string }) {

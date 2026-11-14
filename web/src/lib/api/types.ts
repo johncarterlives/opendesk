@@ -2876,7 +2876,7 @@ export type BotBody = { name: string; role?: string; language?: string; look?: B
 export type BotDraft = { name?: string; role?: string; language?: string; personality?: Partial<BotPersonality> };
 
 // History imports (contracts/imports.md).
-export type ImportSource = "zendesk" | "helpscout" | "freshdesk" | "intercom" | "front" | "csv";
+export type ImportSource = "zendesk" | "helpscout" | "freescout" | "freshdesk" | "intercom" | "front" | "csv";
 export type ImportStatus = "running" | "paused" | "completed" | "failed" | "canceled" | "undoing" | "undone";
 export type ImportCounts = {
   tickets: number;
@@ -3391,7 +3391,7 @@ export type AIDraftFeedbackReason = "wrong_facts" | "wrong_tone" | "missing_info
 
 export type AIDraftFeedbackBody = {
   reason: AIDraftFeedbackReason;
-  /** At most 1,000 characters. */
+  /** At most 2,000 characters. */
   note?: string;
   /** Sanitized like mail. */
   better_answer_html?: string;

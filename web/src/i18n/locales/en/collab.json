@@ -927,6 +927,8 @@
     },
     "note": "Note (optional)",
     "notePlaceholder": "What should it do differently?",
+    "noteCount": "{{used}}/{{max}} characters",
+    "noteFull": "Limit reached: anything longer is cut off. Put the reply itself in Better answer.",
     "better": "Better answer (optional)",
     "betterPlaceholder": "How you would have answered",
     "privacy": "Only the AI client that wrote this draft reads your note and answer.",

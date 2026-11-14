@@ -1,6 +1,6 @@
 ---
 title: Import your history
-description: Bring your tickets, customers and help center articles over from Zendesk, Help Scout, Freshdesk, Intercom, Front or a CSV file, then keep them in step while your team switches.
+description: Bring your tickets, customers and help center articles over from Zendesk, Help Scout, Freshdesk, Intercom, Front, FreeScout or a CSV file, then keep them in step while your team switches.
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
@@ -8,8 +8,9 @@ import Steps from '../../../components/Steps.astro';
 import Step from '../../../components/Step.astro';
 import Callout from '../../../components/Callout.astro';
 import Fold from '../../../components/Fold.astro';
+import Screenshot from '../../../components/Screenshot.astro';
 
-Moving to opendesk does not mean starting from an empty inbox. An import brings your history over from **Zendesk**, **Help Scout**, **Freshdesk**, **Intercom** or **Front**, read through their own APIs, or from a **CSV file** exported from anything else. Every ticket arrives with its whole conversation, so your team can look up what a customer said last year on their first day here.
+Moving to opendesk does not mean starting from an empty inbox. An import brings your history over from **Zendesk**, **Help Scout**, **Freshdesk**, **Intercom**, **Front** or **FreeScout**, read through their own APIs, or from a **CSV file** exported from anything else. Every ticket arrives with its whole conversation, so your team can look up what a customer said last year on their first day here.
 
 Imports run in the background. You can close the page, and an import that is interrupted goes on where it stopped. Running one again never makes duplicates. Imports work the same on opendesk Cloud and on a self-host, on every plan, and imported tickets count toward no limit.
 
@@ -56,7 +57,7 @@ Open **Settings**, then **Import**.
 <Steps>
 <Step title="Choose where your history is">
 
-Pick Zendesk, Help Scout, Freshdesk, Intercom, Front or a CSV file. For a CSV file, see [Import a CSV file](#import-a-csv-file).
+Pick Zendesk, Help Scout, Freshdesk, Intercom, Front, FreeScout or a CSV file. For a CSV file, see [Import a CSV file](#import-a-csv-file).
 
 </Step>
 <Step title="Paste the credentials">
@@ -150,6 +151,25 @@ Front conversations come over from every shared inbox the token can read, with t
 Every email keeps its original Message-ID, In-Reply-To and References, so a customer's reply to one, however old, threads into its imported ticket. Front gives them one email at a time, so they are read last, newest first: the tickets are already here and can be worked while the import shows **Linking replies to their emails**.
 
 Front's API is read at most 60 requests a minute, so a large account takes a while. Bringing over what changed reads Front's events feed; if the token cannot read events, the import walks each inbox from its newest conversations instead.
+
+</TabItem>
+<TabItem label="FreeScout">
+
+FreeScout needs its **API & Webhooks module**, your **instance address** and an **API key**.
+CSV exports contain conversation metadata but not the complete messages; use the API to
+bring those messages and their attachments over.
+
+1. Enable the [API & Webhooks module](https://freescout.net/module/api-webhooks/) in FreeScout.
+2. Copy the instance's HTTPS address, including any installation subdirectory, such as `https://support.example.com/helpdesk`.
+3. Under **Manage → Settings → API & Webhooks**, copy an API key with access to the mailboxes and users you want to import.
+4. Choose **FreeScout** in opendesk's import wizard, enter the address and key, then check the source and review the team and agent mappings.
+
+<Screenshot src="/guides/imports/freescout" alt="The FreeScout import connection form with an instance address and API key" />
+
+Conversations arrive with customer messages, agent replies, internal notes and attachments.
+Mailboxes map to teams. Spam, deleted conversations and drafts are left out. FreeScout help
+center articles are not imported. You can bring over changes again during your move, using
+**Sync**, without importing the same messages twice.
 
 </TabItem>
 </Tabs>

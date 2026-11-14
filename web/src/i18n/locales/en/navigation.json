@@ -190,7 +190,7 @@
     "aiKnowledge": "AI agent knowledge",
     "aiTools": "AI agent tools",
     "aiPlayground": "AI agent playground",
-    "importHistory": "Import history from Zendesk, Help Scout, Freshdesk, Intercom, Front or CSV",
+    "importHistory": "Import history from Zendesk, Help Scout, FreeScout, Freshdesk, Intercom, Front or CSV",
     "pages": "Pages",
     "newPage": "New page"
   },

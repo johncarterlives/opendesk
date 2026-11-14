@@ -906,6 +906,8 @@
     },
     "note": "Notiz (optional)",
     "notePlaceholder": "Was sollte es anders machen?",
+    "noteCount": "{{used}}/{{max}} Zeichen",
+    "noteFull": "Limit erreicht: Längerer Text wird abgeschnitten. Die Antwort selbst gehört in Bessere Antwort.",
     "better": "Bessere Antwort (optional)",
     "betterPlaceholder": "Wie Sie geantwortet hätten",
     "privacy": "Nur der KI-Client, der diesen Entwurf geschrieben hat, liest Ihre Notiz und Antwort.",

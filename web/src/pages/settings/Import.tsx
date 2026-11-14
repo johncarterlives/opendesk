@@ -1,5 +1,5 @@
 // Settings, Import (contracts/imports.md): bring a team's history over from Zendesk, Help
-// Scout, Freshdesk, Intercom, Front or a CSV file. One import runs at a time; its card follows
+// Scout, FreeScout, Freshdesk, Intercom, Front or a CSV file. One import runs at a time; its card follows
 // it live, and earlier imports stay listed with what they brought.
 
 import { useQuery } from "@tanstack/react-query";
