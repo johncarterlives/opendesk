@@ -28,8 +28,11 @@ export function useReplyDraftSync({
   html: string;
   attachmentIds: string[];
   onRestore: (draft: ReplyDraft) => void;
-}): { settled: boolean } {
+}): { settled: boolean; draft: ReplyDraft | null | undefined } {
+  // A scheduled reply going out, or kept with why it did not, arrives as reply_draft.updated.
   const { data, isPending, isError } = useQuery({ ...q.replyDraft(ticketId), enabled });
+  const scheduled = useRef(false);
+  scheduled.current = !!data?.schedule;
   const settled = !enabled || !isPending || isError;
   const decided = useRef<string | null>(null);
   const latest = useRef({ html, attachmentIds });
@@ -52,6 +55,7 @@ export function useReplyDraftSync({
 
   const pending = useRef<{ ticketId: string; html: string; attachmentIds: string[] } | null>(null);
   const push = useCallback((p: { ticketId: string; html: string; attachmentIds: string[] }) => {
+    if (scheduled.current) return;
     const k = keyOf(p.html, p.attachmentIds);
     if (synced.get(p.ticketId) === k) return;
     synced.set(p.ticketId, k);
@@ -63,12 +67,12 @@ export function useReplyDraftSync({
   // A moment after I stop typing.
   const key = keyOf(html, attachmentIds);
   useEffect(() => {
-    if (!enabled || decided.current !== ticketId || synced.get(ticketId) === key) return;
+    if (!enabled || data?.schedule || decided.current !== ticketId || synced.get(ticketId) === key) return;
     const snap = { ticketId, html, attachmentIds };
     pending.current = snap;
     const timer = setTimeout(() => push(snap), SAVE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [enabled, ticketId, key, html, attachmentIds, push]);
+  }, [enabled, ticketId, key, html, attachmentIds, push, data?.schedule]);
 
   // Leaving the ticket, or the app, saves what has not gone yet.
   useEffect(
@@ -78,5 +82,5 @@ export function useReplyDraftSync({
     [ticketId, push],
   );
 
-  return { settled };
+  return { settled, draft: data };
 }

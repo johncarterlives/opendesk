@@ -679,6 +679,10 @@
         "label": "Non-respect des SLA",
         "hint": "Un ticket qui vous est attribué dépasse un délai cible"
       },
+      "scheduled_reply_failed": {
+        "label": "Réponses programmées non envoyées",
+        "hint": "Une réponse que vous avez programmée n’a pas pu partir et se retrouve dans vos brouillons"
+      },
       "ai_handoff": {
         "label": "Transferts à une personne",
         "hint": "Ollie transmet une conversation à l’équipe"

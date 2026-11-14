@@ -47,6 +47,10 @@
     "csv": {
       "with": "Jeder Helpdesk",
       "blurb": "Ein Export aus einem beliebigen anderen Helpdesk, eine Zeile pro Ticket oder pro Nachricht."
+    },
+    "freescout": {
+      "with": "Instanz-URL und API-Schlüssel",
+      "blurb": "Konversationen aus allen Postfächern mit Antworten, internen Notizen, Anhängen und Kunden."
     }
   },
   "steps": {
@@ -233,7 +237,8 @@
     "noLabel": "Kein Label",
     "mailbox": "Antworten von",
     "mailboxHint": "Antworten auf importierte E-Mail-Tickets werden von diesem Postfach gesendet.",
-    "noMailbox": "Beim Antworten wählen"
+    "noMailbox": "Beim Antworten wählen",
+    "articlesUnsupported": "Die FreeScout-API stellt keine Wissensdatenbankartikel bereit."
   },
   "summary": {
     "lead": "Das übernimmt {{what}}.",

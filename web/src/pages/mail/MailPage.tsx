@@ -43,7 +43,7 @@ import { cachedFolders } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
 import { addressNumbers } from "@/lib/collab/badges";
 import { accountCategories, categoryTabs, PRIMARY, ruleSender } from "@/lib/collab/categories";
-import { assignChanges, useAllFolders, useAssignThreads, useCanAct, useMailAccounts, useSidebarPrefs, useThreadAction } from "@/lib/collab/hooks";
+import { assignChanges, useAllFolders, useAssignThreads, useCanAct, useMailAccounts, useSelectEvery, useSidebarPrefs, useThreadAction } from "@/lib/collab/hooks";
 import { type ComposeMode } from "@/lib/collab/recipients";
 import { identitiesOf, ownEmails as ownEmailsOf } from "@/lib/collab/identities";
 import { startThreadDrag, takeThreadDrops, type ThreadDropTarget } from "@/lib/collab/threadDrag";
@@ -69,6 +69,7 @@ import { FolderBar } from "@/components/collab/FolderBar";
 import { SearchCoverage, SpamBesideWork, StorageFullBanner } from "@/components/collab/MailNotices";
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "@/components/collab/pickers";
 import { ListShareDialog, SnoozeItems } from "@/components/collab/ThreadMenu";
+import { SelectAllBar } from "@/components/collab/SelectAllBar";
 import { ThreadRow, type AIDraftAction } from "@/components/collab/ThreadRow";
 import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { useConfirm } from "@/components/ui/confirm";
@@ -246,6 +247,16 @@ export default function MailPage() {
     },
     [threads],
   );
+
+  /** Every conversation of the box, folder, tab or search in view (the master checkbox's second step). */
+  const every = useSelectEvery(list, listKey, setSelected);
+  /** Clears the selection, and stops selecting every conversation so it never comes back. */
+  const clearSelection = () => {
+    every.stop();
+    setSelected(new Set());
+  };
+  /** The master checkbox: every loaded conversation, or none when any is selected or the rest is loading. */
+  const toggleAll = () => (selected.size || every.running ? clearSelection() : setSelected(new Set(threads.map((x) => x.id))));
 
   const move = (d: 1 | -1) => {
     const i = Math.max(0, Math.min(threads.length - 1, focusIdx + d));
@@ -767,7 +778,7 @@ export default function MailPage() {
     "mail.people": () => openId && threadRef.current?.people(),
     "mail.search": () => searchRef.current?.focus(),
     "mail.escape": () => {
-      if (selected.size) setSelected(new Set());
+      if (selected.size || every.running) clearSelection();
       else if (openId) close();
     },
     "mail.selectAll": () => !openId && setSelected(new Set(threads.map((x) => x.id))),
@@ -1008,6 +1019,18 @@ export default function MailPage() {
         {shareId && <ListShareDialog threadId={shareId} onClose={() => setShareId(null)} />}
 
         {discardedAI && <AIDraftFeedbackDialog draft={discardedAI.draft} threadId={discardedAI.threadId} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
+        {canAct && !noAccounts && threads.length > 0 && (
+          <SelectAllBar
+            loaded={threads.length}
+            selected={selected.size}
+            hasMore={!!list.hasNextPage}
+            loading={every.running}
+            scope={category ? (tabs.find((c) => c.key === category)?.name ?? title) : title}
+            matching={!!query.q}
+            onToggle={toggleAll}
+            onSelectEvery={() => void every.start()}
+          />
+        )}
 
         <div ref={listRef} role="listbox" aria-label={t("list.label")} aria-multiselectable className="flex min-h-0 flex-1 flex-col overflow-y-auto">
           {noAccounts ? (
@@ -1132,7 +1155,7 @@ export default function MailPage() {
               </BulkButton>
             )}
             <span className="flex-1" />
-            <BulkButton label={t("list.clear")} shortcut="escape" onClick={() => setSelected(new Set())}>
+            <BulkButton label={t("list.clear")} shortcut="escape" onClick={clearSelection}>
               <X />
             </BulkButton>
           </div>

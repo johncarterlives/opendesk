@@ -86,6 +86,7 @@ function notificationText(n: Notification) {
       return "Auto-recharge failed and is now off";
     case "ai_key_failed":
       return n.data.reason === "no_funds" ? "Your AI provider account is out of funds" : "Your AI provider rejected the workspace's key";
+    case "scheduled_reply_failed":
     case "team_joined":
     case "import_finished":
     case "support_channel_unhealthy":
@@ -114,6 +115,7 @@ const notificationSound: Partial<Record<Notification["type"], AlertSound>> = {
   assigned: "assigned",
   mentioned: "assigned",
   sla_breached: "assigned",
+  scheduled_reply_failed: "assigned",
   collab_assigned: "assigned",
   collab_mention: "assigned",
   wiki_mention: "assigned",

@@ -117,7 +117,7 @@ Requires the owner, with two-factor authentication and a recent sign-in. All wor
 ```ts
 type Notification = {
   id: string;
-  type: "assigned" | "new_ticket" | "mentioned" | "customer_replied" | "thread_replied" | "sla_breached" | "ai_handoff" | "ai_cap_reached"
+  type: "assigned" | "new_ticket" | "mentioned" | "customer_replied" | "thread_replied" | "sla_breached" | "scheduled_reply_failed" | "ai_handoff" | "ai_cap_reached"
     | "ai_balance_low" | "ai_balance_out" | "auto_recharge_failed" | "ai_key_failed"
     | "wiki_mention" | "wiki_comment" | "wiki_reminder";
   ticket: { id: string; number: number; subject: string } | null;

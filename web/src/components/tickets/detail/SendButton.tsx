@@ -70,6 +70,7 @@ export function SendButton({
   disabled,
   busy,
   onSend,
+  onSchedule,
   current,
   phase,
   sentWith,
@@ -84,6 +85,7 @@ export function SendButton({
   disabled: boolean;
   busy: boolean;
   onSend: (s?: TicketStatus) => void;
+  onSchedule?: () => void;
   current: TicketStatus;
   phase: Phase;
   /** The status the last send set, so its own segment shows the spinner and the check. */
@@ -108,7 +110,7 @@ export function SendButton({
   useLayoutEffect(() => onFold?.(fold), [fold, onFold]);
   const { button: own, menu: options } = choose(layout !== "menu");
   const includes = !!include && (include.quoted > 0 || include.files.length > 0);
-  const menu = options.length > 0 || includes;
+  const menu = options.length > 0 || includes || !!onSchedule;
   const along = useIncludeSummary(include);
   const status = (s: TicketStatus) => display.status(s).toLowerCase();
   // The header's words for finishing: "Send and solve", "Send and close", "Send and mark as Done".
@@ -174,6 +176,7 @@ export function SendButton({
           </Tooltip>
           <M.Portal>
             <M.Content side="top" align="end" sideOffset={6} className={cn(floatingPanel, includes ? "w-[300px]" : "min-w-[230px]", "p-1")}>
+              {onSchedule && <M.Item disabled={disabled} onSelect={onSchedule} className="flex h-8 cursor-default items-center rounded-md px-2 text-[12.5px] outline-none data-[highlighted]:bg-hover">{t("composer.sendLater")}</M.Item>}
               {includes && <SideIncludeItems inc={include} />}
               {includes && options.length > 0 && <M.Separator className="-mx-1 my-1 h-px bg-line" />}
               {options.length > 0 && <div className="label-caps px-2 pb-1 pt-1.5">{t("composer.andStatus", { label })}</div>}

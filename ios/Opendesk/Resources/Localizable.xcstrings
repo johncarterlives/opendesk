@@ -397,6 +397,30 @@
         }
       }
     },
+    "push.scheduled_reply_failed.body": {
+      "comment": "Push notification body for scheduled_reply_failed. It may come without a ticket number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It is back in your reply box as a draft"
+          }
+        }
+      }
+    },
+    "push.scheduled_reply_failed.title": {
+      "comment": "Push notification title for scheduled_reply_failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scheduled reply not sent"
+          }
+        }
+      }
+    },
     "push.sla_breached.body": {
       "comment": "Push notification body for sla_breached. %@ is the ticket number.",
       "extractionState": "manual",

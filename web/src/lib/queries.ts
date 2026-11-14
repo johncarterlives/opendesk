@@ -41,6 +41,9 @@ export function keyBody(key: readonly unknown[]): readonly unknown[] {
 /** The roots a user-level key may start with (src/lib/queryKeys.test.ts holds every literal key to it). */
 export const USER_ROOTS = new Set(["auth-config", "me", "public", "invitation-lookup", "oauth", "totp-setup", "customerPortal"]);
 
+/** Conversations per page of a Collab mail list. */
+export const MAIL_PAGE_SIZE = 50;
+
 export const qk = {
   /** Every key of one workspace (default: the one in scope). */
   scope: (wid?: string | null) => [scopeKey(wid === undefined ? scopeWorkspace() : wid)] as const,
@@ -638,7 +641,7 @@ export const q = {
   mailThreads: (query: CollabThreadQuery) =>
     infiniteQueryOptions({
       queryKey: qk.mailThreads(query),
-      queryFn: ({ pageParam }) => api.collab.threads.list({ ...query, limit: 50, cursor: pageParam }),
+      queryFn: ({ pageParam }) => api.collab.threads.list({ ...query, limit: MAIL_PAGE_SIZE, cursor: pageParam }),
       initialPageParam: null as string | null,
       getNextPageParam: (last) => last.next_cursor,
       staleTime: 15_000,

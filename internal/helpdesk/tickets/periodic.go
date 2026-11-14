@@ -212,7 +212,8 @@ func (w *PurgeAttachmentsWorker) Work(ctx context.Context, _ *river.Job[PurgeAtt
 // Uploads held by a member's unsent reply draft stay while the draft does; drafts untouched
 // for ReplyDraftRetention are deleted first, which frees their uploads.
 func PurgeAttachments(ctx context.Context, d *deps.Deps) error {
-	if _, err := d.DB.Pool.Exec(ctx, `DELETE FROM ticket_reply_drafts WHERE updated_at < now() - make_interval(secs => $1)`,
+	// A scheduled reply stays until it goes out, however far ahead it is.
+	if _, err := d.DB.Pool.Exec(ctx, `DELETE FROM ticket_reply_drafts WHERE send_at IS NULL AND updated_at < now() - make_interval(secs => $1)`,
 		ReplyDraftRetention.Seconds()); err != nil {
 		return err
 	}

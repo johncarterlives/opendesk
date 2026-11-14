@@ -278,6 +278,7 @@ struct NotificationTypePrefs: Codable, Hashable, Sendable, Identifiable {
         "customer_replied": ("Customer replies", "On tickets assigned to you, and on tickets nobody has yet"),
         "thread_replied": ("Side conversation answers", "Someone outside your team answers a side conversation on a ticket assigned to you"),
         "sla_breached": ("SLA breaches", "A ticket assigned to you misses a target"),
+        "scheduled_reply_failed": ("Scheduled replies not sent", "A reply you scheduled could not go out and is back in your drafts"),
         "ai_handoff": ("Handoffs to a person", "Ollie hands a conversation to the team"),
         "collab_assigned": ("Mail assigned to you", "A teammate assigns you a conversation from a mail account"),
         "collab_mention": ("Mail comment mentions", "Someone mentions you in a comment on a mail conversation"),

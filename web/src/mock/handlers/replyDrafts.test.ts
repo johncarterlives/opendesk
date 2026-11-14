@@ -37,4 +37,22 @@ describe("mock reply drafts", () => {
     expect((await call("DELETE", path)).status).toBe(204);
     expect((await call("GET", path)).body.draft).toBeNull();
   });
+  it("schedules, moves, preserves across another reply, cancels and sends now once", async () => {
+    const ticket = db.workspaces[0]!.tickets.find((x) => x.channel === "email")!;
+    const path = `/v1/tickets/${ticket.id}/reply-draft`;
+    const at = new Date(Date.now() + 3600000).toISOString();
+    const reply = { kind: "reply", body_html: "<p>Later</p>" };
+    expect((await call("POST", `${path}/schedule`, { send_at: at, reply })).status).toBe(200);
+    expect((await call("PUT", path, { body_html: "overwrite" })).status).toBe(422);
+    await call("POST", `/v1/tickets/${ticket.id}/messages`, { kind: "reply", body_html: "<p>First</p>" });
+    expect((await call("GET", path)).body.draft.schedule.send_at).toBe(at);
+    const later = new Date(Date.now() + 7200000).toISOString();
+    expect((await call("POST", `${path}/schedule`, { send_at: later })).body.draft.schedule.send_at).toBe(later);
+    expect((await call("DELETE", `${path}/schedule`)).body.draft).toMatchObject({ body_html: reply.body_html, schedule: null });
+    await call("POST", `${path}/schedule`, { send_at: at, reply });
+    expect((await call("POST", `${path}/send`)).status).toBe(201);
+    expect((await call("POST", `${path}/send`)).status).toBe(404);
+    expect((await call("GET", path)).body.draft).toBeNull();
+  });
+
 });

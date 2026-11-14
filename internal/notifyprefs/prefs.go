@@ -73,6 +73,8 @@ var Types = []Type{
 	// Someone outside the team answered a third-party thread on a ticket assigned to you.
 	{Type: "thread_replied", Group: GroupTickets, Defaults: everywhere},
 	{Type: "sla_breached", Group: GroupTickets, Defaults: everywhere},
+	// A reply the member scheduled did not go out and stayed their draft (contracts/api.md "Reply drafts").
+	{Type: "scheduled_reply_failed", Group: GroupTickets, Defaults: everywhere},
 	{Type: "ai_handoff", Group: GroupTickets, Defaults: everywhere},
 	{Type: "team_joined", Group: GroupTeam, Defaults: quiet},
 	// Collab conversations assigned to the member or mentioning them (contracts/collab.md).

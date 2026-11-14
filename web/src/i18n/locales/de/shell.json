@@ -112,6 +112,7 @@
       "threadReplied": "{{who}} hat in deiner Nebenunterhaltung geantwortet",
       "threadRepliedAnon": "Jemand hat in deiner Nebenunterhaltung geantwortet",
       "sla": "SLA überschritten",
+      "scheduledReplyFailed": "Deine geplante Antwort wurde nicht gesendet",
       "handoff": "{{who}} möchte mit einer Person sprechen",
       "handoffAnon": "Ein Kunde möchte mit einer Person sprechen",
       "other": "Benachrichtigung",

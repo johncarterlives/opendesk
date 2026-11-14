@@ -2,7 +2,7 @@
 
 A team moving to opendesk brings its history along: tickets with every reply and internal
 note, the customers who wrote them, their companies, labels and attachments, and the help
-center articles. Sources are **Zendesk**, **Help Scout**, **Freshdesk**, **Intercom** and **Front**, read
+center articles. Sources are **Zendesk**, **Help Scout**, **Freshdesk**, **Intercom**, **Front** and **FreeScout**, read
 through their public APIs, and a **CSV** file for everything else. Same code on the cloud and
 on a self-host; no plan gates it, and imported tickets count toward no limit.
 
@@ -62,7 +62,7 @@ answers `409 import_running`.
 ## Shapes
 
 ```ts
-type ImportSource = "zendesk" | "helpscout" | "freshdesk" | "intercom" | "front" | "csv";
+type ImportSource = "zendesk" | "helpscout" | "freshdesk" | "intercom" | "front" | "freescout" | "csv";
 type ImportStatus = "running" | "paused" | "completed" | "failed" | "canceled" | "undoing" | "undone";
 
 interface Import {
@@ -139,6 +139,7 @@ Credentials by source (all strings):
 | `freshdesk` | `domain` (`acme`, `acme.freshdesk.com` or its URL), `api_key` (profile picture → Profile settings → View API key). An admin's key also reads the account's name |
 | `intercom` | `token` (Developer Hub → your app → Configure → Authentication → access token), `region` (`us` default, `eu`, `au`) |
 | `front` | `token` (an admin: Settings → Developers → API Tokens → Create API token, Access resources, Shared resources with all shared workspaces, read permission). A sync reads the events feed and walks the inboxes when the token cannot. Articles are not imported |
+| `freescout` | `url` (the HTTPS instance address, including an installation subdirectory if any), `api_key` (Manage → Settings → API & Webhooks; requires the API & Webhooks module and access to the mailboxes and users being imported). Authentication uses `X-FreeScout-API-Key`, never a URL parameter. Articles are not imported |
 
 ## Endpoints
 
@@ -173,17 +174,17 @@ the encoding, a line that cannot be read, more than 500,000 rows, no rows under 
 
 ## What is brought over
 
-| opendesk | Zendesk | Help Scout | Freshdesk | Intercom | Front |
-| --- | --- | --- | --- | --- | --- |
-| ticket | ticket | conversation (email, chat, phone) | ticket | conversation | conversation |
-| reply / note | public / private comment | customer and reply threads / note and forward threads | description and conversations, `private` = note | source and parts / note parts | messages / comments |
-| contact | requester | primary customer | requester | first contact (user or lead) | recipient (contact) |
-| company | requester's organization | none | ticket's company | contact's first company | none |
-| assignee | assignee | assignee | responder | admin assignee | assignee |
-| team | group | mailbox | group | team assignee | inbox |
-| labels | tags | tags | tags | tags | tags |
-| CSAT | satisfaction good 5, bad 1 | rating great 5, okay 3, not good 1 | none | conversation rating 1..5 | none |
-| article, collection | Guide article, section | Docs article, collection (with `docs_key`) | solution article, folder | article, collection | none |
+| opendesk | Zendesk | Help Scout | Freshdesk | Intercom | Front | FreeScout |
+| --- | --- | --- | --- | --- | --- | --- |
+| ticket | ticket | conversation (email, chat, phone) | ticket | conversation | conversation | conversation (email, chat, phone) |
+| reply / note | public / private comment | customer and reply threads / note and forward threads | description and conversations, `private` = note | source and parts / note parts | messages / comments | customer and message threads / note threads |
+| contact | requester | primary customer | requester | first contact (user or lead) | recipient (contact) | customer |
+| company | requester's organization | none | ticket's company | contact's first company | none | customer company when provided |
+| assignee | assignee | assignee | responder | admin assignee | assignee | assignee |
+| team | group | mailbox | group | team assignee | inbox | mailbox |
+| labels | tags | tags | tags | tags | tags | tags |
+| CSAT | satisfaction good 5, bad 1 | rating great 5, okay 3, not good 1 | none | conversation rating 1..5 | none | none |
+| article, collection | Guide article, section | Docs article, collection (with `docs_key`) | solution article, folder | article, collection | none | none |
 
 - Statuses: Zendesk `new`/`open` → open, `pending` → pending, `hold` → on_hold, `solved` → solved,
   `closed` → closed; Help Scout `active` → open, `pending` → pending, `closed` → closed; Freshdesk 2 → open,
@@ -292,6 +293,18 @@ the encoding, a line that cannot be read, more than 500,000 rows, no rows under 
   message; its requester is the first customer row with an email or a name. Rows with neither body nor subject
   are left out and listed as problems (`Row <line>`). Blank rows are skipped.
 
+### FreeScout
+
+FreeScout uses its API & Webhooks module. The importer reads published conversations in all
+statuses, with customer messages, agent replies, internal notes and attachments. Mailboxes
+map to teams and users to agents. Active conversations become open, pending stays pending,
+and closed stays closed. Spam, deleted conversations and draft, hidden and review threads
+are skipped. Notes stay internal. Help center articles are not available through this API.
+
+Listings are read oldest first with numbered pages of 25 conversations, each with its
+threads. `since` uses `createdSince`; sync uses `updatedSince`. The source instance URL
+identifies the account, including a subdirectory installation. Re-importing that account uses the existing import records to avoid duplicates.
+
 ## Security
 
 - Credentials are sealed with `d.Box`, never returned, logged or audited. They are deleted when the
@@ -299,7 +312,7 @@ the encoding, a line that cannot be read, more than 500,000 rows, no rows under 
 - Every request goes to the source's own API host over https (`<sub>.zendesk.com`,
   `api.helpscout.net`, `docsapi.helpscout.net`, `<domain>.freshdesk.com`, `api.intercom.io`,
   `api.eu.intercom.io`, `api.au.intercom.io`, `api2.frontapp.com` and `<company>.api.frontapp.com`,
-  which Front's next-page links use; requests to Front are spaced at most 60 a minute); a next-page link off that host is refused. Attachment
+  which Front's next-page links use, and the FreeScout instance's configured origin and installation path; requests to Front are spaced at most 60 a minute); a next-page link off that host is refused. Attachment
   downloads follow the outbound URL rules (https, public addresses, at most three redirects, each
   re-checked) and send the source's credentials only to its API host.
 - A subdomain or domain is letters, digits and hyphens.

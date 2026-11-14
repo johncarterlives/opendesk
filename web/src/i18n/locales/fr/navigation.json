@@ -190,7 +190,7 @@
     "aiKnowledge": "Connaissances de l’agent IA",
     "aiTools": "Outils de l’agent IA",
     "aiPlayground": "Espace d’essai de l’agent IA",
-    "importHistory": "Importer l’historique depuis Zendesk, Help Scout, Freshdesk, Intercom, Front ou un fichier CSV",
+    "importHistory": "Importer l’historique depuis Zendesk, Help Scout, FreeScout, Freshdesk, Intercom, Front ou un fichier CSV",
     "pages": "Pages",
     "newPage": "Nouvelle page"
   },

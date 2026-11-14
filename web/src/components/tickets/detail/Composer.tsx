@@ -27,6 +27,7 @@ import { matchVars, refreshTags, templateExtension, VarSuggestPopup, type VarIte
 import { variableText } from "./composerTemplates";
 import { ReplySignature } from "./ReplySignature";
 import { ReplyPreview } from "./ReplyPreview";
+import { ScheduledReplyControls, ScheduleReplyDialog } from "./ScheduledReply";
 import { SendButton } from "./SendButton";
 import { ChatReplyLine } from "./ChatReplyLine";
 import { statusLabel } from "../bits";
@@ -436,6 +437,16 @@ export const Composer = forwardRef<
     },
   });
 
+  const wasScheduled = useRef(false);
+  useEffect(() => {
+    if (wasScheduled.current && ownDraft.draft === null && mode === "reply") {
+      setDraft({ html: "", cc: [], bcc: [], savedReplyIds: undefined });
+      editor.current?.clear();
+      setUploads([]);
+    }
+    wasScheduled.current = !!ownDraft.draft?.schedule;
+  }, [ownDraft.draft, setDraft, mode]);
+
   // Presence: "replying" while a draft exists, "viewing" otherwise.
   const hasDraft = !!draft.html;
   useEffect(() => {
@@ -451,9 +462,16 @@ export const Composer = forwardRef<
     (mode === "thread" && teams.mailbox(thread?.mailbox_id ?? ticket.mailbox_id)?.sending === "system_off");
   const threadReady = mode !== "thread" || !!thread || (draft.threadTo.length > 0 && !!draft.threadSubject.trim());
   // A forwarded email can go without words of its own.
+  const scheduled = mode === "reply" && !!ownDraft.draft?.schedule;
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const scheduleReply = useMutation({
+    mutationFn: ({ at, body }: { at: string; body: SendMessageBody }) => api.tickets.replyDraft.schedule(ticket.id, at, body),
+    onSuccess: ({ draft: saved }) => { qc.setQueryData(qk.replyDraft(ticket.id), saved); setScheduleOpen(false); },
+    onError: (e) => toast.error(e),
+  });
   // A reply whose To the agent emptied waits for an address.
   const noRecipient = mode === "reply" && draft.to?.length === 0;
-  const canSend = (!!draft.html || !!forwarding) && !noRecipient && !busyUploads && !disabled && !ai.busy && !noSender && !filling && threadReady && !sendThread.isPending;
+  const canSend = !scheduled && !scheduleReply.isPending && (!!draft.html || !!forwarding) && !noRecipient && !busyUploads && !disabled && !ai.busy && !noSender && !filling && threadReady && !sendThread.isPending;
 
   // The send button's moment: a check once it is out, or once a reply is on hold (its toast
   // and the timeline count down from there).
@@ -526,11 +544,12 @@ export const Composer = forwardRef<
   useEffect(() => setPlaceholderWarn(null), [draft.html, mode]);
 
   /** Sends what is written; `as` sends it as a note instead, `checked` skips the mention check, `filled` the placeholder check. */
-  const submit = (status?: TicketStatus, opts: { as?: "note"; checked?: boolean; filled?: boolean } = {}) => {
+  const submit = (status?: TicketStatus, opts: { as?: "note"; checked?: boolean; filled?: boolean; sendAt?: string } = {}) => {
     if (!canSend) return;
     if (mode === "thread") return submitThread(status);
     const kind = opts.as ?? mode;
     const reply = kind === "reply";
+    if (opts.sendAt && (mentionedTeammates(draft.html, members ?? [], me).length || findPlaceholders(draft.html).length)) { toast.error(t("composer.scheduleReview")); return; }
     if (reply && !opts.checked) {
       const names = mentionedTeammates(draft.html, members ?? [], me);
       if (names.length) return setMentionWarn({ names, status });
@@ -570,6 +589,7 @@ export const Composer = forwardRef<
       from_note_id: reply ? draft.fromNote : undefined,
       saved_reply_ids: draft.savedReplyIds?.length ? draft.savedReplyIds : undefined,
     };
+    if (opts.sendAt) { scheduleReply.mutate({ at: opts.sendAt, body }); return; }
     const tempId = `tmp-${Date.now().toString(36)}`;
     retries.current.set(tempId, body);
     const temp = tempMessage(body, tempId);
@@ -657,6 +677,8 @@ export const Composer = forwardRef<
           />
         )}
         {!disabled && <SharedDraftBar ticket={ticket} html={draft.html} onUse={takeShared} onClear={dropShared} hold={!ownDraft.settled} />}
+        {mode === "reply" && <ScheduledReplyControls ticketId={ticket.id} draft={ownDraft.draft} onSent={() => { if (modeRef.current === "reply") { setDraft({ html: "" }); editor.current?.clear(); setUploads([]); } }} />}
+        <ScheduleReplyDialog open={scheduleOpen} onOpenChange={setScheduleOpen} busy={scheduleReply.isPending} onSchedule={(at) => submit(undefined, { sendAt: at })} />
         <AnimatePresence initial={false}>
           {others.length > 0 && mode === "reply" && (
             <motion.div
@@ -913,7 +935,7 @@ export const Composer = forwardRef<
               extensions={extensions}
               onSubmit={() => submit()}
               onKeyDown={onKeyDown}
-              editable={!disabled && !ai.busy}
+              editable={!disabled && !ai.busy && !scheduled}
               contentClassName={cn("max-h-[40vh] transition-[min-height] duration-200 ease-out motion-reduce:transition-none", open ? "min-h-[96px]" : "min-h-[44px]")}
               afterContent={
                 forwarding ? (
@@ -965,6 +987,7 @@ export const Composer = forwardRef<
                     include={starting ? include : undefined}
                     disabled={!canSend}
                     busy={busyUploads}
+                    onSchedule={mode === "reply" && !draft.fromNote ? () => setScheduleOpen(true) : undefined}
                     onSend={submit}
                     current={ticket.status}
                     phase={phase}

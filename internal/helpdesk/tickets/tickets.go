@@ -1143,6 +1143,10 @@ func merge(ctx context.Context, tx pgx.Tx, d *deps.Deps, wid, src, dst uuid.UUID
 		WHERE workspace_id = $1 AND id = $2`, wid, src, dst); err != nil {
 		return err
 	}
+	// A reply scheduled on src would go out from a closed ticket: it stays its author's draft.
+	if err := keepScheduledOn(ctx, tx, wid, src, SendErrorMerged, actor.UserID); err != nil {
+		return err
+	}
 	srcChanged := []string{"merged_into", "message_count"}
 	if quiet {
 		if _, err := tx.Exec(ctx, `UPDATE tickets SET status = 'closed', solved_at = COALESCE(solved_at, now()),

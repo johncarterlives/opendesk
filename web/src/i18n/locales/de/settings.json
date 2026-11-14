@@ -700,6 +700,10 @@
         "label": "SLA-Überschreitungen",
         "hint": "Ein dir zugewiesenes Ticket verfehlt ein Ziel"
       },
+      "scheduled_reply_failed": {
+        "label": "Nicht gesendete geplante Antworten",
+        "hint": "Eine Antwort, die du geplant hast, konnte nicht gesendet werden und liegt wieder in deinen Entwürfen"
+      },
       "ai_handoff": {
         "label": "Übergaben an eine Person",
         "hint": "Ollie übergibt eine Unterhaltung an das Team"

@@ -112,6 +112,7 @@
       "threadReplied": "{{who}} answered your side conversation",
       "threadRepliedAnon": "Someone answered your side conversation",
       "sla": "SLA breached",
+      "scheduledReplyFailed": "Your scheduled reply was not sent",
       "handoff": "{{who}} asked for a person",
       "handoffAnon": "A customer asked for a person",
       "other": "Notification",

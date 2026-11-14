@@ -43,6 +43,10 @@
     "csv": {
       "with": "Tout outil d’assistance",
       "blurb": "Un export de tout autre outil d’assistance, avec une ligne par ticket ou par message."
+    },
+    "freescout": {
+      "with": "URL de l’instance et clé API",
+      "blurb": "Conversations de toutes les boîtes, avec réponses, notes internes, pièces jointes et clients."
     }
   },
   "steps": {
@@ -236,7 +240,8 @@
     "mailboxHint": "Les réponses aux tickets par e-mail importés sont envoyées depuis cette boîte de réception.",
     "noMailbox": "Choisir au moment de répondre",
     "ticketsHint_many": "{{n}} tickets avec leurs conversations.",
-    "articlesHint_many": "{{n}} articles avec leurs collections. Les images sont aussi importées."
+    "articlesHint_many": "{{n}} articles avec leurs collections. Les images sont aussi importées.",
+    "articlesUnsupported": "L’API FreeScout ne donne pas accès aux articles de la base de connaissances."
   },
   "summary": {
     "lead": "Cette opération importe {{what}}.",

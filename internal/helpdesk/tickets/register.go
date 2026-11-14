@@ -25,6 +25,7 @@ func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	registerMessages(d, api)
 	registerDrafts(d, api)
 	registerReplyDrafts(d, api)
+	registerScheduledReplies(d, api)
 	registerTyping(d, api)
 	registerVisitorPresence(d, api)
 	registerThreads(d, api)
@@ -46,6 +47,7 @@ func RegisterWorkers(d *deps.Deps, w *river.Workers) {
 	river.AddWorker(w, &SnoozeWakeWorker{D: d})
 	river.AddWorker(w, &AutoCloseWorker{D: d})
 	river.AddWorker(w, &PurgeAttachmentsWorker{D: d})
+	river.AddWorker(w, &ScheduledReplyWorker{D: d})
 }
 
 // Periodic returns the scheduled helpdesk jobs.

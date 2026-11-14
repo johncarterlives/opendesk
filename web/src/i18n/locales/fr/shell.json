@@ -115,6 +115,7 @@
       "threadReplied": "{{who}} a répondu à votre conversation parallèle",
       "threadRepliedAnon": "Quelqu’un a répondu à votre conversation parallèle",
       "sla": "SLA non respecté",
+      "scheduledReplyFailed": "Votre réponse programmée n’a pas été envoyée",
       "handoff": "{{who}} a demandé à parler à une personne",
       "handoffAnon": "Un client a demandé à parler à une personne",
       "other": "Notification",

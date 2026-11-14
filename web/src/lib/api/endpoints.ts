@@ -626,6 +626,10 @@ export const api = {
       get: (id: string) => http.get<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft`),
       save: (id: string, b: { body_html: string; attachment_ids: string[] }) => http.put<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft`, b),
       discard: (id: string) => http.del(`/v1/tickets/${id}/reply-draft`),
+      schedule: (id: string, send_at: string, reply?: SendMessageBody) =>
+        http.post<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft/schedule`, { send_at, reply }),
+      unschedule: (id: string) => http.del<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft/schedule`),
+      sendScheduled: (id: string) => http.create<T.Message>(`/v1/tickets/${id}/reply-draft/send`, {}),
     },
     threads: (id: string) => http.get<{ data: T.Thread[] }>(`/v1/tickets/${id}/threads`),
     startThread: (id: string, b: StartThreadBody) => http.create<{ thread: T.Thread; message: T.Message }>(`/v1/tickets/${id}/threads`, b),

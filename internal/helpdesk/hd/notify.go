@@ -37,6 +37,9 @@ const (
 	NotifyTeamJoined = "team_joined"
 	// NotifyNewTicket: a new ticket nobody is assigned to (contracts/api.md "Assignment").
 	NotifyNewTicket = "new_ticket"
+	// NotifyScheduledReplyFailed: a member's scheduled reply did not go out and stayed their
+	// draft (contracts/api.md "Reply drafts"); data {reason}, the draft's send_error.
+	NotifyScheduledReplyFailed = "scheduled_reply_failed"
 )
 
 type NotificationTicket struct {

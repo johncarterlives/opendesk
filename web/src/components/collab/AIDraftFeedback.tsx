@@ -5,7 +5,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { MessageSquareText } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api/endpoints";
 import type { AIDraftFeedbackReason, AIDraftRef, MailMessage } from "@/lib/api/types";
@@ -18,7 +18,7 @@ import { Select } from "@/components/ui/select";
 import { toast } from "@/components/ui/toast";
 
 const reasons: AIDraftFeedbackReason[] = ["wrong_facts", "wrong_tone", "missing_info", "should_not_answer", "other"];
-const noteMax = 1000;
+const noteMax = 2000;
 
 const textHtml = (text: string) =>
   text
@@ -72,7 +72,7 @@ function FeedbackLine({ draft, threadId, how }: { draft: AIDraftRef; threadId: s
   );
 }
 
-/** Feedback on one AI draft; `defaultReason` preselects a reason (a discard suggests "should not answer"). */
+/** Feedback on one AI draft, sent, waiting or gone; `defaultReason` preselects a reason (a discard suggests "should not answer"). Saving never changes the mail. */
 export function AIDraftFeedbackDialog({
   draft,
   threadId,
@@ -86,11 +86,13 @@ export function AIDraftFeedbackDialog({
   onOpenChange: (o: boolean) => void;
   defaultReason?: AIDraftFeedbackReason;
 }) {
-  const { t } = useTranslation("collab");
+  const { t, i18n } = useTranslation("collab");
   const qc = useQueryClient();
   const [reason, setReason] = useState<AIDraftFeedbackReason | undefined>();
   const [note, setNote] = useState("");
   const [better, setBetter] = useState("");
+  const noteCountId = useId();
+  const full = note.length >= noteMax;
   useEffect(() => {
     if (!open) return;
     setReason(defaultReason);
@@ -143,7 +145,25 @@ export function AIDraftFeedbackDialog({
         </label>
         <label className="flex flex-col gap-1.5 text-[12.5px] font-medium">
           {t("aiFeedback.note")}
-          <Textarea value={note} maxLength={noteMax} rows={3} onChange={(e) => setNote(e.target.value)} placeholder={t("aiFeedback.notePlaceholder")} />
+          <Textarea
+            value={note}
+            maxLength={noteMax}
+            rows={3}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t("aiFeedback.notePlaceholder")}
+            aria-describedby={noteCountId}
+          />
+          {/* The limit is visible before saving: a pasted note past it is cut off, not refused. */}
+          <span id={noteCountId} className="flex justify-end gap-2 text-[11.5px] font-normal">
+            {full && (
+              <span role="status" className="mr-auto text-danger-fg">
+                {t("aiFeedback.noteFull")}
+              </span>
+            )}
+            <span className={`mono tabular-nums ${full ? "text-danger-fg" : "text-fg-4"}`}>
+              {t("aiFeedback.noteCount", { used: note.length.toLocaleString(i18n.language), max: noteMax.toLocaleString(i18n.language) })}
+            </span>
+          </span>
         </label>
         <label className="flex flex-col gap-1.5 text-[12.5px] font-medium">
           {t("aiFeedback.better")}
