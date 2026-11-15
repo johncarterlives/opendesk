@@ -685,6 +685,28 @@
     "relinkDone": "{{email}} can sign in with a new account for the next 15 minutes.",
     "relinkNone": "No contact has that email address.",
     "relinkReauth": "Sign in again to do this.",
-    "relinkFailed": "Couldn't allow the sign-in"
+    "relinkFailed": "Couldn't allow the sign-in",
+    "protocol": "Provider type",
+    "protocolHint": "Most identity providers support both. Pick the one your team already uses.",
+    "protocols": {
+      "oidc": "OpenID Connect",
+      "saml": "SAML 2.0"
+    },
+    "spEntity": "Service provider entity ID",
+    "spEntityHint": "Enter this as the entity ID (audience) at your provider.",
+    "copyEntity": "Copy entity ID",
+    "acs": "Assertion consumer service URL",
+    "acsHint": "Enter this as the ACS or reply URL, with the HTTP-POST binding. Customers start at the portal: sign-in started from the provider isn't supported.",
+    "copyAcs": "Copy ACS URL",
+    "idpEntity": "Provider entity ID",
+    "idpEntityHint": "The identity provider's entity ID, often its metadata URL.",
+    "idpUrl": "Sign-on URL",
+    "idpUrlHint": "Its HTTPS single sign-on URL (HTTP-Redirect binding).",
+    "certs": "Signing certificates",
+    "certsHint": "One to three PEM certificates the provider signs with, RSA with a 2048 bit key or more. Add the new one before the old one expires.",
+    "emailAttr": "Email attribute",
+    "emailAttrHint": "The attribute that holds the customer's email. Leave empty to try the usual names, then the NameID when it is an address.",
+    "nameAttr": "Name attribute",
+    "samlInvalid": "We couldn't use that provider. Check the entity ID, an HTTPS sign-on URL, and one to three current RSA signing certificates."
   }
 }

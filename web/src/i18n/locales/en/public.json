@@ -121,6 +121,7 @@
       "unknown_customer": "We couldn't find a customer with that email address. Contact the team that gave you access.",
       "blocked": "This account can't sign in. Contact the team for help.",
       "relink_required": "Your account at the provider changed. Ask the team to allow a new sign-in, then try again.",
+      "transient_name_id": "The sign-in provider sends a different ID each time, so we can't recognize you. Contact the team for help.",
       "identity_revoked": "This sign-in was removed. Contact the team for help.",
       "access_denied": "The sign-in was cancelled.",
       "provider_unavailable": "We couldn't reach the sign-in provider. Please try again.",

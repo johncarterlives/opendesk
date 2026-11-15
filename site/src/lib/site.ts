@@ -52,6 +52,7 @@ export const NAV = [
 export const PRODUCT_NAV = [
   { icon: 'inbox', href: '/features/#inbox', title: 'Shared inbox', desc: 'Every mailbox and channel in one queue.' },
   { icon: 'chat', href: '/features/#chat', title: 'Live chat', desc: 'A light widget that speaks 15 languages.' },
+  { icon: 'mail', href: '/features/#collab', title: 'Collab', desc: 'Your own mail accounts, private or shared.' },
   { icon: 'sparkles', href: '/features/#ai', title: 'AI', desc: 'Drafts, summaries, triage and translation.' },
   { icon: 'book', href: '/features/#knowledge-base', title: 'Knowledge base', desc: 'A help center customers search themselves.' },
   { icon: 'zap', href: '/features/#automations', title: 'Automations and SLAs', desc: 'Rules and targets that run on arrival.' },

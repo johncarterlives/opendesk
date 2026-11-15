@@ -476,7 +476,7 @@
     "connected": "{{email}} est connecté. Ses messages sont en cours de synchronisation.",
     "error": {
       "oauth_state": "La connexion a expiré ou provient d’un autre navigateur. Réessayez.",
-      "access_denied": "La connexion a été annulée.",
+      "access_denied": "La connexion a été annulée ou bloquée par Google. Sur Google Workspace, un admin doit peut-être d’abord approuver opendesk : les étapes sont dans Connecter un compte, Google.",
       "provider_error": "Le fournisseur a refusé la connexion. Réessayez dans un instant.",
       "account_conflict": "Une personne de cet espace de travail a déjà connecté cette adresse.",
       "collab_required": "Collab n’est pas inclus dans l’offre de cet espace de travail.",
@@ -507,7 +507,7 @@
     "back": "Retour",
     "openedInBrowser": "La connexion s’est ouverte dans votre navigateur. Terminez-la là-bas, puis revenez.",
     "address": "Adresse e-mail",
-    "loginHint": "Facultatif : l’adresse utilisée pour vous connecter",
+    "loginHint": "L’adresse utilisée pour vous connecter",
     "name": "Nom dans la barre latérale",
     "namePlaceholder": "Travail, Ventes, Personnel",
     "password": "Mot de passe",
@@ -533,7 +533,36 @@
     "nothingDeleted": "opendesk ne supprime jamais de messages chez votre fournisseur.",
     "history": "Anciens e-mails",
     "historyHint": "Les 30 derniers jours arrivent d’abord. Les e-mails plus anciens suivent en arrière-plan, et vous pouvez changer ce choix dans les paramètres du compte.",
-    "historyNone": "Seulement les 30 derniers jours"
+    "historyNone": "Seulement les 30 derniers jours",
+    "workspace": {
+      "title": "Sur Google Workspace ? Votre admin approuve opendesk une fois",
+      "hint": "Si Google indique que l’accès est bloqué, un admin Workspace marque opendesk comme approuvé pour votre domaine. Ensuite, chaque compte du domaine peut se connecter.",
+      "s1": "Connectez-vous à <b>admin.google.com</b> en tant qu’admin.",
+      "open": "Ouvrir Google Admin",
+      "s2": "Allez dans <b>Sécurité</b>, <b>Commandes des API</b>, <b>Contrôle des accès des applications</b>, puis choisissez <b>Configurer une nouvelle application</b>.",
+      "s3": "Recherchez cet ID client et sélectionnez l’application trouvée.",
+      "noClientId": "Cette instance n’a pas indiqué son ID client. Demandez-le à la personne qui la gère.",
+      "s4": "Pour la portée, choisissez <b>Tous les utilisateurs de votre organisation</b> ou les unités organisationnelles des comptes. Pour l’accès, choisissez <b>Approuvée</b>, puis <b>Terminer</b>."
+    },
+    "personalGmail": "C’est une adresse Gmail personnelle. Gmail personnel se connecte avec un mot de passe d’application, sans connexion Google.",
+    "methodStep": "Comment opendesk doit-il se connecter ?",
+    "method": {
+      "workspace": "Google Workspace",
+      "workspaceHint": "Un compte sur le domaine de votre entreprise",
+      "signin": "Se connecter avec Google",
+      "signinHint": "Votre admin Workspace marque opendesk comme application approuvée une fois, puis chaque compte se connecte avec Google.",
+      "recommended": "Recommandé",
+      "personal": "Gmail personnel",
+      "personalHint": "Un compte @gmail.com ou @googlemail.com",
+      "appPassword": "Mot de passe d’application",
+      "appPasswordHint": "Guidé : activez la validation en deux étapes, créez un mot de passe d’application de 16 lettres, connectez. Fonctionne aussi pour un compte Workspace."
+    },
+    "appPasswordTitle": "Gmail avec un mot de passe d’application",
+    "appPasswordBanner": "Un mot de passe d’application connecte n’importe quel compte Gmail ou Workspace en deux minutes environ, sans écran de consentement Google.",
+    "appPasswordConnect": "Connecter le compte",
+    "appPasswordConnectHint": "Votre adresse et le mot de passe d’application. Les serveurs de Gmail sont déjà renseignés.",
+    "appPasswordNote": "Utilisez l’adresse avec laquelle vous vous connectez à Google, pas un alias, et un mot de passe d’application de ce même compte. Supprimer le mot de passe d’application dans votre compte Google déconnecte le compte.",
+    "useAppPassword": "Utiliser un mot de passe d’application"
   },
   "detail": {
     "back": "Comptes de messagerie",

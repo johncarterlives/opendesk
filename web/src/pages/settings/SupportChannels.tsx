@@ -38,11 +38,11 @@ import { atLeast, useRole } from "@/lib/session";
 
 // Providers and credential fields with their own copy; another provider shows
 // the name, description and labels its adapter describes.
-const PROVIDERS = ["slack", "discord", "telegram", "google_chat"] as const;
+const PROVIDERS = ["slack", "discord", "telegram", "google_chat", "mattermost"] as const;
 type ProviderKey = (typeof PROVIDERS)[number];
 const PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 type DestinationPriority = "all" | (typeof PRIORITIES)[number];
-const FIELDS = ["bot_token", "signing_secret", "public_key", "guild_id", "webhook_secret", "service_account_json"] as const;
+const FIELDS = ["bot_token", "signing_secret", "public_key", "guild_id", "webhook_secret", "service_account_json", "server_url", "team_id", "webhook_token"] as const;
 type FieldKey = (typeof FIELDS)[number];
 const OLLIE_ACTIONS: SupportChannelOllieAction[] = ["reply", "note", "assign_self", "status", "priority", "create_ticket"];
 const OLLIE_LENGTHS: SupportChannelOllieLength[] = ["brief", "standard", "detailed"];
@@ -61,7 +61,12 @@ function useProviderCopy() {
     description: (p: SupportChannelProvider) => (knownProvider(p.key) ? t(`supportChannels.provider.${p.key}.description`) : p.description),
     setup: (p: SupportChannelProvider) => (knownProvider(p.key) ? t(`supportChannels.provider.${p.key}.setup`) : p.description),
     field: (f: SupportChannelProvider["fields"][number]) => (knownField(f.name) ? t(`supportChannels.field.${f.name}`) : f.label),
-    help: (p: SupportChannelProvider, f: SupportChannelProvider["fields"][number]) => (knownProvider(p.key) ? undefined : f.help),
+    // A provider's own hint for a field (Mattermost's server address), else the server's help for one we have no copy of.
+    help: (p: SupportChannelProvider, f: SupportChannelProvider["fields"][number]) =>
+      knownProvider(p.key) ? t(`supportChannels.provider.${p.key}.help.${f.name}`, { defaultValue: "" }) || undefined : f.help,
+    // What an account is called to choose: a Discord server, a Mattermost team.
+    account: (p: SupportChannelProvider, key: "findAccounts" | "accountPlaceholder" | "refreshAccounts" | "noAccounts" | "discoveryError", values?: Record<string, string>) =>
+      t(`supportChannels.provider.${p.key}.${key}`, { defaultValue: t(`supportChannels.connect.${key}`, values), ...values }),
     noChannels: (key: string) => (knownProvider(key) ? t(`supportChannels.provider.${key}.noChannels`) : t("supportChannels.destination.none")),
   };
 }
@@ -698,7 +703,7 @@ function DeliveryRow({ delivery, retrying, onRetry }: { delivery: SupportChannel
 function SetupSteps({ provider, webhookUrl, done }: { provider: string; webhookUrl: string; done: boolean }) {
   const { t } = useTranslation("settingsChannels");
   const [open, setOpen] = useState(!done);
-  const providerSteps = provider === "slack" || provider === "google_chat" ? provider : "";
+  const providerSteps = provider === "slack" || provider === "google_chat" || provider === "mattermost" ? provider : "";
   const steps: unknown = providerSteps ? t(`supportChannels.provider.${providerSteps}.steps`, { returnObjects: true }) : null;
   const list = Array.isArray(steps) ? (steps as string[]) : [t("supportChannels.setup.generic")];
   if (!open)
@@ -759,7 +764,7 @@ function ConnectDialog({ provider, onClose, onConnected }: { provider: SupportCh
       // A bot in one server has nothing to choose.
       if (result.data.length === 1) for (const field of discoveredFields) setCredentials((old) => ({ ...old, [field.name]: result.data[0].id }));
     },
-    onError: (e) => setError(errorMessage(e, t("supportChannels.connect.discoveryError", { name: provider.name }))),
+    onError: (e) => setError(errorMessage(e, copy.account(provider, "discoveryError", { name: provider.name }))),
   });
   const baseValid = fields.every((field) => credentials[field.name]?.trim());
   const valid = baseValid && discoveredFields.every((field) => credentials[field.name]?.trim());
@@ -784,7 +789,7 @@ function ConnectDialog({ provider, onClose, onConnected }: { provider: SupportCh
           <Button onClick={onClose}>{t("supportChannels.connect.cancel")}</Button>
           {discoveredFields.length > 0 && accounts === null ? (
             <Button variant="primary" disabled={!baseValid} loading={discover.isPending} onClick={() => discover.mutate()}>
-              {t("supportChannels.connect.findAccounts")}
+              {copy.account(provider, "findAccounts")}
             </Button>
           ) : (
             <Button variant="primary" disabled={!valid} loading={connect.isPending} onClick={() => connect.mutate()}>
@@ -821,14 +826,14 @@ function ConnectDialog({ provider, onClose, onConnected }: { provider: SupportCh
                     value={credentials[field.name] || undefined}
                     onChange={(value) => setCredential(field.name, value)}
                     options={accounts.map((account) => ({ value: account.id, label: account.name || account.id }))}
-                    placeholder={t("supportChannels.connect.accountPlaceholder")}
+                    placeholder={copy.account(provider, "accountPlaceholder")}
                   />
-                  <Button square icon={<RefreshCw />} aria-label={t("supportChannels.connect.refreshAccounts")} loading={discover.isPending} onClick={() => discover.mutate()} />
+                  <Button square icon={<RefreshCw />} aria-label={copy.account(provider, "refreshAccounts")} loading={discover.isPending} onClick={() => discover.mutate()} />
                 </div>
               )}
             </Field>
           ))}
-        {accounts !== null && accounts.length === 0 && <p className="text-[12px] text-fg-3">{t("supportChannels.connect.noAccounts")}</p>}
+        {accounts !== null && accounts.length === 0 && <p className="text-[12px] text-fg-3">{copy.account(provider, "noAccounts")}</p>}
         {error && (
           <p role="alert" className="text-[12px] text-danger-fg">
             {error}

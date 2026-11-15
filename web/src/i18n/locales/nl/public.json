@@ -121,6 +121,7 @@
       "unknown_customer": "We hebben geen klant met dat e-mailadres gevonden. Neem contact op met het team dat je toegang gaf.",
       "blocked": "Dit account kan niet inloggen. Neem contact op met het team voor hulp.",
       "relink_required": "Je account bij de provider is gewijzigd. Vraag het team een nieuwe aanmelding toe te staan en probeer het opnieuw.",
+      "transient_name_id": "De aanmeldprovider stuurt elke keer een andere ID, dus we kunnen je niet herkennen. Neem contact op met het team voor hulp.",
       "identity_revoked": "Deze aanmelding is verwijderd. Neem contact op met het team voor hulp.",
       "access_denied": "De aanmelding is geannuleerd.",
       "provider_unavailable": "We konden de aanmeldprovider niet bereiken. Probeer het opnieuw.",

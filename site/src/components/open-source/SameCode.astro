@@ -9,6 +9,7 @@ import Icon from '../Icon.astro';
 
 const rows: { key: string; what: string; cloud: string; self: string }[] = [
   { key: 'STRIPE_SECRET_KEY', what: 'Billing', cloud: 'Set: plans, seats and AI usage', self: 'Unset: no plans and no limits' },
+  { key: 'COLLAB', what: 'Collab', cloud: 'On for workspaces on the Collab plan', self: 'On for every workspace, unless set to false' },
   { key: 'ANTHROPIC_API_KEY', what: 'AI', cloud: 'The instance’s provider, paid as AI usage in dollars', self: 'Your key, or a local model on any OpenAI-compatible endpoint' },
   { key: 'DATABASE_URL', what: 'Data', cloud: 'Neon Postgres, pooled', self: 'Stock Postgres beside it' },
   { key: 'NATS_URL', what: 'Events', cloud: 'A three-node NATS cluster', self: 'Unset: NATS runs inside the binary' },

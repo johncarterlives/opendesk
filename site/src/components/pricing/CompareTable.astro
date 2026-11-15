@@ -1,58 +1,71 @@
 ---
 /**
- * The plans side by side, from contracts/billing.md. Plans differ only in
- * limits, so the rows are limits; every feature is on every plan.
+ * The plans side by side, from contracts/billing.md. Plans differ in limits,
+ * so most rows are limits; every helpdesk feature is on every plan, and Collab
+ * (each person's own mail accounts) is the one addition, on Collab and
+ * self-hosted.
  */
 import Icon from '../Icon.astro';
-import { PRO_PRICE, AI_ALLOWANCE, AI_TOP_UP, usd } from '../../lib/pricing';
+import { PRO_PRICE, COLLAB_PRICE, COLLAB_STORAGE_GB, AI_ALLOWANCE, AI_TOP_UP, usd } from '../../lib/pricing';
 
-type Cell = string | true;
+/** Text, included (true) or not on this plan (false). */
+type Cell = string | boolean;
 const topUp = `${usd(AI_TOP_UP.minUsd)} to ${usd(AI_TOP_UP.maxUsd)}, never expire`;
-const groups: { title: string; rows: [string, Cell, Cell, Cell][] }[] = [
+const groups: { title: string; rows: [string, Cell, Cell, Cell, Cell][] }[] = [
   {
     title: 'Plan',
     rows: [
-      ['Price', '$0, forever', `$${PRO_PRICE} per user a month`, '$0'],
-      ['Billed for', 'Nothing', 'Owners, admins and agents', 'Nothing'],
-      ['Runs on', 'opendesk Cloud', 'opendesk Cloud', 'Your own servers'],
+      ['Price', '$0, forever', `$${PRO_PRICE} per user a month`, `$${COLLAB_PRICE} per user a month`, '$0'],
+      ['Billed for', 'Nothing', 'Owners, admins and agents', 'Owners, admins and agents', 'Nothing'],
+      ['Runs on', 'opendesk Cloud', 'opendesk Cloud', 'opendesk Cloud', 'Your own servers'],
     ],
   },
   {
     title: 'Limits',
     rows: [
-      ['Mailboxes', '1', 'Unlimited', 'Unlimited'],
-      ['Team members', '1, invitations included', 'Unlimited', 'Unlimited'],
-      ['Viewers', 'Count as members', 'Free and unlimited', 'Unlimited'],
+      ['Mailboxes', '1', 'Unlimited', 'Unlimited', 'Unlimited'],
+      ['Team members', '1, invitations included', 'Unlimited', 'Unlimited', 'Unlimited'],
+      ['Viewers', 'Count as members', 'Free and unlimited', 'Free and unlimited', 'Unlimited'],
     ],
   },
   {
     title: 'AI',
     rows: [
-      ['AI usage each month', `${usd(AI_ALLOWANCE.free)} per workspace`, `${usd(AI_ALLOWANCE.perSeat)} per paid user, pooled`, 'Unlimited on your own key'],
-      ['AI top-ups', topUp, topUp, 'Not needed'],
-      ['Auto-recharge', true, true, 'Not needed'],
-      ['Your own AI key', true, true, 'Your key or a local model'],
+      ['AI usage each month', `${usd(AI_ALLOWANCE.free)} per workspace`, `${usd(AI_ALLOWANCE.perSeat)} per paid user, pooled`, `${usd(AI_ALLOWANCE.collabPerSeat)} per paid user, pooled`, 'Unlimited on your own key'],
+      ['AI top-ups', topUp, topUp, topUp, 'Not needed'],
+      ['Auto-recharge', true, true, true, 'Not needed'],
+      ['Your own AI key', true, true, true, 'Your key or a local model'],
+    ],
+  },
+  {
+    title: 'Collab',
+    rows: [
+      ['Your own mail accounts, private or shared', false, false, true, true],
+      ['Share, assign and comment on one conversation', false, false, true, true],
+      ['Read support inboxes directly, without forwarding', false, false, true, true],
+      ['Mail storage', false, false, `${COLLAB_STORAGE_GB} GB per paid user, pooled`, 'Unlimited'],
     ],
   },
   {
     title: 'Everything else',
     rows: [
-      ['Every feature, Ollie included', true, true, true],
-      ['REST API, webhooks and realtime', true, true, true],
-      ['Desktop and iPhone apps', true, true, true],
-      ['If you downgrade', 'Nothing is deleted', 'Nothing is deleted', 'No plans to change'],
+      ['Every helpdesk feature, Ollie included', true, true, true, true],
+      ['REST API, webhooks and realtime', true, true, true, true],
+      ['Desktop and iPhone apps', true, true, true, true],
+      ['If you downgrade', 'Nothing is deleted', 'Nothing is deleted', 'Nothing is deleted', 'No plans to change'],
     ],
   },
 ];
 const heads = [
   { name: 'Free', sub: '$0 forever' },
   { name: 'Pro', sub: `$${PRO_PRICE} per user / month`, featured: true },
+  { name: 'Collab', sub: `$${COLLAB_PRICE} per user / month` },
   { name: 'Self-hosted', sub: 'Free, unlimited' },
 ];
 ---
-<!-- Phones: each limit with the three plans under it. -->
+<!-- Phones: each limit with the four plans under it. -->
 <div class="rounded-[18px] bg-bg ring-1 ring-line md:hidden">
-  <div class="sticky top-[60px] z-[2] grid grid-cols-3 gap-2 rounded-t-[18px] border-b border-line bg-bg px-4 py-3">
+  <div class="sticky top-[60px] z-[2] grid grid-cols-4 gap-2 rounded-t-[18px] border-b border-line bg-bg px-4 py-3">
     {heads.map((h) => <div class="text-[13px] font-semibold text-fg">{h.name}</div>)}
   </div>
   {groups.map((g) => (
@@ -61,8 +74,10 @@ const heads = [
       {g.rows.map(([k, ...cells]) => (
         <div class="border-t border-line-soft px-4 py-3">
           <div class="text-[12.5px] text-muted">{k}</div>
-          <div class="mt-1.5 grid grid-cols-3 gap-2 text-[13px] leading-snug text-fg">
-            {cells.map((c) => <div>{c === true ? <span class="inline-flex size-5 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--c-green)_14%,transparent)] text-[var(--c-green)]"><Icon name="check" size={12} stroke={2.5} /><span class="sr-only">Included</span></span> : c}</div>)}
+          <div class="mt-1.5 grid grid-cols-4 gap-2 text-[12px] leading-snug text-fg">
+            {cells.map((c) => <div class="min-w-0 break-words">{c === true
+              ? <span class="inline-flex size-5 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--c-green)_14%,transparent)] text-[var(--c-green)]"><Icon name="check" size={12} stroke={2.5} /><span class="sr-only">Included</span></span>
+              : c === false ? <span class="inline-flex size-5 items-center justify-center text-subtle"><i class="block h-px w-2.5 bg-current" aria-hidden="true"></i><span class="sr-only">Not included</span></span> : c}</div>)}
           </div>
         </div>
       ))}
@@ -71,12 +86,12 @@ const heads = [
 </div>
 
 <div class="hidden overflow-x-auto rounded-[18px] bg-bg ring-1 ring-line md:block lg:overflow-visible">
-  <table class="w-full min-w-[720px] border-separate border-spacing-0 text-left text-[14px]">
+  <table class="w-full min-w-[860px] border-separate border-spacing-0 text-left text-[14px]">
     <thead>
       <tr>
-        <th scope="col" class="cmp-head w-[28%] rounded-tl-[18px] px-6 py-5 align-bottom font-normal"><span class="label">Compare</span></th>
+        <th scope="col" class="cmp-head w-[24%] rounded-tl-[18px] px-6 py-5 align-bottom font-normal"><span class="label">Compare</span></th>
         {heads.map((h) => (
-          <th scope="col" class={`cmp-head w-[24%] px-6 py-5 align-bottom font-normal ${h.featured ? 'cmp-feat' : ''} ${h.name === 'Self-hosted' ? 'rounded-tr-[18px]' : ''}`}>
+          <th scope="col" class={`cmp-head w-[19%] px-6 py-5 align-bottom font-normal ${h.featured ? 'cmp-feat' : ''} ${h.name === 'Self-hosted' ? 'rounded-tr-[18px]' : ''}`}>
             <div class="flex items-center gap-2 text-[15px] font-semibold tracking-[-0.01em] text-fg">{h.name}{h.featured && <span class="pill t-violet !h-5 !text-[10px]">Most teams</span>}</div>
             <div class="mt-1 font-mono text-[11.5px] text-muted">{h.sub}</div>
           </th>
@@ -86,7 +101,7 @@ const heads = [
     {groups.map((g) => (
       <tbody>
         <tr>
-          <th scope="colgroup" colspan="4" class="px-6 pb-2 pt-7 text-left font-normal"><span class="font-mono text-[10.5px] uppercase tracking-[0.1em] text-subtle">{g.title}</span></th>
+          <th scope="colgroup" colspan="5" class="px-6 pb-2 pt-7 text-left font-normal"><span class="font-mono text-[10.5px] uppercase tracking-[0.1em] text-subtle">{g.title}</span></th>
         </tr>
         {g.rows.map(([k, ...cells]) => (
           <tr class="cmp-row">
@@ -95,7 +110,9 @@ const heads = [
               <td class={`border-t border-line-soft px-6 py-3.5 ${i === 1 ? 'bg-surface-2' : ''}`}>
                 {c === true
                   ? <span class="inline-flex size-5 items-center justify-center rounded-full bg-[color-mix(in_oklab,var(--c-green)_14%,transparent)] text-[var(--c-green)]"><Icon name="check" size={12} stroke={2.5} /><span class="sr-only">Included</span></span>
-                  : <span class="text-fg">{c}</span>}
+                  : c === false
+                    ? <span class="inline-flex size-5 items-center justify-center text-subtle"><i class="block h-px w-2.5 bg-current" aria-hidden="true"></i><span class="sr-only">Not included</span></span>
+                    : <span class="text-fg">{c}</span>}
               </td>
             ))}
           </tr>

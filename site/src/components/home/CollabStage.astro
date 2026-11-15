@@ -1,0 +1,145 @@
+---
+/**
+ * Collab on the home page: a member's mail in opendesk, standing on a painting.
+ * On the left her accounts, one private and one shared with a team; in the
+ * middle a conversation from the shared account with the comment bar pinned
+ * under it (contracts/collab.md, CommentBar). On the timeline she shares that
+ * one conversation with Jonas, the header says so, his comment lands and she
+ * starts answering it. The rest of the account stays as it is.
+ */
+import Stage from '../Stage.astro';
+import Icon from '../Icon.astro';
+
+const boxes = [
+  { icon: 'inbox', label: 'All inboxes', n: '14' },
+  { icon: 'users', label: 'Shared with me', n: '3' },
+  { icon: 'user', label: 'Assigned to me', n: '2' },
+] as const;
+
+const accounts = [
+  { color: '#2b6cf0', name: 'maya@margin.app', via: 'Google', audience: 'Private', tone: 't-grey', n: '9' },
+  { color: '#0c9488', name: 'partners@margin.app', via: 'Microsoft', audience: 'Partnerships', tone: 't-teal', n: '4', active: true },
+  { color: '#d48806', name: 'maya@fastmail.com', via: 'IMAP', audience: 'Private', tone: 't-grey', n: '1' },
+] as const;
+
+const threads = [
+  { who: 'Daniel Okafor', subject: 'Renewal terms for 2027', time: '9:41', unread: true, active: true },
+  { who: 'Lea Hoffmann', subject: 'Co-marketing plan, first draft', time: '9:12', unread: true },
+  { who: 'Ravi Menon', subject: 'Intro: Margin x Inkwell', time: 'Tue' },
+] as const;
+---
+<Stage w={1180} h={628} tone="none" mobileW={600} mobileX={340} label="opendesk Mail: a private and a shared mail account in the sidebar, a conversation from the shared account shared on its own with a teammate, and his comment under the thread.">
+  <div class="absolute inset-0" data-seq data-hold="4600">
+    <!-- The member's accounts -->
+    <div class="float-card left-[40px] top-[56px] w-[292px] !rounded-[16px] p-3 text-left">
+      <div class="px-2 pb-2 pt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-subtle">Mail</div>
+      {boxes.map((b) => (
+        <div class="flex h-8 items-center gap-2.5 rounded-[7px] px-2 text-[12.5px] text-body">
+          <Icon name={b.icon} size={14} class="text-subtle" />
+          <span class="flex-1">{b.label}</span>
+          <span class="font-mono text-[11px] text-muted">{b.n}</span>
+        </div>
+      ))}
+      <div class="mx-2 my-2.5 h-px bg-line"></div>
+      {accounts.map((a) => (
+        <div class={`flex items-center gap-2.5 rounded-[9px] px-2 py-2 ${'active' in a ? 'bg-surface ring-1 ring-line' : ''}`}>
+          <span class="size-2.5 shrink-0 rounded-full" style={`background:${a.color}`}></span>
+          <span class="min-w-0 flex-1 leading-tight">
+            <span class="block truncate text-[12.5px] font-medium text-fg">{a.name}</span>
+            <span class="mt-1 flex items-center gap-1.5 text-[11px] text-muted">{a.via}<span class={`pill pill-dot ${a.tone} !h-[17px] !text-[10px]`}>{a.audience}</span></span>
+          </span>
+          <span class="font-mono text-[11px] text-muted">{a.n}</span>
+        </div>
+      ))}
+      <div class="mt-2 flex h-8 items-center gap-2.5 rounded-[7px] px-2 text-[12.5px] text-muted"><Icon name="plus" size={14} />Connect a mail account</div>
+    </div>
+
+    <!-- The shared account's conversation -->
+    <div class="float-card left-[360px] top-[28px] flex h-[572px] w-[560px] flex-col !rounded-[16px] text-left">
+      <div class="flex h-[46px] shrink-0 items-center gap-2 border-b border-line px-4">
+        <span class="size-2 rounded-full bg-[#0c9488]"></span>
+        <span class="text-[12.5px] font-medium text-fg">partners@margin.app</span>
+        <span class="text-[12px] text-muted">Inbox</span>
+        <span class="ml-auto flex items-center gap-1 text-subtle"><Icon name="archive" size={14} /><Icon name="star" size={14} class="ml-2" /><Icon name="moreH" size={14} class="ml-2" /></span>
+      </div>
+      <div class="flex shrink-0 border-b border-line">
+        {threads.map((t) => (
+          <div class={`min-w-0 flex-1 border-r border-line-soft px-3.5 py-2.5 last:border-r-0 ${'active' in t ? 'bg-surface' : ''}`}>
+            <div class="flex items-center gap-1.5 text-[11.5px]">
+              {'unread' in t && <span class="size-1.5 shrink-0 rounded-full bg-[var(--c-blue)]"></span>}
+              <span class={`truncate ${'unread' in t ? 'font-semibold text-fg' : 'text-body'}`}>{t.who}</span>
+              <span class="ml-auto shrink-0 font-mono text-[10px] text-muted">{t.time}</span>
+            </div>
+            <div class="mt-0.5 truncate text-[11.5px] text-muted">{t.subject}</div>
+          </div>
+        ))}
+      </div>
+
+      <div class="min-h-0 flex-1 overflow-hidden px-5 pt-4">
+        <div class="text-[17px] font-semibold tracking-[-0.02em] text-fg">Renewal terms for 2027</div>
+        <div class="mt-2 flex h-5 items-center gap-1.5">
+          <span class="pill pill-dot t-teal">Partnerships</span>
+          <span class="pill t-blue">Assigned to Maya</span>
+          <span class="s-pop pill t-grey" data-step="2" data-wait="1300"><Icon name="users" size={11} />Shared with Jonas</span>
+        </div>
+        <div class="mt-4 flex h-9 items-center gap-2.5 rounded-[8px] bg-surface-2 px-3 text-[12px] ring-1 ring-line-soft">
+          <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-[#1e3a5f] text-[8px] font-semibold text-white">MC</span>
+          <b class="shrink-0 font-medium text-fg">Maya Chen</b>
+          <span class="min-w-0 flex-1 truncate text-muted">Hi Daniel, lovely to hear. Let me check with the team and come back to you this week.</span>
+          <span class="shrink-0 font-mono text-[10.5px] text-muted">Nov 6</span>
+        </div>
+        <div class="mt-4 flex items-start gap-3">
+          <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#e9d5c4] text-[11px] font-semibold text-[#6b4a2f]">DO</span>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-baseline gap-2 text-[12.5px]"><b class="font-semibold text-fg">Daniel Okafor</b><span class="truncate text-muted">daniel@northwind.co</span><span class="ml-auto shrink-0 font-mono text-[10.5px] text-muted">9:41</span></div>
+            <div class="mt-0.5 text-[11.5px] text-muted">to partners@margin.app</div>
+            <div class="mt-3 space-y-2 text-[13px] leading-[1.6] text-body">
+              <p>Hi Maya,</p>
+              <p>Our board signed off on another year with Margin. Before we sign, could we move the 40 seats to yearly billing, and is there room on the price if we add the design team in March?</p>
+              <p>Happy to jump on a call this week.</p>
+              <p class="text-muted">Daniel</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CommentBar: pinned under the thread, one line until it is used. -->
+      <div class="shrink-0 border-t border-line bg-surface-2 px-4 py-3">
+        <div class="s-pop mb-2.5 flex items-start gap-2.5" data-step="3" data-wait="1500">
+          <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-[#dbe4f5] text-[9.5px] font-semibold text-[#2a4a80]">JB</span>
+          <div class="min-w-0 rounded-[10px] rounded-tl-[3px] bg-bg px-3 py-2 text-[12.5px] leading-snug text-body ring-1 ring-line">
+            <span class="font-medium text-fg">Jonas</span> <span class="text-[var(--c-blue)]">@Maya</span> yearly is fine. I can do 10% off if the design team joins.
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-[8px] bg-bg px-3 text-[12.5px] ring-1 ring-line">
+            <span class="text-subtle" data-step="0" data-until="4" data-wait="0">Comment, @ to mention a teammate</span>
+            <span class="s-swap text-fg" data-step="4" data-wait="1400"><span data-stream="70">Thanks, I will send him that today.</span><span class="od-caret"></span></span>
+          </span>
+          <span class="flex h-8 items-center gap-1 px-1 font-mono text-[11px] text-muted"><Icon name="chat" size={13} /><span data-step="0" data-until="3" data-wait="0">0</span><span class="s-swap" data-step="3">1</span></span>
+          <span class="flex h-8 items-center gap-1.5 rounded-[7px] bg-fg px-3 text-[12px] font-medium text-bg"><Icon name="reply" size={13} />Reply</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Share just this conversation -->
+    <div class="s-pop float-card left-[808px] top-[176px] w-[332px] !rounded-[16px] p-4 text-left" data-step="1" data-until="3" data-wait="1400">
+      <div class="text-[13.5px] font-semibold text-fg">Share conversation</div>
+      <p class="mt-1 text-[12px] leading-snug text-muted">Share just this conversation. The rest of the account stays as it is.</p>
+      <div class="mt-3 flex h-9 items-center gap-2 rounded-[8px] bg-bg px-2.5 ring-1 ring-line">
+        <span class="inline-flex h-6 items-center gap-1.5 rounded-full bg-surface pl-0.5 pr-2 text-[12px] text-fg ring-1 ring-line"><span class="flex size-5 items-center justify-center rounded-full bg-[#dbe4f5] text-[8.5px] font-semibold text-[#2a4a80]">JB</span>Jonas Berg</span>
+        <span class="text-[12px] text-subtle">Add people</span>
+      </div>
+      <div class="mt-3 flex justify-end gap-2">
+        <span class="flex h-7 items-center rounded-[6px] px-2.5 text-[12px] text-muted">Cancel</span>
+        <span class="flex h-7 items-center rounded-[6px] bg-fg px-3 text-[12px] font-medium text-bg">Save</span>
+      </div>
+    </div>
+
+    <!-- A private account stays private. -->
+    <div class="float-card left-[52px] top-[480px] flex w-[268px] items-center gap-2.5 !rounded-[12px] px-3 py-2.5 text-left">
+      <span class="t-grey tint-bg flex size-7 shrink-0 items-center justify-center rounded-[8px]"><Icon name="lock" size={13} /></span>
+      <span class="text-[11.5px] leading-snug text-body">Private accounts are seen by the person who connected them alone, admins included.</span>
+    </div>
+  </div>
+</Stage>

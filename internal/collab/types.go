@@ -404,8 +404,11 @@ type CollabStatus struct {
 	Enabled   bool            `json:"enabled"`
 	Reason    *string         `json:"reason" enum:"plan,disabled,workspace_disabled"`
 	Providers CollabProviders `json:"providers"`
-	Accounts  int             `json:"accounts"`
-	Storage   CollabStorage   `json:"storage"`
+	// GoogleClientID is the OAuth client a Google Workspace admin trusts so the domain's
+	// accounts can connect (contracts/collab.md "Google Workspace").
+	GoogleClientID *string       `json:"google_client_id"`
+	Accounts       int           `json:"accounts"`
+	Storage        CollabStorage `json:"storage"`
 }
 
 // CollabStorage is the workspace's Collab storage (contracts/collab.md "Storage").

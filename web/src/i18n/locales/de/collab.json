@@ -450,7 +450,7 @@
     "connected": "{{email}} ist verbunden. Die E-Mails werden synchronisiert.",
     "error": {
       "oauth_state": "Die Anmeldung ist abgelaufen oder kam aus einem anderen Browser. Versuch es noch einmal.",
-      "access_denied": "Die Anmeldung wurde abgebrochen.",
+      "access_denied": "Die Anmeldung wurde abgebrochen oder von Google blockiert. Bei Google Workspace muss ein Admin opendesk eventuell erst vertrauen: Die Schritte findest du unter Konto verbinden, Google.",
       "provider_error": "Der Anbieter hat die Verbindung abgelehnt. Versuch es gleich noch einmal.",
       "account_conflict": "Jemand in diesem Workspace hat diese Adresse schon verbunden.",
       "collab_required": "Collab ist nicht im Tarif dieses Workspace enthalten.",
@@ -481,7 +481,7 @@
     "back": "Zurück",
     "openedInBrowser": "Die Anmeldung wurde in deinem Browser geöffnet. Schließ sie dort ab und komm dann zurück.",
     "address": "E-Mail-Adresse",
-    "loginHint": "Optional: die Adresse für die Anmeldung",
+    "loginHint": "Die Adresse für die Anmeldung",
     "name": "Name in der Seitenleiste",
     "namePlaceholder": "Arbeit, Vertrieb, Privat",
     "password": "Passwort",
@@ -507,7 +507,36 @@
     "nothingDeleted": "opendesk löscht nie E-Mails bei deinem Anbieter.",
     "history": "Ältere E-Mails",
     "historyHint": "Die letzten 30 Tage kommen zuerst. Ältere E-Mails folgen im Hintergrund, und du kannst das in den Kontoeinstellungen ändern.",
-    "historyNone": "Nur die letzten 30 Tage"
+    "historyNone": "Nur die letzten 30 Tage",
+    "workspace": {
+      "title": "Google Workspace? Dein Admin vertraut opendesk einmal",
+      "hint": "Wenn Google den Zugriff blockiert, markiert ein Workspace-Admin opendesk für eure Domain als vertrauenswürdig. Danach kann sich jedes Konto der Domain verbinden.",
+      "s1": "Melde dich als Admin bei <b>admin.google.com</b> an.",
+      "open": "Google Admin öffnen",
+      "s2": "Öffne <b>Sicherheit</b>, <b>API-Steuerung</b>, <b>App-Zugriffssteuerung</b> und wähle <b>Neue App konfigurieren</b>.",
+      "s3": "Suche nach dieser Client-ID und wähle die gefundene App.",
+      "noClientId": "Diese Instanz hat ihre Client-ID nicht gemeldet. Frag die Person, die sie betreibt.",
+      "s4": "Wähle als Bereich <b>Alle in deiner Organisation</b> oder die Organisationseinheiten mit den Konten. Wähle beim Zugriff <b>Vertrauenswürdig</b> und dann <b>Fertig</b>."
+    },
+    "personalGmail": "Das ist eine private Gmail-Adresse. Privates Gmail verbindet sich mit einem App-Passwort, ohne Google-Anmeldung.",
+    "methodStep": "Wie soll opendesk sich verbinden?",
+    "method": {
+      "workspace": "Google Workspace",
+      "workspaceHint": "Ein Konto auf der eigenen Domain deiner Firma",
+      "signin": "Mit Google anmelden",
+      "signinHint": "Dein Workspace-Admin markiert opendesk einmal als vertrauenswürdige App, danach meldet sich jedes Konto mit Google an.",
+      "recommended": "Empfohlen",
+      "personal": "Privates Gmail",
+      "personalHint": "Ein Konto mit @gmail.com oder @googlemail.com",
+      "appPassword": "App-Passwort",
+      "appPasswordHint": "Geführt: Bestätigung in zwei Schritten einschalten, ein App-Passwort mit 16 Buchstaben erstellen, verbinden. Klappt auch für ein einzelnes Workspace-Konto."
+    },
+    "appPasswordTitle": "Gmail mit einem App-Passwort",
+    "appPasswordBanner": "Ein App-Passwort verbindet jedes Gmail- oder Workspace-Konto in etwa zwei Minuten, ohne Google-Zustimmungsseite.",
+    "appPasswordConnect": "Konto verbinden",
+    "appPasswordConnectHint": "Deine Adresse und das App-Passwort. Die Gmail-Server sind schon eingetragen.",
+    "appPasswordNote": "Nutze die Adresse, mit der du dich bei Google anmeldest, keinen Alias, und ein App-Passwort desselben Kontos. Wenn du das App-Passwort in deinem Google-Konto löschst, wird das Konto getrennt.",
+    "useAppPassword": "App-Passwort nutzen"
   },
   "detail": {
     "back": "E-Mail-Konten",

@@ -35,7 +35,11 @@ func (w *syncAccountWorker) Timeout(*river.Job[jobs.CollabSyncArgs]) time.Durati
 }
 
 func (w *syncAccountWorker) Work(ctx context.Context, job *river.Job[jobs.CollabSyncArgs]) error {
-	return w.s.syncAccount(ctx, job.Args.AccountID)
+	before := w.s.storedGmailHistory(ctx, job.Args.AccountID)
+	if err := w.s.syncAccount(ctx, job.Args.AccountID); err != nil {
+		return err
+	}
+	return w.s.pushedDuring(ctx, job.Args.AccountID, before)
 }
 
 // applyWorker makes an action at the provider (collab.apply).

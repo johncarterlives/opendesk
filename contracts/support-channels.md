@@ -1,7 +1,7 @@
 # Support channels (`internal/supportchannels`)
 
 Support channels mirror email tickets into agent-facing chat products. Version 1 ships
-Slack, Discord and Telegram. The orchestration is provider-neutral so WhatsApp, Signal,
+Slack, Discord, Telegram, Google Chat and Mattermost. The orchestration is provider-neutral so Signal,
 Teams and other products can be added as adapters without changing ticket behavior.
 This is separate from `internal/integrations`: integrations expose MCP tools to Ollie,
 while support channels are places where people work tickets.
@@ -236,6 +236,51 @@ connection URL and authentication audience are the connection's webhook URL. The
 request is accepted only when its Google-signed OIDC token has that audience and the
 `chat@system.gserviceaccount.com` identity. Add the Chat app to each space used as a
 destination.
+
+Mattermost (`internal/supportchannels/providers/mattermost`) works through a **bot account**: the
+credentials are the server's address (`server_url`), the bot's access token (`bot_token`), the team
+(`team_id`, picked from the teams the bot is in: `AccountDiscoverer`) and a `webhook_token` opendesk
+generates.
+
+- The server address passes the outbound URL rules (`netsafe`): https, a public address, no
+  credentials in the URL, no redirects; loopback only on a development instance. Every request
+  to it goes through the guarded client, never the engine's plain one. The token must belong to a
+  bot (`is_bot`): a person's token would act as that person, so it is refused when connecting.
+- Destinations are the team's public and private channels the bot is a member of (direct and
+  group messages and deleted channels are left out). A ticket is the first post of a thread in the
+  channel: its message holds the ticket card (a message attachment with customer, assignee, status
+  and priority, an **Assign to me** button and status and priority selects), and its replies are the
+  thread.
+- People talk to the bot in the thread over the bot's **websocket** (`channel.Subscriber`,
+  `/api/v4/websocket`, authenticated with the bot's token): `posted` events of the connection's
+  team, never the bot's own, another bot's or a webhook's, a system post or a direct message. A post
+  that starts with `!reply`, `!note`, `!assign`, `!status`, `!priority` or `!link` is that command
+  (Mattermost keeps `/` for its slash commands); one that mentions the bot is `Directed`, and what
+  it says is `chat` for Ollie. Any other post is people talking among themselves and is ignored, as
+  in Slack and Discord. Files on a post that reaches opendesk are read with `GET /files/{id}/info`
+  and opened with `GET /files/{id}` (`AttachmentDownloader`). A refused token ends the subscription with a
+  `channel.FatalError`; a dropped connection is retried by the engine, and a connection that stops
+  answering pings is dropped.
+- Buttons and selects post to the connection's webhook URL: opendesk writes it, and the button token,
+  into every message's `integration`, so nothing is registered in Mattermost. Mattermost signs
+  nothing, so `Verify` accepts a press only when `context.token` equals the connection's
+  `webhook_token` (constant time). The engine hands every adapter the connection's webhook address as
+  `webhook_url` in its credentials (never stored) wherever it posts or verifies, and a button
+  without it is refused rather than posted. A press names its thread in `context.thread`;
+  the ticket's own card is the thread's first post, so its `post_id` is the thread.
+- `Respond` posts an ephemeral message only the person sees (`POST /posts/ephemeral`);
+  `ClearActions` removes the buttons of a consumed confirmation; `RichAdapter` posts, edits and
+  deletes mirrored messages (4,000 characters, then "View in opendesk"). A customer's `@name` is
+  written with a zero-width space after the `@` wherever it stands outside a word (after markdown
+  or punctuation too, and in attachment names), so mirrored text never notifies anyone; an email
+  address is left alone.
+- Health is `healthy` when the token works and the bot is a member of the team,
+  `action_required` when it is not, `error` when the token is refused. `Configure` registers nothing
+  and checks the same. A `429` waits for `X-Ratelimit-Reset`.
+- Not yet: edits and deletions of a post in Mattermost (`post_edited`, `post_deleted`) are not
+  mirrored, and direct messages to the bot are ignored.
+- If opendesk is on a private address, Mattermost must be allowed to call it (System Console,
+  Developer, Allow untrusted internal connections).
 
 Adapters are compiled into the binary. They are plugin-shaped Go packages, not Go
 runtime `.so` plugins, which keeps builds portable and self-hosting predictable.

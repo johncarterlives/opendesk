@@ -119,6 +119,7 @@
       "unknown_customer": "未找到使用该邮箱地址的客户。请联系授予您访问权限的团队。",
       "blocked": "此账户无法登录。请联系团队获取帮助。",
       "relink_required": "您在身份提供商处的账户已更改。请让团队允许一次新的登录，然后重试。",
+      "transient_name_id": "登录提供商每次发送的 ID 都不同，因此我们无法识别您。请联系团队寻求帮助。",
       "identity_revoked": "此登录已被移除。请联系团队获取帮助。",
       "access_denied": "登录已取消。",
       "provider_unavailable": "无法连接到登录提供商。请重试。",

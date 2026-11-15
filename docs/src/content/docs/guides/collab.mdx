@@ -1,0 +1,80 @@
+---
+title: Collab mail accounts
+description: Connect your own Gmail, Google Workspace, Microsoft or IMAP account to opendesk and handle its mail like a mail app, privately or shared with your team.
+---
+
+import Steps from '../../../components/Steps.astro';
+import Step from '../../../components/Step.astro';
+import Callout from '../../../components/Callout.astro';
+
+With Collab, each member connects their own email account and reads and handles it in opendesk like a mail app: every folder and label, read and unread, stars, archive, move, trash and spam, replies and new mail from the address. Each change is made at your provider too, and changes made elsewhere come back.
+
+An account is **private** (only the person who connected it sees it, admins included) or **shared** with the whole workspace or the teams and people you pick. Any single conversation can be shared on its own, assigned and discussed in comments, so a teammate can help with one email without seeing the rest of the account. Collab mail never becomes tickets and is never sent to AI providers.
+
+## Who has Collab
+
+- **opendesk Cloud**: Collab comes with the **Collab** plan, $38 per seat per month. It is Pro plus Collab, with $20 of AI usage per paid seat instead of $10. Owners and admins subscribe, or switch a Pro subscription to it, in **Settings, Plan and billing**. See [Cloud plans and billing](/guides/billing/).
+- **Self-hosted**: every workspace has Collab, unless the instance turns it off with `COLLAB=false`.
+
+## Connect an account
+
+In **Settings**, open **Mail accounts** and click **Connect an account**. Pick where the account is: **Google**, **Microsoft** or **Other (IMAP)**. Then choose who sees it and how much older mail to import. The last 30 days arrive first, and older mail follows in the background.
+
+### Google Workspace: sign in with Google
+
+Choose **Google**, then **Sign in with Google**. Many Google Workspace domains only let accounts connect to apps their admin trusts. If Google says access is blocked, a Workspace admin marks opendesk as trusted once for the domain. After that, every account on the domain can sign in.
+
+<Steps>
+<Step title="Your Workspace admin trusts opendesk">
+
+The admin signs in to [admin.google.com](https://admin.google.com/ac/owl/list?tab=configuredApps), goes to **Security**, **API controls**, **App access control**, and chooses **Configure new app**. They search for opendesk's client ID, which the connect dialog shows with a copy button, and select the app it finds. For scope they choose **All in your organization** or the organizational units with the accounts. For access to Google data they choose **Trusted**, then **Finish**.
+
+</Step>
+<Step title="Sign in">
+
+Back in opendesk, click **Continue with Google**, sign in with the account and approve. Google sends you back with the account connected, and its mail starts syncing.
+
+</Step>
+</Steps>
+
+<Callout type="note">
+Already trusted for your domain? Skip straight to signing in. The admin's step is needed once per domain, not once per account.
+</Callout>
+
+### Personal Gmail: an app password
+
+Personal `@gmail.com` and `@googlemail.com` accounts connect with an app password, without Google sign-in. Choose **Google**, then **App password**. If you type a personal Gmail address in the sign-in step, opendesk offers this path too. It also works for a single Workspace account whose admin allows app passwords.
+
+<Steps>
+<Step title="Turn on 2-Step Verification">
+
+Google only offers app passwords on accounts with 2-Step Verification. Turn it on in your [Google Account's security settings](https://myaccount.google.com/security) with a phone prompt, an authenticator app or a text message. Already on? Continue.
+
+</Step>
+<Step title="Create an app password">
+
+Open [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), type **opendesk** as the app name and choose **Create**. Copy the 16 letters Google shows. The spaces don't matter.
+
+</Step>
+<Step title="Connect">
+
+Enter your address and paste the app password. Gmail's servers are filled in for you: `imap.gmail.com` on port 993 and `smtp.gmail.com` on port 465, both over TLS.
+
+</Step>
+</Steps>
+
+<Callout type="note">
+Use the address you sign in to Google with, not an alias, and an app password from that same account. Deleting the app password in your Google Account disconnects the account in opendesk. No app passwords page? 2-Step Verification is still off, or your Workspace admin has turned app passwords off.
+</Callout>
+
+### Microsoft 365 and Outlook
+
+Choose **Microsoft** and click **Continue with Microsoft**. This works for work and school accounts and for personal Outlook.com, Hotmail and Live accounts. A Microsoft 365 organization may need an admin to approve opendesk first, as Microsoft shows when you sign in.
+
+### Other providers
+
+Choose **Other (IMAP)** and type your address. opendesk fills in the servers for common hosts. iCloud, Yahoo, AOL, Fastmail, Zoho and Yandex need an app password rather than your account password, and the form shows where to make one with a link to that page. For any other host, enter its IMAP and SMTP servers. opendesk signs in to both before it saves anything.
+
+## Disconnect
+
+Open the account in **Settings, Mail accounts** and choose **Disconnect**. opendesk removes the account's mail and credentials. Nothing is deleted at your provider: opendesk never deletes mail there.

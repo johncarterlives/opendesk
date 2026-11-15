@@ -123,6 +123,7 @@
       "unknown_customer": "Não encontramos nenhum cliente com esse e-mail. Fale com a equipa que lhe deu acesso.",
       "blocked": "Esta conta não pode iniciar sessão. Fale com a equipa para obter ajuda.",
       "relink_required": "A sua conta no provedor mudou. Peça à equipa para permitir um novo início de sessão e tente novamente.",
+      "transient_name_id": "O provedor de início de sessão envia um identificador diferente de cada vez, por isso não o conseguimos reconhecer. Contacte a equipa para obter ajuda.",
       "identity_revoked": "Este início de sessão foi removido. Fale com a equipa para obter ajuda.",
       "access_denied": "O início de sessão foi cancelado.",
       "provider_unavailable": "Não foi possível contactar o provedor de início de sessão. Tente novamente.",

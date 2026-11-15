@@ -29,6 +29,10 @@ func (s *service) registerStatusRoutes(api huma.API) {
 				return nil, httpx.Wrap(err)
 			}
 			out := CollabStatus{Enabled: state.Mail, Providers: s.providersOffered()}
+			if out.Providers.Google {
+				id := s.oauth[ProviderGoogle].clientID
+				out.GoogleClientID = &id
+			}
 			if !state.Mail {
 				reason := state.MailDisabledReason
 				if reason == products.InstanceDisabled {

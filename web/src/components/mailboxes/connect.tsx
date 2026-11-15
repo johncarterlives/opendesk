@@ -2,7 +2,7 @@
 // the app password walkthroughs and the cause-and-fix callout for a refused sign-in.
 
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, ExternalLink, KeyRound, Settings2 } from "lucide-react";
+import { AlertCircle, ExternalLink, KeyRound, Settings2, ShieldCheck } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -256,7 +256,7 @@ export function Steps({ items }: { items: ReactNode[] }) {
       {items.map((it, i) => (
         <li key={i} className="flex gap-2.5 text-[12.5px] leading-5 text-fg-2 [&_b]:font-medium [&_b]:text-fg">
           <span className="mono flex size-5 shrink-0 items-center justify-center rounded-sm border border-line bg-sunken text-[10.5px] text-fg-3">{i + 1}</span>
-          <span>{it}</span>
+          <span className="min-w-0 flex-1">{it}</span>
         </li>
       ))}
     </ol>
@@ -272,6 +272,57 @@ export function AppPasswordGuide({ host, url }: { host: GuideHost; url: string }
       <div className="text-[12.5px] font-medium">{t("connect.guide.title")}</div>
       <Steps items={(["s1", "s2", "s3"] as const).map((k) => <Trans key={k} t={t} i18nKey={`connect.guide.${host}.${k}`} components={{ b }} />)} />
       {url && <ExternalButton href={url}>{t(`connect.guide.${host}.open`)}</ExternalButton>}
+    </div>
+  );
+}
+
+/**
+ * The Gmail and Google Workspace app password in three steps: 2-Step Verification, the app
+ * password, then `connect` (the password and anything else the caller asks for). Shared by
+ * support mailboxes and Collab mail accounts.
+ */
+export function GmailAppPasswordGuide({ sub, banner, connectTitle, connectSub, connect }: { sub: 0 | 1 | 2; banner: string; connectTitle?: string; connectSub?: string; connect: ReactNode }) {
+  const { t } = useTranslation("settingsChannels");
+  const b = <b />;
+  const labels = [t("connect.gmail.p1"), t("connect.gmail.p2"), t("connect.gmail.p3")];
+  const title = sub === 2 && connectTitle ? connectTitle : t(`connect.gmail.s${(sub + 1) as 1 | 2 | 3}Title`);
+  const subtitle = sub === 2 && connectSub ? connectSub : t(`connect.gmail.s${(sub + 1) as 1 | 2 | 3}Sub`);
+  return (
+    <div className="flex flex-col gap-4">
+      <p className={cn("rounded-md px-3 py-2 text-xs leading-[18px]", tone.blue.chip)}>{banner}</p>
+      <div className="flex items-center gap-1.5" aria-hidden>
+        {labels.map((l, i) => (
+          <div key={l} className="min-w-0 flex-1">
+            <div className={cn("h-1 rounded-full transition-colors duration-200", i < sub ? "bg-fg-2" : i === sub ? "bg-fg-3" : "bg-line")} />
+            <div className={cn("mt-1.5 truncate text-[11px] font-medium", i === sub ? "text-fg" : i < sub ? "text-fg-2" : "text-fg-4")}>{l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line bg-surface">
+          {sub === 2 ? <KeyRound className="size-4 text-fg-2" aria-hidden /> : <ShieldCheck className="size-4 text-fg-2" aria-hidden />}
+        </span>
+        <div className="min-w-0">
+          <div className="text-[13.5px] font-medium">{title}</div>
+          <div className="text-xs text-fg-3">{subtitle}</div>
+        </div>
+      </div>
+      {sub === 0 && (
+        <>
+          <Steps items={[<Trans key="a" t={t} i18nKey="connect.gmail.s1a" components={{ b }} />, t("connect.gmail.s1b")]} />
+          <ExternalButton href="https://myaccount.google.com/security">{t("connect.gmail.s1Open")}</ExternalButton>
+          <p className="text-xs leading-[18px] text-fg-3">{t("connect.gmail.s1Note")}</p>
+          <p className="text-xs text-fg-4">{t("connect.gmail.s1Already")}</p>
+        </>
+      )}
+      {sub === 1 && (
+        <>
+          <Steps items={[t("connect.gmail.s2a"), <Trans key="b" t={t} i18nKey="connect.gmail.s2b" components={{ b }} />, t("connect.gmail.s2c")]} />
+          <ExternalButton href="https://myaccount.google.com/apppasswords">{t("connect.gmail.s2Open")}</ExternalButton>
+          <p className="text-xs leading-[18px] text-fg-3">{t("connect.gmail.s2Note")}</p>
+        </>
+      )}
+      {sub === 2 && connect}
     </div>
   );
 }

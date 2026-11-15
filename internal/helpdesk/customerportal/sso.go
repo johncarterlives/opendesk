@@ -45,15 +45,27 @@ var oidcClient = func() *http.Client { return netsafe.Client(false, 10*time.Seco
 // ssoBrand is the sign-in configuration of one brand.
 type ssoBrand struct {
 	Mode           string
+	Protocol       string // oidc | saml
 	Issuer         string
 	ClientID       string
 	Secret         []byte
 	CreateContacts bool
+	SAML           samlBrand
+}
+
+// identityIssuer is the issuer a link of this brand's provider is keyed by. SAML entity ids
+// are kept apart from OIDC issuers, so one string cannot name both kinds of provider.
+func (b ssoBrand) identityIssuer() string {
+	if b.Protocol == "saml" {
+		return "saml:" + b.SAML.EntityID
+	}
+	return b.Issuer
 }
 
 func (s *service) registerSSO(r chi.Router) {
 	r.Get("/v1/public/help/{workspace_slug}/portal/sso/start", s.ssoStart)
 	r.Get("/v1/public/help/{workspace_slug}/portal/sso/callback", s.ssoCallback)
+	s.registerSAML(r)
 }
 
 func (s *service) ssoBindHash(v string) string {
@@ -102,13 +114,24 @@ func (s *service) ssoDone(w http.ResponseWriter, r *http.Request, slug, back, co
 // ssoBrandFor loads the brand a sign-in is for. It answers "" when the brand takes no provider sign-in.
 func (s *service) ssoBrandFor(ctx context.Context, hc kb.HelpCenter) (ssoBrand, string) {
 	var b ssoBrand
-	err := s.d.DB.Pool.QueryRow(ctx, `SELECT portal_auth_mode, portal_oidc_issuer, portal_oidc_client_id,
-        portal_oidc_client_secret_enc, portal_oidc_create_contacts FROM brands WHERE workspace_id=$1 AND id=$2`,
-		hc.WorkspaceID, hc.BrandID).Scan(&b.Mode, &b.Issuer, &b.ClientID, &b.Secret, &b.CreateContacts)
+	err := s.d.DB.Pool.QueryRow(ctx, `SELECT portal_auth_mode, portal_sso_protocol, portal_oidc_issuer, portal_oidc_client_id,
+        portal_oidc_client_secret_enc, portal_oidc_create_contacts, portal_saml_idp_entity_id, portal_saml_idp_sso_url,
+        portal_saml_idp_certificates, portal_saml_email_attribute, portal_saml_name_attribute FROM brands WHERE workspace_id=$1 AND id=$2`,
+		hc.WorkspaceID, hc.BrandID).Scan(&b.Mode, &b.Protocol, &b.Issuer, &b.ClientID, &b.Secret, &b.CreateContacts,
+		&b.SAML.EntityID, &b.SAML.SSOURL, &b.SAML.Certificates, &b.SAML.EmailAttribute, &b.SAML.NameAttribute)
 	if err != nil {
 		return b, "server_error"
 	}
-	if b.Mode == "local" || b.Issuer == "" || len(b.Secret) == 0 {
+	if b.Mode == "local" {
+		return b, "sso_unavailable"
+	}
+	if b.Protocol == "saml" {
+		if b.SAML.EntityID == "" || b.SAML.SSOURL == "" || b.SAML.Certificates == "" {
+			return b, "sso_unavailable"
+		}
+		return b, ""
+	}
+	if b.Issuer == "" || len(b.Secret) == 0 {
 		return b, "sso_unavailable"
 	}
 	return b, ""
@@ -143,6 +166,10 @@ func (s *service) ssoStart(w http.ResponseWriter, r *http.Request) {
 	b, code := s.ssoBrandFor(ctx, hc)
 	if code != "" {
 		s.ssoDone(w, r, hc.Slug, "", code)
+		return
+	}
+	if b.Protocol == "saml" {
+		s.samlStart(w, r, hc, b)
 		return
 	}
 	secret, err := s.d.Box.Open(b.Secret)
@@ -235,6 +262,10 @@ func (s *service) ssoCallback(w http.ResponseWriter, r *http.Request) {
 	b, bcode := s.ssoBrandFor(ctx, hc)
 	if bcode != "" {
 		fail(bcode, uuid.Nil)
+		return
+	}
+	if b.Protocol != "oidc" {
+		fail("sso_unavailable", uuid.Nil)
 		return
 	}
 	id, err := s.ssoExchange(ctx, hc, b, st.Data, code)
@@ -341,7 +372,7 @@ func (s *service) ssoSignIn(ctx context.Context, hc kb.HelpCenter, b ssoBrand, i
 		var cid uuid.UUID
 		var revoked *time.Time
 		err := tx.QueryRow(ctx, `SELECT contact_id, revoked_at FROM customer_oidc_identities
-            WHERE workspace_id=$1 AND issuer=$2 AND subject=$3 FOR UPDATE`, wid, b.Issuer, id.Subject).Scan(&cid, &revoked)
+            WHERE workspace_id=$1 AND issuer=$2 AND subject=$3 FOR UPDATE`, wid, b.identityIssuer(), id.Subject).Scan(&cid, &revoked)
 		known := err == nil
 		if err != nil && !db.IsNotFound(err) {
 			return err
@@ -386,7 +417,7 @@ func (s *service) ssoSignIn(ctx context.Context, hc kb.HelpCenter, b ssoBrand, i
 		if !known {
 			var other bool
 			if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM customer_oidc_identities
-                WHERE workspace_id=$1 AND contact_id=$2 AND issuer=$3 AND revoked_at IS NULL)`, wid, cid, b.Issuer).Scan(&other); err != nil {
+                WHERE workspace_id=$1 AND contact_id=$2 AND issuer=$3 AND revoked_at IS NULL)`, wid, cid, b.identityIssuer()).Scan(&other); err != nil {
 				return err
 			}
 			if relink || other {
@@ -401,12 +432,12 @@ func (s *service) ssoSignIn(ctx context.Context, hc kb.HelpCenter, b ssoBrand, i
 					return nil
 				}
 				if _, err := tx.Exec(ctx, `UPDATE customer_oidc_identities SET revoked_at=now(), updated_at=now()
-                    WHERE workspace_id=$1 AND contact_id=$2 AND issuer=$3 AND revoked_at IS NULL`, wid, cid, b.Issuer); err != nil {
+                    WHERE workspace_id=$1 AND contact_id=$2 AND issuer=$3 AND revoked_at IS NULL`, wid, cid, b.identityIssuer()); err != nil {
 					return err
 				}
 			}
 			if _, err := tx.Exec(ctx, `INSERT INTO customer_oidc_identities(id,workspace_id,brand_id,contact_id,issuer,subject,email)
-                VALUES($1,$2,$3,$4,$5,$6,$7)`, ids.New(), wid, hc.BrandID, cid, b.Issuer, id.Subject, email); err != nil {
+                VALUES($1,$2,$3,$4,$5,$6,$7)`, ids.New(), wid, hc.BrandID, cid, b.identityIssuer(), id.Subject, email); err != nil {
 				return err
 			}
 			if relink {
@@ -429,7 +460,7 @@ func (s *service) ssoSignIn(ctx context.Context, hc kb.HelpCenter, b ssoBrand, i
 		sid := ids.New()
 		refresh = crypto.RandomToken(32)
 		if _, err := tx.Exec(ctx, `INSERT INTO customer_sessions(id,workspace_id,contact_id,email,refresh_hash,ip,user_agent,expires_at,method)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,'oidc')`, sid, wid, cid, email, crypto.HashToken(refresh), ri.IP, ri.UserAgent, time.Now().Add(auth.RefreshTTL)); err != nil {
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, sid, wid, cid, email, crypto.HashToken(refresh), ri.IP, ri.UserAgent, time.Now().Add(auth.RefreshTTL), b.Protocol); err != nil {
 			return err
 		}
 		return audit.Log(ctx, tx, p, wid, "customer.sso.login", "contact", &cid, map[string]any{"brand_id": hc.BrandID})

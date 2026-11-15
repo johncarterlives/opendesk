@@ -2,14 +2,19 @@
  * Plans and AI usage, from contracts/billing.md. Prices render on /pricing, the
  * home page teaser and the JSON-LD offers; nothing else hard-codes a price.
  *
- * The yearly Pro price is not decided, so the site shows monthly pricing only.
+ * The yearly prices are not decided, so the site shows monthly pricing only.
  */
 import { LINKS } from './site';
 
 export const PRO_PRICE = 18; // USD per seat per month, billed monthly
+export const COLLAB_PRICE = 38; // USD per seat per month, billed monthly: Pro plus Collab
 
-// The monthly AI usage allowance, in US dollars (contracts/billing.md, "Plans").
-export const AI_ALLOWANCE = { free: 0.5, perSeat: 10 };
+// The monthly AI usage allowance, in US dollars (contracts/billing.md, "Plans"):
+// per paid seat on Pro and on Collab, pooled across the workspace.
+export const AI_ALLOWANCE = { free: 0.5, perSeat: 10, collabPerSeat: 20 };
+
+// Collab mail storage per paid seat, pooled, a fair-use bound (contracts/billing.md "Collab").
+export const COLLAB_STORAGE_GB = 25;
 
 // An AI top-up: a one-time purchase of any amount of AI usage, dollar for dollar.
 // Top-ups never expire and are spent after the monthly allowance.
@@ -20,7 +25,7 @@ export const AI_TOP_UP = { minUsd: 5, maxUsd: 5000 };
 export const AUTO_RECHARGE = { thresholdUsd: 5, amountUsd: 25, monthlyLimitUsd: 250 };
 
 export type Plan = {
-  id: 'free' | 'pro' | 'self_hosted';
+  id: 'free' | 'pro' | 'collab' | 'self_hosted';
   name: string;
   blurb: string;
   price: string;
@@ -40,7 +45,7 @@ export const PLANS: Plan[] = [
     unit: 'forever',
     note: 'Per workspace',
     cta: { label: 'Start for free', href: LINKS.signup },
-    limits: ['1 mailbox', '1 team member', '$0.50 of AI usage per month', 'Every feature'],
+    limits: ['1 mailbox', '1 team member', '$0.50 of AI usage per month', 'Every helpdesk feature'],
   },
   {
     id: 'pro',
@@ -51,7 +56,17 @@ export const PLANS: Plan[] = [
     note: 'Viewers are free',
     cta: { label: 'Start for free', href: LINKS.signup },
     featured: true,
-    limits: ['Unlimited mailboxes', 'Unlimited team members', '$10 of AI usage per seat per month, pooled', 'Every feature'],
+    limits: ['Unlimited mailboxes', 'Unlimited team members', `$${AI_ALLOWANCE.perSeat} of AI usage per seat per month, pooled`, 'Every helpdesk feature'],
+  },
+  {
+    id: 'collab',
+    name: 'Collab',
+    blurb: 'Pro, plus each person’s own mail in opendesk: private, or shared with the team.',
+    price: `$${COLLAB_PRICE}`,
+    unit: 'per user / month',
+    note: 'Viewers are free',
+    cta: { label: 'Start for free', href: LINKS.signup },
+    limits: ['Everything in Pro', 'Your own Google, Microsoft or IMAP mail, synced both ways', `$${AI_ALLOWANCE.collabPerSeat} of AI usage per seat per month, pooled`, `${COLLAB_STORAGE_GB} GB of mail per seat, pooled`],
   },
   {
     id: 'self_hosted',
@@ -61,7 +76,7 @@ export const PLANS: Plan[] = [
     unit: 'free, unlimited',
     note: 'Apache-2.0',
     cta: { label: 'Read the install guide', href: 'https://docs.opendesk.sh/getting-started/quickstart-self-host/' },
-    limits: ['Unlimited mailboxes', 'Unlimited team members', 'Unlimited AI with your own key', 'Every feature'],
+    limits: ['Unlimited mailboxes', 'Unlimited team members', 'Unlimited AI with your own key', 'Every feature, Collab included'],
   },
 ];
 

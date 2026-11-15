@@ -337,7 +337,8 @@ func TestAPICollabRequired(t *testing.T) {
 	// On: enabled, no reason.
 	w.s = newService(w.d)
 	srv = w.api(w.agent)
-	if st := doJSON(t, "GET", srv.URL+"/v1/collab", nil, &status); st != 200 || !status.Enabled || status.Reason != nil {
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab", nil, &status); st != 200 || !status.Enabled || status.Reason != nil ||
+		status.GoogleClientID == nil || *status.GoogleClientID != "gid" {
 		t.Fatalf("status on: %d %+v", st, status)
 	}
 	// An API key never reaches Collab.

@@ -125,6 +125,7 @@
       "unknown_customer": "Zákazníka s touto e-mailovou adresou jsme nenašli. Obraťte se na tým, který vám poskytl přístup.",
       "blocked": "K tomuto účtu se nelze přihlásit. Požádejte tým o pomoc.",
       "relink_required": "Váš účet u poskytovatele se změnil. Požádejte tým o povolení nového přihlášení a zkuste to znovu.",
+      "transient_name_id": "Poskytovatel přihlášení pokaždé posílá jiný identifikátor, proto vás nemůžeme rozpoznat. Požádejte tým o pomoc.",
       "identity_revoked": "Tento způsob přihlášení byl odebrán. Požádejte tým o pomoc.",
       "access_denied": "Přihlášení bylo zrušeno.",
       "provider_unavailable": "Nepodařilo se spojit s poskytovatelem přihlášení. Zkuste to znovu.",

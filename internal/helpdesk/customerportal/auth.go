@@ -344,7 +344,7 @@ func (s *service) refresh(ctx context.Context, slug string) (*authOut, error) {
    LEFT JOIN customer_credentials a ON a.workspace_id=s.workspace_id AND a.contact_id=s.contact_id
    JOIN workspaces w ON w.id=s.workspace_id
    JOIN brands b ON b.workspace_id=s.workspace_id AND b.slug=$2 AND b.help_center_enabled
-   WHERE s.refresh_hash=$1 AND (s.method<>'oidc' OR b.portal_auth_mode<>'local') AND `+auth.CustomerSessionLive+` FOR UPDATE OF s`, crypto.HashToken(ri.Refresh), strings.ToLower(strings.TrimSpace(slug))).Scan(&sid, &wid, &cid, &expires)
+   WHERE s.refresh_hash=$1 AND (s.method='password' OR (b.portal_auth_mode<>'local' AND s.method=b.portal_sso_protocol)) AND `+auth.CustomerSessionLive+` FOR UPDATE OF s`, crypto.HashToken(ri.Refresh), strings.ToLower(strings.TrimSpace(slug))).Scan(&sid, &wid, &cid, &expires)
 		if err != nil {
 			return err
 		}

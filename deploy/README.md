@@ -386,6 +386,27 @@ instance admin gives Collab to try (`contracts/admin.md` "Collab access").
 Publishing it to everyone needs Google's verification and a yearly CASA
 assessment.
 
+Gmail push makes new Gmail arrive in seconds instead of with the next sync
+(`contracts/collab.md` "Push"). In the Collab Google project, with `<project>`
+its project id:
+
+```sh
+gcloud services enable pubsub.googleapis.com --project <project>
+gcloud pubsub topics create collab-gmail --project <project>
+gcloud pubsub topics add-iam-policy-binding collab-gmail --project <project> \
+  --member serviceAccount:gmail-api-push@system.gserviceaccount.com --role roles/pubsub.publisher
+gcloud iam service-accounts create collab-gmail-push --project <project>
+gcloud pubsub subscriptions create collab-gmail-push --project <project> --topic collab-gmail \
+  --push-endpoint https://api.opendesk.sh/v1/collab/google/push \
+  --push-auth-service-account collab-gmail-push@<project>.iam.gserviceaccount.com \
+  --ack-deadline 30 --message-retention-duration 1h
+```
+
+Then set `collab_google_pubsub_topic = "projects/<project>/topics/collab-gmail"`
+and `collab_google_pubsub_service_account =
+"collab-gmail-push@<project>.iam.gserviceaccount.com"` in `terraform.tfvars`.
+Each Gmail account is watched at its next sync.
+
 ### 8. Stripe billing
 
 Billing exists only on opendesk Cloud and is on when `STRIPE_SECRET_KEY` is set

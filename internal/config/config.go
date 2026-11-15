@@ -17,10 +17,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // MinAuthSecretLength is the hard floor for AUTH_SECRET; the realtime gateway enforces the same.
 const MinAuthSecretLength = 32
+
+// MaxAIAgentInstructions caps AI_AGENT_INSTRUCTIONS, which every support agent reply carries.
+const MaxAIAgentInstructions = 8000
 
 type Config struct {
 	Env      string // development | production
@@ -162,6 +166,12 @@ type Config struct {
 	CollabGoogleClientSecret    string
 	CollabMicrosoftClientID     string
 	CollabMicrosoftClientSecret string
+	// CollabGooglePubSubTopic (COLLAB_GOOGLE_PUBSUB_TOPIC, projects/<project>/topics/<topic>)
+	// and CollabGooglePubSubServiceAccount (COLLAB_GOOGLE_PUBSUB_SERVICE_ACCOUNT) turn on Gmail
+	// push (contracts/collab.md "Push"): Gmail accounts are watched on the topic, and its push
+	// subscription, authenticated as that service account, calls API_URL/v1/collab/google/push.
+	CollabGooglePubSubTopic          string
+	CollabGooglePubSubServiceAccount string
 	// StripePriceCollab and StripePriceCollabYear are the collab plan's recurring per-seat
 	// prices (contracts/billing.md "Collab"); without one the plan cannot be bought.
 	StripePriceCollab     string
@@ -223,10 +233,13 @@ type Config struct {
 	AIModel           string // drafting, summaries, answers
 	AIFastModel       string // triage, classification, short rewrites
 	// AIModels are the models a workspace may choose (contracts/ai.md "Models"); empty = the defaults.
-	AIModels         []string
-	EmbeddingsDriver string // openrouter | voyage | openai | none
-	VoyageAPIKey     string
-	EmbeddingsModel  string
+	AIModels []string
+	// AIAgentInstructions holds optional instance-wide guidance for chat and email support
+	// agents across every workspace (AI_AGENT_INSTRUCTIONS), at most MaxAIAgentInstructions characters.
+	AIAgentInstructions string
+	EmbeddingsDriver    string // openrouter | voyage | openai | none
+	VoyageAPIKey        string
+	EmbeddingsModel     string
 	// AIUsageMarkup multiplies a call's provider cost into what the workspace pays when
 	// billing is on (contracts/billing.md "Metered usage").
 	AIUsageMarkup float64
@@ -333,6 +346,11 @@ func (c *Config) AdminOrigin() string {
 		return ""
 	}
 	return u.Scheme + "://" + u.Host
+}
+
+// CollabGooglePush reports whether Gmail accounts sync on Gmail's push as well as on a timer.
+func (c *Config) CollabGooglePush() bool {
+	return c.CollabGooglePubSubTopic != "" && c.CollabGooglePubSubServiceAccount != ""
 }
 
 // BillingEnabled reports whether plans, limits and the AI balance are enforced.
@@ -528,18 +546,19 @@ func Load() (*Config, error) {
 		StripePriceTopUp:    env("STRIPE_PRICE_AI_TOPUP", env("STRIPE_PRICE_CREDITS", "")),
 		StripeAPIURL:        env("STRIPE_API_URL", ""),
 
-		AIProvider:        env("AI_PROVIDER", ""),
-		AnthropicAPIKey:   env("ANTHROPIC_API_KEY", ""),
-		OpenAIAPIKey:      env("OPENAI_API_KEY", ""),
-		OpenAIBaseURL:     strings.TrimRight(env("OPENAI_BASE_URL", "https://api.openai.com/v1"), "/"),
-		OpenRouterAPIKey:  env("OPENROUTER_API_KEY", ""),
-		OpenRouterBaseURL: strings.TrimRight(env("OPENROUTER_BASE_URL", "https://openrouter.ai/api"), "/"),
-		AIModel:           env("AI_MODEL", ""),
-		AIFastModel:       env("AI_FAST_MODEL", ""),
-		AIModels:          envList("AI_MODELS"),
-		EmbeddingsDriver:  env("EMBEDDINGS_DRIVER", ""),
-		VoyageAPIKey:      env("VOYAGE_API_KEY", ""),
-		EmbeddingsModel:   env("EMBEDDINGS_MODEL", ""),
+		AIProvider:          env("AI_PROVIDER", ""),
+		AnthropicAPIKey:     env("ANTHROPIC_API_KEY", ""),
+		OpenAIAPIKey:        env("OPENAI_API_KEY", ""),
+		OpenAIBaseURL:       strings.TrimRight(env("OPENAI_BASE_URL", "https://api.openai.com/v1"), "/"),
+		OpenRouterAPIKey:    env("OPENROUTER_API_KEY", ""),
+		OpenRouterBaseURL:   strings.TrimRight(env("OPENROUTER_BASE_URL", "https://openrouter.ai/api"), "/"),
+		AIModel:             env("AI_MODEL", ""),
+		AIFastModel:         env("AI_FAST_MODEL", ""),
+		AIModels:            envList("AI_MODELS"),
+		AIAgentInstructions: strings.TrimSpace(strings.ReplaceAll(env("AI_AGENT_INSTRUCTIONS", ""), "\r\n", "\n")),
+		EmbeddingsDriver:    env("EMBEDDINGS_DRIVER", ""),
+		VoyageAPIKey:        env("VOYAGE_API_KEY", ""),
+		EmbeddingsModel:     env("EMBEDDINGS_MODEL", ""),
 
 		DecisionsProvider: strings.ToLower(env("DECISIONS_PROVIDER", "")),
 		TypesafeAPIKey:    env("TYPESAFE_API_KEY", ""),
@@ -560,6 +579,9 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("AI_USAGE_MARKUP must be a number from 1 to 100")
 	}
 	c.AIUsageMarkup = markup
+	if utf8.RuneCountInString(c.AIAgentInstructions) > MaxAIAgentInstructions {
+		return nil, fmt.Errorf("AI_AGENT_INSTRUCTIONS must be at most %d characters", MaxAIAgentInstructions)
+	}
 	if c.AIProvider == "" {
 		switch {
 		case c.OpenRouterAPIKey != "":
@@ -660,6 +682,8 @@ func Load() (*Config, error) {
 	if c.CollabGoogleClientID == "" {
 		c.CollabGoogleClientID, c.CollabGoogleClientSecret = c.GoogleMailboxClientID, c.GoogleMailboxClientSecret
 	}
+	c.CollabGooglePubSubTopic = env("COLLAB_GOOGLE_PUBSUB_TOPIC", "")
+	c.CollabGooglePubSubServiceAccount = env("COLLAB_GOOGLE_PUBSUB_SERVICE_ACCOUNT", "")
 	c.CollabMicrosoftClientID, c.CollabMicrosoftClientSecret = env("COLLAB_MICROSOFT_CLIENT_ID", ""), env("COLLAB_MICROSOFT_CLIENT_SECRET", "")
 	if c.CollabMicrosoftClientID == "" {
 		c.CollabMicrosoftClientID, c.CollabMicrosoftClientSecret = c.MicrosoftMailboxClientID, c.MicrosoftMailboxClientSecret

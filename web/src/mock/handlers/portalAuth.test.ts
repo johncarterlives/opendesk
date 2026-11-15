@@ -24,7 +24,7 @@ describe("mock customer portal sign-in", () => {
     const saved = (await call("PATCH", path, { portal_auth: { mode: "local_and_oidc", issuer: "https://login.acme.com", client_id: "c", client_secret: "s", create_contacts: true } })).body as Brand;
     expect(saved.portal_auth.mode).toBe("local_and_oidc");
     const read = (await call("GET", `${path}/portal/auth`)).body as PortalAuthSettings & { client_secret?: string };
-    expect(read).toEqual({ mode: "local_and_oidc", issuer: "https://login.acme.com", client_id: "c", secret_configured: true, create_contacts: true });
+    expect(read).toMatchObject({ mode: "local_and_oidc", protocol: "oidc", issuer: "https://login.acme.com", client_id: "c", secret_configured: true, create_contacts: true });
     expect(read.client_secret).toBeUndefined();
 
     // An omitted secret keeps the saved one for the same provider, and is refused for another.
@@ -38,7 +38,27 @@ describe("mock customer portal sign-in", () => {
 
     await call("PATCH", path, { portal_auth: { mode: "local" } });
     const cleared = (await call("GET", `${path}/portal/auth`)).body as PortalAuthSettings;
-    expect(cleared).toEqual({ mode: "local", issuer: "", client_id: "", secret_configured: false, create_contacts: false });
+    expect(cleared).toMatchObject({ mode: "local", protocol: "oidc", issuer: "", client_id: "", secret_configured: false, create_contacts: false });
+  });
+
+  it("saves a SAML provider with its certificate, and tells what to enter at the provider", async () => {
+    const brand = ((await call("GET", "/v1/brands")).body.data as Brand[]).find((b) => b.slug === "pressroom")!;
+    const path = `/v1/brands/${brand.id}`;
+    const cert = "-----BEGIN CERTIFICATE-----\nMIIBkTCB+wIJAKHBfpegPjMCMA0GCSqGSIb3DQEBCwUAMBExDzANBgNVBAMMBnVu\n-----END CERTIFICATE-----";
+    const saml = { idp_entity_id: "https://idp.acme.com/entity", idp_sso_url: "https://idp.acme.com/sso", idp_certificates: cert };
+
+    for (const bad of [{ ...saml, idp_entity_id: "" }, { ...saml, idp_sso_url: "http://idp.acme.com/sso" }, { ...saml, idp_certificates: "not a certificate" }]) {
+      expect((await call("PATCH", path, { portal_auth: { mode: "oidc", protocol: "saml", saml: bad } })).body.code).toBe("invalid_saml_config");
+    }
+    expect((await call("PATCH", path, { portal_auth: { mode: "oidc", protocol: "saml", create_contacts: true, saml: { ...saml, email_attribute: "mail" } } })).status).toBe(200);
+    const read = (await call("GET", `${path}/portal/auth`)).body as PortalAuthSettings;
+    expect(read).toMatchObject({ mode: "oidc", protocol: "saml", secret_configured: false, create_contacts: true });
+    expect(read.saml).toMatchObject({ idp_entity_id: saml.idp_entity_id, idp_sso_url: saml.idp_sso_url, email_attribute: "mail" });
+    expect(read.saml.sp_entity_id).toMatch(/\/portal\/sso\/saml\/metadata$/);
+    expect(read.saml.acs_url).toMatch(/\/portal\/sso\/saml\/acs$/);
+
+    await call("PATCH", path, { portal_auth: { mode: "local" } });
+    expect(((await call("GET", `${path}/portal/auth`)).body as PortalAuthSettings).saml.idp_entity_id).toBe("");
   });
 
   it("allows a relink for a contact that can sign in, once per request", async () => {

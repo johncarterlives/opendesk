@@ -822,8 +822,6 @@ func (s *Service) webhook(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	// Google Chat binds its signed request audience to this connection's URL.
-	cr["webhook_url"] = s.webhookURL(c)
 	if e = a.Verify(r.Header, body, cr); e != nil {
 		s.recordWebhookRejection(r.Context(), c.ID)
 		w.WriteHeader(http.StatusUnauthorized)
@@ -958,7 +956,20 @@ const connectionSelect = `SELECT id,workspace_id,provider,name,external_account_
 func connectionScan(c *connection) []any {
 	return []any{&c.ID, &c.WorkspaceID, &c.Provider, &c.Name, &c.ExternalAccountID, &c.ExternalAccountName, &c.ExternalAccountHandle, &c.CredentialsEnc, &c.Status, &c.LastError, &c.HealthStatus, &c.HealthDetail, &c.HealthCheckedAt, &c.HealthUnhealthySince, &c.HealthAlertedAt, &c.CredentialsUpdatedAt, &c.CreatedAt}
 }
+
 func (s *Service) credentials(c connection) (map[string]string, error) {
+	return s.openCredentials(c.CredentialsEnc, c.ID, c.Provider)
+}
+
+// openCredentials opens a connection's stored credentials and adds its webhook address as
+// webhook_url: never stored, but an adapter whose messages carry the address (Mattermost's
+// buttons) needs it wherever it posts, and Google Chat checks its signed requests against it.
+// Every path that posts or verifies opens credentials through here.
+func (s *Service) openCredentials(enc []byte, connectionID uuid.UUID, provider string) (map[string]string, error) {
 	out := map[string]string{}
-	return out, s.d.Box.OpenJSON(c.CredentialsEnc, &out)
+	if err := s.d.Box.OpenJSON(enc, &out); err != nil {
+		return out, err
+	}
+	out["webhook_url"] = s.webhookURL(connection{ID: connectionID, Provider: provider})
+	return out, nil
 }

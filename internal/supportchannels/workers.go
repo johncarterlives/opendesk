@@ -193,8 +193,8 @@ func (s *Service) dispatchTo(ctx context.Context, a jobs.SupportChannelDispatchA
 	if !ok {
 		return nil
 	}
-	creds := map[string]string{}
-	if err = s.d.Box.OpenJSON(d.CredentialsEnc, &creds); err != nil {
+	creds, err := s.openCredentials(d.CredentialsEnc, d.ConnectionID, d.Provider)
+	if err != nil {
 		return err
 	}
 	creds["channel_id"] = d.ExternalChannelID

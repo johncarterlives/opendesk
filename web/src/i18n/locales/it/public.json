@@ -123,6 +123,7 @@
       "unknown_customer": "Non abbiamo trovato nessun cliente con questo indirizzo e-mail. Contatta il team che ti ha dato l’accesso.",
       "blocked": "Questo account non può accedere. Contatta il team per assistenza.",
       "relink_required": "Il tuo account presso il provider è cambiato. Chiedi al team di consentire un nuovo accesso e riprova.",
+      "transient_name_id": "Il provider di accesso invia un identificativo diverso ogni volta, quindi non possiamo riconoscerti. Contatta il team per assistenza.",
       "identity_revoked": "Questo accesso è stato rimosso. Contatta il team per assistenza.",
       "access_denied": "L’accesso è stato annullato.",
       "provider_unavailable": "Non siamo riusciti a raggiungere il provider di accesso. Riprova.",

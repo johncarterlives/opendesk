@@ -88,6 +88,9 @@ type fakeGmail struct {
 	failRawAfter     int
 	failMinimalAfter int
 	profileStatus    int // the profile answers this when set
+	// watches are the topics of users.watch calls (push_test.go); watchStatus refuses them.
+	watches     []string
+	watchStatus int
 	// unreadable are messages whose every read answers 500, as Gmail does for some.
 	unreadable map[string]bool
 	// refused are messages whose reads answer Gmail's 403 rate limit, which names no wait;
@@ -207,6 +210,15 @@ func (g *fakeGmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(g.profileStatus)
 	case r.Method == "GET" && path == "/profile":
 		reply(map[string]any{"historyId": strconv.Itoa(g.history), "messagesTotal": len(g.msgs)})
+	case r.Method == "POST" && path == "/watch" && g.watchStatus != 0:
+		w.WriteHeader(g.watchStatus)
+	case r.Method == "POST" && path == "/watch":
+		var in struct {
+			TopicName string `json:"topicName"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&in)
+		g.watches = append(g.watches, in.TopicName)
+		reply(map[string]any{"historyId": strconv.Itoa(g.history), "expiration": strconv.FormatInt(time.Now().Add(7*24*time.Hour).UnixMilli(), 10)})
 	case r.Method == "GET" && path == "/messages":
 		// Newest first, with the search's after: and before: (unix seconds), spam and trash
 		// only when asked for, in pages whose token is an offset.
@@ -1412,6 +1424,7 @@ func TestEndpointOf(t *testing.T) {
 		{"GET", base + "/gmail/v1/users/me/messages?q=after%3A1", "messages.list", 5},
 		{"GET", base + "/gmail/v1/users/me/history?startHistoryId=1", "history.list", 2},
 		{"GET", base + "/gmail/v1/users/me/profile", "profile", 1},
+		{"POST", base + "/gmail/v1/users/me/watch", "watch", 100},
 		{"GET", base + "/gmail/v1/users/me/labels", "labels.list", 1},
 		{"POST", base + "/gmail/v1/users/me/messages/batchModify", "messages.batchModify", 50},
 		{"POST", base + "/gmail/v1/users/me/messages/abc/modify", "messages.modify", 5},

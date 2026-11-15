@@ -185,7 +185,7 @@
     "ofUnlimited": "of unlimited",
     "ofGb": "of {{gb}} GB",
     "note": "Note",
-    "hintBilling": "The Collab plan is hidden. Offer it so this workspace can subscribe at $38 per user per month, or give it for free.",
+    "hintBilling": "Every workspace is offered the Collab plan at $38 per user per month. Give it for free, or hide it from this workspace.",
     "hintNoBilling": "Billing is off on this instance, so every workspace has Collab unless the instance turns it off. Access is kept but has no effect.",
     "noBilling": "Billing is off on this instance, so this is kept but has no effect.",
     "offer": {
@@ -205,11 +205,11 @@
       "doneUntil": "Collab is free until {{date}}"
     },
     "remove": {
-      "title": "Remove Collab access?",
-      "button": "Remove access",
-      "done": "Collab access removed",
-      "complimentary": "<b>{{name}}</b> loses Collab now unless it pays for the plan. Connected mail accounts stop syncing and are kept.",
-      "offered": "<b>{{name}}</b> can no longer subscribe to the Collab plan. A subscription it already has keeps running."
+      "title": "Hide the Collab plan?",
+      "button": "Hide the plan",
+      "done": "Collab plan hidden",
+      "complimentary": "<b>{{name}}</b> loses Collab now and no longer sees the Collab plan. Connected mail accounts stop syncing and are kept.",
+      "offered": "<b>{{name}}</b> no longer sees the Collab plan and cannot subscribe to it. A subscription it already has keeps running."
     },
     "ends": "Ends",
     "endsOn": "Ends {{date}}.",
@@ -229,6 +229,13 @@
       "format": "Use a date like 2026-12-31.",
       "noSuchDay": "That day doesn't exist.",
       "past": "Pick a day in the future."
+    },
+    "hidden": "Hidden",
+    "endFree": {
+      "title": "End free Collab?",
+      "button": "End free access",
+      "done": "Free Collab ended",
+      "body": "<b>{{name}}</b> loses Collab now unless it subscribes to the Collab plan, which it still sees. Connected mail accounts stop syncing and are kept."
     }
   }
 }

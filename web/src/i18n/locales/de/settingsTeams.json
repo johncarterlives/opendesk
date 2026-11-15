@@ -685,6 +685,28 @@
     "relinkDone": "{{email}} kann sich in den nächsten 15 Minuten mit einem neuen Konto anmelden.",
     "relinkNone": "Kein Kontakt hat diese E-Mail-Adresse.",
     "relinkReauth": "Melde dich erneut an, um das zu tun.",
-    "relinkFailed": "Die Anmeldung konnte nicht erlaubt werden"
+    "relinkFailed": "Die Anmeldung konnte nicht erlaubt werden",
+    "protocol": "Anbietertyp",
+    "protocolHint": "Die meisten Identitätsanbieter unterstützen beides. Wähle, was dein Team schon nutzt.",
+    "protocols": {
+      "oidc": "OpenID Connect",
+      "saml": "SAML 2.0"
+    },
+    "spEntity": "Entity-ID des Service Providers",
+    "spEntityHint": "Trage das beim Anbieter als Entity-ID (Audience) ein.",
+    "copyEntity": "Entity-ID kopieren",
+    "acs": "Assertion-Consumer-Service-URL",
+    "acsHint": "Trage das als ACS- oder Antwort-URL mit HTTP-POST-Binding ein. Kunden beginnen im Portal: Eine vom Anbieter gestartete Anmeldung wird nicht unterstützt.",
+    "copyAcs": "ACS-URL kopieren",
+    "idpEntity": "Entity-ID des Anbieters",
+    "idpEntityHint": "Die Entity-ID des Identitätsanbieters, oft seine Metadaten-URL.",
+    "idpUrl": "Anmelde-URL",
+    "idpUrlHint": "Seine HTTPS-URL für Single Sign-on (HTTP-Redirect-Binding).",
+    "certs": "Signaturzertifikate",
+    "certsHint": "Ein bis drei PEM-Zertifikate, mit denen der Anbieter signiert, RSA mit mindestens 2048 Bit. Füge das neue hinzu, bevor das alte abläuft.",
+    "emailAttr": "E-Mail-Attribut",
+    "emailAttrHint": "Das Attribut mit der E-Mail-Adresse des Kunden. Leer lassen, um die üblichen Namen zu versuchen, dann die NameID, wenn sie eine Adresse ist.",
+    "nameAttr": "Namensattribut",
+    "samlInvalid": "Dieser Anbieter ließ sich nicht verwenden. Prüfe die Entity-ID, eine HTTPS-Anmelde-URL und ein bis drei aktuelle RSA-Signaturzertifikate."
   }
 }

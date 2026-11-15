@@ -428,6 +428,10 @@ locals {
     POSTHOG_HOST                = var.posthog_host
     APP_ATTEST_APP_IDS          = var.app_attest_app_ids
 
+    # Gmail push for Collab accounts; both empty, they sync on the timer alone.
+    COLLAB_GOOGLE_PUBSUB_TOPIC           = var.collab_google_pubsub_topic
+    COLLAB_GOOGLE_PUBSUB_SERVICE_ACCOUNT = var.collab_google_pubsub_service_account
+
     # Integrations that only accept apps registered in advance (variables.tf).
     MCP_SLACK_CLIENT_ID  = var.mcp_slack_client_id
     MCP_BOX_CLIENT_ID    = var.mcp_box_client_id

@@ -88,6 +88,28 @@ ten minutes. Owner-removal and storage-trash cleanup still run to enforce data r
   With Collab a workspace's mailboxes may also receive over generic IMAP while `MAILBOX_IMAP` is
   off, as long as `COLLAB_IMAP` is on.
 
+### Google Workspace
+
+A Google Workspace domain may allow only the third-party apps its admin trusts. So the web app's
+Google connect asks how first (`web/src/components/collab/ConnectAccount.tsx`):
+
+- **Sign in with Google** (recommended for Workspace): before the sign-in it shows the one-time admin
+  step: in the Admin console, Security, API controls, App access control, Configure new app, search the
+  Collab Google client id, scope it to the organization or the units with the accounts and choose
+  Trusted. `CollabStatus.google_client_id` is that client id (`COLLAB_GOOGLE_CLIENT_ID`, else the
+  mailbox client), `null` while Google is not offered. A client id is public: it is in every
+  authorization URL.
+- **App password** (offered while `COLLAB_IMAP` is on): a guided `imap` account on Gmail's own
+  servers (`imap.gmail.com:993`, `smtp.gmail.com:465`, TLS): turn on 2-Step Verification, create an
+  app password, connect. It is the way in for a personal `@gmail.com` or `@googlemail.com` address
+  (typing one in the sign-in step offers it), and works for one Workspace account whose admin allows
+  app passwords. Spaces in the password are dropped. It is an IMAP account like any other: no Gmail
+  labels as folders beyond what Gmail's IMAP shows, no settings sync.
+
+Other hosts that need an app password (iCloud, Yahoo, AOL, Fastmail, Zoho, Yandex) show their own
+steps and link in the IMAP form, from the address's preset (`web/src/lib/collab/imapPresets.ts`, the
+same links as `internal/email/mailhost` `AppPasswordURL`).
+
 ## Sync
 
 A River job per account (`collab.sync_account`, queue `email`) runs when it is due: every minute
@@ -165,6 +187,28 @@ after a connect, a reconnect, `POST .../sync` or an action. One runs per account
   with remote images on request (`web/src/lib/sanitize.ts`). A message with attachments or inline
   images keeps its raw MIME in storage (`collab/<workspace>/<account>/<message>.eml`, deleted with
   the message) and its files are read from it. Messages over 30 MB are skipped.
+
+### Push
+
+With `COLLAB_GOOGLE_PUBSUB_TOPIC` and `COLLAB_GOOGLE_PUBSUB_SERVICE_ACCOUNT` set, Gmail pushes
+each mailbox's changes and its new mail arrives in seconds. The timer above stays as it is, so
+a push that never comes costs only the wait.
+
+- **Watch**: a sync pass of a Gmail account calls `users.watch` on the topic (100 quota units)
+  once a day (Gmail ends a watch after 7 days), at once when the topic changed, and an hour after
+  Gmail refused one. A watch never fails the sync. Stored on the account: `gmail_watch_topic`,
+  `gmail_watch_at` (the next renewal).
+- **Push**: `POST /v1/collab/google/push`, the topic's push subscription, with Pub/Sub's OIDC
+  token: issuer `https://accounts.google.com`, audience `<API_URL>/v1/collab/google/push`, the
+  configured service account as a verified `email`. Anything else is `401`; without the settings
+  the route is `404`. The message's data is Gmail's `{"emailAddress", "historyId"}`. Every Gmail
+  account of that address keeps the newest pushed history id (`gmail_push_history`), and one whose
+  synced history is older gets its sync queued, unless it waits for a reconnect, its backoff or a
+  hold, or its workspace lacks Collab. A verified push is `204` whatever it named, so Pub/Sub
+  never sends it again.
+- **During a pass**: a push that arrives while the account's sync runs cannot queue another (one
+  per account). When the pass ends behind the pushed history id and moved on, its job runs again
+  5 seconds later.
 
 ## History
 
@@ -923,6 +967,7 @@ interface CollabStatus {
   enabled: boolean
   reason: "plan" | "disabled" | "workspace_disabled" | null // instance off wins (disabled), then plan, then workspace flag
   providers: { google: boolean; microsoft: boolean; imap: boolean }
+  google_client_id: string | null  // the client a Workspace admin trusts ("Google Workspace"); null without Google
   accounts: number             // accounts the caller sees
   storage: {                   // the workspace's Collab storage ("Storage")
     used_bytes: number

@@ -1,0 +1,315 @@
+---
+/**
+ * /features, "Collab": the desktop app on Collab's mail page, drawn 1:1 at
+ * 1280 x 804 for the Showcase stage. The sidebar has Mail under Tickets (All
+ * inboxes, Shared with me, Assigned to me, then one row per account); the list
+ * is a shared account's inbox with its folder tabs and categories; the open
+ * conversation has its assignee, its own share, the team's comments and the
+ * CommentBar pinned under the thread (contracts/collab.md, web/src/components/collab).
+ *
+ * On the timeline (`data-step`) a new email lands on top of the list and the
+ * counts tick, Jonas comments on the open conversation, and Maya starts her
+ * answer in the comment field. Comments stay with the team, never the sender.
+ */
+import AppWindow from '../../app/AppWindow.astro';
+import { ic, type Tone } from '../../app/icons';
+
+type Person = { initials: string; tone: Tone };
+const maya: Person = { initials: 'MC', tone: 'violet' };
+const jonas: Person = { initials: 'JB', tone: 'indigo' };
+const priya: Person = { initials: 'PR', tone: 'teal' };
+
+interface Row {
+  who: string;
+  count?: number;
+  subject: string;
+  preview: string;
+  time: string;
+  unread?: boolean;
+  active?: boolean;
+  starred?: boolean;
+  files?: boolean;
+  /** Shared on its own, beyond the account's audience. */
+  shared?: boolean;
+  comments?: number | [number, number];
+  assignees?: Person[];
+}
+
+const rows: Row[] = [
+  {
+    who: 'Daniel Okafor, Ana Ruiz', count: 4, subject: 'Renewal terms for 2027', preview: 'Our board signed off on another year. Could we move the 40 seats to yearly billing?',
+    time: '9:41', active: true, shared: true, comments: [1, 2], assignees: [maya],
+  },
+  {
+    who: 'Ravi Menon', subject: 'Intro: Margin x Inkwell', preview: 'Happy to introduce you to the Inkwell team. They make the paper we keep hearing about.',
+    time: '8:15', unread: true,
+  },
+  {
+    who: 'Sofia Lindgren', count: 2, subject: 'Booth at Paper and Pen Expo', preview: 'We still have two booths left next to the stationery hall, if you want one.',
+    time: 'Yesterday', assignees: [jonas], comments: 3,
+  },
+  {
+    who: 'Northwind Legal', subject: 'Updated data processing addendum', preview: 'Please find the countersigned addendum attached for your records.',
+    time: 'Mon', files: true, starred: true,
+  },
+  {
+    who: 'Tomás Ortega', count: 3, subject: 'Affiliate payouts for October', preview: 'Thanks, the numbers match on our side too. Paying out on Friday.',
+    time: 'Mon',
+  },
+  {
+    who: 'Hana Sato', subject: 'Workshop recap and next steps', preview: 'Thank you for hosting us. Here are the notes and the three things we agreed on.',
+    time: 'Oct 30', assignees: [priya],
+  },
+  {
+    who: 'Felix Braun', count: 2, subject: 'Wholesale pricing for 2027', preview: 'Could you send the updated price list before our buying meeting?',
+    time: 'Oct 29',
+  },
+];
+
+// The new email, on step 1.
+const arriving: Row = {
+  who: 'Lea Hoffmann', subject: 'Co-marketing plan, first draft', preview: 'Attached is the outline we talked about. Could your team look at the launch dates?',
+  time: 'now', unread: true, files: true,
+};
+
+const partners = '#0c9488';
+const mail = [
+  { label: 'All inboxes', icon: 'inbox', count: ['12', '13'] as [string, string] },
+  { label: 'Shared with me', icon: 'users', count: '3' },
+  { label: 'Assigned to me', icon: 'user', count: '2' },
+  { label: 'maya@margin.app', color: '#2b6cf0', count: '9' },
+  { label: 'partners@margin.app', color: partners, count: ['3', '4'] as [string, string], active: true },
+];
+
+const av = (p: Person, cls = '') => `<span class="ml-av dm-chip dm-t-${p.tone} ${cls}">${p.initials}</span>`;
+---
+<div class="absolute inset-0" data-seq data-hold="3800">
+  <AppWindow crumbs={['Mail', 'partners@margin.app']} mail={mail} width={1280}>
+    <!-- The list: the account's inbox -->
+    <section class="ml-list">
+      <div class="ml-bar">
+        <span class="ml-acct-dot" style={`background:${partners}`}></span>
+        <span class="ml-title"><span class="ml-h">partners@margin.app</span><span class="ml-shared">Partnerships</span></span>
+        <span class="dm-iconbtn"><Fragment set:html={ic('search', 14)} /></span>
+        <span class="dm-iconbtn"><Fragment set:html={ic('squarePen', 14)} /></span>
+      </div>
+
+      <!-- FolderBar: the member's tabs -->
+      <div class="ml-tabs">
+        {['Inbox', 'Starred', 'Sent', 'Drafts', 'Archive'].map((t, i) => (
+          <span class={`ml-tab ${i === 0 ? 'ml-tab-on' : ''}`}>{t}</span>
+        ))}
+      </div>
+
+      <!-- CategoryTabs -->
+      <div class="ml-cats">
+        <span class="ml-cat ml-cat-on">Primary<span class="dm-mono"><span data-step="0" data-until="1" data-wait="0">1</span><span class="s-swap" data-step="1">2</span></span></span>
+        <span class="ml-cat">Updates<span class="dm-mono">2</span></span>
+        <span class="ml-cat">Newsletters</span>
+      </div>
+
+      <div class="ml-rows">
+        {[arriving, ...rows].map((r) => {
+          const isNew = r === arriving;
+          const row = (
+            <div class={`ml-row ${r.active ? 'ml-row-on' : ''}`}>
+              {r.active && <i class="ml-focus"></i>}
+              <span class="ml-lead">{r.unread ? <i class="ml-unread"></i> : <i></i>}</span>
+              <span class="ml-main">
+                <span class="ml-line">
+                  <span class={`ml-who ${r.unread ? 'ml-bold' : ''}`}>{r.who}</span>
+                  {r.count && <span class="dm-mono ml-n">{r.count}</span>}
+                  <span class="dm-grow"></span>
+                  {r.files && <Fragment set:html={ic('paperclip', 12, 'dm-fg4')} />}
+                  {r.starred && <span class="ml-star"><Fragment set:html={ic('star', 12)} /></span>}
+                  <span class={`dm-mono ml-time ${r.unread ? 'ml-time-new' : ''}`}>{r.time}</span>
+                </span>
+                <span class={`ml-subject ${r.unread ? 'ml-bold' : ''}`}>{r.subject}</span>
+                <span class="ml-line">
+                  <span class="ml-preview">{r.preview}</span>
+                  {r.shared && <Fragment set:html={ic('users', 12, 'dm-fg4')} />}
+                  {r.comments && (
+                    <span class="dm-mono ml-marks">
+                      <Fragment set:html={ic('messageSquare', 12)} />
+                      {Array.isArray(r.comments)
+                        ? <><span data-step="0" data-until="2" data-wait="0">{r.comments[0]}</span><span class="s-swap" data-step="2">{r.comments[1]}</span></>
+                        : r.comments}
+                    </span>
+                  )}
+                  {r.assignees && <span class="ml-avs">{r.assignees.map((p) => <Fragment set:html={av(p, 'ml-av-xs')} />)}</span>}
+                </span>
+              </span>
+            </div>
+          );
+          return isNew ? <div class="ml-arrive" data-step="1" data-wait="1500"><div>{row}</div></div> : row;
+        })}
+      </div>
+    </section>
+
+    <!-- The open conversation -->
+    <section class="ml-thread">
+      <header class="ml-thead">
+        <span class="ml-thead-h">Renewal terms for 2027</span>
+        <span class="ml-thead-acts">
+          <span class="dm-iconbtn"><Fragment set:html={ic('archive', 15)} /></span>
+          <span class="dm-iconbtn"><Fragment set:html={ic('star', 15)} /></span>
+          <span class="dm-iconbtn"><Fragment set:html={ic('clock', 15)} /></span>
+          <span class="dm-iconbtn"><Fragment set:html={ic('userPlus', 15)} /></span>
+          <span class="dm-iconbtn"><Fragment set:html={ic('ellipsis', 15)} /></span>
+        </span>
+      </header>
+      <div class="ml-meta">
+        <span class="ml-pill"><i style={`background:${partners}`}></i>partners@margin.app</span>
+        <span class="ml-pill dm-chip dm-t-blue"><Fragment set:html={ic('user', 11)} />Assigned to Maya Chen</span>
+        <span class="ml-pill dm-chip dm-t-gray"><Fragment set:html={ic('users', 11)} />Shared with Jonas Berg</span>
+      </div>
+
+      <div class="ml-log">
+        <div class="ml-older">2 older messages</div>
+        <div class="ml-fold">
+          <Fragment set:html={av(maya)} />
+          <span class="ml-fold-who">Maya Chen</span>
+          <span class="ml-fold-text">Hi Daniel, lovely to hear. Let me check with the team and come back to you this week.</span>
+          <span class="dm-mono ml-fold-t">Nov 6</span>
+        </div>
+
+        <article class="ml-msg">
+          <header class="ml-msg-head">
+            <span class="ml-av ml-av-md dm-chip dm-t-amber">DO</span>
+            <span class="ml-msg-names">
+              <span class="ml-msg-who">Daniel Okafor <span class="ml-msg-mail">daniel@northwind.co</span></span>
+              <span class="ml-msg-to">to partners@margin.app, cc Ana Ruiz</span>
+            </span>
+            <span class="dm-mono ml-msg-t">9:41</span>
+          </header>
+          <div class="ml-msg-body">
+            <p>Hi Maya,</p>
+            <p>Our board signed off on another year with Margin. Before we sign, could we move the 40 seats to yearly billing? And is there room on the price if we add the design team in March?</p>
+            <p>Happy to jump on a call this week.</p>
+            <p>Best,<br />Daniel</p>
+          </div>
+        </article>
+
+        <!-- Team comments: only teammates who can see the conversation read them. -->
+        <div class="ml-comments">
+          <div class="ml-com">
+            <Fragment set:html={av(priya)} />
+            <div class="ml-com-body"><span class="ml-com-who">Priya Rao <span class="dm-mono">9:52</span></span><p>Their 40 seats renew on December 1. Yearly would save them two months.</p></div>
+          </div>
+          <div class="ml-com-in" data-step="2" data-wait="1700"><div>
+            <div class="ml-com">
+              <Fragment set:html={av(jonas)} />
+              <div class="ml-com-body"><span class="ml-com-who">Jonas Berg <span class="dm-mono">now</span></span><p><span class="ml-at">@Maya Chen</span> yearly is fine. I can do 10% off if the design team joins in March.</p></div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+
+      <!-- CommentBar: the count, the comment field and the reply buttons, pinned under the thread. -->
+      <div class="ml-bar-pin">
+        <span class="dm-mono ml-pin-count"><Fragment set:html={ic('messageSquare', 14)} /><span data-step="0" data-until="2" data-wait="0">1</span><span class="s-swap" data-step="2">2</span></span>
+        <span class="ml-field">
+          <span class="ml-ph" data-step="0" data-until="3" data-wait="0">Comment, @ to mention a teammate</span>
+          <span class="ml-typed s-swap" data-step="3" data-wait="1400"><span data-stream="60">Perfect, I will offer yearly with 10% off today.</span><span class="ml-caret"></span></span>
+        </span>
+        <span class="dm-btn dm-btn-sm"><Fragment set:html={ic('reply', 13)} />Reply</span>
+        <span class="dm-btn dm-btn-sm"><Fragment set:html={ic('replyAll', 13)} />Reply all</span>
+        <span class="dm-iconbtn"><Fragment set:html={ic('forward', 14)} /></span>
+      </div>
+    </section>
+  </AppWindow>
+</div>
+
+<style is:global>
+  /* The mail page; the window and shared pieces are in app/app.css. */
+  .ml-list { display: flex; width: 380px; flex-shrink: 0; flex-direction: column; border-right: 1px solid var(--dm-line); }
+  .ml-bar { display: flex; height: 49px; flex-shrink: 0; align-items: center; gap: 8px; border-bottom: 1px solid var(--dm-line); padding: 0 10px 0 16px; }
+  .ml-acct-dot { width: 9px; height: 9px; flex-shrink: 0; border-radius: 9999px; }
+  .ml-title { display: flex; min-width: 0; flex: 1; align-items: center; gap: 8px; }
+  .ml-h { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .ml-shared { flex-shrink: 0; border-radius: 4px; padding: 0 6px; font-size: 10.5px; line-height: 18px; font-weight: 500; color: var(--dm-fg-3); box-shadow: inset 0 0 0 1px var(--dm-line); }
+
+  .ml-tabs { display: flex; height: 38px; flex-shrink: 0; align-items: center; gap: 2px; border-bottom: 1px solid var(--dm-line-soft); padding: 0 10px; }
+  .ml-tab { display: inline-flex; height: 26px; align-items: center; border-radius: 5px; padding: 0 8px; font-size: 12px; color: var(--dm-fg-3); }
+  .ml-tab-on { background: var(--dm-active); font-weight: 500; color: var(--dm-fg); }
+  .ml-cats { display: flex; height: 36px; flex-shrink: 0; align-items: stretch; gap: 14px; border-bottom: 1px solid var(--dm-line); padding: 0 16px; }
+  .ml-cat { position: relative; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dm-fg-3); }
+  .ml-cat .dm-mono { font-size: 10.5px; color: var(--dm-fg-4); }
+  .ml-cat-on { font-weight: 500; color: var(--dm-fg); }
+  .ml-cat-on::after { content: ''; position: absolute; inset: auto 0 -1px; height: 2px; border-radius: 2px; background: var(--dm-fg); }
+
+  /* ThreadRow, compact: three lines. */
+  .ml-rows { position: relative; min-height: 0; flex: 1; overflow: hidden; }
+  .ml-row { position: relative; display: flex; gap: 8px; border-bottom: 1px solid var(--dm-line-soft); padding: 10px 14px 10px 12px; }
+  .ml-row-on { background: var(--dm-sunken); }
+  .ml-focus { position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 0 2px 2px 0; background: var(--dm-fg); }
+  .ml-lead { display: flex; width: 16px; flex-shrink: 0; justify-content: center; padding-top: 6px; }
+  .ml-lead i { width: 8px; height: 8px; border-radius: 9999px; }
+  .ml-lead .ml-unread { background: var(--dm-blue); }
+  .ml-main { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+  .ml-line { display: flex; min-width: 0; align-items: center; gap: 6px; }
+  .ml-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--dm-fg-2); }
+  .ml-bold { font-weight: 600; color: var(--dm-fg); }
+  .ml-n { flex-shrink: 0; font-size: 10.5px; color: var(--dm-fg-4); }
+  .ml-star { color: var(--dm-amber); }
+  .ml-star svg { fill: currentColor; }
+  .ml-time { min-width: 44px; flex-shrink: 0; text-align: right; font-size: 11px; color: var(--dm-fg-4); }
+  .ml-time-new { font-weight: 500; color: var(--dm-fg-2); }
+  .ml-subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--dm-fg); }
+  .ml-preview { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--dm-fg-3); }
+  .ml-marks { display: inline-flex; flex-shrink: 0; align-items: center; gap: 2px; font-size: 10.5px; color: var(--dm-fg-4); }
+  .ml-avs { display: flex; flex-shrink: 0; }
+
+  .ml-av { position: relative; display: inline-flex; width: 24px; height: 24px; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 9999px; font-size: 9px; font-weight: 600; letter-spacing: -0.02em; }
+  .ml-av-xs { width: 16px; height: 16px; font-size: 7px; box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--t) 18%, transparent), 0 0 0 2px var(--dm-surface); }
+  .ml-av-md { width: 32px; height: 32px; font-size: 11px; }
+
+  /* The conversation */
+  .ml-thread { position: relative; display: flex; min-width: 0; flex: 1; flex-direction: column; }
+  .ml-thead { display: flex; height: 49px; flex-shrink: 0; align-items: center; gap: 8px; border-bottom: 1px solid var(--dm-line); padding: 0 10px 0 20px; }
+  .ml-thead-h { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+  .ml-thead-acts { display: flex; flex-shrink: 0; gap: 2px; }
+  .ml-meta { display: flex; flex-shrink: 0; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 20px 0; }
+  .ml-pill { display: inline-flex; height: 20px; align-items: center; gap: 5px; border-radius: 5px; padding: 0 7px; font-size: 11px; font-weight: 500; color: var(--dm-fg-2); box-shadow: inset 0 0 0 1px var(--dm-line); }
+  .ml-pill.dm-chip { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--t) 18%, transparent); }
+  .ml-pill i { width: 7px; height: 7px; border-radius: 9999px; }
+
+  .ml-log { min-height: 0; flex: 1; overflow: hidden; padding: 14px 20px 0; }
+  .ml-older { display: flex; height: 26px; align-items: center; justify-content: center; border-radius: 6px; background: var(--dm-sunken); font-size: 11.5px; color: var(--dm-fg-3); box-shadow: inset 0 0 0 1px var(--dm-line-soft); }
+  .ml-fold { margin-top: 8px; display: flex; height: 42px; align-items: center; gap: 10px; border-bottom: 1px solid var(--dm-line-soft); padding: 0 2px; }
+  .ml-fold-who { flex-shrink: 0; font-size: 12.5px; font-weight: 500; }
+  .ml-fold-text { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--dm-fg-3); }
+  .ml-fold-t { flex-shrink: 0; font-size: 11px; color: var(--dm-fg-4); }
+  .ml-msg { padding: 14px 2px 4px; }
+  .ml-msg-head { display: flex; align-items: flex-start; gap: 10px; }
+  .ml-msg-names { display: flex; min-width: 0; flex: 1; flex-direction: column; }
+  .ml-msg-who { font-size: 13px; font-weight: 600; }
+  .ml-msg-mail { margin-left: 4px; font-weight: 400; color: var(--dm-fg-3); }
+  .ml-msg-to { font-size: 11.5px; color: var(--dm-fg-3); }
+  .ml-msg-t { flex-shrink: 0; font-size: 11px; color: var(--dm-fg-4); }
+  .ml-msg-body { margin: 12px 0 0 42px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; line-height: 21px; color: var(--dm-fg-2); }
+
+  .ml-comments { margin: 14px 0 0 42px; display: flex; flex-direction: column; border-left: 2px solid color-mix(in oklab, var(--dm-amber) 40%, transparent); padding-left: 12px; }
+  .ml-com { display: flex; gap: 8px; padding: 6px 0; }
+  .ml-com .ml-av { width: 20px; height: 20px; font-size: 8px; }
+  .ml-com-body { min-width: 0; flex: 1; }
+  .ml-com-who { display: block; font-size: 12px; font-weight: 500; }
+  .ml-com-who .dm-mono { margin-left: 4px; font-size: 10.5px; font-weight: 400; color: var(--dm-fg-4); }
+  .ml-com-body p { font-size: 12.5px; line-height: 19px; color: var(--dm-fg-2); }
+  .ml-at { border-radius: 4px; padding: 0 3px; background: color-mix(in oklab, var(--dm-blue) 10%, transparent); font-weight: 500; color: color-mix(in oklab, var(--dm-blue) 82%, var(--dm-fg)); }
+
+  .ml-bar-pin { display: flex; height: 52px; flex-shrink: 0; align-items: center; gap: 8px; border-top: 1px solid var(--dm-line); background: var(--dm-sunken); padding: 0 12px 0 16px; }
+  .ml-pin-count { display: inline-flex; flex-shrink: 0; align-items: center; gap: 4px; font-size: 11.5px; color: var(--dm-fg-3); }
+  .ml-field { display: flex; height: 30px; min-width: 0; flex: 1; align-items: center; overflow: hidden; border: 1px solid var(--dm-line); border-radius: 6px; background: var(--dm-surface); padding: 0 10px; font-size: 12.5px; white-space: nowrap; }
+  .ml-ph { color: var(--dm-fg-4); }
+  .ml-typed { color: var(--dm-fg); }
+  .ml-caret { display: inline-block; width: 1.5px; height: 14px; margin-left: 1px; vertical-align: -2px; background: var(--dm-fg); animation: od-blink 1.05s steps(1) infinite; }
+
+  /* The timeline: the new email slides in on top with a live arrival's blue
+     tint; a comment opens into the thread. */
+  .ml-arrive, .ml-com-in { display: grid; grid-template-rows: 1fr; }
+  .ml-arrive > div, .ml-com-in > div { min-height: 0; overflow: hidden; }
+  .seq-js [data-step].ml-arrive, .seq-js [data-step].ml-com-in { transition: grid-template-rows 420ms cubic-bezier(0.16, 1, 0.3, 1), opacity 300ms ease 60ms; }
+  .seq-js [data-step]:not(.on).ml-arrive, .seq-js [data-step]:not(.on).ml-com-in { grid-template-rows: 0fr; opacity: 0; }
+  .seq-js [data-step].on.ml-arrive .ml-row { animation: dm-fresh 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards; }
+</style>

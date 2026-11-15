@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -72,6 +73,9 @@ type service struct {
 	paceLimits map[string]paceLimit
 	paceMu     sync.Mutex
 	paced      map[uuid.UUID]*pace
+
+	// pushKeys verify Gmail push tokens (push.go); tests replace them.
+	pushKeys oidc.KeySet
 }
 
 func newService(d *deps.Deps) *service {
@@ -115,6 +119,7 @@ func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	s.registerCategoryRoutes(api)
 	s.registerHandoverRoutes(api)
 	r.Get("/v1/collab/attachments/{message_id}/{index}", s.attachmentHandler)
+	r.Post(gmailPushPath, s.gmailPush)
 	d.Overview.MailCounts = s.overviewCounts
 }
 

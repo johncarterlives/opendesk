@@ -667,7 +667,7 @@ function status(ws: WsData): CollabStatus {
   const p = new URLSearchParams(location.search).get("mock_collab") ?? ws.collabOff ?? null;
   const workspaceOff = ws.workspace.settings.mail_enabled === false;
   const off = p === "off" || p === "plan" || p === "disabled" || workspaceOff;
-  return { enabled: !off, reason: workspaceOff && !p ? "workspace_disabled" : off ? (p === "plan" ? "plan" : "disabled") : null, providers: { google: true, microsoft: true, imap: true }, accounts: off ? 0 : visibleAccounts(ws).length, storage: storage() };
+  return { enabled: !off, reason: workspaceOff && !p ? "workspace_disabled" : off ? (p === "plan" ? "plan" : "disabled") : null, providers: { google: true, microsoft: true, imap: true }, google_client_id: "000000000000-opendesk-collab.apps.googleusercontent.com", accounts: off ? 0 : visibleAccounts(ws).length, storage: storage() };
 }
 
 /**

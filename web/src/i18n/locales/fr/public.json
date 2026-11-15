@@ -123,6 +123,7 @@
       "unknown_customer": "Nous n’avons trouvé aucun client avec cette adresse e-mail. Contactez l’équipe qui vous a donné l’accès.",
       "blocked": "Ce compte ne peut pas se connecter. Contactez l’équipe pour obtenir de l’aide.",
       "relink_required": "Votre compte chez le fournisseur a changé. Demandez à l’équipe d’autoriser une nouvelle connexion, puis réessayez.",
+      "transient_name_id": "Le fournisseur de connexion envoie un identifiant différent à chaque fois, nous ne pouvons donc pas vous reconnaître. Contactez l’équipe pour obtenir de l’aide.",
       "identity_revoked": "Cette connexion a été supprimée. Contactez l’équipe pour obtenir de l’aide.",
       "access_denied": "La connexion a été annulée.",
       "provider_unavailable": "Nous n’avons pas pu joindre le fournisseur de connexion. Veuillez réessayer.",

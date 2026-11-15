@@ -27,6 +27,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/ids"
 	"github.com/useopendesk/opendesk/internal/jobs"
 	"github.com/useopendesk/opendesk/internal/supportchannels/channel"
+	"github.com/useopendesk/opendesk/internal/supportchannels/providers/mattermost"
 	"github.com/useopendesk/opendesk/internal/supportchannels/providers/telegram"
 )
 
@@ -218,6 +219,66 @@ func TestDispatchRoutesByTeamAndPriority(t *testing.T) {
 			t.Fatalf("team move stayed on %q, want team", got)
 		}
 	})
+}
+
+// TestDispatchedCardButtonsPostToTheWebhook checks the engine hands the adapter the
+// connection's webhook address when it posts: a Mattermost card's buttons carry it.
+func TestDispatchedCardButtonsPostToTheWebhook(t *testing.T) {
+	w := newWorkflow(t)
+	e := w.e
+	var posts []map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		var p map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&p)
+		if r.URL.Path == "/api/v4/posts" {
+			posts = append(posts, p)
+		}
+		_, _ = io.WriteString(rw, `{"id":"root1"}`)
+	}))
+	defer srv.Close()
+	var err error
+	if w.s.registry, err = NewRegistry(w.fake, mattermost.New(true)); err != nil {
+		t.Fatal(err)
+	}
+	creds, err := e.D.Box.SealJSON(map[string]string{"server_url": srv.URL, "bot_token": "bot", "team_id": "team1", "webhook_token": "btn"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mm := connection{ID: ids.New(), Provider: "mattermost"}
+	e.Exec(`UPDATE support_channel_destinations SET enabled=false WHERE workspace_id=$1`, w.ws.ID)
+	e.Exec(`INSERT INTO support_channel_connections(id,workspace_id,provider,name,external_account_id,credentials_enc)
+		VALUES($1,$2,'mattermost','Mattermost','team1',$3)`, mm.ID, w.ws.ID, creds)
+	e.Exec(`INSERT INTO support_channel_destinations(id,workspace_id,connection_id,external_channel_id) VALUES($1,$2,$3,'mm1')`, ids.New(), w.ws.ID, mm.ID)
+	var ticket domain.Ticket
+	if err := e.D.DB.Tx(e.Ctx, func(tx pgx.Tx) error {
+		ticket, err = domain.CreateTicket(e.Ctx, tx, domain.NewTicket{WorkspaceID: w.ws.ID, Subject: "Card", Channel: domain.ChannelEmail})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var seq int64
+	e.Scalar(`SELECT seq FROM events WHERE workspace_id=$1 AND type='ticket.created' AND data->'ticket'->>'id'=$2`, &seq, w.ws.ID, ticket.ID.String())
+	if err := w.s.dispatch(e.Ctx, jobs.SupportChannelDispatchArgs{WorkspaceID: w.ws.ID, EventSeq: seq}); err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) == 0 {
+		t.Fatal("no card was posted")
+	}
+	props, _ := posts[0]["props"].(map[string]any)
+	attachments, _ := props["attachments"].([]any)
+	if len(attachments) != 1 {
+		t.Fatalf("card %v", posts[0])
+	}
+	actions, _ := attachments[0].(map[string]any)["actions"].([]any)
+	if len(actions) == 0 {
+		t.Fatalf("card without buttons %v", attachments[0])
+	}
+	for _, a := range actions {
+		to := a.(map[string]any)["integration"].(map[string]any)
+		if to["url"] != w.s.webhookURL(mm) || to["url"] == "" {
+			t.Fatalf("button posts to %v, want %s", to["url"], w.s.webhookURL(mm))
+		}
+	}
 }
 
 var eventCounter int

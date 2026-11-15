@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"unicode/utf8"
 )
 
 func productionEnv(t *testing.T) {
@@ -297,5 +298,25 @@ func TestCredentialsKeyPrevious(t *testing.T) {
 	t.Setenv("CREDENTIALS_KEY_PREVIOUS", strings.Repeat("ab", 32)+","+hexKey+","+hexKey)
 	if c, err = Load(); err != nil || len(c.CredentialsKeyPrevious) != 1 {
 		t.Fatalf("current and repeated keys: %v %d", err, len(c.CredentialsKeyPrevious))
+	}
+}
+
+func TestAIAgentInstructions(t *testing.T) {
+	productionEnv(t)
+	c, err := Load()
+	if err != nil || c.AIAgentInstructions != "" {
+		t.Fatalf("unset: %v %q", err, c.AIAgentInstructions)
+	}
+	t.Setenv("AI_AGENT_INSTRUCTIONS", "  Line one.\r\nLine two.  ")
+	if c, err = Load(); err != nil || c.AIAgentInstructions != "Line one.\nLine two." {
+		t.Fatalf("set: %v %q", err, c.AIAgentInstructions)
+	}
+	t.Setenv("AI_AGENT_INSTRUCTIONS", strings.Repeat("é", MaxAIAgentInstructions))
+	if c, err = Load(); err != nil || utf8.RuneCountInString(c.AIAgentInstructions) != MaxAIAgentInstructions {
+		t.Fatalf("at the limit: %v", err)
+	}
+	t.Setenv("AI_AGENT_INSTRUCTIONS", strings.Repeat("a", MaxAIAgentInstructions+1))
+	if _, err = Load(); err == nil || !strings.Contains(err.Error(), "AI_AGENT_INSTRUCTIONS") {
+		t.Fatalf("over the limit: %v", err)
 	}
 }

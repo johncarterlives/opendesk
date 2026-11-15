@@ -187,7 +187,7 @@
     "ofUnlimited": "sur illimité",
     "ofGb": "sur {{gb}} Go",
     "note": "Note",
-    "hintBilling": "La formule Collab est masquée. Proposez-la pour que cet espace puisse s’abonner à 38 $ par utilisateur et par mois, ou offrez-la.",
+    "hintBilling": "La formule Collab est proposée à chaque espace à 38 $ par utilisateur et par mois. Offrez-la, ou masquez-la pour cet espace.",
     "hintNoBilling": "La facturation est désactivée sur cette instance : chaque espace a Collab sauf si l’instance le désactive. L’accès est conservé mais sans effet.",
     "noBilling": "La facturation est désactivée sur cette instance : ce choix est conservé mais sans effet.",
     "offer": {
@@ -208,11 +208,11 @@
       "doneUntil": "Collab est offert jusqu’au {{date}}"
     },
     "remove": {
-      "title": "Retirer l’accès Collab ?",
-      "button": "Retirer l’accès",
-      "done": "Accès Collab retiré",
-      "complimentary": "<b>{{name}}</b> perd Collab maintenant, sauf s’il paie la formule. Les comptes mail connectés ne se synchronisent plus et sont conservés.",
-      "offered": "<b>{{name}}</b> ne peut plus s’abonner à la formule Collab. Un abonnement déjà en place continue."
+      "title": "Masquer la formule Collab ?",
+      "button": "Masquer la formule",
+      "done": "Formule Collab masquée",
+      "complimentary": "<b>{{name}}</b> perd Collab maintenant et ne voit plus la formule Collab. Les comptes mail connectés ne se synchronisent plus et sont conservés.",
+      "offered": "<b>{{name}}</b> ne voit plus la formule Collab et ne peut plus s’y abonner. Un abonnement déjà en place continue."
     },
     "ends": "Fin",
     "endsOn": "Se termine le {{date}}.",
@@ -232,6 +232,13 @@
       "format": "Utilisez une date comme 2026-12-31.",
       "noSuchDay": "Ce jour n’existe pas.",
       "past": "Choisissez un jour dans le futur."
+    },
+    "hidden": "Masquée",
+    "endFree": {
+      "title": "Mettre fin à Collab offert ?",
+      "button": "Mettre fin à l’accès offert",
+      "done": "Collab offert terminé",
+      "body": "<b>{{name}}</b> perd Collab maintenant, sauf s’il s’abonne à la formule Collab, qu’il voit toujours. Les comptes mail connectés ne se synchronisent plus et sont conservés."
     }
   }
 }

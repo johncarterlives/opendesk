@@ -127,6 +127,63 @@ brand to still take a provider: switching it to `local` ends it at the next refr
 `oidc` mode refuses password sign-in, password links and resets. Audit events:
 `customer.sso.login`, `customer.sso.login.failed` (reason code only), `customer.sso.linked`.
 
+## SAML 2.0 sign-in
+
+A brand's identity provider is OIDC (above) or **SAML 2.0**. `portal_auth.protocol` (`oidc`, the
+default, or `saml`) says which; the mode keeps its meaning: `oidc` is "the identity provider only"
+whatever its protocol, `local_and_oidc` is "a password or the identity provider". Everything above
+that does not name OIDC holds for SAML: the matching order, `create_contacts`, the relink
+authorization, the blocked and changed-address rules, the audit events and the error codes.
+
+Configuration (`PATCH /v1/brands/{id}` with `portal_auth: {mode, protocol: "saml", create_contacts,
+saml}`; read back by admins at `GET /v1/brands/{id}/portal/auth`): `saml.idp_entity_id`,
+`saml.idp_sso_url` (HTTPS, HTTP-Redirect binding), `saml.idp_certificates` (one to three PEM
+certificates, RSA of 2048 bits or more, valid when saved; the signing key can roll over with both
+trusted for a while), `saml.email_attribute` and `saml.name_attribute` (optional). A malformed
+configuration is `422 invalid_saml_config`; the answer says nothing of what was sent. There is
+nothing secret in a SAML configuration, so nothing is sealed; selecting `local` clears it. The read
+also gives the two values to enter at the provider: `saml.sp_entity_id`
+(`<API_URL>/v1/public/help/{slug}/portal/sso/saml/metadata`) and `saml.acs_url`
+(`.../portal/sso/saml/acs`); `GET` the first (public, no brand setup needed) for service provider
+metadata as `application/samlmetadata+xml`.
+
+Sign-in is **SP-initiated Web SSO**. `GET .../portal/sso/start` (the same route as OIDC; the brand's
+protocol picks the flow) redirects to `idp_sso_url` with an unsigned `AuthnRequest` (HTTP-Redirect; its `NameIDPolicy`
+asks for the `persistent` format) and `RelayState`, and sets a cookie holding a signed `oauth_state` token (`flow: customer_portal_saml`:
+brand, the request id, the relay value, the return path) for 10 minutes. The provider POSTs
+`SAMLResponse` and `RelayState` to `POST .../portal/sso/saml/acs`; the cookie is `SameSite=None` on
+https because that post comes from another site. An assertion started at the provider (no request, no
+cookie) is refused: there is no IdP-initiated sign-in. A response is accepted only when:
+
+1. the cookie's token verifies for this brand and `RelayState` equals its relay value (constant time);
+2. an XML signature on the response or on the assertion verifies against one of the brand's
+   certificates (exclusive canonicalization, enveloped; the library checks the signed element is the one
+   read, against signature wrapping) and the certificate is valid at that time;
+3. the status is Success and the response and assertion issuers are `idp_entity_id`;
+4. the assertion's bearer confirmation names this ACS URL as recipient, answers the request
+   (`InResponseTo`) and has not expired (`NotOnOrAfter` against our clock, no allowance); its
+   audience is the service provider's entity id; its conditions are current: `NotOnOrAfter` is held
+   to our clock exactly, while `NotBefore` may be up to two minutes ahead of it, because providers
+   set it to the instant they sign and a slightly fast provider clock must not refuse a fresh
+   assertion;
+5. its NameID is not `urn:oasis:names:tc:SAML:2.0:nameid-format:transient`: a transient id changes
+   at every sign-in, so it cannot be a lasting link, and such a response is `transient_name_id`;
+6. its assertion id has not been used: ids are kept until two minutes after the assertion expires
+   (`customer_saml_assertions`), so a captured response signs no one in twice.
+
+Who it vouches for: the NameID is the subject, and the link key is `saml:<idp_entity_id>` with it, in
+the same `customer_oidc_identities` table (`brand_id` recorded, ownership at the workspace, tombstones
+and relinks as for OIDC). The address is `email_attribute`, or else the first of `email`, `mail`,
+`emailAddress`, the `.../claims/emailaddress` claim and `urn:oid:0.9.2342.19200300.100.1.3`, or else the NameID
+when it contains `@` and no attribute is named. The provider's signed assertion stands for a verified
+address (there is no `email_verified`): a brand trusts its provider for its customers' addresses. The
+name is `name_attribute` or `name`, `displayName` and the like. The session has `method = 'saml'`; it
+needs its brand to still have a SAML provider, so switching the brand to `local` or to OIDC ends it at the
+next refresh. A failure is `?sso_error={code}` as in OIDC: `invalid_state` (cookie, relay value or a
+reused assertion), `invalid_request`, `provider_error` (anything about the response), `transient_name_id` (the provider sent a transient
+NameID; it must send a persistent one, or another id that stays the same for the customer),
+`provider_unavailable` (unusable configuration), then the matching errors.
+
 ## Starting a request
 
 `POST /v1/customer/portal/tickets` with `{workspace_slug, subject, body}` opens a ticket for the signed-in

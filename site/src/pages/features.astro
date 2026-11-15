@@ -3,16 +3,20 @@ import Layout from '../layouts/Layout.astro';
 import Showcase from '../components/features/Showcase.astro';
 import LiveWidget from '../components/home/LiveWidget.astro';
 import InboxScreen from '../components/features/screens/InboxScreen.astro';
+import MailScreen from '../components/features/screens/MailScreen.astro';
 import OllieScreen from '../components/features/screens/OllieScreen.astro';
 import KbScreen from '../components/features/screens/KbScreen.astro';
 import AutomationsScreen from '../components/features/screens/AutomationsScreen.astro';
 import ReportsScreen from '../components/features/screens/ReportsScreen.astro';
 import ApiScreen from '../components/features/screens/ApiScreen.astro';
+import Icon from '../components/Icon.astro';
+import type { IconName } from '../lib/icons';
 import { LINKS } from '../lib/site';
 
 const stops: [string, string][] = [
   ['inbox', 'Inbox'],
   ['chat', 'Live chat'],
+  ['collab', 'Collab'],
   ['ai', 'Ollie'],
   ['knowledge-base', 'Knowledge base'],
   ['automations', 'Automations and SLAs'],
@@ -20,12 +24,20 @@ const stops: [string, string][] = [
   ['api', 'API'],
 ];
 const guide = (path: string) => `${LINKS.docs}${path}`;
+
+// What Collab does, beside its screen (contracts/collab.md).
+const collab: [IconName, string, string][] = [
+  ['lock', 'Private or shared', 'A private account is seen by the person who connected it alone, admins included. A shared one by the workspace, or the teams and people you choose.'],
+  ['folder', 'A real mail client', 'Every folder and label, read and unread, stars, archive, moves and drafts, with each change made at your provider too. Bring in older mail as far back as you like.'],
+  ['users', 'One conversation at a time', 'Share a single email with a teammate, assign it and discuss it in comments only your team reads, without opening the rest of the account.'],
+  ['settings', 'Your account, kept in step', 'Inbox categories like Primary and Updates, and your signature, sender name and automatic reply, in sync with Gmail or Outlook where they share them.'],
+];
 ---
-<Layout cta={{ painting: 'sunflowers' }} title="Features" description="Shared inboxes, live chat, AI drafts and translation, a knowledge base, automations, SLA policies, reports, a public REST API, webhooks and realtime presence. Every feature in opendesk, on the cloud and self-hosted.">
+<Layout cta={{ painting: 'sunflowers' }} title="Features" description="Shared inboxes, live chat, your team's own mail accounts with Collab, AI drafts and translation, a knowledge base, automations, SLA policies, reports, a public REST API, webhooks and realtime presence. Every feature in opendesk, on the cloud and self-hosted.">
   <section class="container-page pt-16 text-center md:pt-24">
     <div class="label inline-flex items-center gap-2"><span class="dot"></span>Features</div>
     <h1 class="mx-auto mt-6 max-w-[14ch] text-balance text-[44px] font-semibold leading-[0.98] tracking-[-0.05em] text-fg sm:text-[64px] lg:text-[80px]">Everything a support team does.</h1>
-    <p class="lede mx-auto mt-6 max-w-[520px]">Every feature on every plan, on the cloud or on your own servers.</p>
+    <p class="lede mx-auto mt-6 max-w-[560px]">The whole helpdesk on every plan, on the cloud or on your own servers. Collab adds your team’s own mail.</p>
     <nav class="mx-auto mt-10 flex max-w-[760px] flex-wrap justify-center gap-2" aria-label="Features">
       {stops.map(([id, label]) => (
         <a href={`#${id}`} class="inline-flex h-9 items-center rounded-full bg-surface-2 px-4 text-[14px] text-body ring-1 ring-line transition-colors hover:bg-bg hover:text-fg">{label}</a>
@@ -40,6 +52,22 @@ const guide = (path: string) => `${LINKS.docs}${path}`;
   <Showcase id="chat" label="Live chat" title="Chat that knows when to step aside." body="Ollie answers first. A person joins the moment someone asks." painting="cumulus-fields" focus="50% 60%" alt="The opendesk chat widget, live. Try it.">
     <div class="relative mx-auto h-[640px] w-full max-w-[480px]"><LiveWidget scene="chat" autoplay /></div>
   </Showcase>
+
+  <Showcase id="collab" label="Collab" title="Your own mail, with your team." body="Each person’s Google, Microsoft or IMAP account, private or shared, synced both ways. Share one email, assign it, talk it through." painting="tropical" focus="50% 55%" w={1280} h={804} alt="Collab in opendesk: a shared mail account's inbox with folder and category tabs, and an open conversation assigned to Maya and shared with Jonas, with the team's comments under it.">
+    <MailScreen />
+  </Showcase>
+  <section class="container-page mt-3">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {collab.map(([icon, t, d]) => (
+        <div class="rounded-[18px] bg-surface-2 p-6 ring-1 ring-line">
+          <Icon name={icon} size={17} class="text-fg" />
+          <h3 class="mt-4 text-[15.5px] font-semibold tracking-[-0.015em] text-fg">{t}</h3>
+          <p class="mt-1.5 text-[14px] leading-relaxed text-muted">{d}</p>
+        </div>
+      ))}
+    </div>
+    <p class="mt-6 px-1 text-[14px] text-muted">On the <a href="/pricing/#collab" class="text-fg underline decoration-line-strong underline-offset-4 hover:decoration-fg">Collab plan</a> on opendesk Cloud, and included in every self-hosted workspace. Collab mail never becomes tickets and is never sent to AI providers.</p>
+  </section>
 
   <Showcase id="ai" label="Ollie" title="AI that writes like your team." body="Drafts, summaries and translations, from your own replies and articles." painting="pink-valley" focus="50% 50%" w={1280} h={804} alt="A ticket with Ollie's drafted reply, ready to send." href={guide('/guides/ai/')}>
     <OllieScreen />

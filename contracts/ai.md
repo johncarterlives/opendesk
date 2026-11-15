@@ -688,8 +688,13 @@ use `fast_model` (default `AI_FAST_MODEL`). JSON features use structured outputs
 `json_schema` (falling back to `json_object`, then plain) on OpenAI-compatible endpoints.
 System prompts are fixed text and cached (Anthropic prompt caching); workspace guidance
 (tone, language, instructions) is a second cached system block; ticket data is the user
-turn. Data blocks are XML-like tags whose content has `<` and `>` replaced by `‹` and `›`,
-so content cannot close or open a block. Requests time out (90 s, 4 min streaming) and are
+turn. `AI_AGENT_INSTRUCTIONS` (at most 8,000 characters, or the instance refuses to boot) is
+instance-wide guidance for the support agents only, the chat (site) agent and the email agent
+(contracts/agent.md), in an `<instance_guidance>` block before the workspace's; no other feature
+reads it. It holds the operator's universal rules: when guidance conflicts, the bot's
+`<agent_guidance>` wins over `<workspace_guidance>`, which wins over `<instance_guidance>`, and none
+overrides the system prompt. Data blocks are XML-like tags whose content has `<` and `>` replaced by
+`‹` and `›`, so content cannot close or open a block. Requests time out (90 s, 4 min streaming) and are
 retried on 429, 5xx and 529 with backoff honouring `Retry-After`.
 
 ## Voice

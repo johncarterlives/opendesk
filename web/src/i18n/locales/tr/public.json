@@ -121,6 +121,7 @@
       "unknown_customer": "Bu e-posta adresine sahip bir müşteri bulamadık. Size erişim veren ekiple iletişime geçin.",
       "blocked": "Bu hesap oturum açamaz. Yardım için ekiple iletişime geçin.",
       "relink_required": "Sağlayıcıdaki hesabınız değişti. Ekipten yeni bir oturum açmaya izin vermesini isteyin ve tekrar deneyin.",
+      "transient_name_id": "Oturum açma sağlayıcısı her seferinde farklı bir kimlik gönderiyor, bu yüzden sizi tanıyamıyoruz. Yardım için ekiple iletişime geçin.",
       "identity_revoked": "Bu oturum açma kaldırıldı. Yardım için ekiple iletişime geçin.",
       "access_denied": "Oturum açma iptal edildi.",
       "provider_unavailable": "Oturum açma sağlayıcısına ulaşamadık. Lütfen tekrar deneyin.",

@@ -15,18 +15,20 @@ export type ImapPreset = {
   smtp_tls: MailTls;
   /** The host signs in with an app password, not the account's own. */
   appPassword: boolean;
+  /** Where the app password is made (internal/email/mailhost AppPasswordURL). */
+  appPasswordUrl?: string;
 };
 
 export const IMAP_PRESETS: readonly ImapPreset[] = [
-  { id: "gmail", name: "Gmail", domains: ["gmail.com", "googlemail.com"], imap_host: "imap.gmail.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.gmail.com", smtp_port: 465, smtp_tls: "tls", appPassword: true },
+  { id: "gmail", name: "Gmail", domains: ["gmail.com", "googlemail.com"], imap_host: "imap.gmail.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.gmail.com", smtp_port: 465, smtp_tls: "tls", appPassword: true, appPasswordUrl: "https://myaccount.google.com/apppasswords" },
   { id: "outlook", name: "Outlook.com", domains: ["outlook.com", "hotmail.com", "live.com", "msn.com"], imap_host: "outlook.office365.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp-mail.outlook.com", smtp_port: 587, smtp_tls: "starttls", appPassword: false },
-  { id: "icloud", name: "iCloud Mail", domains: ["icloud.com", "me.com", "mac.com"], imap_host: "imap.mail.me.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.mail.me.com", smtp_port: 587, smtp_tls: "starttls", appPassword: true },
-  { id: "yahoo", name: "Yahoo Mail", domains: ["yahoo.com", "ymail.com", "rocketmail.com"], imap_host: "imap.mail.yahoo.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.mail.yahoo.com", smtp_port: 465, smtp_tls: "tls", appPassword: true },
-  { id: "aol", name: "AOL Mail", domains: ["aol.com"], imap_host: "imap.aol.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.aol.com", smtp_port: 465, smtp_tls: "tls", appPassword: true },
-  { id: "fastmail", name: "Fastmail", domains: ["fastmail.com", "fastmail.fm"], imap_host: "imap.fastmail.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.fastmail.com", smtp_port: 465, smtp_tls: "tls", appPassword: true },
-  { id: "zoho", name: "Zoho Mail", domains: ["zoho.com", "zohomail.com"], imap_host: "imap.zoho.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.zoho.com", smtp_port: 465, smtp_tls: "tls", appPassword: true },
+  { id: "icloud", name: "iCloud Mail", domains: ["icloud.com", "me.com", "mac.com"], imap_host: "imap.mail.me.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.mail.me.com", smtp_port: 587, smtp_tls: "starttls", appPassword: true, appPasswordUrl: "https://account.apple.com/account/manage" },
+  { id: "yahoo", name: "Yahoo Mail", domains: ["yahoo.com", "ymail.com", "rocketmail.com"], imap_host: "imap.mail.yahoo.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.mail.yahoo.com", smtp_port: 465, smtp_tls: "tls", appPassword: true, appPasswordUrl: "https://login.yahoo.com/account/security" },
+  { id: "aol", name: "AOL Mail", domains: ["aol.com"], imap_host: "imap.aol.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.aol.com", smtp_port: 465, smtp_tls: "tls", appPassword: true, appPasswordUrl: "https://login.aol.com/account/security" },
+  { id: "fastmail", name: "Fastmail", domains: ["fastmail.com", "fastmail.fm"], imap_host: "imap.fastmail.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.fastmail.com", smtp_port: 465, smtp_tls: "tls", appPassword: true, appPasswordUrl: "https://app.fastmail.com/settings/security/apps" },
+  { id: "zoho", name: "Zoho Mail", domains: ["zoho.com", "zohomail.com"], imap_host: "imap.zoho.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.zoho.com", smtp_port: 465, smtp_tls: "tls", appPassword: true, appPasswordUrl: "https://accounts.zoho.com/home#security/app_password" },
   { id: "gmx", name: "GMX", domains: ["gmx.com", "gmx.net", "gmx.de"], imap_host: "imap.gmx.com", imap_port: 993, imap_tls: "tls", smtp_host: "mail.gmx.com", smtp_port: 587, smtp_tls: "starttls", appPassword: false },
-  { id: "yandex", name: "Yandex Mail", domains: ["yandex.com", "yandex.ru"], imap_host: "imap.yandex.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.yandex.com", smtp_port: 465, smtp_tls: "tls", appPassword: true },
+  { id: "yandex", name: "Yandex Mail", domains: ["yandex.com", "yandex.ru"], imap_host: "imap.yandex.com", imap_port: 993, imap_tls: "tls", smtp_host: "smtp.yandex.com", smtp_port: 465, smtp_tls: "tls", appPassword: true, appPasswordUrl: "https://id.yandex.com/security/app-passwords" },
 ];
 
 /** The preset for an address, by its domain; null for any other host. */

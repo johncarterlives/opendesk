@@ -116,6 +116,16 @@ A request is a new ticket like any other: [routing](/guides/routing/) rules and 
 
 A customer starts up to 10 requests an hour, and all of a workspace's customers together up to 500. When the help center is not published, the portal takes no new requests.
 
+#### Sign in through your identity provider
+
+A brand can let customers sign in to the portal through your company's identity provider, over OpenID Connect or SAML 2.0, instead of or beside a password. In **Settings, Brands, Help center, Portal sign-in** pick **Password or identity provider** or **Identity provider only**, then the provider type.
+
+For SAML, enter the two values shown at your provider: the **service provider entity ID** and the **assertion consumer service URL** (reply URL, HTTP-POST binding). The same entity ID address also serves the metadata file, if your provider can import one. Then paste back the provider's **entity ID**, its **sign-on URL** and its **signing certificates** (one to three, RSA with a 2048 bit key or more; add the new one before the old one expires). If the email isn't sent in an attribute called `email` or `mail`, name the attribute.
+
+The provider must identify each customer with the same name ID every time: use the **persistent** name ID format (or an email address or other ID that doesn't change), which opendesk asks for. A **transient** name ID, which changes at every sign-in, is refused, and the customer sees a message asking them to contact your team.
+
+Customers start at the portal and are sent to your provider; signing in from the provider's own app list is not supported. The customer's email address, from the signed assertion, finds their contact; **Create contacts on first sign-in** lets people with no contact in. Signing in this way gives access to the portal only, never to your team's app.
+
 The help center also has a [changelog](/guides/changelog/) at `/changelog`, for product updates, with its own feed. Write entries under **Knowledge base**, in the **Changelog** view next to **Articles**.
 
 <Fold>

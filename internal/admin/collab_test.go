@@ -28,7 +28,8 @@ func TestAdminWorkspaceCollab(t *testing.T) {
 
 	w := viewer.do("GET", "/v1/admin/workspaces/"+wid, nil)
 	want(t, "get workspace", w, 200)
-	if w.str("collab", "access") != "none" || w.Body["collab"].(map[string]any)["enabled"] != false ||
+	// Every workspace is offered the collab plan; it is not listed under collab until it has it.
+	if w.str("collab", "access") != "offered" || w.Body["collab"].(map[string]any)["enabled"] != false ||
 		w.Body["collab"].(map[string]any)["accounts"] != 0.0 || listed("collab") {
 		t.Fatalf("collab before: %s", w.Raw)
 	}
@@ -38,7 +39,7 @@ func TestAdminWorkspaceCollab(t *testing.T) {
 	o := support.do("PUT", path, map[string]any{"access": "offered", "note": "Beta customer"})
 	want(t, "offer", o, 200)
 	if o.str("collab", "access") != "offered" || o.Body["collab"].(map[string]any)["enabled"] != false || o.str("plan") != "free" ||
-		o.str("collab", "note") != "Beta customer" || !listed("collab") || !listed("free") {
+		o.str("collab", "note") != "Beta customer" || listed("collab") || !listed("free") {
 		t.Fatalf("offered: %s", o.Raw)
 	}
 
@@ -70,7 +71,7 @@ func TestAdminWorkspaceCollab(t *testing.T) {
 		t.Fatalf("row plan: %s", row.Raw)
 	}
 
-	// Removing access turns it off.
+	// Hiding the plan turns it off.
 	n := support.do("PUT", path, map[string]any{"access": "none"})
 	want(t, "remove", n, 200)
 	if n.str("plan") != "free" || n.Body["collab"].(map[string]any)["enabled"] != false || n.Body["collab"].(map[string]any)["until"] != nil ||

@@ -461,7 +461,7 @@
     "connected": "{{email}} is connected. Its mail is syncing.",
     "error": {
       "oauth_state": "The sign-in expired or came from another browser. Try again.",
-      "access_denied": "The sign-in was cancelled.",
+      "access_denied": "The sign-in was cancelled or Google blocked it. On Google Workspace, an admin may need to trust opendesk first: the steps are under Connect account, Google.",
       "provider_error": "The provider refused the connection. Try again in a moment.",
       "account_conflict": "Someone in this workspace already connected that address.",
       "collab_required": "Collab is not on this workspace's plan.",
@@ -492,7 +492,7 @@
     "back": "Back",
     "openedInBrowser": "The sign-in opened in your browser. Finish it there, then come back.",
     "address": "Email address",
-    "loginHint": "Optional: the address to sign in with",
+    "loginHint": "The address to sign in with",
     "name": "Name in the sidebar",
     "namePlaceholder": "Work, Sales, Personal",
     "password": "Password",
@@ -518,7 +518,36 @@
     "nothingDeleted": "opendesk never deletes mail at your provider.",
     "history": "Older mail",
     "historyHint": "The last 30 days arrive first. Older mail follows in the background, and you can change this in the account's settings.",
-    "historyNone": "Only the last 30 days"
+    "historyNone": "Only the last 30 days",
+    "workspace": {
+      "title": "On Google Workspace? Your admin trusts opendesk once",
+      "hint": "If Google says access is blocked, a Workspace admin marks opendesk as trusted for your domain. Then every account on it can connect.",
+      "s1": "Sign in to <b>admin.google.com</b> as an admin.",
+      "open": "Open Google Admin",
+      "s2": "Go to <b>Security</b>, <b>API controls</b>, <b>App access control</b>, and choose <b>Configure new app</b>.",
+      "s3": "Search for this client ID and select the app it finds.",
+      "noClientId": "This instance did not report its client ID. Ask whoever runs it.",
+      "s4": "For scope, choose <b>All in your organization</b> or the organizational units with the accounts. For access, choose <b>Trusted</b>, then <b>Finish</b>."
+    },
+    "personalGmail": "This is a personal Gmail address. Personal Gmail connects with an app password, without Google sign-in.",
+    "methodStep": "How should opendesk connect?",
+    "method": {
+      "workspace": "Google Workspace",
+      "workspaceHint": "An account on your company's own domain",
+      "signin": "Sign in with Google",
+      "signinHint": "Your Workspace admin marks opendesk as a trusted app once, then each account signs in with Google.",
+      "recommended": "Recommended",
+      "personal": "Personal Gmail",
+      "personalHint": "An @gmail.com or @googlemail.com account",
+      "appPassword": "App password",
+      "appPasswordHint": "Guided: turn on 2-Step Verification, create a 16-letter app password, connect. Also works for one Workspace account."
+    },
+    "appPasswordTitle": "Gmail with an app password",
+    "appPasswordBanner": "An app password connects any Gmail or Workspace account in about two minutes, with no Google consent screen.",
+    "appPasswordConnect": "Connect the account",
+    "appPasswordConnectHint": "Your address and the app password. Gmail’s servers are set for you.",
+    "appPasswordNote": "Use the address you sign in to Google with, not an alias, and an app password from that same account. Deleting the app password in your Google Account disconnects the account.",
+    "useAppPassword": "Use an app password"
   },
   "detail": {
     "back": "Mail accounts",

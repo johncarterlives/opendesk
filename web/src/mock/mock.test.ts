@@ -375,6 +375,24 @@ describe("mock backend", () => {
     expect((await call("DELETE", `/v1/support-channels/connections/${created.body.id}`)).status).toBe(204);
   });
 
+  it("connects Mattermost: finds its teams, then names the channels the bot is in", async () => {
+    const providers = (await call("GET", "/v1/support-channels/providers")).body.data;
+    const mm = providers.find((p: { key: string }) => p.key === "mattermost");
+    expect(mm.fields).toContainEqual(expect.objectContaining({ name: "team_id", discovered: true }));
+    expect(mm.fields).toContainEqual(expect.objectContaining({ name: "webhook_token", generated: true }));
+    const found = await call("POST", "/v1/support-channels/providers/mattermost/accounts", { credentials: { server_url: "https://chat.example.com", bot_token: "t" } });
+    expect(found.body.data.map((a: { name: string }) => a.name)).toEqual(["Margin", "Partners"]);
+    expect((await call("POST", "/v1/support-channels/providers/mattermost/accounts", { credentials: { server_url: "http://chat.example.com", bot_token: "t" } })).status).toBe(422);
+    const created = await call("POST", "/v1/support-channels/connections", {
+      provider: "mattermost",
+      credentials: { server_url: "https://chat.example.com", bot_token: "t", team_id: found.body.data[0].id },
+    });
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({ provider: "mattermost", external_account_id: found.body.data[0].id, health_status: "healthy" });
+    expect((await call("GET", `/v1/support-channels/connections/${created.body.id}/destinations`)).body.data.map((d: { kind: string }) => d.kind)).toEqual(["channel", "private"]);
+    expect((await call("DELETE", `/v1/support-channels/connections/${created.body.id}`)).status).toBe(204);
+  });
+
   it("sends presence_state when a ticket topic is joined", async () => {
     const [tid] = [...teammatePresence.keys()];
     const wid = db.workspaces[0].workspace.id;

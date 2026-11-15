@@ -705,6 +705,28 @@
     "relinkDone": "{{email}} peut se connecter avec un nouveau compte pendant 15 minutes.",
     "relinkNone": "Aucun contact n’a cette adresse e-mail.",
     "relinkReauth": "Reconnectez-vous pour faire cela.",
-    "relinkFailed": "Impossible d’autoriser la connexion"
+    "relinkFailed": "Impossible d’autoriser la connexion",
+    "protocol": "Type de fournisseur",
+    "protocolHint": "La plupart des fournisseurs d’identité prennent en charge les deux. Choisissez celui que votre équipe utilise déjà.",
+    "protocols": {
+      "oidc": "OpenID Connect",
+      "saml": "SAML 2.0"
+    },
+    "spEntity": "ID d’entité du fournisseur de services",
+    "spEntityHint": "Saisissez-le chez votre fournisseur comme ID d’entité (audience).",
+    "copyEntity": "Copier l’ID d’entité",
+    "acs": "URL du service consommateur d’assertions",
+    "acsHint": "Saisissez-la comme URL ACS ou de réponse, avec la liaison HTTP-POST. Les clients commencent par le portail : une connexion lancée depuis le fournisseur n’est pas prise en charge.",
+    "copyAcs": "Copier l’URL ACS",
+    "idpEntity": "ID d’entité du fournisseur",
+    "idpEntityHint": "L’ID d’entité du fournisseur d’identité, souvent l’URL de ses métadonnées.",
+    "idpUrl": "URL de connexion",
+    "idpUrlHint": "Son URL HTTPS d’authentification unique (liaison HTTP-Redirect).",
+    "certs": "Certificats de signature",
+    "certsHint": "Un à trois certificats PEM avec lesquels le fournisseur signe, RSA d’au moins 2048 bits. Ajoutez le nouveau avant l’expiration de l’ancien.",
+    "emailAttr": "Attribut e-mail",
+    "emailAttrHint": "L’attribut qui contient l’e-mail du client. Laissez vide pour essayer les noms usuels, puis le NameID s’il s’agit d’une adresse.",
+    "nameAttr": "Attribut du nom",
+    "samlInvalid": "Nous n’avons pas pu utiliser ce fournisseur. Vérifiez l’ID d’entité, une URL de connexion HTTPS et un à trois certificats de signature RSA en cours de validité."
   }
 }

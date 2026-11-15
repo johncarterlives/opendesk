@@ -46,7 +46,7 @@ export default function CustomerPortal() {
 }
 // The customer's way in through the brand's identity provider: the API starts it and brings them back here.
 const ssoStart = (slug: string) => `${config.apiUrl}/v1/public/help/${encodeURIComponent(slug)}/portal/sso/start?redirect_to=${encodeURIComponent(window.location.pathname)}`;
-const SSO_ERRORS = ["email_unverified", "unknown_customer", "blocked", "relink_required", "identity_revoked", "access_denied", "provider_unavailable", "rate_limited"] as const;
+const SSO_ERRORS = ["email_unverified", "unknown_customer", "blocked", "relink_required", "transient_name_id", "identity_revoked", "access_denied", "provider_unavailable", "rate_limited"] as const;
 const ssoReason = (code: string) => SSO_ERRORS.find((known) => known === code) ?? "generic";
 /** A query parameter the portal reads once, then drops from the address: `sso_error`, the code the
  * provider sign-in came back with, and `signed_out`, set by Sign out so the page does not go straight back to the provider. */

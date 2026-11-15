@@ -68,7 +68,7 @@ type AIBalance struct {
 
 // CollabBilling is Billing.collab.
 type CollabBilling struct {
-	// Access is the instance admin's Collab access; the collab plan is hidden without it.
+	// Access is the workspace's Collab access; the collab plan is hidden while it is none.
 	Access string     `json:"access" enum:"none,offered,complimentary"`
 	Until  *time.Time `json:"until" doc:"Complimentary access ends then; null: until an instance admin changes it"`
 	// Enabled is whether the workspace has Collab now (plan.Entitlements.Collab).
@@ -81,8 +81,8 @@ type Prices struct {
 	ProMonth *Price `json:"pro_month"`
 	ProYear  *Price `json:"pro_year"`
 	AITopUp  *Price `json:"ai_top_up"`
-	// CollabMonth and CollabYear are present only for a workspace the collab plan is
-	// offered to (or given complimentary): the plan is hidden from everyone else.
+	// CollabMonth and CollabYear are left out for a workspace an instance admin hid the
+	// collab plan from.
 	CollabMonth *Price `json:"collab_month,omitempty"`
 	CollabYear  *Price `json:"collab_year,omitempty"`
 }
@@ -228,7 +228,7 @@ func (s *svc) load(ctx context.Context, q db.Querier, wid uuid.UUID, prices Pric
 	if collabOpen(e.CollabAccess) {
 		b.Collab.Available = e.BillingEnabled && s.collabPriced()
 	} else {
-		// The collab plan is hidden: its prices never reach a workspace it is not offered to.
+		// The collab plan is hidden: its prices never reach this workspace.
 		b.Prices.CollabMonth, b.Prices.CollabYear = nil, nil
 	}
 	b.Limits = Limits{MaxMailboxes: e.MaxMailboxes, MaxMembers: e.MaxMembers}

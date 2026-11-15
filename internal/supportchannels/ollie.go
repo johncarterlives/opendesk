@@ -394,8 +394,8 @@ func (s *Service) postSummary(ctx context.Context, a jobs.SupportChannelSummaryA
 		if !ok {
 			return nil
 		}
-		creds := map[string]string{}
-		if err := s.d.Box.OpenJSON(current.CredentialsEnc, &creds); err != nil {
+		creds, err := s.openCredentials(current.CredentialsEnc, current.ConnectionID, current.Provider)
+		if err != nil {
 			return err
 		}
 		creds["channel_id"] = current.ChannelID
@@ -608,8 +608,8 @@ func (s *Service) warnSLAs(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			creds := map[string]string{}
-			if err := s.d.Box.OpenJSON(d.CredentialsEnc, &creds); err != nil {
+			creds, err := s.openCredentials(d.CredentialsEnc, d.ConnectionID, d.Provider)
+			if err != nil {
 				return err
 			}
 			creds["channel_id"] = d.ChannelID
@@ -662,8 +662,8 @@ func (s *Service) warnSentiment(ctx context.Context, d deliveryTarget, t domain.
 			if !ok {
 				return nil
 			}
-			creds := map[string]string{}
-			if err := s.d.Box.OpenJSON(current.CredentialsEnc, &creds); err != nil {
+			creds, err := s.openCredentials(current.CredentialsEnc, current.ConnectionID, current.Provider)
+			if err != nil {
 				return err
 			}
 			creds["channel_id"] = current.ChannelID

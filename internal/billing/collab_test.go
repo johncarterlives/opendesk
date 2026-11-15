@@ -33,7 +33,13 @@ func TestCollabCheckoutNeedsAccess(t *testing.T) {
 	owner := e.signup("owner")
 	wid := owner.newWorkspace("Acme")
 
-	// Hidden: no collab price, not available, and checkout refused.
+	// A new workspace is offered the collab plan.
+	if b := owner.do("GET", "/v1/billing", nil); b.str("collab", "access") != "offered" || b.obj("collab")["available"] != true {
+		t.Fatalf("new workspace: %s", b.Raw)
+	}
+
+	// Hidden by an instance admin: no collab price, not available, and checkout refused.
+	e.setCollab(wid, plan.CollabNone, nil)
 	b := owner.do("GET", "/v1/billing", nil)
 	expect(t, b, 200, "")
 	prices := b.obj("prices")
@@ -125,6 +131,7 @@ func TestChangePlan(t *testing.T) {
 	expect(t, free.do("POST", "/v1/billing/change-plan", map[string]any{"plan": "pro"}), 409, "no_subscription")
 
 	expect(t, owner.do("POST", "/v1/billing/change-plan", map[string]any{"plan": "pro"}), 409, "already_on_plan")
+	e.setCollab(wid, plan.CollabNone, nil)
 	expect(t, owner.do("POST", "/v1/billing/change-plan", map[string]any{"plan": "collab"}), 403, "plan_unavailable")
 	expect(t, owner.do("POST", "/v1/billing/change-plan", map[string]any{"plan": "enterprise"}), 422, "")
 

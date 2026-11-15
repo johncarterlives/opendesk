@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { InBrowserNote } from "@/components/desktop/InBrowser";
 import { isDesktop, openInBrowser } from "@/lib/desktop";
-import { ArrowRight, Check, ChevronDown, ChevronLeft, Forward, KeyRound, LockKeyhole, Send, Server, ShieldCheck } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ChevronLeft, Forward, KeyRound, LockKeyhole, Send, Server } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Trans, useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,7 +27,7 @@ import {
   CauseCallout,
   connectFailure,
   DetectionCard,
-  ExternalButton,
+  GmailAppPasswordGuide,
   imapOn,
   isGuideHost,
   NotConfiguredPanel,
@@ -35,7 +35,6 @@ import {
   oauthUnconfigured,
   sendProviders,
   ServerSummary,
-  Steps,
   SyncStartField,
   syncOn,
   systemSendOn,
@@ -1111,52 +1110,13 @@ function GmailAppPassword({
   servers: ReactNode;
 }) {
   const { t } = useTranslation("settingsChannels");
-  const b = <b />;
   const cleaned = stripAppPassword(form.imap_password);
   const lengthOff = cleaned.length > 0 && !looksLikeGoogleAppPassword(cleaned);
-  const labels = [t("connect.gmail.p1"), t("connect.gmail.p2"), t("connect.gmail.p3")];
   return (
-    <div className="flex flex-col gap-4">
-      <p className={cn("rounded-md px-3 py-2 text-xs leading-[18px]", tone.blue.chip)}>{t("connect.gmail.banner")}</p>
-      <div className="flex items-center gap-1.5" aria-hidden>
-        {labels.map((l, i) => (
-          <div key={l} className="min-w-0 flex-1">
-            <div className={cn("h-1 rounded-full transition-colors duration-200", i < sub ? "bg-fg-2" : i === sub ? "bg-fg-3" : "bg-line")} />
-            <div className={cn("mt-1.5 truncate text-[11px] font-medium", i === sub ? "text-fg" : i < sub ? "text-fg-2" : "text-fg-4")}>{l}</div>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-start gap-3">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-line bg-surface">
-          {sub === 2 ? <KeyRound className="size-4 text-fg-2" aria-hidden /> : <ShieldCheck className="size-4 text-fg-2" aria-hidden />}
-        </span>
-        <div className="min-w-0">
-          <div className="text-[13.5px] font-medium">{t(`connect.gmail.s${(sub + 1) as 1 | 2 | 3}Title`)}</div>
-          <div className="text-xs text-fg-3">{t(`connect.gmail.s${(sub + 1) as 1 | 2 | 3}Sub`)}</div>
-        </div>
-      </div>
-      {sub === 0 && (
-        <>
-          <Steps items={[<Trans key="a" t={t} i18nKey="connect.gmail.s1a" components={{ b }} />, t("connect.gmail.s1b")]} />
-          <ExternalButton href="https://myaccount.google.com/security">{t("connect.gmail.s1Open")}</ExternalButton>
-          <p className="text-xs leading-[18px] text-fg-3">{t("connect.gmail.s1Note")}</p>
-          <p className="text-xs text-fg-4">{t("connect.gmail.s1Already")}</p>
-        </>
-      )}
-      {sub === 1 && (
-        <>
-          <Steps
-            items={[
-              t("connect.gmail.s2a"),
-              <Trans key="b" t={t} i18nKey="connect.gmail.s2b" components={{ b }} />,
-              t("connect.gmail.s2c"),
-            ]}
-          />
-          <ExternalButton href="https://myaccount.google.com/apppasswords">{t("connect.gmail.s2Open")}</ExternalButton>
-          <p className="text-xs leading-[18px] text-fg-3">{t("connect.gmail.s2Note")}</p>
-        </>
-      )}
-      {sub === 2 && (
+    <GmailAppPasswordGuide
+      sub={Math.min(sub, 2) as 0 | 1 | 2}
+      banner={t("connect.gmail.banner")}
+      connect={
         <>
           <Field label={t("connect.appPassword")} error={errors.imap_password}>
             {({ id, invalid }) => (
@@ -1176,8 +1136,8 @@ function GmailAppPassword({
           {lengthOff && <p className="-mt-2 text-xs leading-[18px] text-tone-amber">{t("connect.gmail.lengthHint")}</p>}
           {servers}
         </>
-      )}
-    </div>
+      }
+    />
   );
 }
 

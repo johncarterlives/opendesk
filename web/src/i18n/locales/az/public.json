@@ -121,6 +121,7 @@
       "unknown_customer": "Bu e-poçt ünvanı ilə müştəri tapmadıq. Sizə giriş verən komanda ilə əlaqə saxlayın.",
       "blocked": "Bu hesab daxil ola bilmir. Kömək üçün komanda ilə əlaqə saxlayın.",
       "relink_required": "Provayderdəki hesabınız dəyişib. Komandadan yeni girişə icazə verməsini xahiş edin və yenidən cəhd edin.",
+      "transient_name_id": "Giriş provayderi hər dəfə fərqli identifikator göndərir, ona görə sizi tanıya bilmirik. Kömək üçün komanda ilə əlaqə saxlayın.",
       "identity_revoked": "Bu giriş silinib. Kömək üçün komanda ilə əlaqə saxlayın.",
       "access_denied": "Giriş ləğv edildi.",
       "provider_unavailable": "Giriş provayderinə qoşula bilmədik. Yenidən cəhd edin.",

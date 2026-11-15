@@ -1,22 +1,26 @@
 // Connecting a mail account: where it is (Google, Microsoft or any IMAP server the
 // instance offers), then who sees it (only you, or shared with everyone or the
 // teams and people you pick) and how much older mail to import, then the sign-in or
-// the IMAP form.
+// the IMAP form. Google asks how first: Google sign-in, after a Workspace admin trusts
+// opendesk once, or an app password over IMAP, the way in for personal Gmail.
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Lock, Server, Users } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, KeyRound, Lock, Server, Users } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { api, type CollabImapBody } from "@/lib/api/endpoints";
 import { ApiError, errorMessage } from "@/lib/api/client";
 import type { CollabStatus, ConnectHistory, MailAudience, MailProvider, MailTls } from "@/lib/api/types";
-import { defaultPort, guessServers, presetForEmail } from "@/lib/collab/imapPresets";
+import { defaultPort, guessServers, IMAP_PRESETS, presetForEmail } from "@/lib/collab/imapPresets";
 import { isEmail } from "@/lib/collab/recipients";
 import { isDesktop, openInBrowser } from "@/lib/desktop";
 import { cn } from "@/lib/cn";
+import { looksLikeGoogleAppPassword, stripAppPassword } from "@/lib/mailHost";
+import { tone } from "@/lib/tones";
 import { qk } from "@/lib/queries";
 import { storeAccount } from "@/lib/collab/hooks";
 import { useSession } from "@/lib/session";
+import { AppPasswordGuide, GmailAppPasswordGuide, isGuideHost, ServerSummary } from "@/components/mailboxes/connect";
 import { GoogleGlyph, MicrosoftGlyph } from "@/components/mailboxes/kinds";
 import { PortInput, validPort } from "@/components/mailboxes/PortInput";
 import { Button } from "@/components/ui/button";
@@ -25,10 +29,17 @@ import { Field, TextInput } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Segmented } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
+import { GoogleWorkspaceTrust, isPersonalGmail, PersonalGmailNote } from "./GoogleWorkspaceTrust";
 import { HISTORY_SCOPES, sinceOf, type HistoryScope } from "./HistorySection";
 import { audienceIsEmpty, ChoiceCard, SharedAudience } from "./pickers";
 
-type Step = "provider" | "audience" | "imap";
+type Step = "provider" | "method" | "audience" | "imap" | "gmail";
+/** How a Google account connects: Google sign-in, or IMAP with an app password. */
+type GoogleMethod = "signin" | "app_password";
+
+const gmail = IMAP_PRESETS.find((p) => p.id === "gmail")!;
+/** Gmail's own servers, the same for personal Gmail and Google Workspace. */
+const GMAIL_SERVERS = { imap_host: gmail.imap_host, imap_port: gmail.imap_port, imap_tls: gmail.imap_tls, smtp_host: gmail.smtp_host, smtp_port: gmail.smtp_port, smtp_tls: gmail.smtp_tls };
 
 /** How much older mail a new account imports: none past the first sync's 30 days, or a history scope. */
 type ConnectScope = "none" | HistoryScope;
@@ -86,6 +97,7 @@ export function ImapFields({ form, onChange, passwordOptional, showIdentity = tr
   const { t } = useTranslation("collab");
   const [advanced, setAdvanced] = useState(!!form.imap_username && form.imap_username !== form.email);
   const preset = presetForEmail(form.email);
+  const guide = preset?.appPasswordUrl && isGuideHost(preset.id) && !passwordOptional ? <AppPasswordGuide host={preset.id} url={preset.appPasswordUrl} /> : null;
   const server = (kind: "imap" | "smtp") => {
     const host = kind === "imap" ? form.imap_host : form.smtp_host;
     const port = kind === "imap" ? form.imap_port : form.smtp_port;
@@ -136,10 +148,11 @@ export function ImapFields({ form, onChange, passwordOptional, showIdentity = tr
           </Field>
         </>
       )}
+      {guide}
       <Field
         label={preset?.appPassword ? t("connect.appPassword") : t("connect.password")}
         optional={passwordOptional}
-        hint={passwordOptional ? t("detail.passwordUnchanged") : preset?.appPassword ? t("connect.appPasswordHint", { host: preset.name }) : undefined}
+        hint={passwordOptional ? t("detail.passwordUnchanged") : preset?.appPassword && !guide ? t("connect.appPasswordHint", { host: preset.name }) : undefined}
       >
         {(p) => <TextInput {...p} type="password" autoComplete="new-password" value={form.password} onChange={(e) => onChange({ password: e.target.value })} />}
       </Field>
@@ -176,10 +189,13 @@ export function imapValid(f: ImapForm, needPassword: boolean): boolean {
 
 export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boolean; onOpenChange: (o: boolean) => void; status: CollabStatus }) {
   const { t } = useTranslation("collab");
+  const { t: tc } = useTranslation("settingsChannels");
   const qc = useQueryClient();
   const me = useSession((s) => s.user?.id);
   const [step, setStep] = useState<Step>("provider");
   const [provider, setProvider] = useState<MailProvider | null>(null);
+  const [method, setMethod] = useState<GoogleMethod>("signin");
+  const [gmailStep, setGmailStep] = useState<0 | 1 | 2>(0);
   const [visibility, setVisibility] = useState<"private" | "shared">("private");
   const [audience, setAudience] = useState<MailAudience>({ everyone: true, team_ids: [], user_ids: [] });
   const [hint, setHint] = useState("");
@@ -191,6 +207,8 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
   const reset = () => {
     setStep("provider");
     setProvider(null);
+    setMethod("signin");
+    setGmailStep(0);
     setVisibility("private");
     setAudience({ everyone: true, team_ids: [], user_ids: [] });
     setHint("");
@@ -207,6 +225,7 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
   const shared = visibility === "shared" ? (audience.everyone ? { everyone: true, team_ids: [], user_ids: [] } : audience) : undefined;
   // Shared with no one yet is allowed: the teammates may not have joined, and the owner adds them later.
   const nobodyYet = visibility === "shared" && audienceIsEmpty(audience);
+  const appPassword = provider === "google" && method === "app_password";
 
   const oauth = useMutation({
     mutationFn: (p: "google" | "microsoft") => startOAuth(p, { visibility, shared_with: shared, email: hint.trim() || undefined, history: connectHistory(scope) }),
@@ -223,7 +242,7 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
         imap_port: imap.imap_port,
         imap_tls: imap.imap_tls,
         imap_username: imap.imap_username.trim() || undefined,
-        password: imap.password,
+        password: appPassword ? stripAppPassword(imap.password) : imap.password,
         smtp_host: imap.smtp_host,
         smtp_port: imap.smtp_port,
         smtp_tls: imap.smtp_tls,
@@ -257,25 +276,60 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
           vars: missing.map((p) => `COLLAB_${p.toUpperCase()}_CLIENT_ID`).join(", "),
         })
       : null;
+  // An app password reaches Gmail over IMAP, so Google offers it only with IMAP on.
+  const googleMethods = status.providers.imap;
   const providerName = provider ? t(`connect.${provider}`) : "";
+  const personalGmail = provider === "google" && method === "signin" && isPersonalGmail(hint);
+
+  const pickProvider = (p: MailProvider) => {
+    setProvider(p);
+    setMethod("signin");
+    setStep(p === "google" && googleMethods ? "method" : "audience");
+  };
+  /** Gmail over IMAP with an app password: Gmail's servers are set, the address carried over. */
+  const startAppPassword = (fromAudience: boolean) => {
+    setMethod("app_password");
+    setImap({ ...emptyImap, ...GMAIL_SERVERS, email: hint.trim() });
+    setGmailStep(0);
+    setFailure(null);
+    setStep(fromAudience ? "gmail" : "audience");
+  };
+  const back = () => {
+    setFailure(null);
+    if (step === "gmail" && gmailStep > 0) return setGmailStep((gmailStep - 1) as 0 | 1);
+    if (step === "imap" || step === "gmail") return setStep("audience");
+    if (step === "audience" && provider === "google" && googleMethods) return setStep("method");
+    setStep("provider");
+  };
 
   const footer =
-    step === "provider" ? undefined : (
-      <>
-        <Button variant="ghost" className="mr-auto" icon={<ArrowLeft />} onClick={() => (setFailure(null), setStep(step === "imap" ? "audience" : "provider"))}>
+    step === "provider" || step === "method" ? (
+      step === "method" ? (
+        <Button variant="ghost" className="mr-auto" icon={<ArrowLeft />} onClick={back}>
           {t("connect.back")}
         </Button>
-        {step === "audience" && provider !== "imap" && provider && (
+      ) : undefined
+    ) : (
+      <>
+        <Button variant="ghost" className="mr-auto" icon={<ArrowLeft />} onClick={back}>
+          {t("connect.back")}
+        </Button>
+        {step === "audience" && provider && provider !== "imap" && !appPassword && (
           <Button variant="primary" loading={oauth.isPending} onClick={() => oauth.mutate(provider as "google" | "microsoft")}>
             {t("connect.continueWith", { provider: providerName })}
           </Button>
         )}
-        {step === "audience" && provider === "imap" && (
-          <Button variant="primary" onClick={() => setStep("imap")}>
+        {step === "audience" && (provider === "imap" || appPassword) && (
+          <Button variant="primary" onClick={() => (appPassword ? startAppPassword(true) : setStep("imap"))}>
             {t("connect.continue")}
           </Button>
         )}
-        {step === "imap" && (
+        {step === "gmail" && gmailStep < 2 && (
+          <Button variant="primary" onClick={() => setGmailStep((gmailStep + 1) as 1 | 2)}>
+            {gmailStep === 0 ? tc("connect.gmail.s1Next") : tc("connect.gmail.s2Next")}
+          </Button>
+        )}
+        {(step === "imap" || (step === "gmail" && gmailStep === 2)) && (
           <Button variant="primary" loading={create.isPending} disabled={!imapValid(imap, true)} onClick={() => (setFailure(null), create.mutate())}>
             {create.isPending ? t("connect.connecting") : t("connect.connectButton")}
           </Button>
@@ -283,32 +337,42 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
       </>
     );
 
+  const description =
+    step === "provider"
+      ? t("connect.providerStep")
+      : step === "method"
+        ? t("connect.methodStep")
+        : step === "audience"
+          ? t("connect.audienceStep")
+          : step === "gmail"
+            ? t("connect.appPasswordTitle")
+            : providerName;
+
   return (
-    <Dialog
-      open={open}
-      onOpenChange={close}
-      size={step === "imap" ? "lg" : "md"}
-      title={t("connect.title")}
-      description={step === "provider" ? t("connect.providerStep") : step === "audience" ? t("connect.audienceStep") : providerName}
-      footer={footer}
-    >
+    <Dialog open={open} onOpenChange={close} size={step === "imap" ? "lg" : "md"} title={t("connect.title")} description={description} footer={footer}>
       <div className="flex flex-col gap-3 pb-2">
         {step === "provider" &&
           (offered.length ? (
-            offered.map((p) => (
-              <ProviderCard
-                key={p}
-                provider={p}
-                onPick={() => {
-                  setProvider(p);
-                  setStep("audience");
-                }}
-              />
-            ))
+            offered.map((p) => <ProviderCard key={p} provider={p} onPick={() => pickProvider(p)} />)
           ) : (
             <p className="rounded-md bg-sunken px-3 py-2.5 text-[12.5px] text-fg-3">{t("connect.none")}</p>
           ))}
         {step === "provider" && missingNote && <p className="rounded-md bg-sunken px-3 py-2.5 text-[12px] leading-[18px] text-fg-3">{missingNote}</p>}
+
+        {step === "method" && (
+          <div className="flex flex-col gap-2">
+            <MethodSection title={t("connect.method.workspace")} hint={t("connect.method.workspaceHint")} />
+            <MethodCard
+              icon={<GoogleGlyph className="size-4" />}
+              title={t("connect.method.signin")}
+              hint={t("connect.method.signinHint")}
+              badge={t("connect.method.recommended")}
+              onPick={() => (setMethod("signin"), setStep("audience"))}
+            />
+            <MethodSection title={t("connect.method.personal")} hint={t("connect.method.personalHint")} />
+            <MethodCard icon={<KeyRound className="size-4 text-fg-2" />} title={t("connect.method.appPassword")} hint={t("connect.method.appPasswordHint")} onPick={() => startAppPassword(false)} />
+          </div>
+        )}
 
         {step === "audience" && (
           <>
@@ -330,13 +394,25 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
                 />
               )}
             </Field>
-            {provider !== "imap" && (
+            {provider !== "imap" && !appPassword && (
               <Field label={t("connect.loginHint")} optional className="mt-1">
                 {(p) => <TextInput {...p} type="email" value={hint} onChange={(e) => setHint(e.target.value)} placeholder="you@company.com" />}
               </Field>
             )}
+            {provider === "google" && method === "signin" && !personalGmail && <GoogleWorkspaceTrust clientId={status.google_client_id} defaultOpen />}
+            {personalGmail && googleMethods && <PersonalGmailNote onUseAppPassword={() => startAppPassword(true)} />}
             {openedInBrowser && <p className="rounded-md bg-sunken px-3 py-2 text-[12px] text-fg-2">{t("connect.openedInBrowser")}</p>}
           </>
+        )}
+
+        {step === "gmail" && (
+          <GmailAppPasswordGuide
+            sub={gmailStep}
+            banner={t("connect.appPasswordBanner")}
+            connectTitle={t("connect.appPasswordConnect")}
+            connectSub={t("connect.appPasswordConnectHint")}
+            connect={<GmailAppPasswordFields form={imap} onChange={(p) => setImap((f) => ({ ...f, ...p }))} />}
+          />
         )}
 
         {step === "imap" && <ImapFields form={imap} onChange={(p) => setImap((f) => ({ ...f, ...p }))} />}
@@ -347,8 +423,65 @@ export function ConnectAccountDialog({ open, onOpenChange, status }: { open: boo
             <div className="mono mt-0.5 break-words text-[11.5px]">{failure}</div>
           </div>
         )}
-        {step !== "provider" && <p className="text-[11.5px] text-fg-4">{t("connect.nothingDeleted")}</p>}
+        {step !== "provider" && step !== "method" && <p className="text-[11.5px] text-fg-4">{t("connect.nothingDeleted")}</p>}
       </div>
     </Dialog>
+  );
+}
+
+function MethodSection({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div className="flex min-w-0 items-baseline gap-2 pt-1 first:pt-0">
+      <span className="shrink-0 text-[11.5px] font-medium text-fg-2">{title}</span>
+      <span className="truncate text-[11.5px] text-fg-4">{hint}</span>
+    </div>
+  );
+}
+
+function MethodCard({ icon, title, hint, badge, onPick }: { icon: ReactNode; title: string; hint: string; badge?: string; onPick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      className="flex w-full items-start gap-3 rounded-lg border border-line bg-surface px-3.5 py-3 text-left outline-none transition-[border-color,transform] duration-150 hover:border-line-strong focus-visible:shadow-[0_0_0_3px_var(--focus)] active:scale-[0.995] motion-reduce:active:scale-100"
+    >
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-line bg-surface">{icon}</span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="text-[13px] font-medium">{title}</span>
+          {badge && <span className={cn("rounded-sm px-1.5 py-px text-[10.5px] font-medium", tone.green.chip)}>{badge}</span>}
+        </span>
+        <span className="block text-[12px] leading-[18px] text-fg-3">{hint}</span>
+      </span>
+    </button>
+  );
+}
+
+/** The last step of a Gmail app password: the address, its sidebar name and the password. Gmail's servers are set. */
+function GmailAppPasswordFields({ form, onChange }: { form: ImapForm; onChange: (patch: Partial<ImapForm>) => void }) {
+  const { t } = useTranslation("collab");
+  const { t: tc } = useTranslation("settingsChannels");
+  const cleaned = stripAppPassword(form.password);
+  const lengthOff = cleaned.length > 0 && !looksLikeGoogleAppPassword(cleaned);
+  return (
+    <div className="flex flex-col gap-4">
+      <Field label={t("connect.address")}>
+        {(p) => <TextInput {...p} type="email" autoComplete="email" autoFocus={!form.email} value={form.email} onChange={(e) => onChange({ email: e.target.value.trim() })} placeholder="you@gmail.com" />}
+      </Field>
+      <Field label={t("connect.name")} optional>
+        {(p) => <TextInput {...p} value={form.name} onChange={(e) => onChange({ name: e.target.value })} placeholder={t("connect.namePlaceholder")} />}
+      </Field>
+      <Field label={t("connect.appPassword")}>
+        {(p) => (
+          <TextInput {...p} type="password" autoComplete="new-password" autoFocus={!!form.email} className="mono" value={form.password} placeholder="xxxx xxxx xxxx xxxx" onChange={(e) => onChange({ password: e.target.value })} />
+        )}
+      </Field>
+      {lengthOff && <p className="-mt-2 text-xs leading-[18px] text-tone-amber">{tc("connect.gmail.lengthHint")}</p>}
+      <ServerSummary
+        imap={{ host: form.imap_host, port: form.imap_port, security: form.imap_tls }}
+        smtp={{ host: form.smtp_host, port: form.smtp_port, security: form.smtp_tls }}
+        note={t("connect.appPasswordNote")}
+      />
+    </div>
   );
 }

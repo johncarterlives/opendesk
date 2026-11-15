@@ -11,7 +11,7 @@ Same code, same API.
 | --- | --- | --- | --- | --- |
 | `free` | $0, per workspace, forever | 1 | 1 | $0.50 per workspace |
 | `pro` | $18 per seat per month (Stripe recurring per-seat price `STRIPE_PRICE_PRO`; optional yearly `STRIPE_PRICE_PRO_YEARLY`) | unlimited | unlimited | $10 per paid seat, pooled |
-| `collab` (hidden, see "Collab") | $38 per seat per month (Stripe recurring per-seat price `STRIPE_PRICE_COLLAB`; optional yearly `STRIPE_PRICE_COLLAB_YEARLY`) | unlimited | unlimited | $20 per paid seat, pooled; plus Collab |
+| `collab` (see "Collab") | $38 per seat per month (Stripe recurring per-seat price `STRIPE_PRICE_COLLAB`; optional yearly `STRIPE_PRICE_COLLAB_YEARLY`) | unlimited | unlimited | $20 per paid seat, pooled; plus Collab |
 | `self_hosted` | free | unlimited | unlimited | unlimited (own key) |
 
 - Every feature is on every plan. Plans differ only in the limits above and the import file
@@ -54,14 +54,14 @@ file is also at most 25 MB, as for any attachment, on every plan.
 
 ## Collab
 
-The `collab` plan is Pro with a larger AI allowance plus Collab (contracts/collab.md). It is
-**hidden**: no workspace sees it, its prices or its card until an instance admin opens it to
-that workspace (contracts/admin.md "Collab access"), as `subscriptions.collab_access`:
+The `collab` plan is Pro with a larger AI allowance plus Collab (contracts/collab.md). Every
+workspace is offered it; an instance admin may hide it from a workspace or give it for free
+(contracts/admin.md "Collab access"), as `subscriptions.collab_access`:
 
 | access | the workspace |
 | --- | --- |
-| `none` (default) | cannot see or buy the collab plan; `prices.collab_month`/`collab_year` are left out of `Billing` |
-| `offered` | may subscribe (`POST /v1/billing/checkout {plan: "collab"}`) or switch a Pro subscription to it (`POST /v1/billing/change-plan`) |
+| `none` (an instance admin hid it) | cannot see or buy the collab plan; `prices.collab_month`/`collab_year` are left out of `Billing` |
+| `offered` (default) | may subscribe (`POST /v1/billing/checkout {plan: "collab"}`) or switch a Pro subscription to it (`POST /v1/billing/change-plan`) |
 | `complimentary` | has the collab plan without a subscription, until `collab_until` (or until changed): plan `collab`, unlimited mailboxes and members, $20 of AI per billed seat (`plan.BilledSeats`, pooled), and Collab. It may still subscribe to pay for it |
 
 - The plan of a Stripe subscription comes from its item's price: a collab price (monthly or

@@ -1,8 +1,8 @@
-// The workspace's Collab card: the hidden collab plan's access (offered or
-// complimentary), whether Collab is on, and the actions that change it
+// The workspace's Collab card: the collab plan's access (offered by default, complimentary
+// or hidden), whether Collab is on, and the actions that change it
 // (contracts/admin.md "Collab access").
 
-import { ChevronDown, Gift, Mail, XCircle } from "lucide-react";
+import { ChevronDown, EyeOff, Gift, Mail, XCircle } from "lucide-react";
 import { useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { ActionMenuItem } from "@/components/ActionButton";
@@ -32,7 +32,7 @@ function AccessLabel({ access, until }: { access: CollabAccess; until: string | 
         <span className="text-[12px] text-fg-3">{until ? t("collab.untilDate", { date: shortDate(until) }) : t("collab.noEnd")}</span>
       </span>
     );
-  return <span className="text-fg-3">{t("common:none")}</span>;
+  return <span className="text-fg-3">{t("collab.hidden")}</span>;
 }
 
 export function CollabSection({ w, billing, onSaved }: { w: AdminWorkspace; billing: boolean; onSaved: (w: AdminWorkspace) => void }) {
@@ -41,18 +41,25 @@ export function CollabSection({ w, billing, onSaved }: { w: AdminWorkspace; bill
   const confirm = useConfirm();
   const [dialog, setDialog] = useState<null | "offered" | "complimentary">(null);
 
-  const remove = () =>
+  const name = { b: <span className="font-medium text-fg" /> };
+  const hide = () =>
     confirm.show(
-      c.access === "complimentary" ? (
-        <Trans t={t} i18nKey="collab.remove.complimentary" values={{ name: w.name }} components={{ b: <span className="font-medium text-fg" /> }} />
-      ) : (
-        <Trans t={t} i18nKey="collab.remove.offered" values={{ name: w.name }} components={{ b: <span className="font-medium text-fg" /> }} />
-      ),
+      <Trans t={t} i18nKey={c.access === "complimentary" ? "collab.remove.complimentary" : "collab.remove.offered"} values={{ name: w.name }} components={name} />,
       async () => {
         onSaved(await api.workspaces.setCollab(w.id, { access: "none", note: c.note }));
         toast.success(t("collab.remove.done"));
       },
       { title: t("collab.remove.title"), confirmLabel: t("collab.remove.button"), danger: true },
+    );
+  // Ending free access returns the workspace to the default: offered, so it can still subscribe.
+  const endFree = () =>
+    confirm.show(
+      <Trans t={t} i18nKey="collab.endFree.body" values={{ name: w.name }} components={name} />,
+      async () => {
+        onSaved(await api.workspaces.setCollab(w.id, { access: "offered", note: c.note }));
+        toast.success(t("collab.endFree.done"));
+      },
+      { title: t("collab.endFree.title"), confirmLabel: t("collab.endFree.button"), danger: true },
     );
 
   return (
@@ -66,7 +73,7 @@ export function CollabSection({ w, billing, onSaved }: { w: AdminWorkspace; bill
             </Button>
           </MenuTrigger>
           <MenuContent className="w-[250px]">
-            {c.access !== "offered" && (
+            {c.access === "none" && (
               <ActionMenuItem perm="workspaces.limits" icon={<Mail />} onSelect={() => setDialog("offered")}>
                 {t("collab.offer.title")}
               </ActionMenuItem>
@@ -77,7 +84,12 @@ export function CollabSection({ w, billing, onSaved }: { w: AdminWorkspace; bill
             {c.access !== "none" && (
               <>
                 <MenuSeparator />
-                <ActionMenuItem perm="workspaces.limits" icon={<XCircle />} danger onSelect={remove}>
+                {c.access === "complimentary" && (
+                  <ActionMenuItem perm="workspaces.limits" icon={<XCircle />} danger onSelect={endFree}>
+                    {t("collab.endFree.button")}
+                  </ActionMenuItem>
+                )}
+                <ActionMenuItem perm="workspaces.limits" icon={<EyeOff />} danger onSelect={hide}>
                   {t("collab.remove.button")}
                 </ActionMenuItem>
               </>

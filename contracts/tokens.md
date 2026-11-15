@@ -10,7 +10,7 @@ and a consumer accepts exactly one purpose. `exp` is required.
 | `ws`         | `POST /v1/realtime/token`     | 5 min    | Elixir gateway (socket connect) |
 | `widget_ws`  | `POST /v1/widget/session`     | 5 min    | Elixir gateway (socket connect) |
 | `mfa`        | login when TOTP is enabled    | 5 min    | `POST /v1/auth/mfa`             |
-| `oauth_state`| OAuth start endpoints (sign-in, mailboxes, integrations; `data.flow` tells them apart) | 10 min | the matching OAuth callback |
+| `oauth_state`| OAuth start endpoints (sign-in, mailboxes, integrations, customer portal OIDC and SAML sign-in; `data.flow` tells them apart; a SAML sign-in carries it in a cookie, since RelayState is short) | 10 min | the matching OAuth callback |
 | `passkey_login` | `POST /v1/auth/passkey/login/begin` | 5 min | `POST /v1/auth/passkey/login/finish` |
 | `passkey_register` | `POST /v1/me/passkeys/register/begin` | 5 min | `POST /v1/me/passkeys/register/finish` |
 | `assistant_approval` | a Ollie run's `approval` event | 15 min | `POST /v1/assistant/actions/{id}/decision` |

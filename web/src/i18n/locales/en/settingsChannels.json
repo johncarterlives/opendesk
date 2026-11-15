@@ -772,6 +772,25 @@
           "Add the Chat app to each space you want to route tickets to, then refresh the space list."
         ],
         "noChannels": "No spaces are available. Add the Chat app to a named space, then refresh."
+      },
+      "mattermost": {
+        "description": "Mirror email tickets into Mattermost threads and work them by talking to Ollie.",
+        "setup": "Create a bot account in Mattermost (Integrations, Bot Accounts), copy its access token and paste it with your server's address. opendesk finds the teams the bot is in. Add the bot to the channels tickets go to.",
+        "steps": [
+          "In Mattermost, add the bot to the team and to each channel you route tickets to.",
+          "Talk to it in a ticket's thread: mention it for Ollie, or start a message with !reply, !note, !assign, !status or !priority.",
+          "The buttons on a ticket's message call opendesk from your Mattermost server. If opendesk is on a private address, allow it under System Console, Developer, Allow untrusted internal connections."
+        ],
+        "noChannels": "The bot isn't in any channel yet. Add it to a channel in Mattermost, then refresh.",
+        "findAccounts": "Find teams",
+        "accountPlaceholder": "Choose a team",
+        "refreshAccounts": "Refresh teams",
+        "noAccounts": "This bot is not a member of any team yet. Add it to a team in Mattermost.",
+        "discoveryError": "Couldn't load teams for {{name}}. Check the server address and the token.",
+        "help": {
+          "server_url": "Where your Mattermost is, like https://chat.example.com.",
+          "bot_token": "The access token of a bot account, not a person's."
+        }
       }
     },
     "field": {
@@ -780,7 +799,10 @@
       "public_key": "Interactions public key",
       "guild_id": "Server",
       "webhook_secret": "Webhook secret",
-      "service_account_json": "Service account JSON"
+      "service_account_json": "Service account JSON",
+      "server_url": "Server address",
+      "team_id": "Team",
+      "webhook_token": "Button token"
     },
     "connect": {
       "title": "Connect {{name}}",

@@ -23,6 +23,7 @@ var gmailUnits = map[string]int{
 	"messages.send": 100, "messages.trash": 5, "messages.untrash": 5,
 	"settings.get": 1, "settings.sendAs.patch": 100, "settings.vacation.update": 5,
 	"threads.get": 10, "threads.modify": 10, "threads.trash": 10, "threads.untrash": 10,
+	"watch": 100, "stop": 50,
 }
 
 // endpointOf names a call of the provider's and prices it. Microsoft Graph counts requests,
@@ -55,8 +56,8 @@ func gmailMethod(method, path string) string {
 	if path == "" || parts[0] == "" {
 		return "other"
 	}
-	if parts[0] == "profile" {
-		return "profile"
+	if parts[0] == "profile" || parts[0] == "watch" || parts[0] == "stop" {
+		return parts[0]
 	}
 	if parts[0] == "settings" {
 		switch {

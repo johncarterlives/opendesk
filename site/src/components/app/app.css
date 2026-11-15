@@ -187,6 +187,8 @@
 /* Sidebar */
 .dm-side { display: flex; width: 240px; flex-shrink: 0; flex-direction: column; }
 .dm-side-scroll { flex: 1; overflow: hidden; padding: 4px 0 12px; }
+/* A sidebar longer than the window (Collab's Mail added) scrolls: its end fades out. */
+.dm-side-fade { -webkit-mask-image: linear-gradient(#000 calc(100% - 56px), transparent); mask-image: linear-gradient(#000 calc(100% - 56px), transparent); }
 .dm-sec-label {
   margin: 0 10px 2px; display: flex; height: 24px; align-items: center; padding: 0 8px;
   font-size: 10px; line-height: 14px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dm-fg-4);
@@ -201,6 +203,11 @@
 .dm-nav-label { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dm-nav-count { margin-left: auto; font-size: 11px; color: var(--dm-fg-2); }
 .dm-nav-on { background: var(--dm-chrome-active); font-weight: 500; }
+/* Collab's Mail rows: an account's colour dot in the icon's place, a quiet tag beside the name. */
+.dm-nav-acct { display: flex; width: 15px; height: 15px; flex-shrink: 0; align-items: center; justify-content: center; }
+.dm-nav-acct i { width: 9px; height: 9px; border-radius: 9999px; }
+.dm-nav-tag { flex-shrink: 0; border-radius: 4px; padding: 0 5px; font-size: 10px; line-height: 16px; font-weight: 500; color: var(--dm-fg-3); box-shadow: inset 0 0 0 1px var(--dm-line); }
+.dm-nav-tag + .dm-nav-count { margin-left: 0; }
 .dm-nav-wait { margin-bottom: 4px; overflow: hidden; font-weight: 500; color: color-mix(in oklab, var(--dm-red) 82%, var(--dm-fg)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--dm-red) 18%, transparent); }
 .dm-nav-dot { display: flex; width: 15px; height: 15px; flex-shrink: 0; align-items: center; justify-content: center; }
 .dm-nav-time { margin-left: auto; flex-shrink: 0; font-size: 11px; font-weight: 600; }

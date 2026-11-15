@@ -257,6 +257,18 @@ variable "collab_google_client_id" {
   default     = ""
 }
 
+variable "collab_google_pubsub_topic" {
+  description = "COLLAB_GOOGLE_PUBSUB_TOPIC: the Pub/Sub topic Gmail pushes Collab accounts' changes to (projects/<project>/topics/<topic>), in the Collab Google project. Empty, Gmail accounts sync on the timer alone."
+  type        = string
+  default     = ""
+}
+
+variable "collab_google_pubsub_service_account" {
+  description = "COLLAB_GOOGLE_PUBSUB_SERVICE_ACCOUNT: the service account the topic's push subscription authenticates as; only its tokens reach /v1/collab/google/push."
+  type        = string
+  default     = ""
+}
+
 variable "collab_microsoft_client_id" {
   description = "COLLAB_MICROSOFT_CLIENT_ID: the Microsoft app Collab mail accounts connect with (Mail.ReadWrite, Mail.Send), when it is not the mailbox app. Its secret is COLLAB_MICROSOFT_CLIENT_SECRET (optional_secrets)."
   type        = string

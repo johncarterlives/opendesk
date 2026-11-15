@@ -253,7 +253,7 @@ are left out of the public OpenAPI spec. Lists take `?limit=&cursor=` and answer
 | POST | `/v1/admin/users/{id}/unsuspend` | users.suspend | → `AdminUser` |
 | POST | `/v1/admin/users/{id}/mfa/disable` | users.mfa | `{code}` step-up → `AdminUser`; emails the user; `409 mfa_not_enabled` |
 | DELETE | `/v1/admin/users/{id}` | users.delete | `{code, confirm_email}` → 204; `422 confirm_email_mismatch`; `409 sole_owner` while they own a workspace with other members; `409` for yourself or an admin |
-| GET | `/v1/admin/workspaces` | read | `?q=` name, slug, id or a member's email; `?filter=suspended\|paid\|free\|collab\|test` (paid: a paid Stripe subscription; free: neither that nor complimentary Collab; collab: on the collab plan or with Collab access offered or complimentary; test: test workspaces); newest first → `Page<AdminWorkspaceRow>` |
+| GET | `/v1/admin/workspaces` | read | `?q=` name, slug, id or a member's email; `?filter=suspended\|paid\|free\|collab\|test` (paid: a paid Stripe subscription; free: neither that nor complimentary Collab; collab: on the collab plan, paid or complimentary; test: test workspaces); newest first → `Page<AdminWorkspaceRow>` |
 | GET | `/v1/admin/workspaces/{id}` | read | `AdminWorkspace` |
 | POST | `/v1/admin/workspaces/{id}/suspend` | workspaces.suspend | `{reason: 1..500}` → `AdminWorkspace` |
 | POST | `/v1/admin/workspaces/{id}/unsuspend` | workspaces.suspend | → `AdminWorkspace` |
@@ -300,11 +300,11 @@ email jobs carry whole emails with their sign-in links. `last_error` is cut to 2
   storage allowance (contracts/collab.md "Storage"; `0` = unlimited). They apply on every plan and
   survive plan changes; `null` returns to the plan's. Without billing every limit is already
   unlimited and the overrides are kept but have no effect.
-- **Collab access** (contracts/billing.md "Collab"): the collab plan ($38 per seat per month) is hidden
-  until an operator opens it to a workspace. `offered` lets its owners and admins subscribe to it, or
-  switch a Pro subscription to it, from the billing page. `complimentary` gives the workspace the collab
+- **Collab access** (contracts/billing.md "Collab"): every workspace is offered the collab plan ($38 per
+  seat per month). `offered`, the default, lets its owners and admins subscribe to it, or switch a Pro
+  subscription to it, from the billing page. `complimentary` gives the workspace the collab
   plan without paying (unlimited mailboxes and members, $20 of AI per billed seat, Collab) until `until`,
-  or until changed. `none` hides the plan again and ends complimentary access; a subscription already
+  or until changed. `none` hides the plan from the workspace and ends complimentary access; a subscription already
   on the collab plan is not canceled. The note is the operator's own and stays in the admin audit log
   and on this page; the workspace never sees it. Each change publishes `billing.updated` to the
   workspace (so do limit overrides and AI grants). Without billing the access is stored and has no

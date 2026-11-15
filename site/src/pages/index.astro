@@ -11,9 +11,10 @@ import Bento from '../components/home/Bento.astro';
 import Ollie from '../components/home/Ollie.astro';
 import OllieShowcase from '../components/home/OllieShowcase.astro';
 import AppsStage from '../components/home/AppsStage.astro';
+import CollabStage from '../components/home/CollabStage.astro';
 import Tile from '../components/home/Tile.astro';
 import { LINKS, SITE } from '../lib/site';
-import { PRO_PRICE } from '../lib/pricing';
+import { PRO_PRICE, COLLAB_PRICE } from '../lib/pricing';
 import PlanCards from '../components/PlanCards.astro';
 import { CREATE_TICKET, WEBHOOK, REALTIME } from '../lib/samples';
 
@@ -30,15 +31,17 @@ const softwareJsonLd = {
   license: 'https://www.apache.org/licenses/LICENSE-2.0',
   codeRepository: LINKS.github,
   offers: [
-    { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', description: '1 mailbox, 1 team member, every feature' },
+    { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', description: '1 mailbox, 1 team member, every helpdesk feature' },
     { '@type': 'Offer', name: 'Pro', price: String(PRO_PRICE), priceCurrency: 'USD', description: 'Per user per month, everything unlimited' },
+    { '@type': 'Offer', name: 'Collab', price: String(COLLAB_PRICE), priceCurrency: 'USD', description: 'Per user per month, Pro plus each member’s own mail accounts, private or shared' },
     { '@type': 'Offer', name: 'Self-hosted', price: '0', priceCurrency: 'USD' },
   ],
 };
 
 const faq = [
   { q: 'Is opendesk really open source?', a: 'Yes. The code is Apache-2.0 licensed and developed in public on GitHub. opendesk Cloud runs the same code that is in the repository; there is no closed edition with extra features.' },
-  { q: 'What is the difference between Cloud and self-hosted?', a: 'Only who runs it. Both have every feature. Cloud is free for one mailbox and one member, and $' + PRO_PRICE + ' per user a month for unlimited everything. Self-hosted is free and unlimited on your own servers, with your own AI key or a local model.' },
+  { q: 'What is the difference between Cloud and self-hosted?', a: 'Only who runs it. Cloud is free for one mailbox and one member, $' + PRO_PRICE + ' per user a month for unlimited everything, and $' + COLLAB_PRICE + ' per user a month with Collab, your team’s own mail accounts. Self-hosted has every feature, Collab included, free and unlimited on your own servers, with your own AI key or a local model.' },
+  { q: 'Can my team bring their own mail accounts?', a: 'Yes, with Collab. Each member connects their Google, Microsoft or IMAP account and reads and answers it in opendesk, synced both ways. An account stays private to the person who connected it, admins included, or is shared with the teams and people they choose. Collab mail never becomes tickets and is never sent to AI providers.' },
   { q: 'Which channels does it support?', a: 'Email forwarded from any provider, with replies sent from your own address through Gmail, Microsoft 365 or your SMTP server, plus a live chat widget for your site and a public help center. Everything arrives as tickets in one shared inbox.' },
   { q: 'Does the AI train on my customers’ messages?', a: 'No. Customer content is sent to the AI provider only to run the feature you asked for, and it is never used to train models. Admins can turn AI off for the whole workspace.' },
   { q: 'Can my customers write in their own language?', a: 'Yes. The widget and help center come in 15 languages, and messages and drafts translate both ways, so agents read and reply in their language while customers get theirs.' },
@@ -137,6 +140,38 @@ const install = [
     </div>
   </section>
 
+  <!-- Collab -->
+  <section id="collab" class="container-page mt-28 scroll-mt-24 md:mt-40">
+    <div class="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
+      <div>
+        <div class="label flex items-center gap-2"><span class="dot"></span>Collab</div>
+        <h2 class="mt-5 max-w-[15ch] text-[36px] font-semibold leading-[1.02] tracking-[-0.045em] text-fg md:text-[56px]">Your own mail, with your team.</h2>
+      </div>
+      <div class="lg:pb-2">
+        <p class="lede max-w-[520px]">Connect your Google, Microsoft or IMAP account and work it in opendesk like a mail app, every folder and label, synced both ways. Keep it private, or share the account, or just one conversation, with the people who can help.</p>
+        <a href="/features/#collab" class="link-arrow mt-5">See how Collab works<Icon name="arrowRight" size={14} /></a>
+      </div>
+    </div>
+    <div class="relative mt-12 overflow-hidden rounded-[22px] ring-1 ring-line md:mt-16">
+      <Backdrop name="cypress-lake" sizes="(min-width: 1440px) 1360px, 100vw" class="absolute inset-0 h-full w-full" />
+      <div class="relative"><CollabStage /></div>
+    </div>
+    <div class="mt-3 grid gap-3 md:grid-cols-3">
+      {[
+        ['lock', 'Private or shared', 'A private account is seen by the person who connected it alone, admins included. A shared one by the workspace, or the teams and people you choose.'],
+        ['users', 'One conversation at a time', 'Share a single email with a teammate, assign it and talk it through in comments, without opening the rest of the account.'],
+        ['reply', 'Tickets from your own address', 'Answer a ticket from your own address when the customer knows you. Their answers come back to the ticket, and Collab mail never becomes tickets.'],
+      ].map(([i, t, d]) => (
+        <div class="rounded-[18px] bg-surface-2 p-6 ring-1 ring-line">
+          <Icon name={i as 'lock'} size={18} class="text-fg" />
+          <h3 class="mt-4 text-[16px] font-semibold tracking-[-0.015em] text-fg">{t}</h3>
+          <p class="mt-1.5 text-[14.5px] leading-relaxed text-muted">{d}</p>
+        </div>
+      ))}
+    </div>
+    <p class="mt-6 px-1 text-[14px] text-muted">On the <a href="/pricing/#collab" class="text-fg underline decoration-line-strong underline-offset-4 hover:decoration-fg">Collab plan</a> on Cloud, and included when you self-host. Collab mail is never sent to AI providers.</p>
+  </section>
+
   <!-- Apps -->
   <section class="container-page mt-28 md:mt-40">
     <div class="grid gap-6 lg:grid-cols-[1.1fr_1fr] lg:items-end">
@@ -225,12 +260,12 @@ const install = [
   <section class="container-page mt-28 md:mt-40">
     <div class="flex flex-col items-center text-center">
       <div class="label flex items-center gap-2"><span class="dot"></span>Pricing</div>
-      <h2 class="mt-5 text-[36px] font-semibold leading-[1.02] tracking-[-0.045em] text-fg md:text-[56px]">Free to start. One price to grow.</h2>
-      <p class="lede mt-5 max-w-[540px]">Every feature on every plan, Ollie included. Plans differ only in limits.</p>
+      <h2 class="mt-5 text-[36px] font-semibold leading-[1.02] tracking-[-0.045em] text-fg md:text-[56px]">Free to start. Per user to grow.</h2>
+      <p class="lede mt-5 max-w-[540px]">The whole helpdesk on every plan, Ollie included. Plans differ in limits, and Collab adds your team’s own mail.</p>
     </div>
     <PlanCards class="mt-12 md:mt-16" />
     <div class="mt-8 flex flex-wrap items-center justify-between gap-4 px-1">
-      <p class="text-[14px] text-muted">Pro is billed per user who answers customers. Viewers are free.</p>
+      <p class="text-[14px] text-muted">Pro and Collab are billed per user who answers customers. Viewers are free.</p>
       <a href="/pricing/" class="link-arrow">Compare plans and AI pricing<Icon name="arrowRight" size={14} /></a>
     </div>
   </section>

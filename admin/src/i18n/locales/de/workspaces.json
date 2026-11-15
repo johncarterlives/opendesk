@@ -185,7 +185,7 @@
     "ofUnlimited": "von unbegrenzt",
     "ofGb": "von {{gb}} GB",
     "note": "Notiz",
-    "hintBilling": "Der Collab-Tarif ist verborgen. Biete ihn an, damit dieser Workspace für 38 $ pro Benutzer und Monat abonnieren kann, oder gib ihn kostenlos.",
+    "hintBilling": "Jedem Workspace wird der Collab-Tarif für 38 $ pro Benutzer und Monat angeboten. Gib ihn kostenlos oder verbirg ihn vor diesem Workspace.",
     "hintNoBilling": "Die Abrechnung ist auf dieser Instanz aus, also hat jeder Workspace Collab, außer die Instanz schaltet es ab. Der Zugang bleibt gespeichert, wirkt aber nicht.",
     "noBilling": "Die Abrechnung ist auf dieser Instanz aus, also bleibt das gespeichert, wirkt aber nicht.",
     "offer": {
@@ -205,11 +205,11 @@
       "doneUntil": "Collab ist bis {{date}} kostenlos"
     },
     "remove": {
-      "title": "Collab-Zugang entfernen?",
-      "button": "Zugang entfernen",
-      "done": "Collab-Zugang entfernt",
-      "complimentary": "<b>{{name}}</b> verliert Collab jetzt, außer er bezahlt den Tarif. Verbundene Mail-Konten werden nicht mehr synchronisiert und bleiben erhalten.",
-      "offered": "<b>{{name}}</b> kann den Collab-Tarif nicht mehr abonnieren. Ein bestehendes Abonnement läuft weiter."
+      "title": "Collab-Tarif verbergen?",
+      "button": "Tarif verbergen",
+      "done": "Collab-Tarif verborgen",
+      "complimentary": "<b>{{name}}</b> verliert Collab jetzt und sieht den Collab-Tarif nicht mehr. Verbundene Mail-Konten werden nicht mehr synchronisiert und bleiben erhalten.",
+      "offered": "<b>{{name}}</b> sieht den Collab-Tarif nicht mehr und kann ihn nicht abonnieren. Ein bestehendes Abonnement läuft weiter."
     },
     "ends": "Endet",
     "endsOn": "Endet am {{date}}.",
@@ -229,6 +229,13 @@
       "format": "Nutze ein Datum wie 2026-12-31.",
       "noSuchDay": "Diesen Tag gibt es nicht.",
       "past": "Wähle einen Tag in der Zukunft."
+    },
+    "hidden": "Verborgen",
+    "endFree": {
+      "title": "Kostenloses Collab beenden?",
+      "button": "Kostenlosen Zugang beenden",
+      "done": "Kostenloses Collab beendet",
+      "body": "<b>{{name}}</b> verliert Collab jetzt, außer er abonniert den Collab-Tarif, den er weiter sieht. Verbundene Mail-Konten werden nicht mehr synchronisiert und bleiben erhalten."
     }
   }
 }

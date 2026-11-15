@@ -202,7 +202,15 @@ export type TeamBody = Partial<
 export type BrandBody = Partial<Pick<T.Brand, "name" | "slug" | "color" | "locale">> & {
   help_center?: Partial<Pick<T.Brand["help_center"], "enabled" | "title">>;
   /** Omit the secret to keep the saved one (same issuer and client id). */
-  portal_auth?: { mode: T.PortalAuthMode; issuer?: string; client_id?: string; client_secret?: string; create_contacts?: boolean };
+  portal_auth?: {
+    mode: T.PortalAuthMode;
+    protocol?: T.PortalSsoProtocol;
+    issuer?: string;
+    client_id?: string;
+    client_secret?: string;
+    create_contacts?: boolean;
+    saml?: Pick<T.PortalSamlSettings, "idp_entity_id" | "idp_sso_url" | "idp_certificates"> & { email_attribute?: string; name_attribute?: string };
+  };
 };
 export type WidgetBody = { brand_id?: string; name?: string; team_id?: string | null; bot_id?: string | null; settings?: Partial<T.WidgetSettings> };
 export type RoutingRuleBody = Partial<Pick<T.RoutingRule, "name" | "enabled" | "match" | "conditions" | "team_id" | "skill_ids">>;

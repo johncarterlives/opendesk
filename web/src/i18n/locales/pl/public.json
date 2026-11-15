@@ -125,6 +125,7 @@
       "unknown_customer": "Nie znaleźliśmy klienta z tym adresem e-mail. Skontaktuj się z zespołem, który dał Ci dostęp.",
       "blocked": "To konto nie może się zalogować. Skontaktuj się z zespołem, aby uzyskać pomoc.",
       "relink_required": "Twoje konto u dostawcy się zmieniło. Poproś zespół o zezwolenie na nowe logowanie i spróbuj ponownie.",
+      "transient_name_id": "Dostawca logowania za każdym razem wysyła inny identyfikator, więc nie możemy Cię rozpoznać. Skontaktuj się z zespołem, aby uzyskać pomoc.",
       "identity_revoked": "To logowanie zostało usunięte. Skontaktuj się z zespołem, aby uzyskać pomoc.",
       "access_denied": "Logowanie zostało anulowane.",
       "provider_unavailable": "Nie udało się połączyć z dostawcą logowania. Spróbuj ponownie.",

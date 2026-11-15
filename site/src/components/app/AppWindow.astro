@@ -3,7 +3,8 @@
  * The opendesk desktop app's window (desktop/, macOS), drawn 1:1 for the site:
  * the translucent frame with the traffic lights, AppHeader (workspace switcher,
  * crumbs, connection, notifications, Ollie, search, New ticket) and Sidebar
- * (waiting chats, folders, views, workspace, setup, account). The page goes in
+ * (waiting chats, folders, Collab's Mail when given, views, workspace, setup,
+ * account). The page goes in
  * the slot, inside the opaque work panel inset right of the sidebar
  * (`.dm-main`: a flex row, 1032 x 748 with its 1px hairline).
  *
@@ -24,6 +25,8 @@ type View = 'urgent' | 'billing' | 'engineering';
 type Page = 'contacts' | 'knowledge' | 'reports' | 'settings';
 /** A count, or the pair it changes between on step 1 of the scene's timeline. */
 type Count = string | [string, string];
+/** A row of Collab's Mail section (web/src/components/collab/MailNav.tsx): a box, or an account with its colour. */
+type MailRow = { label: string; icon?: string; color?: string; count?: Count; active?: boolean; tag?: string };
 
 interface Props {
   /** The highlighted sidebar row. Settings pages (automations, SLA, API keys) are `settings`. */
@@ -36,9 +39,11 @@ interface Props {
   waiting?: number;
   /** The width of the box the window is scaled into. */
   width?: number;
+  /** Collab on: the Mail section under the ticket folders, which the sidebar then calls Tickets. */
+  mail?: MailRow[];
   class?: string;
 }
-const { active, crumbs, counts = {}, waiting, width = 860, class: className = '' } = Astro.props;
+const { active, crumbs, counts = {}, waiting, width = 860, mail, class: className = '' } = Astro.props;
 
 const folders: { id: Folder; icon: string; label: string; count?: Count }[] = [
   { id: 'unassigned', icon: 'circleDashed', label: 'Unassigned', count: '17' },
@@ -95,8 +100,8 @@ const maya =
     <div class="dm-body">
       <!-- Sidebar -->
       <nav class="dm-side">
-        <div class="dm-side-scroll">
-          <div class="dm-sec-label">Inbox</div>
+        <div class={`dm-side-scroll ${mail ? 'dm-side-fade' : ''}`}>
+          <div class="dm-sec-label">{mail ? 'Tickets' : 'Inbox'}</div>
           <div class="dm-rows">
             {waiting !== undefined && (
               <span class="dm-nav dm-nav-wait dm-wash">
@@ -121,6 +126,27 @@ const maya =
               );
             })}
           </div>
+          {mail && (
+            <>
+              <div class="dm-sec-label dm-sec-next">Mail</div>
+              <div class="dm-rows">
+                {mail.map((m) => (
+                  <span class={`dm-nav ${m.active ? 'dm-nav-on' : ''}`}>
+                    {m.color
+                      ? <span class="dm-nav-acct"><i style={`background:${m.color}`}></i></span>
+                      : <Fragment set:html={ic(m.icon ?? 'inbox', 15)} />}
+                    <span class="dm-nav-label">{m.label}</span>
+                    {m.tag && <span class="dm-nav-tag">{m.tag}</span>}
+                    {m.count && (Array.isArray(m.count) ? (
+                      <span class="dm-mono dm-nav-count"><span data-step="0" data-until="1" data-wait="0">{m.count[0]}</span><span class="s-swap" data-step="1" data-wait="1400">{m.count[1]}</span></span>
+                    ) : (
+                      <span class="dm-mono dm-nav-count">{m.count}</span>
+                    ))}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
           <div class="dm-sec-label dm-sec-next">Views</div>
           <div class="dm-rows">
             {views.map((v) => {

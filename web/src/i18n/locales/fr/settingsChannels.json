@@ -751,6 +751,25 @@
           "Ajoutez l’application Chat à chaque espace de discussion souhaité, puis actualisez la liste des espaces."
         ],
         "noChannels": "Aucun espace avec fils de discussion n’est disponible. Ajoutez l’application Chat à un espace nommé, puis actualisez."
+      },
+      "mattermost": {
+        "description": "Reflétez les tickets e-mail dans des fils Mattermost et traitez-les en parlant à Ollie.",
+        "setup": "Créez un compte de bot dans Mattermost (Intégrations, Comptes de bot), copiez son jeton d’accès et collez-le avec l’adresse de votre serveur. opendesk trouve les équipes du bot. Ajoutez le bot aux canaux où vont les tickets.",
+        "steps": [
+          "Dans Mattermost, ajoutez le bot à l’équipe et à chaque canal où vont les tickets.",
+          "Parlez-lui dans le fil d’un ticket : mentionnez-le pour Ollie, ou commencez un message par !reply, !note, !assign, !status ou !priority.",
+          "Les boutons du message d’un ticket appellent opendesk depuis votre serveur Mattermost. Si opendesk est sur une adresse privée, autorisez-le dans Console système, Développeur, Autoriser les connexions internes non fiables."
+        ],
+        "noChannels": "Le bot n’est encore dans aucun canal. Ajoutez-le à un canal dans Mattermost, puis actualisez.",
+        "findAccounts": "Trouver les équipes",
+        "accountPlaceholder": "Choisir une équipe",
+        "refreshAccounts": "Actualiser les équipes",
+        "noAccounts": "Ce bot ne fait encore partie d’aucune équipe. Ajoutez-le à une équipe dans Mattermost.",
+        "discoveryError": "Impossible de charger les équipes de {{name}}. Vérifiez l’adresse du serveur et le jeton.",
+        "help": {
+          "server_url": "L’adresse de votre Mattermost, par exemple https://chat.example.com.",
+          "bot_token": "Le jeton d’accès d’un compte de bot, pas celui d’une personne."
+        }
       }
     },
     "field": {
@@ -759,7 +778,10 @@
       "public_key": "Clé publique des interactions",
       "guild_id": "Serveur",
       "webhook_secret": "Secret du webhook",
-      "service_account_json": "JSON du compte de service"
+      "service_account_json": "JSON du compte de service",
+      "server_url": "Adresse du serveur",
+      "team_id": "Équipe",
+      "webhook_token": "Jeton des boutons"
     },
     "connect": {
       "title": "Connecter {{name}}",

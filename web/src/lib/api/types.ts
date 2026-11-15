@@ -182,7 +182,27 @@ export type HelpDomainRecord = { type: "TXT" | "CNAME"; name: string; value: str
 /** How customers sign in to a brand's portal: a password, the company's identity provider, or either. */
 export type PortalAuthMode = "local" | "oidc" | "local_and_oidc";
 /** What GET /v1/brands/{id}/portal/auth returns (admin). The client secret is never returned. */
-export type PortalAuthSettings = { mode: PortalAuthMode; issuer: string; client_id: string; secret_configured: boolean; create_contacts: boolean };
+export type PortalAuthSettings = {
+  mode: PortalAuthMode;
+  /** The kind of identity provider; oidc until a brand sets up SAML. */
+  protocol: PortalSsoProtocol;
+  issuer: string;
+  client_id: string;
+  secret_configured: boolean;
+  create_contacts: boolean;
+  saml: PortalSamlSettings;
+};
+export type PortalSsoProtocol = "oidc" | "saml";
+/** A brand's SAML provider, and what to enter at it (the service provider's entity id and ACS URL). */
+export type PortalSamlSettings = {
+  idp_entity_id: string;
+  idp_sso_url: string;
+  idp_certificates: string;
+  email_attribute: string;
+  name_attribute: string;
+  sp_entity_id: string;
+  acs_url: string;
+};
 /** A brand whose help center is on: where a portal invitation can lead (contracts/customer-portal.md "Invitations"). */
 export type PortalBrand = { id: string; name: string; slug: string; auth_mode: PortalAuthMode; default: boolean };
 /** A contact's customer portal access, as members see it. */
@@ -3500,6 +3520,8 @@ export type CollabStatus = {
   /** Why not: not on the plan, or off on this instance. */
   reason: "plan" | "disabled" | "workspace_disabled" | null;
   providers: { google: boolean; microsoft: boolean; imap: boolean };
+  /** The OAuth client a Google Workspace admin trusts so the domain's accounts can connect; null without Google. */
+  google_client_id: string | null;
   /** Accounts the caller sees. */
   accounts: number;
   storage: CollabStorage;

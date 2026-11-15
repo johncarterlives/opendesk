@@ -344,7 +344,7 @@ func (s *svc) registerWorkspaces(api huma.API) {
 				AND ($6 = '' OR ($6 = 'suspended' AND w.suspended_at IS NOT NULL)
 					OR ($6 = 'paid' AND `+paidSQL+`)
 					OR ($6 = 'free' AND NOT COALESCE(`+paidSQL+`, false) AND NOT COALESCE(`+complimentarySQL+`, false))
-					OR ($6 = 'collab' AND ((sub.plan = 'collab' AND `+paidSQL+`) OR sub.collab_access IN ('offered', 'complimentary')))
+					OR ($6 = 'collab' AND ((sub.plan = 'collab' AND `+paidSQL+`) OR `+complimentarySQL+`))
 					OR ($6 = 'test' AND w.test))
 				ORDER BY w.created_at DESC, w.id DESC LIMIT $7`, cur.T, cur.ID, q, byID, likePattern(q), in.Filter, in.Limit+1)
 			if err != nil {

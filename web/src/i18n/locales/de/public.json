@@ -121,6 +121,7 @@
       "unknown_customer": "Wir haben keinen Kunden mit dieser E-Mail-Adresse gefunden. Wenden Sie sich an das Team, das Ihnen Zugang gegeben hat.",
       "blocked": "Dieses Konto kann sich nicht anmelden. Wenden Sie sich für Hilfe an das Team.",
       "relink_required": "Ihr Konto beim Anbieter hat sich geändert. Bitten Sie das Team, eine neue Anmeldung zu erlauben, und versuchen Sie es dann erneut.",
+      "transient_name_id": "Der Anmeldeanbieter sendet jedes Mal eine andere ID, daher können wir Sie nicht erkennen. Wenden Sie sich an das Team.",
       "identity_revoked": "Diese Anmeldung wurde entfernt. Wenden Sie sich für Hilfe an das Team.",
       "access_denied": "Die Anmeldung wurde abgebrochen.",
       "provider_unavailable": "Wir konnten den Anmeldeanbieter nicht erreichen. Bitte versuchen Sie es erneut.",
