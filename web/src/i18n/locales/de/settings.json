@@ -446,7 +446,7 @@
     "onlineTimeOn": "Erfasst die Zeit, in der jedes Mitglied opendesk mit dem Status Online geöffnet hat, für Berichte → Agents. Schalte sie aus, wo ihre Erfassung die Zustimmung des Teams oder eine Betriebsvereinbarung braucht.",
     "onlineTimeOff": "Es wird keine Online-Zeit erfasst oder in den Berichten gezeigt. Speichern mit ausgeschalteter Option löscht die bisher erfasste Online-Zeit.",
     "undoSend": "Senden rückgängig für E-Mail",
-    "undoSendHint": "E-Mail-Antworten warten so lange, bevor sie rausgehen, damit sie zurückgenommen oder zu einer Notiz gemacht werden können.",
+    "undoSendHint": "E-Mail-Antworten auf Tickets und Mails aus Mail-Konten warten so lange, bevor sie rausgehen, damit sie zurückgenommen werden können (eine Ticket-Antwort auch zu einer Notiz).",
     "undoSendChat": "Senden rückgängig für Chat",
     "undoSendChatHint": "Chat-Antworten warten so lange, bevor der Kunde sie sieht. Standardmäßig aus, damit der Chat live bleibt.",
     "undoOff": "Aus",

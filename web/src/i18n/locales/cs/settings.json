@@ -467,7 +467,7 @@
     "onlineTimeOn": "Zaznamenává dobu, po kterou má každý člen otevřený opendesk se stavem „Online“, pro sekci „Přehledy“ → „Agenti“. Vypněte, pokud záznam vyžaduje souhlas týmu nebo rady zaměstnanců.",
     "onlineTimeOff": "Čas online se nezaznamenává ani nezobrazuje v přehledech. Uložením s vypnutou volbou se dosud zaznamenaný čas online smaže.",
     "undoSend": "Vrácení odeslání e-mailu",
-    "undoSendHint": "Odpovědi e-mailem před odesláním počkají po tuto dobu, aby je bylo možné vzít zpět nebo změnit na poznámku.",
+    "undoSendHint": "Odpovědi e-mailem na tikety a pošta odeslaná z poštovních účtů před odesláním počkají po tuto dobu, aby je bylo možné vzít zpět (odpověď na tiket lze také změnit na poznámku).",
     "undoSendChat": "Vrácení odeslání v chatu",
     "undoSendChatHint": "Odpovědi v chatu počkají po tuto dobu, než je zákazník uvidí. Ve výchozím nastavení vypnuto, aby chat probíhal v reálném čase.",
     "undoOff": "Vypnuto",

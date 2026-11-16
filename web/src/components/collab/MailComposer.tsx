@@ -8,7 +8,7 @@
 // From picks the address it goes out from (the account's own or an alias, lib/collab/identities),
 // and the signature follows it.
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Paperclip, Send, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -23,7 +23,7 @@ import { sanitizeHtml } from "@/lib/sanitize";
 import { forwardHeader, replyRecipients, replySubject, type ComposeMode } from "@/lib/collab/recipients";
 import { bytes, fullDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
-import { qk } from "@/lib/queries";
+import { q, qk } from "@/lib/queries";
 import { RichEditor, type RichEditorHandle } from "@/components/editor/RichEditor";
 import { replaceSignature, SignatureBlock, signatureBlockHtml, withoutSignature } from "@/components/editor/signature";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { AccountDot } from "./bits";
+import { holdSend, undoSendSeconds } from "./outbox";
 import { RecipientField } from "./RecipientField";
 
 type Upload = { key: string; file: File; status: "uploading" | "done" | "error"; attachment?: Attachment; preview?: string };
@@ -113,6 +114,7 @@ export type MailComposerProps = {
   /** People to suggest first: the conversation's participants. */
   suggestions?: MailAddress[];
   autoFocus?: boolean;
+  /** Sent, or saved and handed to the outbox to send once the undo window ends: the composer closes. */
   onSent?: (m: MailMessage) => void;
   /** removed settles true once the stored draft is deleted, false when that failed. */
   onDiscard?: (removed: Promise<boolean>) => void;
@@ -163,6 +165,8 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inflight = useRef<Promise<void> | null>(null);
   const again = useRef(false);
+  // The draft as last saved: what a held send sends, and what Undo opens again.
+  const lastSaved = useRef<MailMessage | null>(null);
   const latest = useRef({ draft, uploads, keptFiles, forwardFiles, accountId, message, fromEmail });
   latest.current = { draft, uploads, keptFiles, forwardFiles, accountId, message, fromEmail };
   const onDraftIdRef = useRef(onDraftId);
@@ -225,6 +229,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
           return;
         }
         draftIdRef.current = m.id;
+        lastSaved.current = m;
         setKeptFiles(m.attachments.filter((a) => !a.inline));
         setUploads((u) => u.filter((x) => !savedUploads.includes(x.key)));
         setDraftState((d) => {
@@ -337,6 +342,9 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
 
   const recipients = draft.to.length + draft.cc.length + draft.bcc.length;
   const busy = uploads.some((u) => u.status === "uploading");
+  const { data: workspace } = useQuery(q.workspace());
+  // Saving it to hold: a second Send meanwhile does nothing.
+  const holding = useRef(false);
 
   const send = useMutation({
     // With a draft, the draft is sent (saved with what the composer shows first).
@@ -382,11 +390,46 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
   };
 
   const sendNow = async () => {
-    if (send.isPending) return;
+    if (send.isPending || holding.current) return;
     // A save on its way finishes first, so the draft it makes is the one sent.
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     if (inflight.current) await inflight.current;
+    // With an undo window, what is written is saved as the draft (files and all) and the
+    // outbox sends that draft when the window ends; Undo opens it again. A save that fails
+    // sends straight away, as before.
+    const seconds = undoSendSeconds(workspace?.settings);
+    if (seconds > 0) {
+      holding.current = true;
+      lastSaved.current = null;
+      await saveNow();
+      const saved = lastSaved.current as MailMessage | null;
+      if (saved && draftIdRef.current === saved.id) {
+        gone.current = true;
+        const content = contentOf(latest.current);
+        holdSend(
+          {
+            draftId: saved.id,
+            draft: saved,
+            // The files are on the saved draft now: kept, not added again.
+            body: { ...content, attachment_ids: undefined, keep_attachments: saved.attachments.filter((a) => !a.inline).map((a) => a.id) },
+            from: fromEmail || account?.email || "",
+            inline: variant === "inline",
+          },
+          seconds,
+        );
+        if (threadId) useDrafts.setState((s) => {
+          const next = { ...s };
+          delete next[threadId];
+          return next;
+        }, true);
+        uploads.forEach((u) => u.preview && URL.revokeObjectURL(u.preview));
+        setUploads([]);
+        onSent?.(saved);
+        return;
+      }
+      holding.current = false;
+    }
     gone.current = true;
     const content = contentOf(latest.current);
     send.mutate({

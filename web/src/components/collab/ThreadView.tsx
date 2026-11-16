@@ -71,6 +71,7 @@ import { CommentBar, Comments, Count, type CommentBarHandle } from "./Comments";
 import { DraftRow } from "./DraftRow";
 import { draftFromMessage, MailComposer, startDraft, useForwardBlock } from "./MailComposer";
 import { MailMessageItem } from "./MailMessageItem";
+import { useHeldSends, useUndoneSends } from "./outbox";
 import { PersonPanel } from "./PersonPanel";
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "./pickers";
 import { ShareDialog } from "./ShareDialog";
@@ -269,7 +270,12 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
 
   const all = useMemo(() => detail?.messages ?? [], [detail]);
   const messages = useMemo(() => all.filter((m) => !m.draft), [all]);
-  const drafts = useMemo(() => all.filter((m) => m.draft && m.id !== composerDraftId && m.id !== editing?.id), [all, composerDraftId, editing]);
+  // A draft on hold to send (Undo send) is not shown as a draft meanwhile.
+  const heldSends = useHeldSends();
+  const drafts = useMemo(
+    () => all.filter((m) => m.draft && m.id !== composerDraftId && m.id !== editing?.id && !heldSends[m.draft_id ?? m.id] && !heldSends[m.id]),
+    [all, composerDraftId, editing, heldSends],
+  );
   const target = replyTarget(all);
   // Every address of the account (its own and its aliases): never a reply-all recipient.
   const ownEmail = useMemo(() => (detail ? ownEmails(detail.account) : []), [detail]);
@@ -319,6 +325,16 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   }));
 
   useEffect(() => setCommentThread(null), [threadId]);
+
+  // Mail taken back with Undo send opens again here, as it was written.
+  const undone = useUndoneSends((s) => s[threadId]);
+  useEffect(() => {
+    if (!undone || !detail?.can_act) return;
+    useUndoneSends.setState((s) => Object.fromEntries(Object.entries(s).filter(([k]) => k !== threadId)), true);
+    editDraft(undone);
+    // editDraft is a fresh closure each render; the taken-back draft is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [undone, detail?.can_act, threadId]);
 
   // A discard that finishes after the conversation changed offers no feedback on it.
   const shownThread = useRef<string | null>(threadId);

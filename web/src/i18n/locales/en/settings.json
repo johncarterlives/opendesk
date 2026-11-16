@@ -446,7 +446,7 @@
     "onlineTimeOn": "Records the time each member has opendesk open with their status set to Online, for Reports → Agents. Turn it off where recording it needs your team's consent or a works council's agreement.",
     "onlineTimeOff": "No online time is recorded or shown in Reports. Saving with it off deletes the online time recorded so far.",
     "undoSend": "Undo send for email",
-    "undoSendHint": "Email replies wait this long before they go out, so they can be taken back or made a note.",
+    "undoSendHint": "Email replies on tickets and mail sent from mail accounts wait this long before they go out, so they can be taken back (a ticket reply can also become a note).",
     "undoSendChat": "Undo send for chat",
     "undoSendChatHint": "Chat replies wait this long before the customer sees them. Off by default, so chat stays live.",
     "undoOff": "Off",

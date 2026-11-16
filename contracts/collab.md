@@ -386,6 +386,13 @@ a reply in its conversation, a new message or a forward in a conversation of its
   written; sending or discarding it is `502` or done, and the next sync shows the provider's state.
 - The web composer saves a draft about two seconds after typing stops and when it closes, and
   sends the draft when there is one.
+- Undo send: with the workspace's `undo_send_seconds` (contracts/api.md, the window ticket email
+  replies use; 0 turns it off), Send saves the draft and the web app holds it that long before
+  `POST /v1/collab/drafts/{id}/send`, with Undo and Send now. Nothing reaches the provider
+  meanwhile, so the API never delays. Undo leaves it a draft and opens it again where it was
+  written. The hold lives outside the composer: closing the conversation keeps the countdown;
+  leaving the page, switching account or workspace, or signing out sends it at once. A save that
+  fails sends straight away, as without a window.
 - The composer puts the account's signature in as one block, `<div class="od-signature">` around
   `signature_html` exactly as stored: drawn as designed (tables, inline styles, sized images), never
   edited inline, removed whole, and swapped for the new account's when From changes. The stored email
