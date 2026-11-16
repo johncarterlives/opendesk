@@ -717,6 +717,8 @@
     "ownAddress": "Own address",
     "ownAddressHint": "Sent from the writer's own mail account instead of the ticket's address. The customer's answers come back to this ticket.",
     "toAddress": "to {{address}}",
+    "toAndOthers": "to {{to}} +{{others}}",
+    "receivedAt": "received at {{address}}",
     "replyTo": "Reply-To <m>{{address}}</m>",
     "replyToUsed": "Replies go to this address, which the sender asked for",
     "replyToOther": "The sender asked for replies here. It is outside their organisation, so replies go to {{address}}",
@@ -756,7 +758,8 @@
     "showReply": "Show reply",
     "showNote": "Show note",
     "hideNote": "Hide note",
-    "forward": "Forward"
+    "forward": "Forward",
+    "viewSource": "View source"
   },
   "merge": {
     "title": "Merge #{{number}} into another ticket",
@@ -1158,5 +1161,15 @@
   "wiki": {
     "title": "Wiki",
     "untitled": "Untitled"
+  },
+  "source": {
+    "title": "Original message",
+    "download": "Download .eml",
+    "copy": "Copy source",
+    "close": "Close",
+    "error": "The original of this message isn't available. Only email that arrived at a mailbox keeps one, and a purged message's is gone.",
+    "loadError": "Couldn't load the original message. Try again.",
+    "downloadError": "Couldn't download the message.",
+    "truncated": "Only the first part is shown. The download has the whole message ({{size}} KB)."
   }
 }

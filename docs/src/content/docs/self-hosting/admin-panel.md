@@ -40,7 +40,7 @@ The role is checked on every request, so removing or downgrading an admin takes 
 
 ## Language
 
-The panel follows your browser's language, like the app: English, French or German. Any other language shows English. What the API itself writes, such as the names and details of the health checks, stays in English.
+The panel follows your browser's language: English, French or German. Any other language shows English. What the API itself writes, such as the names and details of the health checks, stays in English.
 
 ## Suspending
 

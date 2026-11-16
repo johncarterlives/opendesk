@@ -1,0 +1,85 @@
+{
+  "title": "邮件设计",
+  "description": "发给客户的每封邮件的样式：回复、自动回复和满意度调查。每个品牌都有自己的设计。",
+  "brand": "品牌",
+  "docs": "模板指南",
+  "tabs": {
+    "layout": "版式",
+    "csat": "满意度邮件",
+    "variables": "变量"
+  },
+  "readOnly": "只有管理员可以修改邮件设计。",
+  "default": "默认",
+  "customized": "已自定义",
+  "reset": "恢复默认",
+  "resetLayoutConfirm": "版式将恢复为朴素样式，不带 Logo 和页脚，并引用上一条消息。",
+  "resetCsatConfirm": "满意度邮件将恢复为内置文案。",
+  "resetTitle": "恢复默认？",
+  "resetDone": "已恢复默认",
+  "saved": "邮件设计已保存",
+  "layout": {
+    "mode": "版式",
+    "modeHint": "简单版式适合大多数团队。自定义 HTML 可以完全控制整封邮件的正文。",
+    "simple": "简单",
+    "custom": "自定义 HTML",
+    "style": "风格",
+    "plain": "朴素",
+    "plainHint": "读起来像真人写的邮件，最适合回复。",
+    "branded": "品牌样式",
+    "brandedHint": "带 Logo 和强调线的卡片。",
+    "logo": "显示 Logo",
+    "logoHint": "每封邮件顶部的品牌 Logo。",
+    "noLogo": "这个品牌还没有 Logo。",
+    "addLogo": "添加 Logo",
+    "accent": "强调色",
+    "accentHint": "链接、品牌强调线和满意度调查按钮。",
+    "useBrand": "品牌色",
+    "accentInvalid": "请使用类似 #2563EB 的颜色。",
+    "font": "字体",
+    "fonts": {
+      "system": "系统",
+      "sans": "Helvetica",
+      "serif": "Georgia"
+    },
+    "footer": "页脚",
+    "footerHint": "每封邮件下方的小字，比如你的地址或帮助中心链接。支持变量。",
+    "footerPlaceholder": "Acme Inc, 1 Market Street, San Francisco",
+    "customHtml": "版式 HTML",
+    "customHint": "整封邮件的正文。opendesk 会把消息放在你写 {{content}} 的位置，签名放在 {{signature}}，更早的消息放在 {{history}}。",
+    "history": "更早的消息",
+    "historyHint": "引用在每条回复下方，让客户保留上下文。内部备注不会包含在内。",
+    "historyNone": "不引用",
+    "historyLast": "上一条消息",
+    "historyAll": "整个会话",
+    "historyHeader": "引用行",
+    "historyHeaderHint": "显示在每条引用消息上方。可使用 {{author}}、{{email}}（发件人地址）和 {{date}}。"
+  },
+  "csat": {
+    "off": "满意度调查已关闭，所以这封邮件还不会发送。",
+    "turnOn": "开启满意度调查",
+    "subject": "主题",
+    "subjectHint": "缺少工单编号时会自动补上，这样回复能归到同一会话。",
+    "body": "邮件",
+    "bodyHint": "必须包含 {{survey}}，五个评分按钮会放在这里。"
+  },
+  "variables": {
+    "title": "变量",
+    "description": "点击即可复制标签。每个模板都能使用所有变量，不适用的值为空。",
+    "logic": "逻辑",
+    "logicHint": "只在适用时显示某部分，按值选择，对列表中的每一项重复。点击示例即可复制。",
+    "helpers": "辅助函数",
+    "helpersHint": "过滤器用于改变值：在 | 之后依次添加。",
+    "copy": "复制",
+    "groups": {
+      "text": "文本",
+      "lists": "列表",
+      "numbers": "数字",
+      "dates": "日期"
+    }
+  },
+  "loadError": {
+    "title": "邮件设计加载失败",
+    "description": "加载这个品牌的邮件时出错了，请稍后再试。",
+    "retry": "重试"
+  }
+}

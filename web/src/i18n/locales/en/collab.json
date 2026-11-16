@@ -775,7 +775,8 @@
     "spoofedTitle": "Be careful with this message",
     "spoofedBody": "It failed its sender's checks, so it may not really be from {{domain}}. Avoid its links and files, and don't reply with personal details.",
     "unverifiedTitle": "This sender couldn't be verified",
-    "unverifiedBody": "Nothing confirms this message came from {{domain}}. Take care with its links and files."
+    "unverifiedBody": "Nothing confirms this message came from {{domain}}. Take care with its links and files.",
+    "showSource": "View source"
   },
   "addresses": {
     "title": "Addresses",

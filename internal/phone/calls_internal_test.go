@@ -48,10 +48,19 @@ func TestSubject(t *testing.T) {
 	if s := Subject("de", "inbound", "", ""); s != "Anruf von einer unterdrückten Nummer" {
 		t.Fatal(s)
 	}
+	if s := Subject("cs", "outbound", "Jana Nováková", "+420777"); s != "Odchozí hovor: Jana Nováková" {
+		t.Fatal(s)
+	}
+	if s := Subject("zh", "inbound", "王芳", "+8613800"); s != "来电：王芳" {
+		t.Fatal(s)
+	}
+	if s := Subject("zh", "inbound", "", ""); s != "隐藏号码来电" {
+		t.Fatal(s)
+	}
 }
 
 // Every language has the call words English has, and a workspace locale picks its base
-// language, else English.
+// language, else English; Chinese words are Simplified, so Traditional tags get English.
 func TestCallTexts(t *testing.T) {
 	for lang, words := range callTexts {
 		for k := range callTexts["en"] {
@@ -63,7 +72,8 @@ func TestCallTexts(t *testing.T) {
 			t.Errorf("%s has %d words, English %d", lang, len(words), len(callTexts["en"]))
 		}
 	}
-	for in, want := range map[string]string{"": "en", "fr": "fr", "fr-BE": "fr", "FR_be": "fr", "de-CH": "de", "nl-BE": "en", "en-GB": "en", "pt-BR": "en"} {
+	for in, want := range map[string]string{"": "en", "fr": "fr", "fr-BE": "fr", "FR_be": "fr", "de-CH": "de", "cs-CZ": "cs", "nl-BE": "en", "en-GB": "en", "pt-BR": "en",
+		"zh": "zh", "zh-CN": "zh", "zh_cn": "zh", "zh-Hans": "zh", "zh-TW": "en", "zh-HK": "en", "zh-Hant": "en", "zh-Hant-TW": "en"} {
 		if got := callLanguage(in); got != want {
 			t.Errorf("callLanguage(%q) = %q, want %q", in, got, want)
 		}

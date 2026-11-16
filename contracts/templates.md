@@ -162,7 +162,7 @@ brand's layout. A brand without one uses the default (plain, no logo, the previo
 ```ts
 type EmailLayoutOptions = {
   mode: "simple" | "custom";
-  style: "plain" | "branded";       // plain reads like a personal email; branded adds a card, header and accent
+  style: "plain" | "branded";       // plain reads like a personal email (no frame or fixed colours, follows light and dark mode; an email forwarded whole stays light); branded adds a light card, header and accent
   logo: boolean;                    // the brand's logo on top
   accent: string;                   // "#rrggbb" or "" = brand.color; links and the branded accent
   font: "system" | "sans" | "serif";

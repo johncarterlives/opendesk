@@ -1,0 +1,234 @@
+{
+  "title": "知识库",
+  "newArticle": "新建文章",
+  "writeArticle": "撰写文章",
+  "viewHelpCenter": "查看帮助中心",
+  "helpCenterSettings": "帮助中心设置",
+  "collections": "合集",
+  "newCollection": "新建合集",
+  "allArticles": "全部文章",
+  "allArticlesHint": "知识库中的所有文章，无论是否已发布。",
+  "noDescription": "暂无描述。",
+  "noCollection": "无合集",
+  "untitled": "无标题",
+  "noExcerpt": "无摘要",
+  "searchArticles": "搜索文章",
+  "clearSearch": "清除搜索",
+  "cancel": "取消",
+  "retry": "重试",
+  "articleCount_other": "{{count}} 篇文章",
+  "draftCount_other": "{{count}} 篇草稿",
+  "viewCount_other": "{{n}} 次浏览",
+  "stat": {
+    "articles": "文章",
+    "inCollections_other": "分布在 {{count}} 个合集",
+    "published": "已发布",
+    "live": "已在帮助中心上线",
+    "drafts": "草稿",
+    "notLive": "客户不可见",
+    "views": "浏览量",
+    "top": "阅读最多：{{title}}",
+    "noViews": "暂无浏览量"
+  },
+  "filter": {
+    "all": "全部",
+    "published": "已发布",
+    "drafts": "草稿"
+  },
+  "status": {
+    "published": "已发布",
+    "draft": "草稿"
+  },
+  "col": {
+    "title": "文章",
+    "collection": "合集",
+    "status": "状态",
+    "views": "浏览量",
+    "author": "作者",
+    "updated": "更新时间"
+  },
+  "empty": {
+    "title": "暂无文章",
+    "description": "一次写好答案，就能在回复、聊天组件和帮助中心里重复使用。",
+    "noDrafts": "没有草稿",
+    "noMatch": "没有匹配的文章",
+    "noMatchHint": "换个关键词试试，或者清除筛选条件。",
+    "noMatchFor": "没有与“{{q}}”匹配的内容。",
+    "noDraftsHint": "这里的文章都已发布。你写草稿后会显示在这里。",
+    "collectionTitle": "这个合集是空的"
+  },
+  "error": {
+    "title": "文章加载失败"
+  },
+  "collection": {
+    "options": "{{name}} 的选项",
+    "rename": "重命名",
+    "edit": "编辑合集",
+    "delete": "删除",
+    "deleteTitle": "删除 {{name}}？",
+    "deleteBody_other": "其中的 {{count}} 篇文章会留在知识库中，不归属任何合集。",
+    "deleteEmpty": "这个合集是空的。",
+    "deleteConfirm": "删除合集",
+    "created": "合集已创建",
+    "renamed": "合集已重命名",
+    "create": "创建",
+    "save": "保存",
+    "name": "名称",
+    "namePlaceholder": "快速上手",
+    "nameRequired": "请填写名称。",
+    "description": "描述",
+    "descriptionHint": "显示在帮助中心的合集标题下方。",
+    "saved": "合集已保存"
+  },
+  "toast": {
+    "published": "文章已发布",
+    "unpublished": "文章已取消发布",
+    "saved": "已保存",
+    "deleted": "文章已删除"
+  },
+  "details": {
+    "title": "详情",
+    "status": "状态",
+    "collection": "合集",
+    "author": "作者",
+    "views": "浏览量",
+    "published": "已发布",
+    "updated": "更新时间",
+    "url": "URL",
+    "urlHint": "这篇文章在你帮助中心里的地址。改动后旧链接仍会指向这里。"
+  },
+  "editor": {
+    "notFound": "找不到文章",
+    "uploadFailed": "图片上传失败",
+    "moveTo": "移动到合集",
+    "unsaved": "未保存的更改",
+    "savedAgo": "已于 {{when}} 保存",
+    "openInHelp": "在帮助中心打开",
+    "view": "查看",
+    "saveLiveHint": "把更改保存到已发布的文章",
+    "saveDraftHint": "保存但不发布",
+    "save": "保存",
+    "saveDraft": "保存草稿",
+    "publish": "发布",
+    "more": "更多操作",
+    "unpublish": "取消发布",
+    "deletePublished": "它会立即从帮助中心消失。",
+    "deleteDraft": "这份草稿将被永久删除。",
+    "deleteTitle": "删除 {{title}}？",
+    "deleteArticle": "删除文章",
+    "saveFirst": "请先保存再删除",
+    "titlePlaceholder": "文章标题",
+    "excerptPlaceholder": "一行摘要，用于搜索结果和帮助中心",
+    "uploading": "正在上传图片",
+    "bodyPlaceholder": "开始写作。用标题让读者快速浏览。",
+    "advanced": "高级",
+    "leaveTitle": "不保存就离开？",
+    "leaveBody": "你对这篇文章的更改尚未保存。",
+    "keepEditing": "继续编辑",
+    "discard": "放弃更改",
+    "saving": "正在保存"
+  },
+  "clearFilters": "清除筛选",
+  "tips": {
+    "spelling": "检查拼写",
+    "fewerWords": "试试更少或更宽泛的关键词",
+    "collections": "把文章归入合集",
+    "publish": "发布后即可在帮助中心显示"
+  },
+  "brand": {
+    "label": "品牌",
+    "all": "全部品牌",
+    "allHint": "共享",
+    "search": "搜索品牌",
+    "filter": "品牌：{{value}}",
+    "filterHint": "它自己的文章和共享的文章",
+    "collectionHint": "哪些帮助中心会显示这个合集。选择全部品牌会与所有品牌共享。",
+    "articleHint": "哪些帮助中心会显示这篇文章。",
+    "fromCollection": "跟随所属合集 {{name}}。",
+    "only": "仅在 {{name}} 帮助中心"
+  },
+  "switch": {
+    "articles": "文章",
+    "changelog": "更新日志"
+  },
+  "changelog": {
+    "new": "新建更新",
+    "view": "查看更新日志",
+    "all": "全部更新",
+    "search": "搜索更新",
+    "loadMore": "加载更多",
+    "undated": "未设置日期",
+    "error": "更新加载失败",
+    "status": {
+      "scheduled": "已排期"
+    },
+    "filter": {
+      "allCategories": "全部分类",
+      "scheduled": "已排期"
+    },
+    "col": {
+      "update": "更新",
+      "categories": "分类",
+      "date": "日期"
+    },
+    "empty": {
+      "title": "暂无更新",
+      "description": "告诉客户有哪些新增、改进和修复。更新会显示在帮助中心的更新日志和信息流中。",
+      "noMatch": "没有匹配的更新",
+      "noneHere": "这里什么都没有",
+      "noneHereHint": "没有符合这些筛选条件的更新。"
+    },
+    "tips": {
+      "categories": "给更新打上新增、改进或修复标记",
+      "schedule": "选择更晚的日期即可排期",
+      "api": "通过 API 从发布工具推送更新"
+    },
+    "toast": {
+      "published": "更新已发布",
+      "scheduled": "更新已排期到 {{date}}",
+      "unpublished": "更新已取消发布",
+      "deleted": "更新已删除"
+    },
+    "editor": {
+      "notFound": "找不到更新",
+      "openInHelp": "在帮助中心打开",
+      "saveLiveHint": "把更改保存到已发布的更新",
+      "schedule": "排期",
+      "deletePublished": "它会立即从更新日志和信息流中消失。",
+      "delete": "删除更新",
+      "titlePlaceholder": "有什么变化？",
+      "excerptPlaceholder": "一行摘要，用于更新日志和信息流",
+      "bodyPlaceholder": "描述这次更新。截图和简短列表能帮读者快速了解变化。",
+      "body": "更新正文",
+      "leaveBody": "你对这次更新的更改尚未保存。"
+    },
+    "details": {
+      "date": "日期",
+      "time": "时间",
+      "whenPublished": "发布时间",
+      "dateEmptyHint": "设为发布的那一刻。",
+      "dateHint": "读者会在更新中看到这个日期。",
+      "scheduledFor": "已排期到 {{date}}。在此之前保持隐藏。",
+      "willSchedule": "发布后将排期到 {{date}}。",
+      "categories": "分类",
+      "brandHint": "哪些帮助中心会显示这次更新。",
+      "urlHint": "这次更新在你帮助中心里的地址。改动后旧链接会失效。"
+    },
+    "categories": {
+      "remove": "移除 {{name}}",
+      "create": "添加",
+      "search": "搜索分类",
+      "none": "暂无分类",
+      "add": "添加",
+      "addFirst": "添加分类",
+      "empty": "没有分类",
+      "hint": "最多 {{max}} 个，例如新增、改进或修复。",
+      "problem": {
+        "empty": "请输入名称。",
+        "tooLong": "请控制在 {{length}} 个字符以内。",
+        "duplicate": "这个分类已存在。",
+        "full": "最多 {{max}} 个分类。"
+      }
+    }
+  }
+}

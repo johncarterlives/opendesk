@@ -32,9 +32,13 @@ export type SelectAllBarProps = {
   actions?: ReactNode;
   /** A narrow list (beside an open conversation): the count is left to the checkbox and the toolbar's name. */
   compact?: boolean;
+  /** Beside the checkbox, as Gmail keeps Refresh there: the account's Sync. Shown while selecting too. */
+  lead?: ReactNode;
+  /** Off for someone who cannot act on the list: the row then holds only `lead`. */
+  selectable?: boolean;
 };
 
-export function SelectAllBar({ loaded, selected, hasMore, loading, scope, matching, onToggle, onSelectEvery, actions, compact }: SelectAllBarProps) {
+export function SelectAllBar({ loaded, selected, hasMore, loading, scope, matching, onToggle, onSelectEvery, actions, compact, lead, selectable = true }: SelectAllBarProps) {
   const { t } = useTranslation("collab");
   const all = loaded > 0 && selected === loaded;
   const state = all ? true : selected > 0 ? "indeterminate" : false;
@@ -63,8 +67,9 @@ export function SelectAllBar({ loaded, selected, hasMore, loading, scope, matchi
   return (
     <div className="flex shrink-0 flex-col border-b border-line-soft text-[12px] text-fg-3">
       <div className="flex min-h-9 items-center gap-2.5 px-3.5">
-        <Checkbox checked={state} disabled={!loaded} aria-label={selected || loading ? t("list.clear") : t("list.selectAll")} onCheckedChange={onToggle} />
-        <span className={cn("mono shrink-0 tabular-nums", actions && compact && "sr-only")}>{selected ? t("list.selected", { count: selected }) : t("list.selectAll")}</span>
+        {selectable && <Checkbox checked={state} disabled={!loaded} aria-label={selected || loading ? t("list.clear") : t("list.selectAll")} onCheckedChange={onToggle} />}
+        {lead && <span className="-mx-1 flex shrink-0">{lead}</span>}
+        {selectable && <span className={cn("mono shrink-0 tabular-nums", actions && compact && "sr-only")}>{selected ? t("list.selected", { count: selected }) : t("list.selectAll")}</span>}
         {actions ? (
           <div role="toolbar" aria-label={t("list.selected", { count: selected })} className="flex min-w-0 flex-1 flex-wrap items-center gap-0.5 py-1">
             <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />

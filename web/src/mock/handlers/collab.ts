@@ -32,6 +32,7 @@ import { COLLAB_FROM_VARS, fromNameProblem, hasFromVars } from "@/lib/fromname";
 import { db, me as meUser, userRef, type WsData } from "../db";
 import { publish } from "../gateway";
 import { isEmoji } from "@/lib/botlook";
+import { rawMessage, sourceFile } from "../mailSource";
 import { del, get, HttpError, invalid, notFound, patch, post, put, respond, strArr, type Ctx } from "../router";
 import { escapeHtml, isRecord, nowIso, uuid } from "../util";
 import { mailbox as createMailbox } from "./resources";
@@ -1846,6 +1847,24 @@ export function registerCollab() {
     const t = threadOr404(ctx.ws, m.thread_id);
     const a = s.accounts.find((x) => x.id === t.account_id)!;
     return messageDetails(m, a.provider, m.sent_by !== null || m.from.email === a.email);
+  });
+
+  // Show original: the message's source, as a view and as an .eml file.
+  const sourceOf = (ctx: Ctx) => {
+    requireCollab(ctx.ws);
+    const m = state(ctx.ws).messages.find((x) => x.id === ctx.params.id);
+    if (!m) throw notFound("Message");
+    threadOr404(ctx.ws, m.thread_id);
+    const addr = (x: MailAddress) => (x.name ? `${x.name} <${x.email}>` : x.email);
+    return { m, raw: rawMessage({ from: addr(m.from), to: m.to.map(addr).join(", "), subject: m.subject, date: m.sent_at, messageId: m.message_id, text: m.body_text || m.snippet }) };
+  };
+  get("/v1/collab/messages/:id/source", (ctx) => {
+    const { raw } = sourceOf(ctx);
+    return { source: raw, size_bytes: raw.length, truncated: false };
+  });
+  get("/v1/collab/messages/:id/source.eml", (ctx) => {
+    const { m, raw } = sourceOf(ctx);
+    return sourceFile(raw, m.subject);
   });
 
   post("/v1/collab/threads/actions", (ctx) => {

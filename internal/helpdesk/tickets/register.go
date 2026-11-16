@@ -29,6 +29,7 @@ func Register(d *deps.Deps, api huma.API, r chi.Router) {
 	registerTyping(d, api)
 	registerVisitorPresence(d, api)
 	registerThreads(d, api)
+	registerMessageSource(d, api)
 	registerTemplates(d, api)
 	registerCSAT(d, api)
 	registerInsights(d, api)

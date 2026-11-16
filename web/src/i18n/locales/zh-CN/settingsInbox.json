@@ -1,0 +1,852 @@
+{
+  "common": {
+    "edit": "编辑",
+    "delete": "删除",
+    "cancel": "取消",
+    "discard": "放弃",
+    "discardTitle": "放弃更改？",
+    "actionsFor": "{{name}} 的操作",
+    "enable": "启用 {{name}}"
+  },
+  "savedReplies": {
+    "title": "快捷回复",
+    "descriptionBefore": "团队经常发送的答复。在编辑器里输入",
+    "descriptionAfter": "后接一个快捷键，或从快捷回复菜单中选择一条。",
+    "new": "新建回复",
+    "find": "查找回复",
+    "count_other": "{{count}} 条回复",
+    "noMatches": "没有匹配项",
+    "noMatchesHint": "试试标题或快捷键。",
+    "emptyTitle": "还没有快捷回复",
+    "emptyHint": "把你最常写的答复保存下来，之后用斜杠插入。",
+    "pickTitle": "选择要编辑的回复",
+    "pickHint": "或者新建一条。",
+    "untitled": "未命名回复",
+    "newBadge": "新增",
+    "noShortcut": "无快捷键",
+    "titleLabel": "标题",
+    "titlePlaceholder": "退款确认",
+    "shortcutLabel": "快捷键",
+    "bodyPlaceholder": "你好，感谢联系我们…",
+    "bodyLabel": "回复内容",
+    "save": "保存",
+    "revert": "还原",
+    "unsaved": "有未保存的更改",
+    "newReply": "新建回复",
+    "saved": "快捷回复已保存",
+    "saveFailed": "保存回复失败",
+    "deleteFailed": "删除回复失败",
+    "discardBody": "你对这条回复的更改将丢失。",
+    "deleteTitle": "删除这条回复？",
+    "deleteBody": "将不再出现在编辑器中。",
+    "needTitle": "请给回复起个标题。",
+    "needBody": "请填写回复内容。",
+    "shortcutTaken": "另一条回复已经使用了 /{{shortcut}}。",
+    "updated": "编辑于 {{when}}",
+    "emptyTips": {
+      "slash": "在编辑器里输入 / 和快捷键",
+      "team": "回复会与整个团队共享"
+    },
+    "variablesHint": "插入回复时，变量会按每张工单填入。",
+    "actionsTitle": "发送时的操作",
+    "actionsHint": "发送使用这条回复的消息时会应用到工单。如果草稿被放弃，则不会执行任何操作。",
+    "addTags": "添加标签",
+    "removeTags": "移除标签",
+    "tagsPlaceholder": "标签-a，标签-b",
+    "setTeam": "移到团队",
+    "setAssignee": "分配给",
+    "noChange": "不更改"
+  },
+  "views": {
+    "reorderAria": "重新排序 {{name}}。按住 Alt 再按方向键移动。",
+    "title": "视图",
+    "description": "保存在侧边栏“视图”下的筛选，带实时计数。视图可以只属于你、某个团队或所有人。这里的顺序就是侧边栏中的顺序。",
+    "new": "新建视图",
+    "count_other": "{{count}} 个视图",
+    "emptyTitle": "还没有视图",
+    "emptyHint": "视图是保存的筛选，比如账单团队的紧急工单。",
+    "shared": "共享",
+    "personal": "仅自己",
+    "showToEveryone": "让所有人都能看到 {{name}}",
+    "open": "打开视图",
+    "openThis": "打开这个视图",
+    "deleteTitle": "删除这个视图？",
+    "deleteConfirm": "删除视图",
+    "deleteFrom": {
+      "me": "将从你的侧边栏中消失。工单不受影响。",
+      "team": "将从 {{team}} 所有成员的侧边栏中消失。工单不受影响。",
+      "anyTeam": "将从该团队所有成员的侧边栏中消失。工单不受影响。",
+      "everyone": "将从所有人的侧边栏中消失。工单不受影响。"
+    },
+    "updateFailed": "更新视图失败",
+    "reorderFailed": "重新排序视图失败",
+    "moveTo": "移到分区",
+    "movedTo": "{{name}} 已移到“{{section}}”分区",
+    "movedOut": "{{name}} 已移出所在分区",
+    "deleteFailed": "删除视图失败",
+    "editTitle": "编辑视图",
+    "nameLabel": "名称",
+    "namePlaceholder": "账单队列",
+    "sectionLabel": "分区",
+    "sectionHint": "同一分区的视图会在侧边栏中一起显示，位于可折叠的标题下。",
+    "noSection": "无分区",
+    "newSection": "新建分区",
+    "sectionSearch": "查找或命名分区",
+    "sectionEmpty": "没有匹配的分区",
+    "inSection": "位于“{{name}}”分区",
+    "reorderSectionAria": "重新排序“{{name}}”分区。按住 Alt 再按方向键，可连同其中的视图一起移动。",
+    "sectionChars": "分区名称不能包含 < 或 >。",
+    "sectionEdit": {
+      "title": "编辑分区",
+      "aria": "编辑“{{name}}”分区",
+      "description_other": "新名称会重命名此处列出的 {{count}} 个视图所属的分区，分区图标也会随之更新。",
+      "save": "保存分区",
+      "saved": "分区已保存",
+      "needName": "请给分区起个名称。"
+    },
+    "sectionIcon": {
+      "hint": "显示在侧边栏中分区名称旁边，分区内有视图的所有人都能看到。",
+      "namePlaceholder": "分区名称"
+    },
+    "needName": "请给视图起个名称。",
+    "icon": {
+      "label": "图标",
+      "change": "更改",
+      "preview": "在侧边栏中",
+      "none": "无",
+      "tabs": {
+        "emoji": "Emoji",
+        "icon": "图标",
+        "text": "文字"
+      },
+      "searchEmoji": "搜索或粘贴 Emoji",
+      "searchIcon": "搜索图标",
+      "noMatch": "没有匹配项。",
+      "textLabel": "字母或数字",
+      "textPlaceholder": "PO",
+      "textHint": "一到两个字母或数字，显示在小方块上。",
+      "colour": "颜色",
+      "colourEmoji": "Emoji 会保留自身的颜色。",
+      "done": "完成",
+      "hint": "显示在侧边栏中名称旁边，方便找到这个视图。"
+    },
+    "visibleTitle": "所有人可见",
+    "audience": {
+      "me": "只有你能在自己的侧边栏中看到。",
+      "team": "{{team}} 的所有成员都能在侧边栏中看到。",
+      "anyTeam": "该团队的所有成员都能在侧边栏中看到。",
+      "everyone": "工作区的所有人都能在侧边栏中看到。"
+    },
+    "showWhere": "显示工单，条件为",
+    "discardBody": "你对这个视图的更改将丢失。",
+    "save": "保存视图",
+    "create": "创建视图",
+    "saved": "视图已保存",
+    "created": "视图已创建",
+    "duplicate": "复制",
+    "duplicateTitle": "复制视图",
+    "copyName": "{{name}}（副本）",
+    "copyPersonal": {
+      "everyone": "这个副本只属于你，因为只有管理员能为所有人创建视图。",
+      "team": "这个副本只属于你，因为只有管理员和 {{team}} 的负责人能创建该团队的视图。",
+      "anyTeam": "这个副本只属于你，因为只有管理员和团队负责人能创建该团队的视图。"
+    },
+    "clear": "清除 {{field}}",
+    "allTickets": "全部工单",
+    "filters": {
+      "status": "状态",
+      "priority": "优先级",
+      "severity": "严重程度",
+      "assignee": "负责人",
+      "team": "团队",
+      "mailbox": "邮箱",
+      "writtenTo": "收件地址",
+      "contact": "联系人",
+      "company": "公司",
+      "tag": "标签",
+      "channel": "渠道",
+      "keyword": "关键词"
+    },
+    "any": {
+      "status": "任意状态",
+      "priority": "任意优先级",
+      "severity": "任意严重程度",
+      "assignee": "任何人",
+      "team": "任意团队",
+      "mailbox": "任意邮箱",
+      "writtenTo": "任意地址",
+      "tag": "任意标签",
+      "channel": "任意渠道"
+    },
+    "keywordPlaceholder": "主题、联系人或正文",
+    "noSeverity": "无严重程度",
+    "assigneeViewer": "当前查看者",
+    "unassigned": "未分配",
+    "assignedToViewer": "已分配给查看者",
+    "assignedTo": "已分配给 {{name}}",
+    "aTeammate": "一位同事",
+    "teamNamed": "{{name}} 团队",
+    "unknown": "未知",
+    "inMailbox": "位于 {{name}}",
+    "aMailbox": "某个邮箱",
+    "aContact": "某位联系人",
+    "aCompany": "某家公司",
+    "writtenTo": "收件地址为 {{address}}",
+    "matching": "匹配“{{q}}”",
+    "ops": {
+      "is": "是",
+      "not": "不是"
+    },
+    "labelOps": {
+      "is": "是以下任一",
+      "not": "不是以下任一",
+      "empty": "为空"
+    },
+    "choose": {
+      "tag": "选择标签",
+      "team": "选择团队",
+      "mailbox": "选择邮箱",
+      "contact": "选择联系人",
+      "company": "选择公司",
+      "channel": "选择渠道"
+    },
+    "myTeams": "我的团队",
+    "noTeam": "无团队",
+    "notTeamNamed": "不属于 {{name}} 团队",
+    "notInMailbox": "不在 {{name}} 中",
+    "notContact": "不是来自 {{name}}",
+    "notCompany": "不是来自 {{name}}",
+    "withoutLabels": "不含 {{labels}}",
+    "noLabel": "无标签",
+    "notChannel": "不是 {{channel}}",
+    "emptyTips": {
+      "sidebar": "共享视图会出现在每个人的侧边栏中",
+      "personal": "个人视图只出现在你的侧边栏中"
+    }
+  },
+  "sla": {
+    "reorderAria": "重新排序 {{name}}。按住 Alt 再按方向键移动。",
+    "title": "SLA 政策",
+    "description": "响应和解决的目标时限。政策按从上到下的顺序检查，第一个已启用且匹配工单优先级和团队的政策生效。",
+    "new": "新建政策",
+    "emptyTitle": "没有 SLA 政策",
+    "emptyHint": "没有政策时，工单就没有到期时间。",
+    "allPriorities": "所有优先级",
+    "firstResponse": "首次响应",
+    "resolution": "解决",
+    "replyIn": "{{time}} 内回复",
+    "resolveIn": "{{time}} 内解决",
+    "footnote": "到期时间会显示在工单和列表中。超时会通知负责人。",
+    "deleteTitle": "删除这条政策？",
+    "deleteConfirm": "删除政策",
+    "deleteBodyBefore": "在",
+    "deleteBodyAfter": "政策下的工单会保留当前的到期时间，新工单则按下一个匹配的政策处理。",
+    "updateFailed": "更新政策失败",
+    "reorderFailed": "重新排序政策失败",
+    "deleteFailed": "删除政策失败",
+    "summary": {
+      "policies": "政策",
+      "enabled": "已启用",
+      "fastestReply": "最快回复",
+      "fastestResolve": "最快解决",
+      "off": "{{count}} 项已关闭"
+    },
+    "off": "关闭",
+    "editTitle": "编辑 SLA 政策",
+    "newTitle": "新建 SLA 政策",
+    "dialogHint": "目标按每分钟计时，除非政策只计工作时间。",
+    "save": "保存政策",
+    "create": "创建政策",
+    "saved": "政策已保存",
+    "created": "政策已创建",
+    "nameLabel": "名称",
+    "namePlaceholder": "紧急工单",
+    "appliesTo": "适用于",
+    "anyPriority": "任意优先级",
+    "priorityOption": "{{priority}} 优先级",
+    "firstWithin": "首次响应时限",
+    "resolveWithin": "解决时限",
+    "currently": "当前为 {{time}}",
+    "needName": "请给政策起个名称。",
+    "resolutionTooSoon": "解决时间不能早于首次响应。",
+    "badDuration": "每项时间请填写数字，范围从 1 分钟到 365 天。",
+    "units": {
+      "m": "分钟",
+      "h": "小时",
+      "d": "天"
+    },
+    "emptyTips": {
+      "order": "第一个匹配的政策生效",
+      "calendar": "政策可以在工作时间外暂停计时"
+    },
+    "businessHours": "仅计算工作时间",
+    "businessHoursHint": "在工作时间之外和节假日，计时会暂停。",
+    "businessHoursOff": "工作时间尚未启用，因此在启用前每一分钟都计时。",
+    "businessHoursLink": "设置工作时间",
+    "businessHoursBadge": "工作时间"
+  },
+  "automations": {
+    "reorderAria": "重新排序 {{name}}。按住 Alt 再按方向键移动。",
+    "title": "自动化",
+    "description": "当工单发生变化时自动运行的规则。它们按从上到下的顺序运行。",
+    "new": "新建自动化",
+    "emptyTitle": "还没有自动化",
+    "emptyHint": "把账单邮件路由到账单团队、给紧急关键词打标签，或者自动关闭垃圾邮件，不用动手。",
+    "conditions_other": "{{count}} 个条件",
+    "actions_other": "{{count}} 个操作",
+    "runs": "{{n}} 次运行",
+    "ranTimes": "已运行 {{n}} 次",
+    "active": "启用中",
+    "paused": "已暂停",
+    "deleteTitle": "删除这条自动化？",
+    "deleteBody": "将停止运行。它已经改动的工单保持原样。",
+    "updateFailed": "更新自动化失败",
+    "reorderFailed": "重新排序自动化失败",
+    "deleteFailed": "删除自动化失败",
+    "summary": {
+      "total": "自动化",
+      "active": "已启用",
+      "paused": "已暂停",
+      "runs": "运行次数"
+    },
+    "emptyTips": {
+      "order": "规则按从上到下的顺序运行",
+      "trigger": "每条规则都从一个触发条件开始，比如新建工单"
+    }
+  },
+  "edit": {
+    "fallbackTitle": "自动化",
+    "back": "自动化",
+    "newTitle": "新建自动化",
+    "newHint": "选择它什么时候运行、需要满足什么条件，以及它做什么。",
+    "ran": "已运行 {{n}} 次",
+    "notFound": "找不到这个自动化",
+    "notFoundHint": "它可能已被删除。",
+    "backToList": "返回自动化列表",
+    "create": "创建自动化",
+    "save": "保存",
+    "created": "自动化已创建",
+    "saved": "自动化已保存",
+    "deleted": "自动化已删除",
+    "nameLabel": "名称",
+    "namePlaceholder": "把账单邮件转给账单团队",
+    "on": "开启",
+    "off": "关闭",
+    "enabled": "自动化已启用",
+    "when": "当",
+    "trigger": "触发条件",
+    "ifAll": "如果以下条件全部满足",
+    "everyTicket": "对每张工单",
+    "noConditions": "没有条件：每次都会执行操作。",
+    "then": "则",
+    "addCondition": "添加条件",
+    "addAction": "添加操作",
+    "removeCondition": "移除条件",
+    "removeAction": "移除操作",
+    "if": "如果",
+    "and": "并且",
+    "do": "执行",
+    "field": "字段",
+    "operator": "运算符",
+    "action": "操作",
+    "valueLabel": "{{field}} 的值",
+    "phrasesLabel": "{{field}} 的短语",
+    "phrasesPlaceholder": "每行一个短语",
+    "phrasesCount_other": "{{count}} 条短语，最多 {{max}} 条",
+    "chooseStatus": "选择状态",
+    "choosePriority": "选择优先级",
+    "chooseChannel": "选择渠道",
+    "chooseMailbox": "选择邮箱",
+    "chooseTag": "选择标签",
+    "chooseTeammate": "选择同事",
+    "chooseTeam": "选择团队",
+    "assignReplierHint": "分配给写这条回复的人。添加条件“负责人为未分配”，可以让已有人负责的工单留在原处。",
+    "markSpamHint": "把工单移到垃圾邮件。不会发送回复。",
+    "deleteTicketHint": "删除工单：它会从所有视图中消失，之后不会再对它执行任何操作。",
+    "mergeHint": "把新工单合并到同一联系人最新的待处理、等待中或挂起工单。之后不会再对它执行其他操作。",
+    "mergeWindow_other": "{{count}} 天内",
+    "mergeSameSubject": "仅限相同主题",
+    "replyPlaceholder": "感谢你的来信。我们已收到你的消息…",
+    "notePlaceholder": "给团队的内部备注",
+    "replyText": "回复内容",
+    "noteText": "备注内容",
+    "problems": {
+      "name": "请给这个自动化起个名称。",
+      "action": "请至少添加一个操作。",
+      "condition": "每个条件都需要一个值，否则请移除它。",
+      "actionValue": "每个操作都需要一个值。",
+      "phrases": "短语列表需要 1 到 100 条短语，每行一条，每条最多 500 个字符。",
+      "mergeTrigger": "“合并到联系人的待处理工单”只在创建工单时运行。",
+      "procedureTrigger": "工单更新时 Ollie 无法运行流程。请选择其他触发条件。",
+      "callTrigger": "通话条件需要配合触发条件“通话结束时”。"
+    },
+    "chooseSeverity": "选择严重程度",
+    "noSeverity": "无严重程度",
+    "replyVariablesHint": "在自动回复中，发件人变量（例如客服姓名）为空。",
+    "chooseValue": "选择值",
+    "chooseLine": "选择线路"
+  },
+  "triggers": {
+    "ticket_created": "工单创建时",
+    "customer_replied": "客户回复时",
+    "agent_replied": "客服回复时",
+    "ticket_updated": "工单更新时",
+    "call_ended": "通话结束时"
+  },
+  "triggersShort": {
+    "ticket_created": "工单已创建",
+    "customer_replied": "客户已回复",
+    "agent_replied": "客服已回复",
+    "ticket_updated": "工单已更新",
+    "call_ended": "通话已结束"
+  },
+  "fields": {
+    "subject": "主题",
+    "body": "消息正文",
+    "from_email": "发件人邮箱",
+    "channel": "渠道",
+    "mailbox_id": "邮箱",
+    "priority": "优先级",
+    "severity": "严重程度",
+    "status": "状态",
+    "tag": "标签",
+    "received_at": "收件地址",
+    "team_id": "团队",
+    "brand_id": "品牌",
+    "widget_id": "聊天组件",
+    "assignee_id": "负责人",
+    "call_outcome": "通话结果",
+    "call_direction": "通话方向",
+    "call_time": "通话时间",
+    "call_missed_reason": "未接来电原因",
+    "call_line": "通话线路",
+    "call_tag": "通话标签",
+    "time": "工作时间"
+  },
+  "ops": {
+    "contains": "包含",
+    "not_contains": "不包含",
+    "equals": "是",
+    "not_equals": "不是",
+    "eq": "是",
+    "gt": "高于",
+    "lt": "低于",
+    "any": "包含以下任一项",
+    "none": "不包含以下任何一项"
+  },
+  "actionTypes": {
+    "set_status": "把状态设为",
+    "set_priority": "把优先级设为",
+    "set_severity": "把严重程度设为",
+    "assign_user": "分配给",
+    "assign_replier": "分配给回复的客服",
+    "assign_team": "分配给团队",
+    "add_tag": "添加标签",
+    "remove_tag": "移除标签",
+    "send_reply": "发送回复",
+    "add_note": "添加内部备注",
+    "mark_spam": "标记为垃圾邮件",
+    "delete_ticket": "删除工单",
+    "merge_into_open_ticket": "合并到联系人的待处理工单",
+    "set_field": "设置字段",
+    "set_reply_address": "设置回复地址"
+  },
+  "unsaved": {
+    "title": "不保存就离开？",
+    "body": "你在这个页面上的修改会丢失。",
+    "keep": "继续编辑",
+    "discard": "放弃修改"
+  },
+  "pickers": {
+    "search": "搜索",
+    "searchContacts": "搜索姓名或邮箱",
+    "searchCompanies": "搜索名称或域名",
+    "andMore": "{{first}} 以及另外 {{count}} 个"
+  },
+  "customFields": {
+    "ticketBasics": "工单",
+    "ticketGroup": "工单字段",
+    "contactGroup": "联系人字段",
+    "contactPrefix": "联系人：",
+    "missing": "此字段已被删除",
+    "noValue": "无需填写值",
+    "chooseOption": "选择一个选项",
+    "chooseOptions": "选择选项",
+    "choosePerson": "选择一个人",
+    "choosePeople": "选择人员",
+    "yes": "是",
+    "no": "否",
+    "valueFor": "{{name}} 的值",
+    "clearHint": "留空即清除",
+    "chooseField": "选择字段",
+    "to": "至",
+    "ops": {
+      "eq": "是",
+      "ne": "不是",
+      "contains": "包含",
+      "not_contains": "不包含",
+      "gt": "大于",
+      "gte": "至少为",
+      "lt": "小于",
+      "lte": "至多为",
+      "any": "是以下任意一项",
+      "all": "包含以下全部",
+      "none": "都不是以下各项",
+      "set": "已设置",
+      "not_set": "为空",
+      "date": {
+        "gt": "晚于",
+        "gte": "不早于",
+        "lt": "早于",
+        "lte": "不晚于"
+      },
+      "number": {
+        "gt": "大于",
+        "gte": "至少为",
+        "lt": "小于",
+        "lte": "至多为"
+      }
+    }
+  },
+  "assignment": {
+    "title": "分配",
+    "description": "决定新工单分给谁。只会挑选在线且未达上限的同事。",
+    "saveFailed": "无法保存分配设置",
+    "defaultTitle": "默认模式",
+    "defaultHint": "除非团队或邮箱有自己的规则，否则每张工单都用这个模式。",
+    "modes": {
+      "none": {
+        "label": "关闭",
+        "hint": "工单会留在未分配中，直到有人接手。"
+      },
+      "round_robin": {
+        "label": "轮询",
+        "hint": "同事轮流接单，下一张工单分给下一个人。"
+      },
+      "load_balanced": {
+        "label": "负载均衡",
+        "hint": "下一张工单分给待处理工单最少的同事。"
+      }
+    },
+    "stats": {
+      "eligible": "可接单",
+      "eligibleHint": "在线且未达上限",
+      "atCap": "已达上限"
+    },
+    "presence": {
+      "online": "在线",
+      "away": "离开",
+      "offline": "离线",
+      "idle": "离开，空闲"
+    },
+    "rules": {
+      "title": "规则",
+      "hint": "给团队或邮箱单独设置模式。团队规则优先于邮箱规则。",
+      "add": "添加规则",
+      "search": "查找团队或邮箱",
+      "noTargets": "每个团队和邮箱都已设置规则",
+      "teams": "团队",
+      "mailboxes": "邮箱",
+      "team": "团队",
+      "mailbox": "邮箱",
+      "teamMeta_other": "{{count}} 位成员",
+      "missing": "已删除",
+      "modeFor": "{{name}} 的模式",
+      "remove": "移除规则",
+      "removeFor": "移除 {{name}} 的规则",
+      "removed": "已移除 {{name}} 的规则",
+      "emptyTitle": "还没有规则",
+      "emptyHint": "每张工单都使用默认模式。当某个团队或邮箱需要不同的分配方式时（例如账单邮件用负载均衡），再添加规则。",
+      "tips": {
+        "order": "工单先应用团队规则，再应用邮箱规则",
+        "pool": "只会挑选该团队的成员"
+      }
+    },
+    "notifyTitle": "新的未分配工单",
+    "notifyHint": "工单进来且没有人被分配时，谁会收到通知。由 Ollie 自己回复聊天或邮件时，会在它转交给人时通知。每个人可以在通知设置里选择通知方式。",
+    "notify": {
+      "label": "新未分配工单的通知",
+      "options": {
+        "auto": {
+          "label": "自动",
+          "hint": "小团队通知所有人，需要通知超过 5 人时只通知负责人。"
+        },
+        "everyone": {
+          "label": "团队所有人",
+          "hint": "工单所属团队的全体成员；工单没有团队时，通知工作区里的所有人。"
+        },
+        "leads": {
+          "label": "仅负责人和管理员",
+          "hint": "团队的负责人；没有团队或没有负责人时，通知所有者和管理员。"
+        },
+        "off": {
+          "label": "关闭",
+          "hint": "不通知任何人。新工单会留在未分配中。"
+        }
+      }
+    },
+    "followUpTitle": "已关闭工单的后续跟进",
+    "followUpHint": "回复已关闭工单的邮件会新建一张工单，并链接到已关闭的那张。",
+    "followUp": {
+      "label": "把后续跟进分配给已关闭工单的负责人",
+      "on": "后续跟进会分给原先负责该已关闭工单的人，前提是此人仍可接单；如果该工单属于私有团队，还需要是该团队的成员",
+      "off": "后续跟进会像新工单一样以未分配状态进来"
+    },
+    "chat": {
+      "title": "在线聊天",
+      "hint": "让每段新聊天立刻分给一位同事，访客在页面上就能得到真人回复。邮件仍按上面的规则分配。",
+      "mode": "分配聊天",
+      "modes": {
+        "none": "聊天和邮件一样，按上面的规则分配",
+        "round_robin": "每段新聊天按顺序分给下一位负责聊天的同事",
+        "load_balanced": "每段新聊天分给负责聊天且待处理工单最少的同事"
+      },
+      "skill": "谁负责聊天",
+      "anyone": "团队里的所有人",
+      "skillOn": "只有具备 {{name}} 技能、在线且未离开的同事。开启机器人回答时，聊天会在机器人转交时分配",
+      "skillOff": "聊天所属团队里所有在线且未离开的同事。选择一项技能，可以把聊天只留给负责它的人",
+      "noSkills": "聊天所属团队里所有在线的同事。在路由技能里添加技能，可以把聊天只留给负责它的人",
+      "awayTip": "同事在被自己手动更改之前都算在线：打开下面的“把空闲同事标记为离开”，这样离开后就不会再收到聊天，工作时间之外的聊天会留在收件箱里。"
+    },
+    "awayTitle": "离开",
+    "awayHint": "暂时离开的同事在回来之前不会再收到新工单。",
+    "away": {
+      "label": "把空闲同事标记为离开",
+      "on_other": "{{count}} 分钟无活动后",
+      "off": "同事在被自己手动更改之前都保持在线",
+      "after": "空闲时长",
+      "afterHint": "10 分钟到 24 小时之间。",
+      "min": "分钟"
+    },
+    "teamTitle": "团队可用情况",
+    "teamHint": "现在谁可以被分配，以及每个人手上有多少待处理工单。查看者永远不会被分配。",
+    "teamEmpty": {
+      "title": "还没有可分配的成员",
+      "description": "邀请客服或管理员，新工单才有人可以分配。",
+      "action": "邀请成员",
+      "tips": {
+        "viewers": "查看者可以阅读工单，但永远不会被分配",
+        "online": "只有在线同事会收到新工单"
+      }
+    },
+    "member": {
+      "setAvailability": "设置 {{name}} 的可用状态",
+      "noCap": "无上限",
+      "open": "待处理",
+      "setCap": "设置上限",
+      "capShort_other": "上限 {{count}}",
+      "capFor": "{{name}} 的工单上限",
+      "capTitle": "待处理工单上限",
+      "capHint": "{{name}} 的待处理和等待中工单达到这个数量后，就不再收到新工单。",
+      "limit": "限制待处理工单数",
+      "tickets": "个工单",
+      "saveCap": "保存",
+      "saveFailed": "无法更新这位同事"
+    },
+    "skills": {
+      "title": "路由技能",
+      "hint": "描述处理工单所需的专业能力，并把每项技能分配给同事。",
+      "add": "添加技能",
+      "namePlaceholder": "技能名称",
+      "createHint": "输入名称即可创建这项技能。",
+      "create": "创建技能",
+      "created": "已创建 {{name}}",
+      "saveFailed": "无法保存技能",
+      "emptyTitle": "还没有技能",
+      "emptyHint": "添加诸如账单或技术支持这样的技能。",
+      "memberCount_other": "{{count}} 位同事",
+      "members": "分配同事",
+      "archived": "已归档",
+      "archive": "归档技能",
+      "restore": "恢复技能",
+      "archiveNamed": "归档 {{name}}",
+      "restoreNamed": "恢复 {{name}}",
+      "note": "自动分配之前，匹配的路由规则会要求具备相应技能。"
+    }
+  },
+  "triage": {
+    "title": "分诊",
+    "description": "{{name}} 会读取每张新工单并加以分类，让你的团队从正确的优先级和标签开始。",
+    "saveFailed": "无法保存分诊设置",
+    "unavailable": {
+      "title": "尚未设置 AI",
+      "body": "{{name}} 需要先接入 AI 服务商才能分诊工单。",
+      "action": "打开 AI 设置"
+    },
+    "explainer": {
+      "title": "{{name}} 如何分诊",
+      "on": "开启",
+      "off": "关闭",
+      "body": "{{name}} 做的每项改动都会在工单时间线中显示为由 {{name}} 完成，任何人都能看到工单为何变动，并把它改回去。"
+    },
+    "sample": {
+      "aria": "已分诊工单的示例",
+      "subject": "我的年度套餐被重复扣费",
+      "from": "Maria Lopez · 刚刚",
+      "priority": "优先级已提升为高",
+      "label": "账单",
+      "labelAdded": "已添加标签",
+      "sentiment": "已记录情绪和语言",
+      "assigned": "已分配给下一位同事",
+      "severity": "严重程度已设为 Sev 2"
+    },
+    "section": "分诊",
+    "auto": {
+      "label": "分诊新工单",
+      "hint": "每张新工单到达时，{{name}} 都会立即查看。"
+    },
+    "fields": {
+      "label": "{{name}} 可以改动的内容",
+      "hint": "选择允许分诊在工单上设置的内容。",
+      "always": "始终记录：",
+      "sentiment": "情绪",
+      "language": "语言",
+      "category": "分类",
+      "priority": {
+        "label": "优先级",
+        "hint": "工单看起来紧急时提升优先级，但绝不会降低优先级。"
+      },
+      "severity": {
+        "label": "严重程度",
+        "hint": "根据业务影响设为 Sev 1 到 Sev 4，只会提升严重程度。"
+      },
+      "labels": {
+        "label": "标签",
+        "hint": "添加与工单内容相符的标签。"
+      },
+      "team": {
+        "label": "团队",
+        "hint": "把没有团队的工单路由到最合适的团队。"
+      }
+    },
+    "after": {
+      "section": "分诊之后",
+      "label": "分诊后分配",
+      "hintMode": "随后会按你的 {{mode}} 模式分配工单。",
+      "hintNone": "分配已关闭，工单会交给待处理工单最少的客服。",
+      "link": "分配设置"
+    },
+    "engine": {
+      "section": "决策引擎",
+      "label": "引擎",
+      "jev": "决策模型",
+      "jevHint": "快速、结构化且置信度经过校准的决策。{{name}} 只在足够有把握时才应用决策。",
+      "connected": "已连接",
+      "unreachable": "无法连接",
+      "llm": "LLM 备用",
+      "llmHint": "你的 AI 模型会回答同样的问题，但置信度未经过校准。设置 TYPESAFE_API_KEY 即可改用决策模型。",
+      "none": "未设置",
+      "noneHint": "设置 TYPESAFE_API_KEY 或 AI 服务商密钥，让 {{name}} 进行分诊。",
+      "model": "模型"
+    },
+    "threshold": {
+      "label": "应用决策的置信度",
+      "hint": "达到或高于此值时，{{name}} 会直接应用决策。低于此值时，决策会作为建议等待客服一键接受。",
+      "llmNote": "LLM 备用没有经过校准的置信度，因此其决策会直接应用。",
+      "value": "{{pct}}%",
+      "cautious": "谨慎",
+      "eager": "积极"
+    }
+  },
+  "hours": {
+    "title": "工作时间",
+    "description": "你的团队在线的时间。SLA 政策可以只计算这些时间，夜间、周末和节假日不会计入计时。",
+    "saved": "工作时间已保存",
+    "saveFailed": "无法保存工作时间",
+    "openNow": "当前开放",
+    "closedNow": "当前关闭",
+    "enabled": "使用工作时间",
+    "enabledOn": "计算工作时间的 SLA 政策会在此时间段之外暂停计时",
+    "enabledOff": "每一分钟都计入 SLA 目标",
+    "timezone": "时区",
+    "timezoneHint": "开放时间和节假日按此时区计算，它也是工作区时区。",
+    "searchTimezones": "搜索时区",
+    "sla": "SLA 政策",
+    "slaHint": "按政策开启工作时间。",
+    "slaLink": "打开 SLA 政策",
+    "weekTitle": "每周工作时间",
+    "weekHint": "每天最多三个时间段，以 15 分钟为最小单位。",
+    "perWeek": "每周 {{hours}} 小时",
+    "days": {
+      "mon": "星期一",
+      "tue": "星期二",
+      "wed": "星期三",
+      "thu": "星期四",
+      "fri": "星期五",
+      "sat": "星期六",
+      "sun": "星期日"
+    },
+    "openOn": "{{day}} 开放",
+    "closed": "关闭",
+    "to": "至",
+    "startOf": "{{day}} 第 {{n}} 个时间段开始",
+    "endOf": "{{day}} 第 {{n}} 个时间段结束",
+    "addRange": "添加时间段",
+    "addRangeOn": "在 {{day}} 添加时间段",
+    "maxRanges": "每天最多三个时间段",
+    "removeRange": "移除这些时间段",
+    "removeRangeOf": "移除 {{day}} 第 {{n}} 个时间段",
+    "copyMenu": "{{day}} 的更多操作",
+    "copyWeekdays": "复制到所有工作日",
+    "copyAll": "复制到每一天",
+    "errors": {
+      "order": "每个时间段的结束时间必须晚于开始时间。",
+      "overlap": "这些时间段有重叠。"
+    },
+    "holidays": {
+      "title": "节假日",
+      "hint": "全天关闭。计算工作时间的 SLA 计时会保持暂停。",
+      "add": "添加节假日",
+      "addConfirm": "添加",
+      "done": "完成",
+      "date": "节假日日期",
+      "name": "节假日名称",
+      "namePlaceholder": "元旦",
+      "needDate": "请选择日期。",
+      "needName": "请为节假日填写名称。",
+      "duplicate": "该日期已有节假日。",
+      "tooMany": "最多可以添加 {{count}} 个节假日。",
+      "today": "今天",
+      "past": "已过",
+      "inDays_other": "{{count}} 天后",
+      "remove": "移除节假日",
+      "removeNamed": "移除 {{name}}",
+      "pastCount_other": "{{count}} 个已过的节假日。",
+      "clearPast": "清除已过的节假日",
+      "emptyTitle": "还没有节假日",
+      "emptyHint": "添加团队休息的日子，例如法定节假日，这样没人值班时 SLA 计时不会继续。",
+      "tips": {
+        "closed": "节假日全天关闭",
+        "sla": "只有计算工作时间的策略会暂停"
+      }
+    }
+  },
+  "callValues": {
+    "call_outcome": {
+      "missed": "未接",
+      "voicemail": "语音信箱",
+      "answered": "已接听"
+    },
+    "call_direction": {
+      "inbound": "呼入",
+      "outbound": "呼出"
+    },
+    "call_time": {
+      "outside_business_hours": "工作时间之外",
+      "business_hours": "工作时间之内"
+    },
+    "call_missed_reason": {
+      "out_of_opening_hours": "开放时间之外",
+      "short_abandoned": "快速挂断",
+      "abandoned_in_ivr": "在菜单中挂断",
+      "abandoned_in_classic": "等待时挂断",
+      "no_available_agent": "没有可用的客服",
+      "agents_did_not_answer": "无人接听",
+      "busy": "线路占线",
+      "no_answer": "未接听",
+      "failed": "通话失败",
+      "cancelled": "未接通即挂断",
+      "abandon": "在队列中挂断"
+    }
+  }
+}

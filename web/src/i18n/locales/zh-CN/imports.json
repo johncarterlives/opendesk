@@ -1,0 +1,329 @@
+{
+  "title": "导入",
+  "description": "把团队的历史记录从其他客服系统或 CSV 文件迁移过来：每张工单及其完整会话、来信的联系人，以及你的帮助中心。",
+  "pick": {
+    "title": "你的历史记录现在在哪里？",
+    "again": "从其他来源导入",
+    "hint": "连接你现在使用的账户。原系统不会有任何改动，切换之前你可以继续在里面工作。",
+    "oneAtATime": "同一时间只能运行一个导入。当前导入完成后可以开始下一个。",
+    "adminsOnly": "只有管理员可以导入历史记录。",
+    "guide": "导入是如何运作的"
+  },
+  "promise": {
+    "quiet": {
+      "title": "悄无声息",
+      "body": "没有客户会收到邮件，导入的工单也不会触发自动化、SLA 计时器、Webhook 和通知。"
+    },
+    "people": {
+      "title": "人员一一对应",
+      "body": "客服会变成成员，分组会变成团队，按邮箱和姓名匹配。开始前你可以逐一检查每个匹配结果。"
+    },
+    "undo": {
+      "title": "随时可撤销",
+      "body": "一键移除导入带来的内容，同时保留团队之后写入的内容。"
+    }
+  },
+  "sources": {
+    "zendesk": {
+      "with": "API 令牌",
+      "blurb": "工单及其回复和备注、用户、组织以及 Guide 文章。"
+    },
+    "helpscout": {
+      "with": "App ID 和密钥",
+      "blurb": "每个邮箱的会话、客户，以及你的 Docs 文章。"
+    },
+    "freshdesk": {
+      "with": "API 密钥",
+      "blurb": "工单及其回复和备注、联系人、公司以及解决方案文章。"
+    },
+    "intercom": {
+      "with": "访问 令牌",
+      "blurb": "带备注和文件的会话、联系人、公司以及文章。"
+    },
+    "front": {
+      "with": "API 令牌",
+      "blurb": "每个共享收件箱的会话，包含评论、文件和联系人。"
+    },
+    "csv": {
+      "with": "任意客服系统",
+      "blurb": "从其他客服系统导出的文件，每行一张工单或一条消息。"
+    },
+    "freescout": {
+      "with": "实例 URL 和 API 密钥",
+      "blurb": "每个邮箱的会话，包含回复、内部备注、附件和客户。"
+    }
+  },
+  "steps": {
+    "connect": "连接",
+    "upload": "上传",
+    "columns": "列",
+    "review": "检查",
+    "options": "选择并开始"
+  },
+  "wizard": {
+    "title": "从 {{name}} 导入",
+    "description": "连接你的 {{name}} 账户。我们只读取，不会改动原系统的任何内容。",
+    "csvDescription": "上传当前客服系统导出的文件，然后告诉我们每一列对应什么。",
+    "whatComes": "会迁移的内容",
+    "facts": {
+      "conversations": "每张工单及其全部回复、备注和附件，保留原始日期。",
+      "people": "客户和公司，客服转为成员，分组转为团队。",
+      "articles": "帮助中心的合集和文章。",
+      "quiet": "不会给任何人发邮件，也不会运行自动化。"
+    },
+    "guide": "阅读导入指南",
+    "connect": "连接",
+    "checking": "正在检查 {{name}}",
+    "preview": "预览",
+    "continue": "继续",
+    "start": "开始导入",
+    "back": "返回",
+    "cancel": "取消",
+    "startedToast": "导入已开始。你可以离开这个页面，完成后我们会通知你。",
+    "leaveTitle": "离开这次导入？",
+    "leaveBody": "目前还没有导入任何内容。你在这里的选择将会丢失。",
+    "leave": "离开"
+  },
+  "connect": {
+    "whereToFind": "在哪里找到",
+    "show": "显示",
+    "hide": "隐藏",
+    "safety": "只读。你的凭据会被加密，仅用于读取 {{name}}。最后一次运行后 30 天会自动移除，你也可以随时移除。",
+    "same": "与上次相同"
+  },
+  "review": {
+    "connected": "已连接",
+    "tickets_other": "{{n}} 张工单",
+    "ticketsUnknown": "工单数量会在导入时统计",
+    "articles_other": "{{n}} 篇文章",
+    "agents_other": "{{count}} 位客服",
+    "sampleTitle": "工单的呈现效果",
+    "noSamples": "暂时没有可预览的工单。导入仍会带来它找到的内容。",
+    "noSubject": "（无主题）",
+    "previous": "上一张工单",
+    "next": "下一张工单",
+    "messages_other": "{{count}} 条消息",
+    "more_other": "还有 {{count}} 条消息",
+    "note": "内部备注",
+    "unknown": "未知",
+    "empty": "无文本",
+    "agentsTitle": "客服",
+    "agentsHint": "他们的回复、备注和工单会归到你选择的成员名下。没有对应的人保留原本的署名。",
+    "matched": "{{total}} 个中已匹配 {{n}} 个",
+    "sameEmail": "相同邮箱",
+    "keepName": "保留为姓名",
+    "agentFor": "{{name}} 对应的成员",
+    "groupsTitle": "分组",
+    "groupsHint": "每个分组的工单会归到你选择的团队。",
+    "noTeam": "不指定团队",
+    "teamFor": "{{name}} 对应的团队",
+    "ready": "就绪"
+  },
+  "csv": {
+    "drop": "把 CSV 文件拖到这里，或点击选择文件",
+    "dropNow": "松开即可上传",
+    "dropHint": "每行一张工单，或每行一条消息并带上工单 ID，以便我们归类。首行为列名。",
+    "reading": "正在读取 {{name}}",
+    "formats": "UTF-8 或 UTF-16，用逗号、分号或制表符分隔。最大 50 MB，最多 500,000 行。",
+    "template": "下载模板",
+    "tooLarge": "这个文件超过 50 MB。请拆分成较小的文件，然后依次导入。",
+    "wrongType": "请选择 .csv 文件。在电子表格里依次点击 File、Download 或 Export，即可保存为 CSV。",
+    "summary": "{{rows}} 行，{{columns}} 列",
+    "replace": "选择其他文件",
+    "notInFile": "文件中没有",
+    "emptyColumn": "这一列在前几行是空的",
+    "needBody": "请选择包含消息的列，至少要选择包含主题的列。",
+    "grouping": "工单 ID 相同的行会合并为一张工单，每行按时间顺序成为一条消息。没有工单 ID 列时，每行各成一张工单。",
+    "fields": {
+      "ticket_id": {
+        "label": "工单 ID",
+        "hint": "把多行归并为工单"
+      },
+      "subject": {
+        "label": "主题",
+        "hint": "工单的标题"
+      },
+      "body": {
+        "label": "消息",
+        "hint": "正文，纯文本或 HTML"
+      },
+      "created_at": {
+        "label": "日期",
+        "hint": "创建时间"
+      },
+      "from_email": {
+        "label": "发件人邮箱",
+        "hint": "是谁写的"
+      },
+      "from_name": {
+        "label": "发件人姓名",
+        "hint": "对方的名字"
+      },
+      "author": {
+        "label": "作者类型",
+        "hint": "customer、agent 或 note"
+      },
+      "status": {
+        "label": "状态",
+        "hint": "open、pending、solved、closed"
+      },
+      "priority": {
+        "label": "优先级",
+        "hint": "low、normal、high、urgent"
+      },
+      "tags": {
+        "label": "标签",
+        "hint": "用逗号分隔"
+      },
+      "assignee_email": {
+        "label": "负责人邮箱",
+        "hint": "会匹配到成员"
+      },
+      "team": {
+        "label": "团队",
+        "hint": "按名称匹配到团队"
+      },
+      "company": {
+        "label": "公司",
+        "hint": "客户所属的公司"
+      },
+      "message_id": {
+        "label": "Message-ID",
+        "hint": "邮件自身的 ID，用于把回复串成会话"
+      },
+      "in_reply_to": {
+        "label": "In-Reply-To",
+        "hint": "它所回复的 Message-ID"
+      },
+      "references": {
+        "label": "References",
+        "hint": "会话中更早的 Message-ID"
+      }
+    }
+  },
+  "options": {
+    "what": "要迁移的内容",
+    "tickets": "工单",
+    "ticketsHint_other": "{{n}} 张工单及其会话。",
+    "ticketsHintUnknown": "每张工单及其会话。",
+    "articles": "帮助中心文章",
+    "articlesHint_other": "{{n}} 篇文章及其合集。图片也会一起迁移。",
+    "articlesHintUnknown": "每篇文章及其合集。",
+    "articlesNone": "这个账户没有可迁移的帮助中心。",
+    "articlesNoDocs": "在第一步添加 Docs API 密钥，即可迁移你的 Docs 文章。",
+    "drafts": "文章以草稿形式迁入",
+    "draftsHint": "在发布到帮助中心之前可以先过一遍。",
+    "attachments": "附件",
+    "attachmentsHint": "每个文件最大 25 MB。关闭可以加快导入。",
+    "how": "方式",
+    "since": "起始时间",
+    "sinceHint": "更早的工单不会迁移。文章始终完整迁移。",
+    "allHistory": "全部历史",
+    "fromDate": "从指定日期开始",
+    "statuses": "状态",
+    "keep": "保持原样",
+    "closeAll": "全部关闭",
+    "keepHint": "待处理的工单会以待处理状态迁入，进入你的队列。",
+    "closedHint": "所有工单都以已关闭状态迁入，你的队列保持原样。",
+    "label": "标签",
+    "labelHint": "添加到每张导入的工单，方便你找到它们。",
+    "noLabel": "不加标签",
+    "mailbox": "回复邮箱",
+    "mailboxHint": "对导入邮件工单的回复会从这个邮箱发出。",
+    "noMailbox": "回复时再选择",
+    "articlesUnsupported": "FreeScout API 不提供知识库文章。"
+  },
+  "summary": {
+    "lead": "这将迁移 {{what}}。",
+    "and": " 和 ",
+    "tickets_other": "{{n}} 张工单",
+    "ticketsUnknown": "全部工单",
+    "articles_other": "{{n}} 篇文章",
+    "articlesUnknown": "全部文章",
+    "quiet": "没有人会收到邮件，自动化、SLA 计时器和 Webhook 也不会触发。",
+    "after": "账号数据量大时需要一些时间。导入在我们的服务器上运行，你可以关闭这个页面。完成后我们会通知你，之后你也可以随时迁移此后的变更。"
+  },
+  "current": {
+    "running": "进行中",
+    "runningHint": "实时更新。你可以离开这个页面再回来。",
+    "latest": "最近一次导入"
+  },
+  "state": {
+    "running": "导入中",
+    "paused": "已暂停",
+    "completed": "已完成",
+    "failed": "已停止",
+    "canceled": "已取消",
+    "undoing": "撤销中",
+    "undone": "已撤销",
+    "waiting": "等待中",
+    "needsCredentials": "需要凭据"
+  },
+  "status": {
+    "open": "待处理",
+    "pending": "等待中",
+    "on_hold": "挂起",
+    "solved": "已解决",
+    "closed": "已关闭"
+  },
+  "progress": {
+    "run": "更新 {{n}}",
+    "startedBy": "由 {{name}} 于 {{when}} 开始",
+    "started": "开始于 {{when}}",
+    "finished": "完成于 {{when}}",
+    "articles": "正在迁移帮助中心文章",
+    "tickets": "正在迁移工单",
+    "changes": "正在迁移变更内容",
+    "threading": "正在把回复关联到对应邮件：{{done}} / {{total}}",
+    "undoing": "正在移除导入带来的内容",
+    "paused": "已暂停。恢复后会从这里继续。",
+    "waiting": "{{name}} 要求我们放慢速度。{{seconds}} 秒后继续。",
+    "left": "大约还需 {{time}}",
+    "lessThanMinute": "不到一分钟",
+    "minutes_other": "{{count}} 分钟",
+    "hours_other": "{{count}} 小时",
+    "pause": "暂停",
+    "resume": "恢复",
+    "retry": "重试",
+    "sync": "迁移变更",
+    "actions": "导入操作",
+    "openSource": "打开 {{name}}",
+    "cancel": "取消导入",
+    "cancelTitle": "取消这次导入？",
+    "cancelBody": "已经迁入的内容会保留。凭据会被移除，之后你仍可以撤销。",
+    "canceledToast": "导入已取消",
+    "undo": "撤销导入",
+    "undoPauseFirst": "先暂停才能撤销",
+    "undoTitle": "撤销 {{name}} 的导入？",
+    "undoBody_other": "这会移除它带来的 {{tickets}} 张工单和 {{articles}} 篇文章，以及没有其他地方在用的联系人、公司和标签。团队之后写过内容的工单会保留。",
+    "undoneHint": "已撤销。这次导入带来的内容已被移除。",
+    "forget": "移除凭据",
+    "forgetTitle": "移除这组凭据？",
+    "forgetBody": "这个导入将无法再从 {{name}} 迁移变更。已迁入的内容会保留。",
+    "credentialsRemoved": "凭据已移除",
+    "needsCredentials": "{{name}} 不再接受这组凭据。",
+    "resumeWith": "用这组凭据恢复",
+    "failedHint": "已迁入的内容会保留。重试即可从停止处继续。",
+    "done": "{{name}} 的内容都已迁入。",
+    "syncDone_other": "{{count}} 张工单已更新到最新。",
+    "seeTickets": "查看已导入的工单",
+    "problems_other": "{{count}} 项内容无法迁移",
+    "moreProblems_other": "还有 {{count}} 项",
+    "kept": "凭据会保留，方便你在切换前迁移变更。最后一次运行后 30 天会自动移除。"
+  },
+  "figures": {
+    "tickets": "工单",
+    "messages": "消息",
+    "contacts": "联系人",
+    "articles": "文章",
+    "attachments": "文件",
+    "updated": "更新时间"
+  },
+  "history": {
+    "title": "此前的导入",
+    "hint": "打开一个导入即可迁移变更、撤销，或查看哪些内容没能迁移。",
+    "brought_other": "{{tickets}} 张工单、{{articles}} 篇文章",
+    "undone": "已移除",
+    "none": "还没有导入。"
+  }
+}

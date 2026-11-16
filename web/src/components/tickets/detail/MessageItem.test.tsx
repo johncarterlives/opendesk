@@ -7,7 +7,8 @@ import { ConfirmProvider } from "@/components/ui/confirm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { Message } from "@/lib/api/types";
 import { setClock } from "@/lib/format";
-import { MessageItem } from "./MessageItem";
+import { qk } from "@/lib/queries";
+import { MessageItem, originalRecipients } from "./MessageItem";
 
 vi.mock("@tanstack/react-router", async (orig) => ({ ...(await orig<object>()), useNavigate: () => vi.fn() }));
 
@@ -111,5 +112,101 @@ describe("MessageItem's time", () => {
     await act(async () => root!.unmount());
     const deleted = { ...note, deleted_at: "2026-11-08T17:30:00", deleted_by: note.author.user, body_html: "", body_text: "" };
     expect(sp((await render(deleted)).textContent)).toBe("Nov 8 · 17:30");
+  });
+});
+
+describe("MessageItem's original recipient", () => {
+  let root: Root | null = null;
+
+  beforeAll(async () => {
+    await loadAgentCatalogs("en");
+  });
+  afterEach(async () => {
+    if (root) await act(async () => root!.unmount());
+    root = null;
+    document.body.innerHTML = "";
+    await i18n.changeLanguage("en");
+  });
+
+  /** The line beside the sender's name, in a workspace with two addresses. */
+  async function line(m: Message) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, enabled: false, staleTime: Infinity } } });
+    qc.setQueryData(qk.mailboxes, [{ id: "mb1", email: "support@new.example", aliases: ["sales@new.example"] }]);
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () =>
+      root!.render(
+        <QueryClientProvider client={qc}>
+          <ConfirmProvider>
+            <TooltipProvider>
+              <MessageItem m={m} receivedAt="support@new.example" />
+            </TooltipProvider>
+          </ConfirmProvider>
+        </QueryClientProvider>,
+      ),
+    );
+    return sp(document.querySelector("header [data-ph-mask]:not(.shrink-0)")?.textContent);
+  }
+  const inbound = (patch: Partial<Message>) => message({ mailbox_id: "mb1", received_at: "support@new.example", ...patch } as Partial<Message>);
+
+  it("shows the To header of a forwarded copy beside the address that received it", async () => {
+    expect(await line(inbound({ to: ["orders@old.example"] }))).toBe("ada@example.com to orders@old.example · received at support@new.example");
+  });
+
+  it("keeps the line of an email written to the receiving address", async () => {
+    expect(await line(inbound({ to: ["support@new.example"] }))).toBe("ada@example.com to support@new.example");
+    await act(async () => root!.unmount());
+    expect(await line(inbound({ to: ["other@partner.example", "support@new.example"] }))).toBe("ada@example.com to support@new.example");
+  });
+
+  it("compares addresses whatever their case", async () => {
+    expect(await line(inbound({ to: ["Support@New.Example"] }))).toBe("ada@example.com to support@new.example");
+    await act(async () => root!.unmount());
+    expect(await line(inbound({ to: ["Orders@Old.Example"] }))).toBe("ada@example.com to Orders@Old.Example · received at support@new.example");
+  });
+
+  it("keeps the line when the To header is empty", async () => {
+    expect(await line(inbound({ to: [] }))).toBe("ada@example.com to support@new.example");
+  });
+
+  it("names the first of several recipients and counts the others", async () => {
+    const m = inbound({ to: ["orders@old.example", "lea@old.example", "max@old.example"] });
+    expect(await line(m)).toBe("ada@example.com to orders@old.example +2 · received at support@new.example");
+  });
+
+  it("shows it when our address is only in Cc or Bcc, without the Cc list", async () => {
+    const m = inbound({ to: ["other@partner.example"], cc: ["support@new.example", "third@partner.example"] });
+    expect(await line(m)).toBe("ada@example.com to other@partner.example · received at support@new.example");
+  });
+
+  it("reads the same in German and French", async () => {
+    await loadAgentCatalogs("de");
+    await i18n.changeLanguage("de");
+    const m = inbound({ to: ["orders@old.example", "lea@old.example"] });
+    expect(await line(m)).toBe("ada@example.com an orders@old.example +1 · eingegangen bei support@new.example");
+    await act(async () => root!.unmount());
+    await loadAgentCatalogs("fr");
+    await i18n.changeLanguage("fr");
+    expect(await line(m)).toBe("ada@example.com à orders@old.example +1 · reçu sur support@new.example");
+  });
+
+  it("keeps the full To list out of session replay when its tooltip opens", async () => {
+    await line(inbound({ to: ["orders@old.example", "lea@old.example"] }));
+    const trigger = document.querySelector<HTMLElement>("header [data-ph-mask] [tabindex='0']");
+    await act(async () => trigger!.focus());
+    const tip = document.querySelector("[data-radix-popper-content-wrapper]");
+    const walk = document.createTreeWalker(tip!, NodeFilter.SHOW_TEXT);
+    const shown: Node[] = [];
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) if (n.textContent?.includes("lea@old.example")) shown.push(n);
+    expect(shown.length).toBeGreaterThan(0);
+    for (const n of shown) expect(n.parentElement!.closest("[data-ph-mask]")).not.toBeNull();
+  });
+
+  it("leaves outbound mail, and mail with no recorded receiving address, alone", () => {
+    expect(originalRecipients(inbound({ to: ["orders@old.example"] }))).toEqual({ to: ["orders@old.example"], address: "support@new.example" });
+    expect(originalRecipients(inbound({ to: ["orders@old.example"], received_at: "" }))).toBeNull();
+    expect(originalRecipients(inbound({ to: ["orders@old.example"], direction: "outbound" }))).toBeNull();
+    expect(originalRecipients(inbound({ to: [" ", ""] }))).toBeNull();
   });
 });

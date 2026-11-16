@@ -877,6 +877,27 @@
       "cancel": "Annuler",
       "saved": "Acheminement enregistré.",
       "error": "Impossible d’enregistrer l’acheminement."
+    },
+    "access": {
+      "label": "Qui peut agir depuis {{name}}",
+      "title": "Qui peut agir depuis {{name}}",
+      "description": "Les personnes liées peuvent répondre, modifier le ticket et interroger Ollie depuis les fils de ce canal. Choisissez qui le peut.",
+      "who": "Qui peut agir",
+      "values": {
+        "agents": "Tout agent",
+        "admins": "Admins seulement",
+        "chosen": "Personnes choisies"
+      },
+      "hints": {
+        "agents": "Tous les agents et admins liés. C’est le réglage par défaut.",
+        "admins": "Seulement les admins et les propriétaires. Les agents qui écrivent dans un fil apprennent qu’ils n’ont pas accès.",
+        "chosen": "Seulement les personnes que vous choisissez. Toute autre personne qui écrit dans un fil apprend qu’elle n’a pas accès."
+      },
+      "people": "Personnes",
+      "cancel": "Annuler",
+      "submit": "Enregistrer",
+      "saved": "Accès enregistré.",
+      "error": "Impossible d’enregistrer qui peut agir ici."
     }
   },
   "aliases": {

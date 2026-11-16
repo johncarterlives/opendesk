@@ -206,11 +206,18 @@ func (w *PurgeAttachmentsWorker) Work(ctx context.Context, _ *river.Job[PurgeAtt
 	return PurgeAttachments(ctx, w.D)
 }
 
+// heldByBody keeps an upload that a knowledge base article or changelog entry of its
+// workspace shows: their bodies link it as /v1/attachments/<id>.
+const heldByBody = `
+		AND NOT EXISTS (SELECT 1 FROM kb_articles k WHERE k.workspace_id = a.workspace_id AND strpos(k.body_html, a.id::text) > 0)
+		AND NOT EXISTS (SELECT 1 FROM changelog_entries c WHERE c.workspace_id = a.workspace_id AND strpos(c.body_html, a.id::text) > 0)`
+
 // PurgeAttachments deletes stale unattached uploads from storage and the database. A wiki
 // page's files (contracts/wiki.md "Files") are kept while the page is.
 //
 // Uploads held by a member's unsent reply draft stay while the draft does; drafts untouched
-// for ReplyDraftRetention are deleted first, which frees their uploads.
+// for ReplyDraftRetention are deleted first, which frees their uploads. An image a knowledge
+// base article or changelog entry of the workspace shows stays while its body names it.
 func PurgeAttachments(ctx context.Context, d *deps.Deps) error {
 	// A scheduled reply stays until it goes out, however far ahead it is.
 	if _, err := d.DB.Pool.Exec(ctx, `DELETE FROM ticket_reply_drafts WHERE send_at IS NULL AND updated_at < now() - make_interval(secs => $1)`,
@@ -219,7 +226,7 @@ func PurgeAttachments(ctx context.Context, d *deps.Deps) error {
 	}
 	rows, err := d.DB.Pool.Query(ctx, `SELECT a.id, a.storage_key FROM attachments a WHERE a.message_id IS NULL AND a.wiki_page_id IS NULL
 		AND a.created_at < now() - interval '24 hours'
-		AND NOT EXISTS (SELECT 1 FROM ticket_reply_drafts rd WHERE rd.workspace_id = a.workspace_id AND a.id = ANY(rd.attachment_ids))
+		AND NOT EXISTS (SELECT 1 FROM ticket_reply_drafts rd WHERE rd.workspace_id = a.workspace_id AND a.id = ANY(rd.attachment_ids))`+heldByBody+`
 		ORDER BY a.created_at LIMIT $1`, scanBatch)
 	if err != nil {
 		return err
@@ -239,7 +246,7 @@ func PurgeAttachments(ctx context.Context, d *deps.Deps) error {
 	for _, a := range list {
 		// Claim the row first so an upload attached meanwhile is never removed.
 		tag, err := d.DB.Pool.Exec(ctx, `DELETE FROM attachments a WHERE a.id = $1 AND a.message_id IS NULL AND a.wiki_page_id IS NULL
-			AND NOT EXISTS (SELECT 1 FROM ticket_reply_drafts rd WHERE rd.workspace_id = a.workspace_id AND a.id = ANY(rd.attachment_ids))`, a.id)
+			AND NOT EXISTS (SELECT 1 FROM ticket_reply_drafts rd WHERE rd.workspace_id = a.workspace_id AND a.id = ANY(rd.attachment_ids))`+heldByBody, a.id)
 		if err != nil {
 			return err
 		}

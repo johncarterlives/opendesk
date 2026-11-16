@@ -20,6 +20,7 @@ import type { WaitingScope } from "@/components/tickets/useUrgentChats";
 import type { MailBox, SidebarBadge, SidebarPrefs, SidebarSectionId, WikiArea, WorkspaceOverview } from "@/lib/api/types";
 import { pageTo } from "@/lib/wiki/area";
 import { accountNumbers, allInboxNumbers, boxTabNumbers, folderNumbers, listBoxNumbers, ticketRowNumbers } from "@/lib/collab/badges";
+import { accountView, useAccountViews } from "@/lib/collab/accountView";
 import { accountName, isMailBox, isTabBox, type MailSearch } from "@/lib/collab/boxes";
 import { badgeFor, hid, pickCount, type BadgeKind, type BadgeNumbers, type MailBadge, type TicketBadge } from "@/lib/collab/sidebarPrefs";
 import { cn } from "@/lib/cn";
@@ -184,6 +185,8 @@ export type MailHere = { box: string | null; account?: string; folder?: string }
 
 /** Where the mail page is: its box, account and folder, from the URL. */
 export function useMailLocation(): MailHere {
+  // Account rows read the view each account opens on: they follow a change to it.
+  useAccountViews();
   const href = useRouterState({ select: (s) => (s.location.pathname.startsWith("/mail/") ? `${s.location.pathname}|${(s.location.search as MailSearch).account ?? ""}|${(s.location.search as MailSearch).folder ?? ""}` : "") });
   if (!href) return { box: null };
   const [path, account, folder] = href.split("|");
@@ -354,8 +357,9 @@ export function buildRow(item: { kind: string; id: string }, d: WorkspaceData, c
         icon: dotIcon(<AccountDot color={a.color} className="size-2.5" />),
         tag: <AccountTags account={a} />,
         badge: { kind: "mail", sections: [...via, "mail"], nums: accountNumbers(a, d.folders[a.id], d.mailCounts) },
-        link: { kind: "mail", box: "inbox", account: a.id },
-        active: !!here && here.box === "inbox" && here.account === a.id && !here.folder,
+        // Inbox or Unread, whichever was used last for the account (GH#523).
+        link: { kind: "mail", box: accountView(a.id, here), account: a.id },
+        active: !!here && here.box === accountView(a.id, here) && here.account === a.id && !here.folder,
         railDot: "unread",
       };
     }

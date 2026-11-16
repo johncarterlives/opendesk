@@ -869,6 +869,27 @@
       "cancel": "Abbrechen",
       "saved": "Weiterleitung gespeichert.",
       "error": "Die Weiterleitung konnte nicht gespeichert werden."
+    },
+    "access": {
+      "label": "Wer von {{name}} aus handeln darf",
+      "title": "Wer von {{name}} aus handeln darf",
+      "description": "Verknüpfte Personen können in den Threads dieses Kanals antworten, das Ticket ändern und Ollie fragen. Legen Sie fest, wer das darf.",
+      "who": "Wer handeln darf",
+      "values": {
+        "agents": "Alle Agenten",
+        "admins": "Nur Admins",
+        "chosen": "Ausgewählte Personen"
+      },
+      "hints": {
+        "agents": "Alle verknüpften Agenten und Admins. Das ist die Voreinstellung.",
+        "admins": "Nur Admins und Inhaber. Agenten, die in einem Thread schreiben, erfahren, dass sie keinen Zugriff haben.",
+        "chosen": "Nur die Personen, die Sie auswählen. Alle anderen, die in einem Thread schreiben, erfahren, dass sie keinen Zugriff haben."
+      },
+      "people": "Personen",
+      "cancel": "Abbrechen",
+      "submit": "Speichern",
+      "saved": "Zugriff gespeichert.",
+      "error": "Der Zugriff konnte nicht gespeichert werden."
     }
   },
   "aliases": {

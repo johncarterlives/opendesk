@@ -897,6 +897,27 @@
       "cancel": "Cancel",
       "saved": "Routing saved.",
       "error": "Couldn't save the routing."
+    },
+    "access": {
+      "label": "Who can act from {{name}}",
+      "title": "Who can act from {{name}}",
+      "description": "Linked people can reply, change the ticket and ask Ollie from this channel's threads. Choose who may.",
+      "who": "Who can act",
+      "values": {
+        "agents": "Any agent",
+        "admins": "Admins only",
+        "chosen": "Chosen people"
+      },
+      "hints": {
+        "agents": "Every linked agent and admin. This is the default.",
+        "admins": "Only admins and owners. Agents who write in a thread are told they have no access.",
+        "chosen": "Only the people you pick. Everyone else who writes in a thread is told they have no access."
+      },
+      "people": "People",
+      "cancel": "Cancel",
+      "submit": "Save",
+      "saved": "Access saved.",
+      "error": "Couldn't save who can act here."
     }
   },
   "aliases": {

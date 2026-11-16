@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, AtSign, Clock3, Hash, KeyRound, Link2, MessagesSquare, Plus, RefreshCw, ShieldAlert, SlidersHorizontal, Sparkles, StickyNote, Trash2, Webhook } from "lucide-react";
+import { Activity, AtSign, Lock, Clock3, Hash, KeyRound, Link2, MessagesSquare, Plus, RefreshCw, ShieldAlert, SlidersHorizontal, Sparkles, StickyNote, Trash2, Webhook } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppMark } from "@/components/appmark";
@@ -8,6 +8,7 @@ import { type ItemState, ListSkeleton, StatePill } from "@/components/settings2/
 import { SettingsEmpty } from "@/components/settings2/SettingsEmpty";
 import { ConditionRow, conditionInvalid, type Rule } from "@/components/settings2/ConditionRow";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useConfirm } from "@/components/ui/confirm";
 import { CopyField } from "@/components/ui/copy-button";
 import { Dialog } from "@/components/ui/dialog";
@@ -17,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { errorMessage } from "@/lib/api/client";
 import { api } from "@/lib/api/endpoints";
+import { cn } from "@/lib/cn";
 import type {
   Condition,
   ConditionField,
@@ -113,6 +115,7 @@ export default function SupportChannels() {
   const [routing, setRouting] = useState<string | null>(null);
   const [rotating, setRotating] = useState<SupportChannelConnection | null>(null);
   const [tuning, setTuning] = useState<SupportChannelDestination | null>(null);
+  const [access, setAccess] = useState<SupportChannelDestination | null>(null);
   const [editing, setEditing] = useState<SupportChannelDestination | null>(null);
   const [link, setLink] = useState<{ code: string; expires_at: string } | null>(null);
 
@@ -255,6 +258,16 @@ export default function SupportChannels() {
                                     onClick={() => setEditing(route)}
                                   >
                                     <SlidersHorizontal className="size-3" />
+                                  </button>
+                                )}
+                                {admin && (
+                                  <button
+                                    type="button"
+                                    className={cn("flex size-5 items-center justify-center rounded hover:bg-hover hover:text-fg", route.min_role === "admin" || route.allowed_user_ids.length > 0 ? "text-tone-amber" : "text-fg-4")}
+                                    aria-label={t("supportChannels.access.label", { name })}
+                                    onClick={() => setAccess(route)}
+                                  >
+                                    <Lock className="size-3" />
                                   </button>
                                 )}
                                 {admin && (
@@ -420,6 +433,7 @@ export default function SupportChannels() {
         />
       )}
       {tuning && <OllieDialog destination={tuning} onClose={() => setTuning(null)} />}
+      {access && <AccessDialog destination={access} onClose={() => setAccess(null)} />}
       {editing && <RoutingDialog destination={editing} onClose={() => setEditing(null)} />}
       {routing && (
         <DestinationDialog
@@ -578,6 +592,85 @@ function OllieDialog({ destination, onClose }: { destination: SupportChannelDest
             />
           )}
         </Field>
+        {error && (
+          <p role="alert" className="text-[12px] text-danger-fg">
+            {error}
+          </p>
+        )}
+      </div>
+    </Dialog>
+  );
+}
+
+type Who = "agents" | "admins" | "chosen";
+
+/** Who may act on tickets from a destination's threads (contracts/support-channels.md "Access"). */
+function AccessDialog({ destination, onClose }: { destination: SupportChannelDestination; onClose: () => void }) {
+  const { t } = useTranslation("settingsChannels");
+  const qc = useQueryClient();
+  const { data: members } = useQuery(q.members());
+  const [who, setWho] = useState<Who>(destination.allowed_user_ids.length > 0 ? "chosen" : destination.min_role === "admin" ? "admins" : "agents");
+  const [chosen, setChosen] = useState<string[]>(destination.allowed_user_ids);
+  const [error, setError] = useState("");
+  const name = destination.external_channel_name || destination.external_channel_id;
+  const workers = (members ?? []).filter((m) => m.role !== "viewer");
+  // Only current agents and admins can be chosen: someone who left or became a viewer is not sent.
+  const picked = chosen.filter((id) => workers.some((m) => m.user.id === id));
+  const save = useMutation({
+    mutationFn: () =>
+      api.supportChannels.updateDestination(destination.id, who === "chosen" ? { min_role: "agent", allowed_user_ids: picked } : { min_role: who === "admins" ? "admin" : "agent", allowed_user_ids: [] }),
+    onSuccess: (row) => {
+      upsertInList(qc, qk.supportChannelDestinations, row);
+      toast.success(t("supportChannels.access.saved"));
+      onClose();
+    },
+    onError: (e) => setError(errorMessage(e, t("supportChannels.access.error"))),
+  });
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title={t("supportChannels.access.title", { name })}
+      description={t("supportChannels.access.description")}
+      footer={
+        <>
+          <Button onClick={onClose}>{t("supportChannels.access.cancel")}</Button>
+          <Button variant="primary" disabled={who === "chosen" && picked.length === 0} loading={save.isPending} onClick={() => save.mutate()}>
+            {t("supportChannels.access.submit")}
+          </Button>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <Field label={t("supportChannels.access.who")}>
+          {({ id }) => (
+            <Select<Who>
+              id={id}
+              value={who}
+              onChange={setWho}
+              options={(["agents", "admins", "chosen"] as const).map((value) => ({ value, label: t(`supportChannels.access.values.${value}`) }))}
+            />
+          )}
+        </Field>
+        <p className="-mt-2 text-[12px] leading-[17px] text-fg-3">{t(`supportChannels.access.hints.${who}`)}</p>
+        {who === "chosen" && (
+          <Field label={t("supportChannels.access.people")}>
+            {() => (
+              <div className="flex flex-col gap-1" data-testid="access-people">
+                {workers.map((m) => {
+                  const on = chosen.includes(m.user.id);
+                  return (
+                    <label key={m.user.id} className="flex items-center gap-2 rounded-md px-1.5 py-1 text-[12.5px] hover:bg-hover">
+                      <Checkbox checked={on} aria-label={m.user.name} onCheckedChange={(v) => setChosen((old) => (v ? [...old, m.user.id] : old.filter((x) => x !== m.user.id)))} />
+                      <span className="min-w-0 flex-1 truncate">{m.user.name}</span>
+                      <span className="text-[11.5px] text-fg-4">{m.role}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </Field>
+        )}
         {error && (
           <p role="alert" className="text-[12px] text-danger-fg">
             {error}

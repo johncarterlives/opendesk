@@ -1,7 +1,7 @@
 // i18n: i18next with one JSON catalog per namespace and language under
 // ./locales/<lng>/<ns>.json, as in the agent app (web/src/i18n). The panel
-// ships the agent app's languages, English, French and German, and follows the
-// browser's language like it does; any other language gets English. A key a
+// ships English, French and German, and follows the browser's language like the
+// agent app does; any other language gets English. A key a
 // translation does not have yet falls back to English (fallbackLng), so a new
 // English string never shows a raw key. The three languages are bundled: the
 // panel is small, and loading its language before the first paint keeps the

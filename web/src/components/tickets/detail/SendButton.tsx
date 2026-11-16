@@ -148,7 +148,7 @@ export function SendButton({
           {finishText}
         </span>
       )}
-      <Tooltip content={hint} shortcut="mod enter">
+      <Tooltip content={<span data-ph-mask>{hint}</span>} shortcut="mod enter">
         <Button
           variant="primary"
           size="sm"

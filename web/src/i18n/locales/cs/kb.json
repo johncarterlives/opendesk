@@ -1,0 +1,249 @@
+{
+  "title": "Znalostní báze",
+  "newArticle": "Nový článek",
+  "writeArticle": "Napsat článek",
+  "viewHelpCenter": "Zobrazit centrum nápovědy",
+  "helpCenterSettings": "Nastavení centra nápovědy",
+  "collections": "Sbírky",
+  "newCollection": "Nová sbírka",
+  "allArticles": "Všechny články",
+  "allArticlesHint": "Všechny články ve znalostní bázi, zveřejněné i nezveřejněné.",
+  "noDescription": "Zatím bez popisu.",
+  "noCollection": "Bez sbírky",
+  "untitled": "Bez názvu",
+  "noExcerpt": "Bez úryvku",
+  "searchArticles": "Hledat články",
+  "clearSearch": "Vymazat hledání",
+  "cancel": "Zrušit",
+  "retry": "Zkusit znovu",
+  "articleCount_one": "{{count}} článek",
+  "articleCount_few": "{{count}} články",
+  "articleCount_many": "{{count}} článku",
+  "articleCount_other": "{{count}} článků",
+  "draftCount_one": "{{count}} koncept",
+  "draftCount_few": "{{count}} koncepty",
+  "draftCount_many": "{{count}} konceptu",
+  "draftCount_other": "{{count}} konceptů",
+  "viewCount_one": "{{n}} zobrazení",
+  "viewCount_few": "{{n}} zobrazení",
+  "viewCount_many": "{{n}} zobrazení",
+  "viewCount_other": "{{n}} zobrazení",
+  "stat": {
+    "articles": "Články",
+    "inCollections_one": "v {{count}} sbírce",
+    "inCollections_few": "ve {{count}} sbírkách",
+    "inCollections_many": "v rámci {{count}} sbírky",
+    "inCollections_other": "v {{count}} sbírkách",
+    "published": "Zveřejněné",
+    "live": "dostupné v centru nápovědy",
+    "drafts": "Koncepty",
+    "notLive": "neviditelné pro zákazníky",
+    "views": "Zobrazení",
+    "top": "nejčtenější: {{title}}",
+    "noViews": "zatím žádná zobrazení"
+  },
+  "filter": {
+    "all": "Vše",
+    "published": "Zveřejněné",
+    "drafts": "Koncepty"
+  },
+  "status": {
+    "published": "Zveřejněný",
+    "draft": "Koncept"
+  },
+  "col": {
+    "title": "Článek",
+    "collection": "Sbírka",
+    "status": "Stav",
+    "views": "Zobrazení",
+    "author": "Autor",
+    "updated": "Aktualizováno"
+  },
+  "empty": {
+    "title": "Zatím žádné články",
+    "description": "Napište odpovědi jednou a sdílejte je v odpovědích, chatovacím widgetu a centru nápovědy.",
+    "noDrafts": "Žádné koncepty",
+    "noMatch": "Žádné odpovídající články",
+    "noMatchHint": "Zkuste jiná slova nebo zrušte filtry.",
+    "noMatchFor": "Nic neodpovídá dotazu „{{q}}“.",
+    "noDraftsHint": "Všechny zdejší články jsou zveřejněné. Koncepty se zobrazí, jakmile je začnete psát.",
+    "collectionTitle": "Tato sbírka je prázdná"
+  },
+  "error": {
+    "title": "Články se nepodařilo načíst"
+  },
+  "collection": {
+    "options": "Možnosti sbírky {{name}}",
+    "rename": "Přejmenovat",
+    "edit": "Upravit sbírku",
+    "delete": "Smazat",
+    "deleteTitle": "Smazat sbírku {{name}}?",
+    "deleteBody_one": "Její {{count}} článek zůstane ve znalostní bázi bez sbírky.",
+    "deleteBody_few": "Její {{count}} články zůstanou ve znalostní bázi bez sbírky.",
+    "deleteBody_many": "Obsah sbírky ({{count}} článku) zůstane ve znalostní bázi bez sbírky.",
+    "deleteBody_other": "Jejích {{count}} článků zůstane ve znalostní bázi bez sbírky.",
+    "deleteEmpty": "Tato sbírka je prázdná.",
+    "deleteConfirm": "Smazat sbírku",
+    "created": "Sbírka vytvořena",
+    "renamed": "Sbírka přejmenována",
+    "create": "Vytvořit",
+    "save": "Uložit",
+    "name": "Název",
+    "namePlaceholder": "Začínáme",
+    "nameRequired": "Zadejte název.",
+    "description": "Popis",
+    "descriptionHint": "Zobrazuje se pod názvem sbírky v centru nápovědy.",
+    "saved": "Sbírka uložena"
+  },
+  "toast": {
+    "published": "Článek zveřejněn",
+    "unpublished": "Zveřejnění článku zrušeno",
+    "saved": "Uloženo",
+    "deleted": "Článek smazán"
+  },
+  "details": {
+    "title": "Podrobnosti",
+    "status": "Stav",
+    "collection": "Sbírka",
+    "author": "Autor",
+    "views": "Zobrazení",
+    "published": "Zveřejněno",
+    "updated": "Aktualizováno",
+    "url": "URL",
+    "urlHint": "Adresa tohoto článku v centru nápovědy. Pokud ji změníte, staré odkazy povedou sem."
+  },
+  "editor": {
+    "notFound": "Článek nenalezen",
+    "uploadFailed": "Obrázek se nepodařilo nahrát",
+    "moveTo": "Přesunout do sbírky",
+    "unsaved": "Neuložené změny",
+    "savedAgo": "Uloženo {{when}}",
+    "openInHelp": "Otevřít v centru nápovědy",
+    "view": "Zobrazit",
+    "saveLiveHint": "Uložit změny zveřejněného článku",
+    "saveDraftHint": "Uložit bez zveřejnění",
+    "save": "Uložit",
+    "saveDraft": "Uložit koncept",
+    "publish": "Zveřejnit",
+    "more": "Další akce",
+    "unpublish": "Zrušit zveřejnění",
+    "deletePublished": "Z centra nápovědy zmizí okamžitě.",
+    "deleteDraft": "Tento koncept bude trvale smazán.",
+    "deleteTitle": "Smazat článek {{title}}?",
+    "deleteArticle": "Smazat článek",
+    "saveFirst": "Před smazáním nejprve uložit",
+    "titlePlaceholder": "Název článku",
+    "excerptPlaceholder": "Jednořádkové shrnutí pro výsledky hledání a centrum nápovědy",
+    "uploading": "Nahrávání obrázku",
+    "bodyPlaceholder": "Začněte psát. Používejte nadpisy, aby se čtenáři snadno zorientovali.",
+    "advanced": "Pokročilé",
+    "leaveTitle": "Odejít bez uložení?",
+    "leaveBody": "Vaše změny v tomto článku nebyly uloženy.",
+    "keepEditing": "Pokračovat v úpravách",
+    "discard": "Zahodit změny",
+    "saving": "Ukládání"
+  },
+  "clearFilters": "Zrušit filtry",
+  "tips": {
+    "spelling": "Zkontrolujte pravopis",
+    "fewerWords": "Zkuste méně slov nebo obecnější výrazy",
+    "collections": "Seskupte články do sbírek",
+    "publish": "Zveřejněte článek, aby se zobrazil v centru nápovědy"
+  },
+  "brand": {
+    "label": "Značka",
+    "all": "Všechny značky",
+    "allHint": "Sdílené",
+    "search": "Hledat značky",
+    "filter": "Značka: {{value}}",
+    "filterHint": "Vlastní a sdílené články značky",
+    "collectionHint": "Která centra nápovědy zobrazují tuto sbírku. Volba „Všechny značky“ ji sdílí se všemi značkami.",
+    "articleHint": "Která centra nápovědy zobrazují tento článek.",
+    "fromCollection": "Řídí se svou sbírkou {{name}}.",
+    "only": "Pouze v centru nápovědy značky {{name}}"
+  },
+  "switch": {
+    "articles": "Články",
+    "changelog": "Přehled změn"
+  },
+  "changelog": {
+    "new": "Nový záznam změny",
+    "view": "Zobrazit přehled změn",
+    "all": "Všechny změny",
+    "search": "Hledat změny",
+    "loadMore": "Načíst další",
+    "undated": "Bez data",
+    "error": "Změny se nepodařilo načíst",
+    "status": {
+      "scheduled": "Naplánované"
+    },
+    "filter": {
+      "allCategories": "Všechny kategorie",
+      "scheduled": "Naplánované"
+    },
+    "col": {
+      "update": "Změna",
+      "categories": "Kategorie",
+      "date": "Datum"
+    },
+    "empty": {
+      "title": "Zatím žádné změny",
+      "description": "Informujte zákazníky o novinkách, vylepšeních a opravách. Změny se zobrazují v přehledu změn centra nápovědy a v jeho kanálu.",
+      "noMatch": "Žádné odpovídající změny",
+      "noneHere": "Zde nic není",
+      "noneHereHint": "Těmto filtrům neodpovídají žádné změny."
+    },
+    "tips": {
+      "categories": "Označte změny štítky „Nové“, „Vylepšené“ nebo „Opravené“",
+      "schedule": "Vyberte pozdější datum a naplánujte zveřejnění",
+      "api": "Zveřejňujte změny ze svých nástrojů pro vydávání verzí pomocí API"
+    },
+    "toast": {
+      "published": "Záznam změny zveřejněn",
+      "scheduled": "Zveřejnění změny naplánováno na {{date}}",
+      "unpublished": "Zveřejnění záznamu změny zrušeno",
+      "deleted": "Záznam změny smazán"
+    },
+    "editor": {
+      "notFound": "Záznam změny nenalezen",
+      "openInHelp": "Otevřít v centru nápovědy",
+      "saveLiveHint": "Uložit úpravy zveřejněného záznamu změny",
+      "schedule": "Naplánovat",
+      "deletePublished": "Z přehledu změn a jeho kanálu zmizí okamžitě.",
+      "delete": "Smazat záznam změny",
+      "titlePlaceholder": "Co se změnilo?",
+      "excerptPlaceholder": "Jednořádkové shrnutí pro přehled změn a jeho kanál",
+      "bodyPlaceholder": "Popište změnu. Snímky obrazovky a krátké seznamy pomohou čtenářům pochopit novinky.",
+      "body": "Text záznamu změny",
+      "leaveBody": "Vaše úpravy tohoto záznamu změny nebyly uloženy."
+    },
+    "details": {
+      "date": "Datum",
+      "time": "Čas",
+      "whenPublished": "Při zveřejnění",
+      "dateEmptyHint": "Nastaví se na okamžik zveřejnění.",
+      "dateHint": "Čtenáři u změny uvidí toto datum.",
+      "scheduledFor": "Naplánováno na {{date}}. Do té doby zůstane skryté.",
+      "willSchedule": "Zveřejnění se naplánuje na {{date}}.",
+      "categories": "Kategorie",
+      "brandHint": "Která centra nápovědy zobrazují tuto změnu.",
+      "urlHint": "Adresa této změny v centru nápovědy. Její změnou přestanou staré odkazy fungovat."
+    },
+    "categories": {
+      "remove": "Odebrat kategorii {{name}}",
+      "create": "Přidat",
+      "search": "Hledat kategorie",
+      "none": "Zatím žádné kategorie",
+      "add": "Přidat",
+      "addFirst": "Přidat kategorii",
+      "empty": "Žádné kategorie",
+      "hint": "Nejvýše {{max}}, například „Nové“, „Vylepšené“ nebo „Opravené“.",
+      "problem": {
+        "empty": "Zadejte název.",
+        "tooLong": "Použijte nejvýše {{length}} znaků.",
+        "duplicate": "Tato kategorie už zde je.",
+        "full": "Nejvýše {{max}} kategorií."
+      }
+    }
+  }
+}
