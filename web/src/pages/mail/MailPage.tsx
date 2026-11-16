@@ -876,26 +876,6 @@ export default function MailPage() {
                 className="w-[220px]"
               />
             )}
-            {account && (
-              <Tooltip content={syncNow.syncing ? t("list.syncing") : t("list.refresh")}>
-                {/* Spins until the sync it asked for ends (GH#522). */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  square
-                  aria-label={syncNow.syncing ? t("list.syncing") : t("list.refresh")}
-                  aria-busy={syncNow.syncing || undefined}
-                  icon={<RefreshCw className={cn(syncNow.syncing && "animate-spin motion-reduce:animate-none")} />}
-                  onClick={() =>
-                    !syncNow.syncing &&
-                    syncNow.sync(account, {
-                      onQueued: () => toast.info(t("toast.syncing", { name: accountName(account) })),
-                      onError: (e) => toast.error(e),
-                    })
-                  }
-                />
-              </Tooltip>
-            )}
             {canAct && !noAccounts && (
               <Tooltip content={t("list.compose")} shortcut="c">
                 <Button size="sm" variant={compact ? "ghost" : "secondary"} square={compact} icon={<PenSquare />} onClick={() => compose.open({ accountId: account?.id ?? folderAccount?.id })} aria-label={t("list.compose")}>
@@ -1024,8 +1004,32 @@ export default function MailPage() {
         {shareId && <ListShareDialog threadId={shareId} onClose={() => setShareId(null)} />}
 
         {discardedAI && <AIDraftFeedbackDialog draft={discardedAI.draft} threadId={discardedAI.threadId} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
-        {canAct && !noAccounts && threads.length > 0 && (
+        {/* With one account in view the row stays, empty or loading, so its Sync is always to hand. */}
+        {!noAccounts && ((canAct && threads.length > 0) || account) && (
           <SelectAllBar
+            selectable={canAct && threads.length > 0}
+            lead={
+              account && (
+                <Tooltip content={syncNow.syncing ? t("list.syncing") : t("list.refresh")}>
+                  {/* Spins until the sync it asked for ends (GH#522). */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    square
+                    aria-label={syncNow.syncing ? t("list.syncing") : t("list.refresh")}
+                    aria-busy={syncNow.syncing || undefined}
+                    icon={<RefreshCw className={cn(syncNow.syncing && "animate-spin motion-reduce:animate-none")} />}
+                    onClick={() =>
+                      !syncNow.syncing &&
+                      syncNow.sync(account, {
+                        onQueued: () => toast.info(t("toast.syncing", { name: accountName(account) })),
+                        onError: (e) => toast.error(e),
+                      })
+                    }
+                  />
+                </Tooltip>
+              )
+            }
             loaded={threads.length}
             selected={selected.size}
             hasMore={!!list.hasNextPage}
