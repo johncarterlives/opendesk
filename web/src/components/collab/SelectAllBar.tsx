@@ -1,11 +1,13 @@
 // The master checkbox above Collab's conversation list, with the scope of what it selects:
 // the conversations loaded, or (one click more) every one in the box, folder, tab or search in view.
 
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SELECT_ALL_MAX } from "@/lib/collab/hooks";
 import { MAIL_PAGE_SIZE } from "@/lib/queries";
+import { cn } from "@/lib/cn";
 
 export type SelectAllBarProps = {
   /** Conversations loaded into the list. */
@@ -23,9 +25,14 @@ export type SelectAllBarProps = {
   onToggle: () => void;
   /** Loads the rest of the folder and selects it. */
   onSelectEvery: () => void;
+  /**
+   * What to do with the selection. Shown in this row, beside the count, as Gmail and Outlook
+   * keep theirs at the top of the list; the note about "all" then takes a line of its own.
+   */
+  actions?: ReactNode;
 };
 
-export function SelectAllBar({ loaded, selected, hasMore, loading, scope, matching, onToggle, onSelectEvery }: SelectAllBarProps) {
+export function SelectAllBar({ loaded, selected, hasMore, loading, scope, matching, onToggle, onSelectEvery, actions }: SelectAllBarProps) {
   const { t } = useTranslation("collab");
   const all = loaded > 0 && selected === loaded;
   const state = all ? true : selected > 0 ? "indeterminate" : false;
@@ -41,20 +48,31 @@ export function SelectAllBar({ loaded, selected, hasMore, loading, scope, matchi
         : loaded > MAIL_PAGE_SIZE
           ? matching ? t("list.folderSelectedMatching", { count: loaded }) : t("list.folderSelected", { count: loaded, scope })
           : null;
-  return (
-    <div className="flex min-h-9 shrink-0 items-center gap-2.5 border-b border-line-soft px-3.5 text-[12px] text-fg-3">
-      <Checkbox checked={state} disabled={!loaded} aria-label={selected || loading ? t("list.clear") : t("list.selectAll")} onCheckedChange={onToggle} />
-      <span className="mono tabular-nums">{selected ? t("list.selected", { count: selected }) : t("list.selectAll")}</span>
-      {note && (
-        <span className="flex min-w-0 items-center gap-1.5 truncate" role="status">
-          <span className="truncate">{note}</span>
-          {hasMore && !loading && loaded < SELECT_ALL_MAX && (
-            <Button size="sm" variant="ghost" onClick={onSelectEvery}>
-              {matching ? t("list.selectEveryMatching") : t("list.selectEvery", { scope })}
-            </Button>
-          )}
-        </span>
+  const noteRow = note && (
+    <span className={cn("flex min-w-0 items-center gap-1.5 truncate", actions && "px-3.5 pb-1.5")} role="status">
+      <span className="truncate">{note}</span>
+      {hasMore && !loading && loaded < SELECT_ALL_MAX && (
+        <Button size="sm" variant="ghost" onClick={onSelectEvery}>
+          {matching ? t("list.selectEveryMatching") : t("list.selectEvery", { scope })}
+        </Button>
       )}
+    </span>
+  );
+  return (
+    <div className="flex shrink-0 flex-col border-b border-line-soft text-[12px] text-fg-3">
+      <div className="flex min-h-9 items-center gap-2.5 px-3.5">
+        <Checkbox checked={state} disabled={!loaded} aria-label={selected || loading ? t("list.clear") : t("list.selectAll")} onCheckedChange={onToggle} />
+        <span className="mono shrink-0 tabular-nums">{selected ? t("list.selected", { count: selected }) : t("list.selectAll")}</span>
+        {actions ? (
+          <div role="toolbar" aria-label={t("list.selected", { count: selected })} className="-my-1 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
+            <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
+            {actions}
+          </div>
+        ) : (
+          noteRow
+        )}
+      </div>
+      {actions && noteRow}
     </div>
   );
 }

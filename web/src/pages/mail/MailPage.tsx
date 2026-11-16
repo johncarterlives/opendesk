@@ -102,7 +102,7 @@ function BulkButton({ label, shortcut, onClick, children }: { label: string; sho
         type="button"
         aria-label={label}
         onClick={onClick}
-        className="flex size-7 items-center justify-center rounded-md text-fg-2 outline-none transition-colors hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] data-[state=open]:bg-hover [&_svg]:size-[15px]"
+        className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-2 outline-none transition-colors hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] data-[state=open]:bg-hover [&_svg]:size-[15px]"
       >
         {children}
       </button>
@@ -1029,6 +1029,72 @@ export default function MailPage() {
             matching={!!query.q}
             onToggle={toggleAll}
             onSelectEvery={() => void every.start()}
+            actions={
+              selecting ? (
+                <>
+                  <BulkButton label={t("action.archive")} shortcut="e" onClick={() => act(targets(), "archive")}>
+                    <Archive />
+                  </BulkButton>
+                  <BulkButton label={t("action.trash")} shortcut="#" onClick={() => act(targets(), "trash")}>
+                    <Trash2 />
+                  </BulkButton>
+                  <BulkButton label={t("action.spam")} shortcut="!" onClick={() => act(targets(), "spam")}>
+                    <ShieldAlert />
+                  </BulkButton>
+                  <BulkButton label={t("action.read")} shortcut="shift i" onClick={() => act(targets(), "read", { silent: true })}>
+                    <MailOpen />
+                  </BulkButton>
+                  <BulkButton label={t("action.unread")} shortcut="shift u" onClick={() => act(targets(), "unread", { silent: true })}>
+                    <Mail />
+                  </BulkButton>
+                  <BulkButton label={t("action.star")} shortcut="s" onClick={star}>
+                    <Star />
+                  </BulkButton>
+                  {selectionHandling && (
+                    <>
+                      <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
+                      {selectedThreads.every((x) => x.needs_action) ? (
+                        <BulkButton label={t("action.done")} onClick={() => act(targets(), "done")}>
+                          <CircleCheck />
+                        </BulkButton>
+                      ) : (
+                        <BulkButton label={t("action.needsAction")} onClick={() => act(targets(), "needs_action")}>
+                          <CircleDot />
+                        </BulkButton>
+                      )}
+                      <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} />
+                    </>
+                  )}
+                  <AssignPicker
+                    align="start"
+                    value={commonAssignees(selectedThreads)}
+                    onChange={(ids) => setAssignees(selectedThreads, ids)}
+                    trigger={
+                      <span className="flex">
+                        <BulkButton label={t("action.assignTo")}>
+                          <UserPlus />
+                        </BulkButton>
+                      </span>
+                    }
+                  />
+                  <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
+                  {targetAccount && (
+                    <BulkButton label={t("action.move")} shortcut="m" onClick={() => setPickMove(true)}>
+                      <Folder />
+                    </BulkButton>
+                  )}
+                  {targetLabels && (
+                    <BulkButton label={t("action.label")} shortcut="l" onClick={() => setPickLabels(true)}>
+                      <Tag />
+                    </BulkButton>
+                  )}
+                  <span className="flex-1" />
+                  <BulkButton label={t("list.clear")} shortcut="escape" onClick={clearSelection}>
+                    <X />
+                  </BulkButton>
+                </>
+              ) : undefined
+            }
           />
         )}
 
@@ -1094,72 +1160,6 @@ export default function MailPage() {
           )}
         </div>
 
-        {selecting && canAct && (
-          <div className="absolute inset-x-3 bottom-3 z-10 flex items-center gap-0.5 rounded-lg border border-line bg-raised px-2 py-1 shadow-float animate-rise-in motion-reduce:animate-none">
-            <span className="mono px-1.5 text-[11.5px] tabular-nums text-fg-2">{t("list.selected", { count: selected.size })}</span>
-            <span aria-hidden className="mx-1 h-4 w-px bg-line" />
-            <BulkButton label={t("action.archive")} shortcut="e" onClick={() => act(targets(), "archive")}>
-              <Archive />
-            </BulkButton>
-            <BulkButton label={t("action.trash")} shortcut="#" onClick={() => act(targets(), "trash")}>
-              <Trash2 />
-            </BulkButton>
-            <BulkButton label={t("action.spam")} shortcut="!" onClick={() => act(targets(), "spam")}>
-              <ShieldAlert />
-            </BulkButton>
-            <BulkButton label={t("action.read")} shortcut="shift i" onClick={() => act(targets(), "read", { silent: true })}>
-              <MailOpen />
-            </BulkButton>
-            <BulkButton label={t("action.unread")} shortcut="shift u" onClick={() => act(targets(), "unread", { silent: true })}>
-              <Mail />
-            </BulkButton>
-            <BulkButton label={t("action.star")} shortcut="s" onClick={star}>
-              <Star />
-            </BulkButton>
-            {selectionHandling && (
-              <>
-                <span aria-hidden className="mx-1 h-4 w-px bg-line" />
-                {selectedThreads.every((x) => x.needs_action) ? (
-                  <BulkButton label={t("action.done")} onClick={() => act(targets(), "done")}>
-                    <CircleCheck />
-                  </BulkButton>
-                ) : (
-                  <BulkButton label={t("action.needsAction")} onClick={() => act(targets(), "needs_action")}>
-                    <CircleDot />
-                  </BulkButton>
-                )}
-                <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} />
-              </>
-            )}
-            <AssignPicker
-              align="start"
-              value={commonAssignees(selectedThreads)}
-              onChange={(ids) => setAssignees(selectedThreads, ids)}
-              trigger={
-                <span className="flex">
-                  <BulkButton label={t("action.assignTo")}>
-                    <UserPlus />
-                  </BulkButton>
-                </span>
-              }
-            />
-            <span aria-hidden className="mx-1 h-4 w-px bg-line" />
-            {targetAccount && (
-              <BulkButton label={t("action.move")} shortcut="m" onClick={() => setPickMove(true)}>
-                <Folder />
-              </BulkButton>
-            )}
-            {targetLabels && (
-              <BulkButton label={t("action.label")} shortcut="l" onClick={() => setPickLabels(true)}>
-                <Tag />
-              </BulkButton>
-            )}
-            <span className="flex-1" />
-            <BulkButton label={t("list.clear")} shortcut="escape" onClick={clearSelection}>
-              <X />
-            </BulkButton>
-          </div>
-        )}
       </section>
 
       {openId && (
