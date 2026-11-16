@@ -216,6 +216,7 @@
     "labelCreated": "Étiquette créée",
     "snooze": "Mettre en pause",
     "snoozeNeedsHandling": "La mise en pause fonctionne sur les comptes partagés avec le Traitement activé. Activez-le dans les paramètres du compte.",
+    "snoozeGmailNote": "Mettez en pause ici, pas dans Gmail : tout le monde le voit ici. Un e-mail mis en pause dans Gmail apparaît ici comme archivé jusqu’à ce que Gmail le fasse revenir.",
     "assignTo": "Attribuer à…",
     "shareWith": "Partager avec…",
     "moveTo": "Déplacer vers…",
@@ -579,6 +580,7 @@
       "hint": "Distinguez le travail de la boîte partagée des messages lus et non lus",
       "enabled": "Suivre les conversations à traiter",
       "enabledHint": "Les nouveaux messages entrants restent à traiter jusqu’à ce qu’une personne les marque comme traités. Cela ne modifie pas les messages chez votre fournisseur.",
+      "gmailSnoozeHint": "Mettez en pause ici plutôt que dans Gmail : un e-mail mis en pause dans Gmail apparaît ici comme archivé, hors des messages à traiter, jusqu’à ce que Gmail le fasse revenir.",
       "markInbox": "Partir de la boîte de réception actuelle",
       "markInboxHint": "Mettre à traiter les conversations de la boîte de réception des 30 derniers jours, sauf celles auxquelles vous avez répondu en dernier. Sinon, seuls les messages qui arrivent désormais sont à traiter."
     },

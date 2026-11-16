@@ -209,7 +209,8 @@
     "createLabel": "Label erstellen",
     "labelCreated": "Label erstellt",
     "snooze": "Zurückstellen",
-    "snoozeNeedsHandling": "Zurückstellen gibt es bei geteilten Konten mit aktivierter Bearbeitung. Aktivieren Sie sie in den Kontoeinstellungen.",
+    "snoozeNeedsHandling": "Zurückstellen gibt es bei geteilten Konten mit aktivierter Bearbeitung. Aktiviere sie in den Kontoeinstellungen.",
+    "snoozeGmailNote": "Stelle hier zurück, nicht in Gmail: Hier sehen es alle. Eine in Gmail zurückgestellte E-Mail erscheint hier als archiviert, bis Gmail sie zurückbringt.",
     "assignTo": "Zuweisen an…",
     "shareWith": "Teilen mit…",
     "moveTo": "Verschieben nach…",
@@ -592,6 +593,7 @@
       "hint": "Trenne die Arbeit im geteilten Postfach von gelesenen und ungelesenen E-Mails",
       "enabled": "Zu erledigende Unterhaltungen verfolgen",
       "enabledHint": "Neue eingehende E-Mails sind zu erledigen, bis jemand sie als erledigt markiert. Das ändert nichts an den E-Mails bei deinem Anbieter.",
+      "gmailSnoozeHint": "Stelle E-Mails hier zurück statt in Gmail: Eine in Gmail zurückgestellte E-Mail erscheint hier als archiviert und nicht mehr als zu erledigen, bis Gmail sie zurückbringt.",
       "markInbox": "Mit dem aktuellen Posteingang beginnen",
       "markInboxHint": "Markiert die Unterhaltungen im Posteingang aus den letzten 30 Tagen als zu erledigen, außer denen, auf die du zuletzt geantwortet hast. Sonst sind nur E-Mails zu erledigen, die ab jetzt eintreffen."
     },

@@ -359,7 +359,12 @@ export default function MailAccountDetail() {
 
       {form.visibility === "shared" && (
         <Section title={t("detail.handling.title")} description={t("detail.handling.hint")}>
-          <Row label={t("detail.handling.enabled")} description={t("detail.handling.enabledHint")} htmlFor="handling-enabled">
+          <Row
+            label={t("detail.handling.enabled")}
+            // Gmail's own snooze reaches us as an archive (GH#533): Gmail accounts are told to snooze here.
+            description={account.provider === "google" ? `${t("detail.handling.enabledHint")} ${t("detail.handling.gmailSnoozeHint")}` : t("detail.handling.enabledHint")}
+            htmlFor="handling-enabled"
+          >
             <Switch
               id="handling-enabled"
               checked={form.handling_enabled}

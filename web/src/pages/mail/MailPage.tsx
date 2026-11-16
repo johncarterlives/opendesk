@@ -805,6 +805,9 @@ export default function MailPage() {
   const selecting = selected.size > 0;
   const selectedThreads = selecting ? threads.filter((x) => selected.has(x.id)) : [];
   const selectionHandling = selecting && selectedThreads.every(handlingOn);
+  // Gmail's own snooze reaches us as an archive (GH#533): the picker says so on Gmail accounts.
+  const isGmail = (x: MailThread) => accountsById.get(x.account_id)?.provider === "google";
+  const gmailSnoozeNote = t("action.snoozeGmailNote");
   const idx = threads.findIndex((x) => x.id === openId);
   const phone = usePhone();
   const split = !!openId;
@@ -1070,7 +1073,7 @@ export default function MailPage() {
                           <CircleDot />
                         </BulkButton>
                       )}
-                      <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} />
+                      <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} note={selectedThreads.some(isGmail) ? gmailSnoozeNote : undefined} />
                     </>
                   )}
                   <AssignPicker
@@ -1149,6 +1152,7 @@ export default function MailPage() {
                       onHover={prefetch}
                       onAction={canAct ? onRowAction : undefined}
                       onSnooze={canAct ? onRowSnooze : undefined}
+                      snoozeNote={isGmail(x) ? gmailSnoozeNote : undefined}
                       handling={handlingOn(x)}
                       onDragOut={canAct ? onDragOut : undefined}
                       onDraft={draftsInRows ? onRowDraft : undefined}

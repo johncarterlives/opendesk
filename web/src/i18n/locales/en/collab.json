@@ -217,6 +217,7 @@
     "labelCreated": "Label created",
     "snooze": "Snooze",
     "snoozeNeedsHandling": "Snooze works on shared accounts with Handling on. Turn it on in the account's settings.",
+    "snoozeGmailNote": "Snooze here, not in Gmail: everyone sees it here. An email snoozed in Gmail shows here as archived until Gmail brings it back.",
     "assignTo": "Assign to…",
     "shareWith": "Share with…",
     "moveTo": "Move to…",
@@ -564,6 +565,7 @@
       "hint": "Keep shared inbox work separate from read and unread mail",
       "enabled": "Track conversations needing action",
       "enabledHint": "New incoming mail needs action until someone marks it done. This does not change mail at your provider.",
+      "gmailSnoozeHint": "Snooze here rather than in Gmail: an email snoozed in Gmail shows here as archived, out of Needs action, until Gmail brings it back.",
       "markInbox": "Start with the current inbox",
       "markInboxHint": "Put inbox conversations from the last 30 days in Needs action, except those you answered last. Otherwise only mail that arrives from now on needs action."
     },

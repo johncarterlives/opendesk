@@ -541,7 +541,11 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                   <Check />
                 </HeaderButton>
                 {/* The ticket snooze picker, as is (contracts/collab.md "Snooze"). */}
-                <SnoozeMenu onSnooze={(at) => onAction("snooze", { until: at.toISOString() })} />
+                <SnoozeMenu
+                  onSnooze={(at) => onAction("snooze", { until: at.toISOString() })}
+                  // Gmail's own snooze reaches us as an archive (GH#533): say so where it matters.
+                  note={account.provider === "google" ? t("action.snoozeGmailNote") : undefined}
+                />
                 {th.snoozed_until && (
                   <span className="mono ml-1 hidden whitespace-nowrap text-[11px] text-fg-4 sm:inline" title={t("thread.snoozedUntil", { when: weekdayClock(new Date(th.snoozed_until)) })}>
                     {weekdayClock(new Date(th.snoozed_until))}

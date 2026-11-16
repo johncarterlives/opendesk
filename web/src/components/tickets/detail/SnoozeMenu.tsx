@@ -18,6 +18,7 @@ export function SnoozeMenu({
   onOpenChange,
   unavailable,
   trigger,
+  note,
 }: {
   onSnooze: (at: Date) => void;
   disabled?: boolean;
@@ -27,6 +28,8 @@ export function SnoozeMenu({
   unavailable?: string;
   /** A trigger of the caller's own (a Tooltip around a button), e.g. a list row's hover button. */
   trigger?: ReactNode;
+  /** A line under the choices, e.g. that a snooze set at the provider is not seen here. */
+  note?: string;
 }) {
   const { t } = useTranslation("inbox");
   const [innerOpen, setInnerOpen] = useState(false);
@@ -103,6 +106,7 @@ export function SnoozeMenu({
           </Button>
         </form>
       </div>
+      {note && <p className="border-t border-line px-2 pb-1.5 pt-2 text-[11.5px] leading-snug text-fg-3">{note}</p>}
     </Popover>
   );
 }
