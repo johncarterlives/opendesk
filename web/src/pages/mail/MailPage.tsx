@@ -38,6 +38,7 @@ import { useTranslation } from "react-i18next";
 import type { AIDraftRef, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
 import { api } from "@/lib/api/endpoints";
 import { inverseAction, leavesList, listPlace, UNDOABLE } from "@/lib/collab/actions";
+import { rememberAccountView } from "@/lib/collab/accountView";
 import { accountName, boxForRole, isMailBox, mailListQuery, type MailSearch } from "@/lib/collab/boxes";
 import { cachedFolders } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
@@ -144,6 +145,10 @@ export default function MailPage() {
   const spans = !account && !folder && (accounts?.length ?? 0) > 1;
   const ownEmails = useMemo(() => new Set((accounts ?? []).flatMap((a) => ownEmailsOf(a))), [accounts]);
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
+  // Clicking the account comes back to Inbox or Unread, whichever was used last (GH#523).
+  useEffect(() => {
+    if (search.account && !search.folder) rememberAccountView(search.account, box);
+  }, [search.account, search.folder, box]);
 
   // An inbox (no folder, no search) whose accounts are split shows its tabs; Primary when none is chosen.
   const tabbed = box === "inbox" && !search.folder && !search.q;

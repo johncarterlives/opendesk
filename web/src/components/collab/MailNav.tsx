@@ -5,6 +5,7 @@
 // (its folders unfold on request) with its own Assigned to me under it while it has some. Unread counts come from GET /v1/collab/counts, kept
 // fresh by collab.changed events.
 
+import { accountView, useAccountViews } from "@/lib/collab/accountView";
 import { applyRowOrder } from "@/lib/collab/rowOrder";
 import type { EditSource } from "@/lib/collab/sidebarEditModel";
 import { useQuery } from "@tanstack/react-query";
@@ -159,7 +160,8 @@ function AccountAlert({ account }: { account: MailAccount }) {
 }
 
 /**
- * One account: a single row that opens its inbox, with its unread count. Its other
+ * One account: a single row that opens its inbox (or Unread, when that was used last for
+ * it), with its unread count. Its other
  * folders stay folded until asked for (the mail page's folder bar has every one), so
  * Mail never pushes the ticket inbox out of sight.
  */
@@ -201,7 +203,10 @@ function AccountGroup({
     items: handOver ? [{ label: tInbox("inboxes.useForTickets"), icon: <Inbox />, onSelect: () => quickAdd.inbox({ accountId: account.id }) }] : undefined,
   };
   const expanded = !rail && prefs.expanded_accounts.includes(account.id);
-  const atInbox = here.box === "inbox" && here.account === account.id && !here.folder;
+  // The row opens Inbox or Unread, whichever was used last for the account (GH#523).
+  useAccountViews();
+  const view = accountView(account.id, here);
+  const atView = here.box === view && here.account === account.id && !here.folder;
   const assignedHere = here.box === "assigned" && here.account === account.id;
   const trouble = account.reconnect || account.status === "error";
   if (trouble)
@@ -213,8 +218,8 @@ function AccountGroup({
   if (rail)
     return (
       <MailRow
-        link={{ box: "inbox", account: account.id }}
-        active={atInbox}
+        link={{ box: view, account: account.id }}
+        active={atView}
         icon={<span className="flex size-[15px] shrink-0 items-center justify-center"><AccountDot color={account.color} className="size-2.5" /></span>}
         label={name}
         shown={shown}
@@ -240,8 +245,8 @@ function AccountGroup({
     <div className="flex flex-col gap-px">
       <div className="group/account relative">
         <MailRow
-          link={{ box: "inbox", account: account.id }}
-          active={atInbox}
+          link={{ box: view, account: account.id }}
+          active={atView}
           icon={
             <span className="flex size-[15px] shrink-0 items-center justify-center">
               <AccountDot color={account.color} className={cn("size-2.5 transition-opacity", expanded ? "opacity-0" : "group-hover/account:opacity-0")} />
