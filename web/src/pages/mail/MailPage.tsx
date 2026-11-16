@@ -1012,7 +1012,7 @@ export default function MailPage() {
         {/* With one account in view the row stays, empty or loading, so its Sync is always to hand. */}
         {!noAccounts && ((canAct && threads.length > 0) || account) && (
           <SelectAllBar
-            selectable={canAct && threads.length > 0}
+            selectable={canAct}
             lead={
               account && (
                 <Tooltip content={syncNow.syncing ? t("list.syncing") : t("list.refresh")}>
