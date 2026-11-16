@@ -1166,7 +1166,6 @@ export default function MailPage() {
                       onHover={prefetch}
                       onAction={canAct ? onRowAction : undefined}
                       onSnooze={canAct ? onRowSnooze : undefined}
-                      snoozeNote={isGmail(x) ? gmailSnoozeNote : undefined}
                       handling={handlingOn(x)}
                       onDragOut={canAct ? onDragOut : undefined}
                       onDraft={draftsInRows ? onRowDraft : undefined}

@@ -46,8 +46,6 @@ export type ThreadRowProps = {
   handling?: boolean;
   /** Snoozing from the hover buttons (with Handling on), as Gmail offers it there. */
   onSnooze?: (t: MailThread, at: Date) => void;
-  /** A line under the snooze choices (Gmail accounts: a Gmail snooze shows here as archived). */
-  snoozeNote?: string;
   /** Dragging the row (or the selection it is in) toward the sidebar; left out, it does not drag. */
   onDragOut?: (t: MailThread, e: DragEvent) => void;
   /** Acting on its waiting AI draft in place (Ready for review); left out where it is not offered. */
@@ -127,7 +125,7 @@ function Quick({ label, shortcut, onClick, children }: { label: string; shortcut
 }
 
 const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function ThreadRow(
-  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, handling, onSnooze, snoozeNote, onDragOut, onDraft, draftBusy, style, ...trigger },
+  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, handling, onSnooze, onDragOut, onDraft, draftBusy, style, ...trigger },
   ref,
 ) {
   const { t: tr } = useTranslation("collab");
@@ -266,7 +264,6 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function T
             <span className="flex" onClick={(e) => e.stopPropagation()}>
               <SnoozeMenu
                 onSnooze={(at) => onSnooze!(t, at)}
-                note={snoozeNote}
                 trigger={
                   <Tooltip content={tr("action.snooze")}>
                     <button type="button" aria-label={tr("action.snooze")} className={quickClass}>
