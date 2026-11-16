@@ -1,0 +1,169 @@
+{
+  "title": "Přehledy",
+  "compared_one": "Ve srovnání s předchozím dnem",
+  "compared_few": "Ve srovnání s předchozími {{count}} dny",
+  "compared_many": "Ve srovnání s předchozím obdobím o délce {{count}} dne",
+  "compared_other": "Ve srovnání s předchozími {{count}} dny",
+  "loading": "Načítání přehledů",
+  "error": {
+    "title": "Přehledy se nepodařilo načíst",
+    "description": "Zkontrolujte připojení a zkuste to znovu.",
+    "retry": "Zkusit znovu"
+  },
+  "empty": {
+    "title": "Zatím není co zobrazit",
+    "description": "Přehledy se plní s příchodem tiketů. Čísla za touto kartou jsou ukázková data.",
+    "sample": "Ukázková data",
+    "sampleHint": "Ukázka toho, co stránka zobrazí po příchodu tiketů. Žádné z těchto čísel není skutečné."
+  },
+  "unit": {
+    "tickets_one": "{{count}} tiket",
+    "tickets_few": "{{count}} tikety",
+    "tickets_many": "{{count}} tiketu",
+    "tickets_other": "{{count}} tiketů"
+  },
+  "kpi": {
+    "created": "Vytvořené",
+    "solved": "Vyřešené",
+    "openNow": "Nyní otevřené",
+    "rightNow": "Právě teď",
+    "firstResponse": "První odpověď",
+    "resolution": "Vyřešení",
+    "median": "Medián",
+    "csat": "CSAT",
+    "ratings_one": "{{count}} hodnocení",
+    "ratings_few": "{{count}} hodnocení",
+    "ratings_many": "{{count}} hodnocení",
+    "ratings_other": "{{count}} hodnocení",
+    "slaBreached": "Porušení SLA"
+  },
+  "delta": {
+    "none": "Beze změny",
+    "title": "Ve srovnání s předchozím obdobím",
+    "better": "lepší než v předchozím období",
+    "worse": "horší než v předchozím období"
+  },
+  "volume": {
+    "title": "Vývoj počtu tiketů",
+    "subtitle": "Tikety vytvořené a vyřešené za jednotlivé dny",
+    "chart": "Graf",
+    "table": "Tabulka",
+    "avg": "Denní průměr",
+    "perDay": "vytvořených za den",
+    "busiest": "Nejrušnější den",
+    "solveRate": "Podíl vyřešených",
+    "solvedOfCreated": "vyřešených z vytvořených"
+  },
+  "backlog": {
+    "title": "Nevyřízené tikety",
+    "subtitle": "Aktuální nevyřízené tikety podle stavu",
+    "open": "Nevyřízené tikety",
+    "tickets": "tiketů",
+    "unassigned": "Nepřiřazené",
+    "emptyTitle": "Vše vyřízeno",
+    "emptyDescription": "Právě teď nejsou žádné otevřené tikety."
+  },
+  "channel": {
+    "title": "Podle kanálu",
+    "subtitle": "Tikety vytvořené v daném období"
+  },
+  "open": {
+    "subtitle": "Aktuální nevyřízené tikety",
+    "sample": "Nejnovější otevřené tikety: {{count}}"
+  },
+  "priority": {
+    "title": "Podle priority"
+  },
+  "severity": {
+    "title": "Podle závažnosti",
+    "subtitle": "Tikety vytvořené v daném období",
+    "none": "Bez závažnosti"
+  },
+  "tags": {
+    "title": "Podle štítku",
+    "emptyTitle": "Nevyřízené tikety nemají štítky",
+    "emptyDescription": "Přidejte k tiketům štítky, abyste viděli, na co se lidé ptají."
+  },
+  "agents": {
+    "title": "Žebříček",
+    "subtitle": "Tikety vyřešené v daném období",
+    "caption": "Vyřešené tikety a doba do první odpovědi podle agenta",
+    "agent": "Agent",
+    "solved": "Vyřešené",
+    "share": "Podíl",
+    "firstResponse": "První odpověď",
+    "emptyTitle": "Žádné vyřešené tikety",
+    "emptyDescription": "Agenti se zde zobrazí, jakmile v tomto období vyřeší tikety."
+  },
+  "response": {
+    "title": "Doby odpovědí",
+    "subtitle": "Mediány za dané období",
+    "fastest": "Nejrychlejší první odpověď",
+    "none": "V tomto období zatím nejsou žádné odpovědi."
+  },
+  "filter": {
+    "teamLabel": "Tým: {{value}}",
+    "brandLabel": "Značka: {{value}}",
+    "allTeams": "Všechny týmy",
+    "noTeam": "Bez týmu",
+    "private": "Soukromé",
+    "allBrands": "Všechny značky",
+    "searchTeams": "Hledat týmy",
+    "searchBrands": "Hledat značky"
+  },
+  "groups": {
+    "narrow": "Zobrazit v přehledu pouze toto"
+  },
+  "byTeam": {
+    "title": "Podle týmu",
+    "subtitle": "Tikety vytvořené a vyřešené v daném období a nyní otevřené",
+    "caption": "Vytvořené, vyřešené a otevřené tikety a doba do první odpovědi podle týmu",
+    "team": "Tým",
+    "hidden": "Soukromé týmy, jejichž členem nejste, se zde nezobrazují. Jejich tikety jsou zahrnuty v souhrnech výše.",
+    "emptyTitle": "V tomto období žádná práce týmů",
+    "emptyDescription": "Týmy se zde zobrazí, jakmile jim přijdou tikety nebo je vyřeší."
+  },
+  "byBrand": {
+    "title": "Podle značky",
+    "subtitle": "Tikety vytvořené a vyřešené v daném období a nyní otevřené",
+    "caption": "Vytvořené, vyřešené a otevřené tikety a doba do první odpovědi podle značky",
+    "brand": "Značka",
+    "emptyTitle": "V tomto období žádná práce pro značky",
+    "emptyDescription": "Značky se zde zobrazí, jakmile pro ně přijdou tikety nebo budou vyřešeny."
+  },
+  "filtered": {
+    "emptyTitle": "V tomto období tu nic není",
+    "emptyDescription": "V daném období neodpovídají tomuto týmu a značce žádné tikety. Zkuste delší období nebo zrušte filtry.",
+    "clear": "Zrušit filtry"
+  },
+  "work": {
+    "title": "Agenti",
+    "subtitle": "Práce jednotlivých kolegů v daném období",
+    "subtitleSelf": "Vaše práce v daném období",
+    "caption": "Přiřazené a vyřešené tikety, odpovědi, poznámky, doby odpovědí a vyřízení a čas online podle agenta",
+    "agent": "Agent",
+    "assigned": "Přiřazené",
+    "assignedHint": "Tikety přiřazené danému agentovi v tomto období a nové tikety, které mu byly přiřazeny již při vytvoření",
+    "solved": "Vyřešené",
+    "solvedHint": "Tikety vyřešené v daném období, které jsou přiřazené danému agentovi",
+    "replies": "Odpovědi",
+    "repliesHint": "Odpovědi odeslané daným agentem zákazníkům v tomto období",
+    "notes": "Poznámky",
+    "notesHint": "Interní poznámky napsané daným agentem v tomto období",
+    "perSolved": "Odpovědi na vyřešený tiket",
+    "perSolvedHint": "Odpovědi daného agenta u jím vyřešených tiketů v přepočtu na tiket",
+    "firstResponse": "První odpověď",
+    "firstResponseHint": "Medián doby do první odpovědi u tiketů daného agenta vytvořených v tomto období",
+    "handle": "Doba vyřízení",
+    "handleHint": "Medián doby od posledního přiřazení danému agentovi do vyřešení tiketu",
+    "online": "Online",
+    "onlineHint": "Čas v opendesk se stavem „Online“",
+    "onlineNote": "Čas online zahrnuje dobu, kdy měl každý kolega otevřený opendesk se stavem „Online“, bez ohledu na filtr týmu či značky.",
+    "onlineSelf": "Vidíte vlastní práci a čas online. Administrátoři vidí údaje všech.",
+    "onlineOff": "Čas online je pro tento workspace vypnutý, takže se nezaznamenává ani nezobrazuje. Administrátoři ho mohou zapnout v části „Nastavení“ → „Workspace“.",
+    "emptyTitle": "Žádní agenti k zobrazení",
+    "emptyDescription": "Agenti se zde zobrazí, jakmile v tomto období začnou pracovat na tiketech.",
+    "emptySelf": "Vaše práce se zde zobrazí, jakmile v tomto období začnete pracovat na tiketech. Administrátoři vidí údaje všech.",
+    "errorTitle": "Agenty se nepodařilo načíst"
+  }
+}

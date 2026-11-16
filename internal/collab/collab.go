@@ -24,6 +24,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/deps"
 	"github.com/useopendesk/opendesk/internal/email"
 	"github.com/useopendesk/opendesk/internal/jobs"
+	"github.com/useopendesk/opendesk/internal/mailsource"
 	"github.com/useopendesk/opendesk/internal/products"
 )
 
@@ -33,7 +34,7 @@ const (
 	initialMax      = 500                 // and at most this many messages per account
 	maxFolders      = 200                 // folders and labels kept per account
 	maxIMAPFolders  = 30                  // IMAP folders synced
-	maxRawBytes     = 30 << 20            // a larger message is skipped
+	maxRawBytes     = mailsource.MaxBytes // a larger message is skipped
 	maxSendBytes    = 25 << 20            // files on one sent message
 	maxRecipients   = 100                 // on one sent message
 	activeInterval  = time.Minute         // sync interval while someone with access is active

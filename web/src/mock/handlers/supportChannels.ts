@@ -95,6 +95,21 @@ function applyOllie(row: SupportChannelDestination, body: Record<string, unknown
     if (personality.length > 500) throw invalid("The personality must be 500 characters or less.");
     row.ollie_personality = personality;
   }
+  if (body.min_role !== undefined || body.allowed_user_ids !== undefined) {
+    let minRole = row.min_role;
+    let allowed = row.allowed_user_ids;
+    if (body.min_role !== undefined) {
+      if (body.min_role !== "agent" && body.min_role !== "admin") throw invalid("min_role must be agent or admin.");
+      minRole = body.min_role;
+    }
+    if (body.allowed_user_ids !== undefined) {
+      if (!Array.isArray(body.allowed_user_ids) || body.allowed_user_ids.length > 100) throw invalid("Choose at most 100 people.");
+      allowed = [...new Set(body.allowed_user_ids.map(String))];
+    }
+    if (minRole === "admin" && allowed.length > 0) throw invalid("Choose admins only or a list of people, not both.");
+    row.min_role = minRole;
+    row.allowed_user_ids = allowed;
+  }
   if (body.ollie_length !== undefined) {
     const length = ollieLengths.find((value) => value === body.ollie_length);
     if (!length) throw invalid("Response length must be brief, standard or detailed.");
@@ -272,6 +287,8 @@ export function registerSupportChannels() {
       ollie_warnings: true,
       ollie_personality: "",
       ollie_length: "standard",
+      min_role: "agent",
+      allowed_user_ids: [],
       created_at: nowIso(),
     };
     applyOllie(row, ctx.body);

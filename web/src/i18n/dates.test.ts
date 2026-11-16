@@ -12,6 +12,19 @@ it("writes short dates in each agent language's order and names", () => {
   expect(write("de", "dayMonth")).toBe("6. Okt.");
   expect(write("de", "weekdayDayMonth")).toBe("Di., 6. Okt.");
   expect(write("de-CH", "dayMonthYear")).toBe("6. Okt. 2026");
+  expect(write("cs", "dayMonth")).toBe("6. 10.");
+  expect(write("cs", "weekdayDayMonth")).toBe("út 6. 10.");
+  expect(write("cs-CZ", "dayMonthYear")).toBe("6. 10. 2026");
+  expect(write("en", "monthYear")).toBe("October 2026");
+  expect(write("cs", "monthYear")).toBe("říjen 2026");
+});
+
+it("writes Chinese dates with Chinese month names and day order", () => {
+  expect(write("zh-CN", "dayMonth")).toBe("10月6日");
+  expect(write("zh-CN", "weekdayDayMonth")).toBe("周二 10月6日");
+  expect(write("zh-CN", "dayMonthYear")).toBe("2026年10月6日");
+  expect(write("zh", "field")).toBe("2026年10月6日");
+  expect(write("zh-CN", "monthYear")).toBe("2026年10月");
 });
 
 it("uses English for a language the agent app is not translated into", () => {

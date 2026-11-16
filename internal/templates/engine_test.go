@@ -178,6 +178,52 @@ func TestRenderEmail(t *testing.T) {
 	}
 }
 
+// Plain reads like a person's own email, so it follows the reader's light or dark theme:
+// no forced light scheme, fixed text colour or frame. Branded keeps its light card.
+func TestRenderEmailPlainFollowsTheme(t *testing.T) {
+	c := &Context{Values: vals(nil), Location: time.UTC, BrandColor: "#2563EB"}
+	at := time.Date(2026, 10, 17, 14, 3, 0, 0, time.UTC)
+	parts := Parts{Content: "<p>Thanks!</p>", ContentText: "Thanks!", Signature: "<p>Alex</p>",
+		History: []HistoryItem{{Author: "Jane", At: at, HTML: "<p>Help</p>"}}}
+
+	e := c.RenderEmail(DefaultDesign(), parts)
+	if !strings.Contains(e.HTML, `<meta name="color-scheme" content="light dark">`) || strings.Contains(e.HTML, "light only") {
+		t.Errorf("plain: color scheme: %s", e.HTML)
+	}
+	for _, unwanted := range []string{"color:#171717", "color:#404040", "padding:16px 20px", "max-width:640px", "background:#F5F5F5"} {
+		if strings.Contains(e.HTML, unwanted) {
+			t.Errorf("plain: unexpected %q in %s", unwanted, e.HTML)
+		}
+	}
+	// Its text sits a little in from the window's edge, as a mail app sets a personal email.
+	if !strings.Contains(e.HTML, `body{margin:0;padding:8px}`) || !strings.Contains(e.HTML, `<body style="margin:0;padding:8px;`) {
+		t.Errorf("plain: body inset: %s", e.HTML)
+	}
+
+	// An email forwarded whole keeps its own inline colours, so the message stays light.
+	fwd := parts
+	fwd.Forwarded = &Forwarded{FromEmail: "jana@firma.cz", At: at, Subject: "Order",
+		HTML: `<p style="color:#333333">Hello</p>`}
+	e = c.RenderEmail(DefaultDesign(), fwd)
+	if !strings.Contains(e.HTML, `<meta name="color-scheme" content="light only">`) || strings.Contains(e.HTML, "light dark") ||
+		!strings.Contains(e.HTML, "color:#171717") {
+		t.Errorf("forwarded: color scheme: %s", e.HTML)
+	}
+	// It keeps Plain's inset, so its text still sits in from the edge.
+	if !strings.Contains(e.HTML, `body{margin:0;padding:8px}`) || !strings.Contains(e.HTML, `<body style="margin:0;padding:8px;`) {
+		t.Errorf("forwarded: body inset: %s", e.HTML)
+	}
+
+	d := DefaultDesign()
+	d.Layout.Style = "branded"
+	e = c.RenderEmail(d, parts)
+	for _, want := range []string{`<meta name="color-scheme" content="light only">`, "color:#171717", "background:#FFFFFF", `<body style="margin:0;padding:0;`} {
+		if !strings.Contains(e.HTML, want) {
+			t.Errorf("branded: missing %q", want)
+		}
+	}
+}
+
 // The quote line reads each quoted message's author, address and date, filled in one pass.
 func TestHistoryHeaderEmail(t *testing.T) {
 	c := &Context{Values: vals(nil), Location: time.UTC, BrandColor: "#2563EB"}
@@ -274,6 +320,10 @@ func TestSurveyButtons(t *testing.T) {
 	h, txt := SurveyButtons("https://app.test/csat/tok?score=", "#2563EB")
 	if !strings.Contains(h, `href="https://app.test/csat/tok?score=5"`) || !strings.Contains(txt, "5 (Great): https://app.test/csat/tok?score=5") {
 		t.Fatalf("%s\n%s", h, txt)
+	}
+	// Each button is its own light chip, so its dark number reads in a dark-mode mail app too.
+	if n := strings.Count(h, "background-color:#FFFFFF;color:#0A0A0A"); n != 5 {
+		t.Errorf("buttons with a background: %d of 5: %s", n, h)
 	}
 }
 

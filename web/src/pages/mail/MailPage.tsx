@@ -38,6 +38,7 @@ import { useTranslation } from "react-i18next";
 import type { AIDraftRef, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
 import { api } from "@/lib/api/endpoints";
 import { inverseAction, leavesList, listPlace, UNDOABLE } from "@/lib/collab/actions";
+import { rememberAccountView } from "@/lib/collab/accountView";
 import { accountName, boxForRole, isMailBox, mailListQuery, type MailSearch } from "@/lib/collab/boxes";
 import { cachedFolders } from "@/lib/collab/cache";
 import { compose } from "@/lib/collab/compose";
@@ -46,6 +47,7 @@ import { accountCategories, categoryTabs, PRIMARY, ruleSender } from "@/lib/coll
 import { assignChanges, useAllFolders, useAssignThreads, useCanAct, useMailAccounts, useSelectEvery, useSidebarPrefs, useThreadAction } from "@/lib/collab/hooks";
 import { type ComposeMode } from "@/lib/collab/recipients";
 import { identitiesOf, ownEmails as ownEmailsOf } from "@/lib/collab/identities";
+import { useSyncNow } from "@/lib/collab/syncNow";
 import { startThreadDrag, takeThreadDrops, type ThreadDropTarget } from "@/lib/collab/threadDrag";
 import { isTypingTarget } from "@/lib/hotkeys";
 import { openInNewTab, useHref } from "@/lib/links";
@@ -102,7 +104,7 @@ function BulkButton({ label, shortcut, onClick, children }: { label: string; sho
         type="button"
         aria-label={label}
         onClick={onClick}
-        className="flex size-7 items-center justify-center rounded-md text-fg-2 outline-none transition-colors hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] data-[state=open]:bg-hover [&_svg]:size-[15px]"
+        className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-2 outline-none transition-colors hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] data-[state=open]:bg-hover [&_svg]:size-[15px]"
       >
         {children}
       </button>
@@ -139,11 +141,16 @@ export default function MailPage() {
   const confirm = useConfirm();
 
   const account = search.account ? accounts?.find((a) => a.id === search.account) : undefined;
+  const syncNow = useSyncNow(account);
   const folder: MailFolder | undefined = search.folder ? Object.values(folderMap).flatMap((f) => f ?? []).find((f) => f.id === search.folder) : undefined;
   const folderAccount = folder ? accounts?.find((a) => a.id === folder.account_id) : undefined;
   const spans = !account && !folder && (accounts?.length ?? 0) > 1;
   const ownEmails = useMemo(() => new Set((accounts ?? []).flatMap((a) => ownEmailsOf(a))), [accounts]);
   const accountsById = useMemo(() => new Map((accounts ?? []).map((a) => [a.id, a])), [accounts]);
+  // Clicking the account comes back to Inbox or Unread, whichever was used last (GH#523).
+  useEffect(() => {
+    if (search.account && !search.folder) rememberAccountView(search.account, box);
+  }, [search.account, search.folder, box]);
 
   // An inbox (no folder, no search) whose accounts are split shows its tabs; Primary when none is chosen.
   const tabbed = box === "inbox" && !search.folder && !search.q;
@@ -874,23 +881,6 @@ export default function MailPage() {
                 className="w-[220px]"
               />
             )}
-            {account && (
-              <Tooltip content={t("list.refresh")}>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  square
-                  aria-label={t("list.refresh")}
-                  icon={<RefreshCw />}
-                  onClick={() =>
-                    void api.collab.accounts.sync(account.id).then(
-                      () => toast.info(t("toast.syncing", { name: accountName(account) })),
-                      (e) => toast.error(e),
-                    )
-                  }
-                />
-              </Tooltip>
-            )}
             {canAct && !noAccounts && (
               <Tooltip content={t("list.compose")} shortcut="c">
                 <Button size="sm" variant={compact ? "ghost" : "secondary"} square={compact} icon={<PenSquare />} onClick={() => compose.open({ accountId: account?.id ?? folderAccount?.id })} aria-label={t("list.compose")}>
@@ -1019,8 +1009,32 @@ export default function MailPage() {
         {shareId && <ListShareDialog threadId={shareId} onClose={() => setShareId(null)} />}
 
         {discardedAI && <AIDraftFeedbackDialog draft={discardedAI.draft} threadId={discardedAI.threadId} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
-        {canAct && !noAccounts && threads.length > 0 && (
+        {/* With one account in view the row stays, empty or loading, so its Sync is always to hand. */}
+        {!noAccounts && ((canAct && threads.length > 0) || account) && (
           <SelectAllBar
+            selectable={canAct}
+            lead={
+              account && (
+                <Tooltip content={syncNow.syncing ? t("list.syncing") : t("list.refresh")}>
+                  {/* Spins until the sync it asked for ends (GH#522). */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    square
+                    aria-label={syncNow.syncing ? t("list.syncing") : t("list.refresh")}
+                    aria-busy={syncNow.syncing || undefined}
+                    icon={<RefreshCw className={cn(syncNow.syncing && "animate-spin motion-reduce:animate-none")} />}
+                    onClick={() =>
+                      !syncNow.syncing &&
+                      syncNow.sync(account, {
+                        onQueued: () => toast.info(t("toast.syncing", { name: accountName(account) })),
+                        onError: (e) => toast.error(e),
+                      })
+                    }
+                  />
+                </Tooltip>
+              )
+            }
             loaded={threads.length}
             selected={selected.size}
             hasMore={!!list.hasNextPage}
@@ -1029,6 +1043,73 @@ export default function MailPage() {
             matching={!!query.q}
             onToggle={toggleAll}
             onSelectEvery={() => void every.start()}
+            compact={compact}
+            actions={
+              selecting ? (
+                <>
+                  <BulkButton label={t("action.archive")} shortcut="e" onClick={() => act(targets(), "archive")}>
+                    <Archive />
+                  </BulkButton>
+                  <BulkButton label={t("action.trash")} shortcut="#" onClick={() => act(targets(), "trash")}>
+                    <Trash2 />
+                  </BulkButton>
+                  <BulkButton label={t("action.spam")} shortcut="!" onClick={() => act(targets(), "spam")}>
+                    <ShieldAlert />
+                  </BulkButton>
+                  <BulkButton label={t("action.read")} shortcut="shift i" onClick={() => act(targets(), "read", { silent: true })}>
+                    <MailOpen />
+                  </BulkButton>
+                  <BulkButton label={t("action.unread")} shortcut="shift u" onClick={() => act(targets(), "unread", { silent: true })}>
+                    <Mail />
+                  </BulkButton>
+                  <BulkButton label={t("action.star")} shortcut="s" onClick={star}>
+                    <Star />
+                  </BulkButton>
+                  {selectionHandling && (
+                    <>
+                      <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
+                      {selectedThreads.every((x) => x.needs_action) ? (
+                        <BulkButton label={t("action.done")} onClick={() => act(targets(), "done")}>
+                          <CircleCheck />
+                        </BulkButton>
+                      ) : (
+                        <BulkButton label={t("action.needsAction")} onClick={() => act(targets(), "needs_action")}>
+                          <CircleDot />
+                        </BulkButton>
+                      )}
+                      <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} />
+                    </>
+                  )}
+                  <AssignPicker
+                    align="start"
+                    value={commonAssignees(selectedThreads)}
+                    onChange={(ids) => setAssignees(selectedThreads, ids)}
+                    trigger={
+                      <span className="flex">
+                        <BulkButton label={t("action.assignTo")}>
+                          <UserPlus />
+                        </BulkButton>
+                      </span>
+                    }
+                  />
+                  <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
+                  {targetAccount && (
+                    <BulkButton label={t("action.move")} shortcut="m" onClick={() => setPickMove(true)}>
+                      <Folder />
+                    </BulkButton>
+                  )}
+                  {targetLabels && (
+                    <BulkButton label={t("action.label")} shortcut="l" onClick={() => setPickLabels(true)}>
+                      <Tag />
+                    </BulkButton>
+                  )}
+                  <span className="flex-1" />
+                  <BulkButton label={t("list.clear")} shortcut="escape" onClick={clearSelection}>
+                    <X />
+                  </BulkButton>
+                </>
+              ) : undefined
+            }
           />
         )}
 
@@ -1094,72 +1175,6 @@ export default function MailPage() {
           )}
         </div>
 
-        {selecting && canAct && (
-          <div className="absolute inset-x-3 bottom-3 z-10 flex items-center gap-0.5 rounded-lg border border-line bg-raised px-2 py-1 shadow-float animate-rise-in motion-reduce:animate-none">
-            <span className="mono px-1.5 text-[11.5px] tabular-nums text-fg-2">{t("list.selected", { count: selected.size })}</span>
-            <span aria-hidden className="mx-1 h-4 w-px bg-line" />
-            <BulkButton label={t("action.archive")} shortcut="e" onClick={() => act(targets(), "archive")}>
-              <Archive />
-            </BulkButton>
-            <BulkButton label={t("action.trash")} shortcut="#" onClick={() => act(targets(), "trash")}>
-              <Trash2 />
-            </BulkButton>
-            <BulkButton label={t("action.spam")} shortcut="!" onClick={() => act(targets(), "spam")}>
-              <ShieldAlert />
-            </BulkButton>
-            <BulkButton label={t("action.read")} shortcut="shift i" onClick={() => act(targets(), "read", { silent: true })}>
-              <MailOpen />
-            </BulkButton>
-            <BulkButton label={t("action.unread")} shortcut="shift u" onClick={() => act(targets(), "unread", { silent: true })}>
-              <Mail />
-            </BulkButton>
-            <BulkButton label={t("action.star")} shortcut="s" onClick={star}>
-              <Star />
-            </BulkButton>
-            {selectionHandling && (
-              <>
-                <span aria-hidden className="mx-1 h-4 w-px bg-line" />
-                {selectedThreads.every((x) => x.needs_action) ? (
-                  <BulkButton label={t("action.done")} onClick={() => act(targets(), "done")}>
-                    <CircleCheck />
-                  </BulkButton>
-                ) : (
-                  <BulkButton label={t("action.needsAction")} onClick={() => act(targets(), "needs_action")}>
-                    <CircleDot />
-                  </BulkButton>
-                )}
-                <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} />
-              </>
-            )}
-            <AssignPicker
-              align="start"
-              value={commonAssignees(selectedThreads)}
-              onChange={(ids) => setAssignees(selectedThreads, ids)}
-              trigger={
-                <span className="flex">
-                  <BulkButton label={t("action.assignTo")}>
-                    <UserPlus />
-                  </BulkButton>
-                </span>
-              }
-            />
-            <span aria-hidden className="mx-1 h-4 w-px bg-line" />
-            {targetAccount && (
-              <BulkButton label={t("action.move")} shortcut="m" onClick={() => setPickMove(true)}>
-                <Folder />
-              </BulkButton>
-            )}
-            {targetLabels && (
-              <BulkButton label={t("action.label")} shortcut="l" onClick={() => setPickLabels(true)}>
-                <Tag />
-              </BulkButton>
-            )}
-            <span className="flex-1" />
-            <BulkButton label={t("list.clear")} shortcut="escape" onClick={clearSelection}>
-              <X />
-            </BulkButton>
-          </div>
-        )}
       </section>
 
       {openId && (

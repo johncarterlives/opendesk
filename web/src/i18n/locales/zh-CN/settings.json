@@ -1,0 +1,854 @@
+{
+  "sortable": {
+    "handle": "拖动以重新排序。按住 Alt 并按方向键移动。",
+    "hint": "拖动以重新排序"
+  },
+  "cancel": "取消",
+  "labels": {
+    "title": "标签",
+    "description": "彩色标签可用于整理工单、联系人和公司，方便查找、筛选和统计。删除标签会把它从所有使用它的工单、联系人和公司上移除。",
+    "newLabel": "新建标签",
+    "newGroup": "新建分组",
+    "filter": "筛选标签",
+    "count_other": "{{count}} 个标签",
+    "ungrouped": "其他标签",
+    "emptyGroup": "该分组暂无标签",
+    "editAria": "编辑 {{name}}",
+    "actionsAria": "{{name}} 的操作",
+    "reorderAria": "重新排序 {{name}}。按住 Alt 并按方向键移动。",
+    "usageHint": "{{tickets}} 个工单，{{contacts}} 个联系人，{{companies}} 家公司",
+    "createdToast": "已创建标签“{{name}}”",
+    "savedToast": "标签已保存",
+    "archivedToast": "“{{name}}”已归档",
+    "restoredToast": "“{{name}}”已恢复",
+    "archivedSection_other": "{{count}} 个已归档标签",
+    "summary": {
+      "labels": "标签",
+      "groups": "分组",
+      "onTickets": "用于工单",
+      "archived": "已归档"
+    },
+    "columns": {
+      "label": "标签",
+      "appliesTo": "适用于",
+      "uses": "使用次数"
+    },
+    "scope": {
+      "tickets": "工单",
+      "contacts": "联系人",
+      "companies": "公司",
+      "not": "不适用于 {{what}}"
+    },
+    "empty": {
+      "title": "暂无标签",
+      "description": "你加到工单上的标签会显示在这里。先创建几个试试，比如 billing 或 bug。",
+      "tips": {
+        "groups": "分组可限定同一时间只能选一个标签",
+        "who": "管理员决定谁可以创建标签"
+      }
+    },
+    "noMatch": {
+      "title": "没有匹配的标签",
+      "description": "换个名称试试。"
+    },
+    "menu": {
+      "edit": "编辑",
+      "colour": "颜色",
+      "moveTo": "移到分组",
+      "merge": "合并到其他标签",
+      "archive": "归档",
+      "restore": "恢复",
+      "delete": "删除"
+    },
+    "delete": {
+      "title": "删除这个标签？",
+      "body": {
+        "before": "",
+        "after": "会从所有使用它的工单、联系人和公司上移除。此操作无法撤销。"
+      },
+      "confirm": "删除标签"
+    },
+    "dialog": {
+      "newTitle": "新建标签",
+      "editTitle": "编辑标签",
+      "newDescription": "客服可以立即把它加到工单上。",
+      "name": "名称",
+      "newName": "新标签名称",
+      "namePlaceholder": "billing",
+      "preview": "预览",
+      "colour": "颜色",
+      "description": "描述",
+      "descriptionHint": "在标签选择器中显示，让所有人都以一致的方式使用这个标签。",
+      "descriptionPlaceholder": "关于发票、退款和付款方式的问题",
+      "group": "分组",
+      "noGroup": "无分组",
+      "exclusiveHint": "每条记录在同一时间只能使用该分组中的一个标签。",
+      "appliesTo": "适用于",
+      "create": "创建标签",
+      "save": "保存标签",
+      "duplicate": "已存在同名标签。",
+      "badChars": "请使用字母、数字、空格以及 - _ . / : & + #。",
+      "nameRequired": "请给标签起个名字。",
+      "scopeRequired": "选择标签可以用于哪些对象。"
+    },
+    "group": {
+      "newTitle": "新建分组",
+      "editTitle": "编辑分组",
+      "description": "分组把相关的标签放在一起，比如 Type 或 Plan。",
+      "name": "名称",
+      "namePlaceholder": "Type",
+      "nameRequired": "请给分组起个名字。",
+      "exclusive": "一次只能选一个标签",
+      "exclusiveHint": "每条记录在同一时间只能使用该分组中的一个标签。",
+      "exclusiveBadge": "单选",
+      "create": "创建分组",
+      "save": "保存分组",
+      "actionsAria": "分组 {{name}} 的操作",
+      "addLabel": "添加标签",
+      "edit": "编辑分组",
+      "delete": "删除分组",
+      "deleteTitle": "删除这个分组？",
+      "deleteBody": "{{name}} 中的标签会保留，并移到“其他标签”。",
+      "deleteConfirm": "删除分组"
+    },
+    "merge": {
+      "title": "合并标签",
+      "description": "所有标为 {{name}} 的对象都会改用你选择的标签，{{name}} 会被删除。",
+      "search": "搜索标签",
+      "choose": "选择标签",
+      "confirm": "合并"
+    },
+    "creation": {
+      "title": "谁可以创建标签",
+      "label": "谁可以创建标签",
+      "anyone": "任何人",
+      "admins": "仅管理员",
+      "anyoneHint": "在标签选择器中输入新名称即可创建标签。",
+      "adminsHint": "客服从已有标签中选择，只有管理员可以创建新标签。",
+      "saved": "标签设置已保存"
+    }
+  },
+  "members": {
+    "title": "成员",
+    "description": "所有可以登录此工作区的人，以及他们能做什么。",
+    "count_other": "{{count}} 个成员",
+    "search": "筛选成员",
+    "leave": "退出工作区",
+    "invite": "邀请他人",
+    "you": "你",
+    "noMatch": "没有匹配的成员",
+    "noMatchHint": "换个名称或邮箱试试。",
+    "filter": {
+      "label": "筛选成员",
+      "allRoles": "所有角色",
+      "roleLabel": "角色：{{value}}",
+      "searchRoles": "搜索角色",
+      "allTeams": "所有团队",
+      "noTeam": "无团队",
+      "unknownTeam": "未知团队",
+      "teamLabel": "团队：{{value}}",
+      "searchTeams": "搜索团队",
+      "anyStatus": "任意状态",
+      "statusLabel": "状态：{{value}}",
+      "searchStatuses": "搜索状态",
+      "shown": "{{shown}} / {{total}}",
+      "clear": "清除筛选",
+      "noMatchHint": "试试其他筛选条件，或清除筛选以查看所有人。"
+    },
+    "emptyTitle": "目前只有你",
+    "emptyHint": "邀请同事一起使用收件箱。",
+    "columns": {
+      "person": "成员",
+      "joined": "加入时间",
+      "role": "角色"
+    },
+    "remove": "从工作区移除",
+    "removeTitle": "移除成员？",
+    "removeConfirm": "移除",
+    "removeBody": "{{name}} 会立即失去访问权限。其工单仍会保留，但会变为未分配。",
+    "summary": {
+      "members": "成员",
+      "admins": "管理员",
+      "agents": "客服",
+      "viewers": "查看者",
+      "invited": "已邀请"
+    },
+    "invites": {
+      "title": "待处理的邀请",
+      "description": "邀请 7 天后过期。如果没有收到邮件，可以复制链接自己发送。",
+      "by": "由 {{name}} 邀请，{{when}}",
+      "at": "邀请于 {{when}}",
+      "expired": "已过期",
+      "expires": "{{date}} 过期",
+      "revoke": "撤销",
+      "revokeTitle": "撤销邀请？",
+      "revokeBody": "{{email}} 的邀请链接将失效。",
+      "copyLink": "复制链接",
+      "linkCopied": "邀请链接已复制",
+      "linkCopiedHint": "你可以用任意方式发给 {{email}}。对方用该地址注册后即可加入。",
+      "resend": "重发邮件",
+      "resent": "邀请已再次发送至 {{email}}",
+      "actions": "{{email}} 邀请的操作"
+    },
+    "inviteDialog": {
+      "description": "对方会收到一封包含加入链接的邮件。你也可以从待处理的邀请中复制链接。链接 7 天后过期。",
+      "send": "发送邀请",
+      "emails": "邮箱地址",
+      "emailsHint": "多个地址之间用逗号或空格分隔。"
+    },
+    "emptyTips": {
+      "roles": "角色决定每个人可以做什么",
+      "expire": "邀请 7 天后过期"
+    },
+    "editProfile": "编辑资料",
+    "profileTitle": "面向客户的资料",
+    "profileHint": "客户在签名中看到的 {{name}}：职位、电话、代词和个人签名。",
+    "discardTitle": "放弃更改？",
+    "discardBody": "你对这份资料的修改尚未保存。",
+    "discardConfirm": "放弃",
+    "save": "保存资料",
+    "deleteRule": "可以删除消息",
+    "deleteDefault": "工作区默认（{{rule}}）",
+    "deletes": {
+      "off": "不能删除任何消息",
+      "own": "只能删除自己的备注",
+      "all": "可以删除任何客服的备注和回复"
+    }
+  },
+  "teams": {
+    "title": "团队",
+    "description": "把客服分组，这样工单和邮箱就能路由给合适的人。",
+    "new": "新建团队",
+    "count_other": "{{count}} 个团队",
+    "members_other": "{{count}} 个成员",
+    "emptyTitle": "暂无团队",
+    "emptyHint": "创建 Support、Billing 或 Engineering，把工单分配给整个团队。",
+    "edit": "编辑",
+    "delete": "删除",
+    "deleteTitle": "删除团队？",
+    "deleteBody": "路由给 {{name}} 的工单和邮箱会保留负责人，但不再属于该团队。",
+    "saved": "团队已保存",
+    "created": "团队已创建",
+    "discardTitle": "放弃更改？",
+    "discardBody": "你对这个团队的修改会丢失。",
+    "discard": "放弃",
+    "editTitle": "编辑团队",
+    "nameRequired": "请给团队起个名字。",
+    "name": "名称",
+    "namePlaceholder": "Support",
+    "membersLabel": "成员",
+    "searchMembers": "搜索成员",
+    "addMembers": "添加成员",
+    "remove": "移除",
+    "noMembers": "暂无成员",
+    "save": "保存团队",
+    "create": "创建团队",
+    "andMore_other": " 还有另外 {{count}} 个",
+    "mailboxes_other": "{{count}} 个邮箱",
+    "emptyTips": {
+      "mailbox": "邮箱可以把新工单发送给团队",
+      "delete": "删除团队会保留工单负责人"
+    }
+  },
+  "profile": {
+    "title": "个人资料",
+    "description": "你在工单、备注和提及中向同事展示的样子。",
+    "saved": "资料已保存",
+    "verifySent": "验证邮件已发送",
+    "verifySentHint": "请到收件箱查看链接。",
+    "name": "姓名",
+    "photo": "头像",
+    "photoHint": "会显示在你的回复、提及和应用各处。没有照片时显示你的姓名首字母。",
+    "email": "邮箱",
+    "emailHint": "用于登录和接收通知。",
+    "emailUnverified": "验证邮箱后才能接收通知。",
+    "verified": "已验证",
+    "resend": "重新发送验证",
+    "appearance": "外观",
+    "appearanceHint": "仅对此浏览器生效。",
+    "conversation": {
+      "label": "会话布局",
+      "hint": "客户的消息在左侧，你们团队的回复和备注在右侧，像聊天一样。窄屏时占满整个宽度。"
+    },
+    "conversationWidth": {
+      "label": "会话宽度",
+      "hint": "限制宽度会让消息和回复框保持易于阅读的宽度，适合宽屏。占满宽度则让它们用满工单的整个宽度。",
+      "limited": "限制宽度",
+      "full": "占满宽度"
+    },
+    "properties": {
+      "label": "工单属性",
+      "hint": "状态、优先级、负责人、团队和标签放在详情栏，或会话上方的横栏，可就地编辑。放在横栏时，详情栏从客户以及你的应用了解到的客户信息开始。",
+      "column": "放在详情栏",
+      "bar": "放在会话上方的横栏"
+    },
+    "nextTicket": {
+      "label": "在“{{action}}”后打开下一张工单",
+      "hint": "用会让工单离开列表的状态发送后也一样。会打开你原来所在列表或视图中的下一张工单，并沿用其筛选和排序；最后一张之后，你会回到列表。撤销发送会带你回到该工单。"
+    },
+    "alwaysShowImages": {
+      "label": "始终显示图片",
+      "hint": "你收到的邮件中的远程图片会随邮件一起加载，无需点击“加载图片”。图片来自发件人的服务器，对方因此能知道邮件何时被打开。"
+    },
+    "sounds": {
+      "title": "提示音",
+      "hint": "仅对此浏览器生效。在线聊天使用更明亮的提示音，其他都很安静。",
+      "preview": "播放此提示音",
+      "chat": "在线聊天等待中",
+      "chatHint": "有访客在无人接待的聊天中等待，每分钟会有一次更轻的提醒，直到有人接入。",
+      "ticket": "新会话",
+      "ticketHint": "有来自客户、同事或集成的新工单，未分配或分配给你。",
+      "reply": "客户回复",
+      "replyHint": "客户在你的某张工单上回复，除非你正在查看它。",
+      "assigned": "分配与提及",
+      "assignedHint": "有内容分配给你、有人提到你，或你的工单触发了 SLA 违约。"
+    },
+    "assignee": {
+      "label": "工单列表中的负责人",
+      "hint": "当前在工单上的同事始终以绿色显示，并标出他们正在做什么。",
+      "photo": "头像",
+      "name": "名字",
+      "none": "不显示"
+    },
+    "lastNote": {
+      "label": "显示最新内部备注",
+      "hint": "列表中的每张工单都会显示最新的内部备注，这样不打开工单也能读到。"
+    },
+    "theme": {
+      "label": "主题",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统"
+    },
+    "clock": {
+      "title": "时间",
+      "hint": "对你的账户生效，在所有浏览器中保持一致。",
+      "label": "时间格式",
+      "labelHint": "用于应用内的时间和通知邮件中的时间。自动会跟随浏览器的语言和地区，邮件中使用 24 小时制。",
+      "auto": "自动",
+      "h12": "12 小时制（2:05 PM）",
+      "h24": "24 小时制（14:05）",
+      "saved": "时间格式已保存"
+    }
+  },
+  "pages": {
+    "title": "页面",
+    "description": "团队自己的页面、数据库和画布。它们位于侧边栏中 wiki 的旁边，也可以在“页面”中打开。",
+    "product": "产品",
+    "productHint": "关闭页面功能会向所有人隐藏它。不会删除任何内容，重新开启后都会恢复。",
+    "use": "启用页面",
+    "useOn": "页面已开启：成员可以在侧边栏看到它，并添加页面。",
+    "useOff": "页面已关闭：它被隐藏，页面内容保留。",
+    "lastProduct": "页面是唯一开启的产品",
+    "lastProductHint": "请先在“常规”中开启工单或邮件：始终会有一个产品保持开启。",
+    "saved": "已保存",
+    "saveFailed": "无法保存更改",
+    "teamspaces": "团队空间",
+    "teamspacesHint": "每个团队都有一个团队空间来放自己的页面。私有团队的页面只对其成员可见。",
+    "manageTeams": "管理团队",
+    "privateTeam": "私有团队",
+    "privateTeamHint": "只有其成员能看到它的页面",
+    "pageCount_other": "{{count}} 个页面",
+    "noTeams": "暂无团队",
+    "noTeamsHint": "添加团队后即可为它创建团队空间。",
+    "port": "导入与导出",
+    "portHint": "从 Notion、Obsidian 等工具导入页面，或把页面导出带走。",
+    "import": "导入页面",
+    "importHint": "Notion 或 Obsidian 的导出包，或 Markdown、HTML、CSV 和文本文件。",
+    "importAction": "导入",
+    "export": "导出页面",
+    "exportHint": "你能看到的所有页面，以 Markdown vault 或 HTML 格式打包成 zip。",
+    "exportAction": "导出",
+    "trash": "垃圾箱",
+    "trashHint": "页面会在垃圾箱中保留 30 天，之后永久删除。",
+    "inTrash_other": "垃圾箱中有 {{count}} 个页面",
+    "openTrash": "打开垃圾箱"
+  },
+  "saveBar": {
+    "region": "未保存的更改",
+    "message": "你有未保存的更改",
+    "discard": "放弃",
+    "save": "保存更改"
+  },
+  "workspace": {
+    "title": "常规",
+    "description": "适用于此工作区所有成员的设置。",
+    "saved": "工作区已保存",
+    "name": "工作区名称",
+    "url": "工作区 URL",
+    "urlHint": "用于帮助中心和聊天组件。",
+    "timezone": "时区",
+    "timezoneHint": "报表、SLA 工作日和邮件中的时间戳都会用到它。",
+    "searchTimezones": "搜索时区",
+    "language": "客户语言",
+    "languageHint": "帮助中心、满意度调查和聊天组件会跟随每位访客的浏览器语言。当不支持访客的语言时，使用这里的语言。",
+    "languageFixed": "对所有访客使用",
+    "languageFixedHint": "无论访客的浏览器语言是什么，帮助中心、满意度调查和聊天组件都以 {{language}} 显示给每位访客。品牌自己设置了语言的，则使用品牌的语言。",
+    "searchLanguages": "搜索语言",
+    "products": "产品",
+    "productsHint": "选择此工作区使用的功能，至少要保留一个开启。",
+    "productTickets": "工单",
+    "productTicketsHint": "共享收件箱、在线聊天、帮助中心和报表。关闭后会隐藏这些功能，并暂停新的工单处理。",
+    "productMail": "邮件",
+    "productMailHint": "成员自己的邮件账户，与其收件箱同步。",
+    "productPages": "页面",
+    "productPagesHint": "团队自己的页面、数据库和画布，与 wiki 分开。",
+    "mailUnavailable": {
+      "instance_disabled": "此实例已关闭邮件功能。",
+      "plan": "此工作区的套餐不包含邮件。"
+    },
+    "productKept": "不会删除任何内容",
+    "productKeptHint": "产品关闭期间，工单、邮件、页面和连接都会保留。收到的邮件、通话和聊天消息会等待，重新开启工单后继续。",
+    "helpCenter": "帮助中心",
+    "helpCenterHint": "一个公开站点，展示已发布的知识库文章。",
+    "publish": "发布帮助中心",
+    "publishOn": "任何拿到链接的人都能阅读已发布的文章。",
+    "publishOff": "只有你的团队能看到文章。",
+    "hcTitle": "标题",
+    "publicAddress": "公开地址",
+    "copyLink": "复制链接",
+    "conversations": "会话",
+    "csat": "满意度调查",
+    "csatHint": "工单解决后，请客户为这次会话评分。",
+    "autoAssign": "分配",
+    "brand": "品牌颜色",
+    "brandHint": "用于聊天组件和发出邮件中的按钮。",
+    "brandHex": "品牌颜色色值",
+    "autoAssignLink": "打开分配设置",
+    "assignModes": {
+      "none": "关闭。新工单会留在未分配中，直到有人接手。",
+      "round_robin": "轮询。在线同事轮流接单。",
+      "load_balanced": "负载均衡。新工单分配给待处理工单最少的同事。"
+    },
+    "logo": "Logo",
+    "logoHint": "显示在工作区切换器、邮件和帮助中心中。",
+    "hcLogo": "帮助中心Logo",
+    "hcLogoHint": "用于帮助中心页头的宽版Logo。未设置时，使用工作区Logo和名称。",
+    "hcFavicon": "网站图标",
+    "hcFaviconHint": "浏览器标签页上的小图标。",
+    "pictures": "联系人和公司图片",
+    "picturesHint": "图片能让收件箱更容易浏览。上传的图片始终优先。",
+    "gravatar": "Gravatar 图片",
+    "gravatarHint": "会把联系人邮箱地址的哈希值发送给 Gravatar，以查询他们的图片。",
+    "domainLogos": "公司Logo",
+    "domainLogosHint": "从各公司的网站获取其Logo。",
+    "subjectNumber": "主题中的工单编号",
+    "subjectNumberOn": "发给客户的邮件会在主题末尾带上工单编号，例如 [#1042]。回复会通过此标记以及邮件线程匹配到对应工单。",
+    "subjectNumberOff": "主题中不带工单编号发送，回复通过邮件线程匹配到对应工单。开启会话的那封邮件，例如客服创建工单后的第一封邮件，在邮箱以会改变邮件 ID 的方式发送时仍会保留编号（Microsoft、部分 Google 连接、Amazon SES），这样客户的回复总能找到对应的工单。",
+    "reports": "报表",
+    "onlineTime": "客服在线时长",
+    "onlineTimeOn": "记录每位成员在状态为在线时打开 opendesk 的时长，用于报表 → 客服。如果记录该时长需要团队同意或劳资协议同意，请关闭此项。",
+    "onlineTimeOff": "不会记录在线时长，报表中也不显示。关闭后保存会删除目前已记录的在线时长。",
+    "undoSend": "邮件撤销发送",
+    "undoSendHint": "邮件回复会等待这段时间再发出，以便撤回或转为备注。",
+    "undoSendChat": "聊天撤销发送",
+    "undoSendChatHint": "聊天回复会等待这段时间才对客户可见。默认关闭，以保持聊天实时。",
+    "undoOff": "关闭",
+    "undoSeconds": "{{n}} 秒",
+    "snoozePresets": "稍后处理选项",
+    "snoozePresetsHint": "工单的稍后处理菜单按此顺序提供的选项，使用每位客服自己的时间。客服仍可选择其他日期和时间。",
+    "snoozeKind": "时间类型",
+    "snoozeKindHours": "… 小时后",
+    "snoozeKindDays": "… 天后",
+    "snoozeKindWeek": "下周（周一）",
+    "snoozeHours": "小时",
+    "snoozeDays": "天",
+    "snoozeAt": "于",
+    "snoozeTime": "时间",
+    "snoozeRemove": "移除此时间",
+    "snoozeAdd": "添加时间",
+    "snoozeReset": "恢复默认值",
+    "messageDelete": "客服可以删除消息",
+    "messageDeleteHint": "自己的备注：客服可以删除自己的内部备注。任何客服的：还可以删除所有客服的备注和回复。删除的消息会保留为标记。管理员可以删除任何消息、查看已删除的消息并恢复它们，也可以在成员中为某位客服设置其他规则。",
+    "messageDeleteOff": "关闭",
+    "messageDeleteOwn": "自己的备注",
+    "messageDeleteAll": "任何客服的",
+    "collabReplies": "用自己的邮件回复",
+    "collabRepliesHint": "成员可以用自己已连接的邮件账户之一回复邮件工单，而不是用工单的地址，每次回复一封。客户的回复仍会回到工单。每个邮箱可以设置自己的规则。",
+    "collabReplyTo": "回复的去向",
+    "collabReplyToHint": "这类回复的 Reply-To，除非成员另选。其地址：回复会发往邮件发出的地址，并从那里回到工单。工单的地址：回复会像普通邮件一样发往团队的地址。",
+    "collabReplyToAddress": "其地址",
+    "collabReplyToMailbox": "工单的地址"
+  },
+  "display": {
+    "title": "状态和优先级",
+    "description": "为你的团队重命名或更改颜色，并在客服选择用的菜单中隐藏你不使用的状态。已处于隐藏状态的工单会保持该状态；筛选、自动化和 API 仍照常工作。",
+    "statuses": "状态",
+    "priorities": "优先级",
+    "labelFor": "{{name}} 显示的名称",
+    "colourFor": "{{name}} 的颜色",
+    "reset": "重置",
+    "resetFor": "重置 {{name}}",
+    "hideFor": "在菜单中隐藏 {{name}}",
+    "showFor": "在菜单中显示 {{name}}",
+    "finishButton": "{{action}} 按钮",
+    "finishButtonHint": "在回复框的发送按钮旁显示一个按钮，一键发送并解决工单，而不只是放在它旁边的菜单里。它使用工作区的完成标签，并且始终把状态设为已解决。",
+    "severity": "严重程度",
+    "severityOn": "工单在优先级之外还有一个严重程度，从 Sev 1 到 Sev 4。如果优先级对你的团队已经够用，可以关闭此项。",
+    "severityOff": "工单、列表、筛选、视图、批量修改、自动化、分诊和报表中都不再包含严重程度，Ollie 也不再设置或建议它。工单会保留现有的严重程度；API 仍可读取和写入它。"
+  },
+  "danger": {
+    "title": "危险区域",
+    "transferred": "所有权已转移",
+    "transfer": "转移所有权",
+    "transferHint": "把另一位成员设为所有者。你会变成管理员。",
+    "chooseMember": "选择成员",
+    "transferButton": "转移",
+    "delete": "删除工作区",
+    "deleteHint": "删除所有工单、联系人、文章和设置。此操作无法撤销。",
+    "deleteBody": "{{name}} 的所有数据都会为所有人移除。成员会立即失去访问权限。",
+    "deleteTitle": "删除工作区？",
+    "transferTitle": "将 {{name}} 设为所有者？",
+    "transferBody": "他们将获得完全控制权，包括删除工作区。你仍保留管理员身份。"
+  },
+  "fields": {
+    "reorderAria": "重新排序 {{name}}。按住 Alt 并按方向键移动。",
+    "title": "自定义字段",
+    "description": "团队在工单、联系人和公司上记录的额外信息，例如套餐、订单号或续费日期。",
+    "new": "新建字段",
+    "listTitle": "{{entity}} 字段",
+    "ticketHint": "标记为必填的字段必须填写后才能解决工单。",
+    "requiredBadge": "解决工单必填",
+    "archivedBadge": "已归档",
+    "actionsAria": "{{name}} 的操作",
+    "archivedTitle_other": "{{count}} 个已归档字段",
+    "created": "字段已创建",
+    "saved": "字段已保存",
+    "deleteTitle": "删除此字段？",
+    "deleteBody": "{{name}} 及其存储的所有值都会被删除。此操作无法撤销。",
+    "deleteConfirm": "删除字段",
+    "menu": {
+      "edit": "编辑",
+      "archive": "归档",
+      "restore": "恢复",
+      "delete": "删除"
+    },
+    "entity": {
+      "ticket": "工单",
+      "contact": "联系人",
+      "company": "公司"
+    },
+    "entityPlural": {
+      "ticket": "工单",
+      "contact": "联系人",
+      "company": "公司"
+    },
+    "empty": {
+      "title": "还没有 {{entity}} 字段",
+      "ticket": "添加订单号或产品模块等字段，记录每张工单的详细信息。",
+      "contact": "添加套餐或客户经理等字段，把客户信息集中在一处。",
+      "company": "添加续费日期或席位数等字段，跟踪客户账户。",
+      "tips": {
+        "required": "工单字段可以设为解决工单时必填",
+        "sidebar": "客服从记录的侧边栏填写"
+      }
+    },
+    "type": {
+      "text": "文本",
+      "long_text": "长文本",
+      "number": "数字",
+      "select": "单选",
+      "multi_select": "多选",
+      "date": "日期",
+      "checkbox": "复选框",
+      "url": "链接",
+      "email": "邮件",
+      "user": "人员"
+    },
+    "dialog": {
+      "newTitle": "新建 {{entity}} 字段",
+      "editTitle": "编辑字段",
+      "newDescription": "客服从记录的侧边栏填写。",
+      "editDescription": "键和类型固定不变，这样已存储的值才能继续使用。",
+      "name": "名称",
+      "namePlaceholder": "套餐等级",
+      "key": "键",
+      "keyHint": "供 API、筛选和自动化使用。",
+      "keyFixed": "键不能修改。",
+      "keyRule": "以字母开头；使用小写字母、数字和 _。",
+      "keyTaken": "另一个字段已使用此键。",
+      "type": "类型",
+      "typeFixed": "字段创建后类型不能修改。",
+      "options": "选项",
+      "optionLabel": "选项 {{n}}",
+      "optionPlaceholder": "选项名称",
+      "optionColour": "{{name}} 的颜色",
+      "addOption": "添加选项",
+      "moveUp": "上移",
+      "moveDown": "下移",
+      "removeOption": "移除选项",
+      "removeHint": "移除选项会从使用它的记录中清除该值。",
+      "description": "描述",
+      "descriptionHint": "显示在字段旁，供客服查看。",
+      "required": "解决工单必填",
+      "requiredHint": "此字段为空时，工单不能解决或关闭。",
+      "create": "创建字段",
+      "save": "保存字段",
+      "nameRequired": "请为字段填写名称。",
+      "optionsRequired": "请至少添加一个选项。"
+    }
+  },
+  "notifications": {
+    "title": "通知",
+    "description": "选择在应用外接收哪些通知，以及接收频率。所有内容都会显示在铃铛下。",
+    "saveFailed": "无法保存你的通知设置",
+    "email": {
+      "title": "邮件发送计划",
+      "description": "通知邮件的发送方式。适用于你所在的所有工作区。",
+      "digestAt": "发送摘要时间",
+      "digestAtHint": "按你的时区。每个工作区各自发送摘要。",
+      "timezone": "时区",
+      "limits": "每小时最多 {{perHour}} 封邮件，每天最多 {{perDay}} 封。在本工作区使用 opendesk 时不会发送邮件，你在应用内读过的内容也不会发送。多条通知会合并到一封邮件中。",
+      "sentTo": "接收地址",
+      "confirmed": "已验证",
+      "notConfirmed": "未验证",
+      "unverifiedHint": "通知邮件只会发送到已验证的邮箱地址。",
+      "confirmLink": "在个人资料中验证",
+      "unverified": "请先验证你的邮箱地址。通知邮件只会发送到已验证的邮箱地址。",
+      "test": "给我发送测试邮件",
+      "testSent": "测试邮件已发送",
+      "testSentHint": "请过一两分钟查看 {{email}}。"
+    },
+    "cadence": {
+      "instant": "立即",
+      "instantPaced_other": "事件发生后约 {{count}} 分钟发送第一封邮件。若还有更多内容，最多每 {{gap}} 一封，紧急通知会更快。",
+      "instantHint_other": "事件发生后约 {{count}} 分钟发送，除非你在此之前已在应用内读过。",
+      "hourly": "每小时摘要",
+      "hourlyHint": "每小时一封邮件，包含你尚未读过的内容。",
+      "daily": "每日摘要",
+      "dailyHint": "每天在你选择的时间发送一封邮件，包含你尚未读过的内容。",
+      "off": "关闭",
+      "offHint": "不发送通知邮件。你仍可在应用内看到所有内容。"
+    },
+    "pause": {
+      "title": "暂停通知",
+      "description": "在一段时间内停止邮件、手机和桌面通知。所有内容仍会显示在铃铛下，之后也不会补发。",
+      "off": "未暂停",
+      "offHint": "可暂停 1 小时、到明天早上或 1 周。",
+      "until": "已暂停至 {{when}}",
+      "onHint": "在此之前不会向你的邮箱、手机或桌面发送任何通知。",
+      "pause": "暂停",
+      "change": "更改",
+      "resume": "恢复",
+      "hour": "暂停 1 小时",
+      "tomorrow": "到明天早上",
+      "week": "暂停 1 周"
+    },
+    "channels": {
+      "app": "应用内",
+      "email": "邮件",
+      "push": "手机",
+      "desktop": "桌面"
+    },
+    "groups": {
+      "tickets": "工单",
+      "team": "团队",
+      "mail": "邮件",
+      "wiki": "Wiki",
+      "ai_billing": "AI 和账单",
+      "workspace": "工作区"
+    },
+    "types": {
+      "title": "各类通知的接收方式",
+      "description": "仅适用于 {{workspace}}。每个工作区各自保存选择。",
+      "thisWorkspace": "此工作区",
+      "type": "通知",
+      "alwaysOn": "应用内始终开启",
+      "emailOffShort": "关闭",
+      "emailOff": "通知邮件已关闭。在上方选择发送计划即可重新发送。你在这里的选择会保留。",
+      "phoneHint": "手机：opendesk iPhone 应用。每台手机也可在应用设置中单独关闭某些通知类型。",
+      "desktopHint": "桌面：在 opendesk 桌面应用中，或在此浏览器中允许通知后，当 opendesk 处于后台或已关闭时接收。",
+      "urgent": "紧急",
+      "urgentHint": "可以更早发送邮件，最多每 {{gap}} 一次"
+    },
+    "teams": {
+      "title": "你的团队",
+      "description": "团队里的新工单，以及无人接手的回复。分配给你的工单和提及始终会通知你。",
+      "switch": "来自 {{team}} 的通知"
+    },
+    "kinds": {
+      "assigned": {
+        "label": "分配给你",
+        "hint": "有工单分配给你"
+      },
+      "new_ticket": {
+        "label": "新工单",
+        "hint": "尚未分配给任何人的新工单。由谁接收在“分配”中设置"
+      },
+      "mentioned": {
+        "label": "提及",
+        "hint": "有人在备注中提及你"
+      },
+      "customer_replied": {
+        "label": "客户回复",
+        "hint": "分配给你的工单上，以及尚无人负责的工单上"
+      },
+      "thread_replied": {
+        "label": "分支会话回复",
+        "hint": "团队外的人在分配给你的工单上回复分支会话"
+      },
+      "sla_breached": {
+        "label": "SLA 违约",
+        "hint": "分配给你的工单未达到目标"
+      },
+      "scheduled_reply_failed": {
+        "label": "定时回复未发送",
+        "hint": "你安排的回复未能发出，已回到草稿中"
+      },
+      "ai_handoff": {
+        "label": "转接给人工",
+        "hint": "Ollie 把会话转接给团队"
+      },
+      "collab_assigned": {
+        "label": "分配给你的邮件",
+        "hint": "同事把邮件账户中的会话分配给你"
+      },
+      "collab_mention": {
+        "label": "邮件评论提及",
+        "hint": "有人在邮件会话的评论中提及你"
+      },
+      "wiki_mention": {
+        "label": "Wiki 提及",
+        "hint": "有人在 Wiki 页面或页面评论中提及你"
+      },
+      "wiki_comment": {
+        "label": "Wiki 评论",
+        "hint": "你关注的页面和你参与过的讨论中有新评论"
+      },
+      "wiki_reminder": {
+        "label": "Wiki 提醒",
+        "hint": "你在 Wiki 页面中设置的提醒已到期"
+      },
+      "team_joined": {
+        "label": "团队变更",
+        "hint": "管理员加入了你负责的团队"
+      },
+      "ai_cap_reached": {
+        "label": "AI 客服支出上限已达",
+        "hint": "Ollie 已达到本月支出上限"
+      },
+      "ai_key_failed": {
+        "label": "AI 密钥问题",
+        "hint": "工作区自己的 AI 密钥失效了"
+      },
+      "ai_balance_low": {
+        "label": "AI 余额不足",
+        "hint": "AI 余额即将用完"
+      },
+      "ai_balance_out": {
+        "label": "AI 余额已用完",
+        "hint": "在添加 AI 用量前，Ollie 会暂停"
+      },
+      "auto_recharge_failed": {
+        "label": "自动充值失败",
+        "hint": "一笔自动充值支付失败"
+      },
+      "import_finished": {
+        "label": "导入",
+        "hint": "你发起的导入已完成、已停止或需要新的凭据"
+      },
+      "support_channel_unhealthy": {
+        "label": "支持渠道问题",
+        "hint": "某个服务商的连接异常持续至少 15 分钟"
+      }
+    },
+    "gap": {
+      "hour": "1 小时",
+      "hours_other": "{{count}} 小时",
+      "minutes_other": "{{count}} 分钟"
+    },
+    "holds": {
+      "unsubscribed": "来自 {{workspace}} 的通知邮件已关闭",
+      "unsubscribedHint": "你使用了我们某封邮件中的退订链接。重新开启邮件后会恢复你之前的选择。",
+      "turnEmailOn": "重新开启邮件",
+      "resubscribed": "通知邮件已重新开启",
+      "paused": "通知已暂停至 {{when}}",
+      "pausedHint": "在此之前不会向你的邮箱、手机或桌面发送任何通知。所有内容仍会显示在铃铛下。",
+      "resume": "立即恢复",
+      "emailOff": "通知邮件已关闭",
+      "emailOffHint": "你仍可在应用内看到所有内容。重新开启邮件后会立即发送，并控制发送节奏，不会塞满你的收件箱。"
+    },
+    "desktop": {
+      "blocked": "这台电脑上的 opendesk 通知已被阻止。请在系统设置中允许：Mac 上依次打开“系统设置”、“通知”、“opendesk”；Windows 上依次打开“设置”、“系统”、“通知”。",
+      "blockedBrowser": "此浏览器中的 opendesk 通知已被阻止。请在地址栏旁的网站设置中允许。",
+      "ask": "opendesk 尚未向这台电脑请求显示通知的权限。",
+      "askBrowser": "opendesk 尚未向此浏览器请求显示通知的权限。",
+      "allow": "允许通知"
+    }
+  },
+  "memberProfile": {
+    "title": "面向客户的资料",
+    "description": "客户在 {{workspace}} 中看到的你的信息。它会填充签名和回复中的发件人变量。",
+    "jobTitle": "职位",
+    "jobTitlePlaceholder": "客服专员",
+    "phone": "电话",
+    "phonePlaceholder": "+1 555 010 0199",
+    "pronouns": "人称代词",
+    "pronounsPlaceholder": "她/她",
+    "fills": "填充 {{tag}}",
+    "signature": "个人签名",
+    "signatureHint": "会添加到你的邮件回复中。当团队或地址有自己的签名时，你的签名只会在包含 {{tag}} 的位置显示。",
+    "signaturePlaceholder": "Jane Cooper, Support",
+    "preview": "预览",
+    "previewOther": "预览会用你的姓名和信息替换发件人的信息。",
+    "saved": "资料已保存"
+  },
+  "signatureEditor": {
+    "block": "签名",
+    "edit": "编辑签名",
+    "remove": "移除签名",
+    "preview": "预览",
+    "none": "无签名"
+  },
+  "peer": {
+    "title": "客服协作",
+    "description": "当同事需要只有你能看到的信息时，让他们的 {{name}} 向你询问你的邮件。",
+    "enabled": "允许同事的 {{name}} 询问我的助手",
+    "enabledHint": "你的 {{name}} 会按你的规则，从你自己的邮件账户中回答。对方只会得到答案，不会看到你的邮件。",
+    "offTitle": "你的工作区尚未开启此功能",
+    "offHint": "管理员可以在“设置”的 AI 中允许此功能。",
+    "offAdmin": "在“设置”的 AI 中，通过“允许同事的 {{name}} 互相询问”开启。之后每位成员可为自己的邮件单独选择。",
+    "openAi": "打开 AI 设置",
+    "unavailable": "客服协作不可用",
+    "people": "人员",
+    "peopleHint": "谁可以询问你的 {{name}}。更改会从下一个问题起生效。",
+    "shareWith": "共享范围",
+    "everyone": "所有人",
+    "everyoneHint": "此工作区的所有成员。",
+    "chosen": "指定的人员和团队",
+    "chosenHint": "仅你选择的人员和团队。",
+    "accounts": "账户",
+    "accountsHint": "你的 {{name}} 可以使用哪些你自己的邮件账户。他人与你共享的邮件绝不会被使用。",
+    "useFrom": "使用的信息来源",
+    "modesHint": "“原文”可以引用你的邮件。“仅摘要”只用自己的话回答。“不使用”表示不包含该账户。",
+    "allAccounts": "所有账户",
+    "chosenAccounts": "指定账户",
+    "modeFor": "{{account}} 可以共享的内容",
+    "newAccounts": "新账户",
+    "newAccountsHint": "之后连接的账户会默认使用此设置。",
+    "noAccounts": "你还没有自己的邮件账户",
+    "noAccountsHint": "在“邮件账户”中连接一个，然后在这里选择它可以共享的内容。",
+    "connect": "连接账户",
+    "mode": {
+      "verbatim": "原文",
+      "summary": "仅摘要",
+      "none": "不使用"
+    },
+    "rules": "共享规则",
+    "rulesHint": "你的 {{name}} 在回答时会遵循这些规则，也会凭常识判断，并对私密事项保密。",
+    "rulesSuggestion": "共享日期、决定和后续步骤。绝不共享价格、合同、私人事务或任何标注为机密的内容。",
+    "useSuggestion": "使用建议",
+    "asks": "最近询问",
+    "asksHint": "同事向你 {{name}} 提出的问题及回答。保留 90 天。",
+    "noAsks": "还没有人询问",
+    "noAsksHint": "当同事的 {{name}} 询问你的助手时，问题和回答会显示在这里。",
+    "showMore": "显示更多",
+    "result": {
+      "answered_other": "根据 {{count}} 个会话作答",
+      "declined": "已拒绝",
+      "not_shared": "未共享",
+      "failed": "无法回答"
+    },
+    "saveFailed": "无法保存你的客服协作设置。"
+  }
+}

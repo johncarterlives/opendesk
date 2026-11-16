@@ -375,6 +375,7 @@ export const qk = {
   mailPerson: (email: string, exclude: string) => w(["collab", "person", email, exclude] as const),
   // Outside "collab": a message's source never changes, and reading it is a call to the provider.
   mailMessageDetails: (id: string) => w(["collabMessageDetails", id] as const),
+  mailMessageSource: (id: string) => w(["collabMessageSource", id] as const),
 };
 
 const list = <R>(key: readonly unknown[], fn: () => Promise<R[] | Page<R> | { data: R[] }>, opts: { staleTime?: number } = {}) =>

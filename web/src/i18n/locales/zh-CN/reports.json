@@ -1,0 +1,160 @@
+{
+  "title": "报表",
+  "compared_other": "与前 {{count}} 天相比",
+  "loading": "正在加载报表",
+  "error": {
+    "title": "报表加载失败",
+    "description": "请检查网络连接，然后重试。",
+    "retry": "重试"
+  },
+  "empty": {
+    "title": "还没有可查看的报表",
+    "description": "有工单进来后，报表就会逐渐有数据。此卡片中的数据为示例数据。",
+    "sample": "示例数据",
+    "sampleHint": "这里预览的是有工单后此页面会展示的内容。这些数字都不是真实数据。"
+  },
+  "unit": {
+    "tickets_other": "{{count}} 张工单"
+  },
+  "kpi": {
+    "created": "已创建",
+    "solved": "已解决",
+    "openNow": "当前待处理",
+    "rightNow": "当前",
+    "firstResponse": "首次响应",
+    "resolution": "解决时长",
+    "median": "中位数",
+    "csat": "CSAT",
+    "ratings_other": "{{count}} 个评分",
+    "slaBreached": "SLA 违规"
+  },
+  "delta": {
+    "none": "无变化",
+    "title": "与上一时段相比",
+    "better": "比上一时段更好",
+    "worse": "比上一时段更差"
+  },
+  "volume": {
+    "title": "工单量趋势",
+    "subtitle": "每天创建和解决的工单",
+    "chart": "图表",
+    "table": "表格",
+    "avg": "日均",
+    "perDay": "每天创建",
+    "busiest": "最忙的一天",
+    "solveRate": "解决率",
+    "solvedOfCreated": "解决数占创建数"
+  },
+  "backlog": {
+    "title": "积压",
+    "subtitle": "当前待处理的工作，按状态划分",
+    "open": "待处理工作",
+    "tickets": "工单",
+    "unassigned": "未分配",
+    "emptyTitle": "收件箱已清空",
+    "emptyDescription": "当前没有待处理的工单。"
+  },
+  "channel": {
+    "title": "按渠道",
+    "subtitle": "该时段内创建的工单"
+  },
+  "open": {
+    "subtitle": "当前待处理的工作",
+    "sample": "最近 {{count}} 个待处理工单"
+  },
+  "priority": {
+    "title": "按优先级"
+  },
+  "severity": {
+    "title": "按严重程度",
+    "subtitle": "该时段内创建的工单",
+    "none": "无严重程度"
+  },
+  "tags": {
+    "title": "按标签",
+    "emptyTitle": "待处理工作没有标签",
+    "emptyDescription": "给工单加上标签，就能看到客户都在问什么。"
+  },
+  "agents": {
+    "title": "排行榜",
+    "subtitle": "该时段内解决的工单",
+    "caption": "每位客服解决的工单数和首次响应时间",
+    "agent": "客服",
+    "solved": "已解决",
+    "share": "占比",
+    "firstResponse": "首次响应",
+    "emptyTitle": "没有已解决的工单",
+    "emptyDescription": "客服在该时段内解决工单后就会出现在这里。"
+  },
+  "response": {
+    "title": "响应时间",
+    "subtitle": "该时段的中位数",
+    "fastest": "最快的首次回复",
+    "none": "该时段内还没有回复。"
+  },
+  "filter": {
+    "teamLabel": "团队：{{value}}",
+    "brandLabel": "品牌：{{value}}",
+    "allTeams": "全部团队",
+    "noTeam": "无团队",
+    "private": "私有",
+    "allBrands": "全部品牌",
+    "searchTeams": "搜索团队",
+    "searchBrands": "搜索品牌"
+  },
+  "groups": {
+    "narrow": "报表中只显示此项"
+  },
+  "byTeam": {
+    "title": "按团队",
+    "subtitle": "该时段内创建和解决的工单，以及当前待处理数",
+    "caption": "按团队统计的创建、解决和待处理工单数，以及首次响应时间",
+    "team": "团队",
+    "hidden": "你未加入的私有团队不会显示在这里。上方总计仍包含这些团队的工单。",
+    "emptyTitle": "该时段内没有团队活动",
+    "emptyDescription": "团队的工单创建或被解决后，团队就会出现在这里。"
+  },
+  "byBrand": {
+    "title": "按品牌",
+    "subtitle": "该时段内创建和解决的工单，以及当前待处理数",
+    "caption": "按品牌统计的创建、解决和待处理工单数，以及首次响应时间",
+    "brand": "品牌",
+    "emptyTitle": "该时段内没有品牌活动",
+    "emptyDescription": "品牌的工单创建或被解决后，品牌就会出现在这里。"
+  },
+  "filtered": {
+    "emptyTitle": "该时段内没有数据",
+    "emptyDescription": "该时段内没有符合此团队和品牌的工单。试试更长的时间范围，或清除筛选条件。",
+    "clear": "清除筛选"
+  },
+  "work": {
+    "title": "客服",
+    "subtitle": "每位同事在该时段的工作",
+    "subtitleSelf": "你在该时段的工作",
+    "caption": "按客服统计的已分配和已解决工单、回复、备注、响应和处理时长，以及在线时长",
+    "agent": "客服",
+    "assigned": "已分配",
+    "assignedHint": "该时段内分配给他们的工单，以及创建时就已分配给他们的新工单",
+    "solved": "已解决",
+    "solvedHint": "该时段内解决且分配给他们的工单",
+    "replies": "回复",
+    "repliesHint": "该时段内他们发给客户的回复",
+    "notes": "备注",
+    "notesHint": "该时段内他们编写的内部备注",
+    "perSolved": "每次解决的回复数",
+    "perSolvedHint": "他们解决的工单上平均每个工单的回复数",
+    "firstResponse": "首次响应",
+    "firstResponseHint": "该时段内创建的工单从创建到首次回复的中位时间",
+    "handle": "处理时长",
+    "handleHint": "从最后一次分配给他们的时间到工单解决的中位时长",
+    "online": "在线",
+    "onlineHint": "他们在 opendesk 中打开且状态设为“在线”的时长",
+    "onlineNote": "在线时长按每位同事打开 opendesk 且状态设为“在线”的时间计算，不受团队或品牌筛选影响。",
+    "onlineSelf": "你看到的是自己的工作和在线时长。管理员可以看到所有人的。",
+    "onlineOff": "该工作区已关闭在线时长统计，因此不会记录或显示。管理员可以在“设置 → 工作区”中开启。",
+    "emptyTitle": "没有可显示的客服",
+    "emptyDescription": "客服在该时段内处理工单后就会出现在这里。",
+    "emptySelf": "你在该时段内处理工单后，你的工作数据就会出现在这里。管理员可以看到所有人的。",
+    "errorTitle": "客服数据加载失败"
+  }
+}

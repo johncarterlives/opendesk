@@ -298,6 +298,10 @@ every plan and never count as mailboxes (contracts/billing.md). Each alias is it
   for an admin to add as aliases; nothing is added on its own, and the usual alias rules apply.
 - **Working an alias as its own inbox**: ticket lists and views filter on `received_at`, the inbox's
   address filter lists each mailbox's aliases under it, and a ticket shows the address it was written to.
+- **Mail written to another address**: an inbound email whose `To` names no address equal to its
+  `received_at` (a copy forwarded from another address, or one that reached us in Cc or Bcc) shows its
+  `To` beside the address that received it: the first address, a count of the others, and all of them
+  on hover or focus. Its `Cc` is not shown.
 
 ## Chat follow-up
 

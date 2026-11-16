@@ -148,7 +148,7 @@ func (s *Service) dispatch(ctx context.Context, a jobs.SupportChannelDispatchArg
 	if t.Channel != domain.ChannelEmail {
 		return nil
 	}
-	rows, err := s.d.DB.Pool.Query(ctx, `SELECT d.id,d.connection_id,d.team_id,d.priority,d.external_channel_id,d.external_channel_name,d.enabled,d.include_notes,d.message_limit,d.mode,d.conditions,d.mirror,d.ollie_summary,d.ollie_warnings,d.ollie_personality,d.ollie_length,d.created_at,c.provider,c.credentials_enc,existing.id IS NOT NULL
+	rows, err := s.d.DB.Pool.Query(ctx, `SELECT d.id,d.connection_id,d.team_id,d.priority,d.external_channel_id,d.external_channel_name,d.enabled,d.include_notes,d.message_limit,d.mode,d.conditions,d.mirror,d.ollie_summary,d.ollie_warnings,d.ollie_personality,d.ollie_length,d.min_role,d.allowed_user_ids,d.created_at,c.provider,c.credentials_enc,existing.id IS NOT NULL
 		FROM support_channel_destinations d JOIN support_channel_connections c ON c.id=d.connection_id
 		LEFT JOIN support_channel_threads existing ON existing.destination_id=d.id AND existing.ticket_id=$3
 		WHERE d.workspace_id=$1 AND d.enabled AND (d.team_id IS NULL OR d.team_id IS NOT DISTINCT FROM $2)
@@ -748,11 +748,20 @@ func (s *Service) handleInbound(ctx context.Context, c connection, r *reply) err
 			}
 		}
 		if creating {
-			err = s.d.DB.Pool.QueryRow(ctx, `SELECT team_id,ollie_personality,ollie_length FROM support_channel_destinations
-				WHERE connection_id=$1 AND workspace_id=$2 AND external_channel_id=$3 AND enabled`, c.ID, c.WorkspaceID, in.ExternalChannelID).Scan(&teamID, &voice.Personality, &voice.Length)
+			err = s.d.DB.Pool.QueryRow(ctx, `SELECT id,team_id,ollie_personality,ollie_length FROM support_channel_destinations
+				WHERE connection_id=$1 AND workspace_id=$2 AND external_channel_id=$3 AND enabled`, c.ID, c.WorkspaceID, in.ExternalChannelID).Scan(&destinationID, &teamID, &voice.Personality, &voice.Length)
 			if err == nil && p == nil {
 				if p, err = s.externalPrincipal(ctx, c, in.ExternalUserID); err != nil {
 					r.notice(ctx, "Link your opendesk account before asking Ollie to create a ticket.")
+					return nil
+				}
+			}
+			// Creating a ticket from a channel is acting from it: the channel's own access rule applies.
+			if err == nil {
+				if ok, accessErr := s.mayAct(ctx, destinationID, p); accessErr != nil {
+					return accessErr
+				} else if !ok {
+					r.notice(ctx, noAccess)
 					return nil
 				}
 			}
@@ -802,6 +811,15 @@ func (s *Service) handleInbound(ctx context.Context, c connection, r *reply) err
 			r.notice(ctx, "Link your opendesk account before using this command.")
 			return nil
 		}
+	}
+	// Who may act from this destination's threads is the destination's own rule.
+	if ok, accessErr := s.mayAct(ctx, destinationID, p); accessErr != nil {
+		return accessErr
+	} else if !ok {
+		if in.Mutation == "" {
+			r.notice(ctx, noAccess)
+		}
+		return nil
 	}
 	in.DestinationID = destinationID.String()
 	if control {

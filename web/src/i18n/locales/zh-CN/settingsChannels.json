@@ -1,0 +1,1086 @@
+{
+  "personal": {
+    "title": "成员用个人地址回复",
+    "description": "借助 Collab，成员可以用自己的一个邮件账户回复该地址的工单，每次回复一封。客户的回复仍会回到工单中。",
+    "workspaceLink": "工作区默认设置",
+    "allowed": "允许",
+    "allowedOn": "在该地址的工单的回复框中，成员可以选择自己的一个地址。",
+    "allowedOff": "该地址的工单始终从该地址发出回复。",
+    "workspaceDefault": "默认（{{value}}）",
+    "on": "开",
+    "off": "关",
+    "replyTo": "回复发往",
+    "replyToHint": "除非成员另选地址，客户的回复会发到这里。无论哪种方式，回复都会回到工单。",
+    "replyToAddress": "成员自己的地址",
+    "replyToMailbox": "该地址",
+    "accounts": "可用地址",
+    "accountsAny": "成员可用于发信的任意账户地址，包括个人和共享账户。",
+    "accountsShared": "仅限与团队共享的账户，绝不使用他人的个人邮箱。",
+    "accountsDomain": "仅限 {{domains}} 的地址。",
+    "any": "任意",
+    "shared": "共享账户",
+    "domain": "{{domain}} 的地址"
+  },
+  "ollie": {
+    "description": "让 {{name}} 基于你的知识库回复发往该邮箱的邮件。",
+    "toggle": "由 {{name}} 回复发往该邮箱的邮件",
+    "toggleHint": "默认关闭。垃圾邮件、自动回复、邮件列表以及来自你团队的邮件一律不回复。",
+    "aiOff": "该工作区的 AI 已关闭。",
+    "aiOffLink": "在“设置 → AI”中开启",
+    "mode": "模式",
+    "draft": "生成草稿供审核",
+    "send": "自动发送",
+    "draftHint": "{{name}} 会在工单上写一条建议回复。同事可一键发送、编辑或放弃。",
+    "sendHint": "{{name}} 会立即通过邮件回复，遇到不确定时会交给你的团队处理。",
+    "outsideHours": "仅在工作时间之外",
+    "outsideHoursHint": "工作时间内仍由你的团队照常回复。",
+    "hoursOff": "工作时间已关闭，因此该设置不生效。",
+    "cost": "每次回复按 AI 客服所用模型计费，约 {{cost}}。",
+    "handoff": "{{name}} 无法处理时，工单会保持未分配，等待你的团队处理。",
+    "behaviourLink": "AI 客服行为"
+  },
+  "kind": {
+    "google": "Google",
+    "microsoft": "Microsoft 365",
+    "imap": "IMAP 和 SMTP",
+    "forwarding": "转发"
+  },
+  "status": {
+    "active": "正常",
+    "error": "需要处理",
+    "disabled": "已停用"
+  },
+  "list": {
+    "title": "邮箱",
+    "description": "邮件会转成工单的邮箱地址。回复从同一地址发出。",
+    "add": "添加邮箱",
+    "addFirst": "添加邮箱",
+    "count_other": "{{count}} 个邮箱",
+    "emptyTitle": "还没有邮箱",
+    "emptyBody": "从任意服务商转发你的支持地址，然后选择回复的发送方式。",
+    "never": "从未同步",
+    "noMail": "还没有邮件",
+    "quiet": "已 {{count}} 天无邮件",
+    "instant": "即时",
+    "syncedAgo": "同步于 {{when}}",
+    "actionsFor": "{{email}} 的操作",
+    "test": "测试连接",
+    "enable": "启用",
+    "disable": "停用",
+    "remove": "移除",
+    "connected": "邮箱已连接",
+    "connectedForward": "已连接。把该邮箱的邮件转发到 opendesk 即可完成。",
+    "connectFailed": "无法连接该邮箱。",
+    "noTeam": "无团队",
+    "colAddress": "地址",
+    "colConnection": "连接",
+    "colTeam": "团队",
+    "colStatus": "状态",
+    "colSynced": "最近邮件",
+    "emptyTips": {
+      "forward": "转发支持任意服务商",
+      "team": "每个邮箱都可以路由到团队"
+    }
+  },
+  "summary": {
+    "total": "邮箱",
+    "active": "正常",
+    "attention": "需要处理",
+    "disabled": "已停用",
+    "allGood": "全部正常收信",
+    "checkThese": "打开查看错误",
+    "paused": "未同步"
+  },
+  "oauthErrors": {
+    "access_denied": "连接已取消。",
+    "invalid_state": "连接已过期，请重试。",
+    "provider_error": "服务商返回错误，请重试。",
+    "provider_unavailable": "该服务商未在此服务器上配置。"
+  },
+  "actions": {
+    "removeTitle": "移除邮箱？",
+    "removeBody": "发往 {{email}} 的邮件将不再进入 opendesk。现有工单会保留。",
+    "removeBodyTickets_other": "发往 {{email}} 的邮件将不再进入 opendesk。从该地址回复的 {{count}} 张工单会保留（{{open}} 个待处理），但这些工单的回复将不再从 {{email}} 发出。",
+    "removeConfirm": "移除",
+    "removed": "邮箱已移除",
+    "testTitle": "连接测试",
+    "testFailed": "测试无法运行，请稍后重试。",
+    "done": "完成"
+  },
+  "test": {
+    "receiving": "收信",
+    "sending": "发信",
+    "works": "{{what}} 正常",
+    "failed": "{{what}} 失败",
+    "detail": "服务器返回"
+  },
+  "receiving": {
+    "pill": "未收信",
+    "pillHint": "此实例已关闭 IMAP 收信。请把该邮箱切换为转发。",
+    "offTitle": "该邮箱未在接收邮件",
+    "offBody": "此实例已关闭 IMAP 收信，因此 opendesk 不再从 {{email}} 拉取邮件。切换为转发即可继续收信。回复的发送方式保持不变。",
+    "switch": "切换为转发",
+    "confirmTitle": "切换为转发？",
+    "confirmBody": "opendesk 将不再登录 {{email}} 拉取邮件，并会提供转发地址。设置好转发后，新邮件即可到达。回复的发送方式保持不变。",
+    "switched": "已切换为转发。请在下方设置转发。",
+    "title": "收信",
+    "imapHint": "opendesk 会登录该邮箱拉取新邮件。转发无需登录。",
+    "apiHint": "opendesk 通过 {{provider}} 读取新邮件。转发无需它。"
+  },
+  "sendingOff": {
+    "pill": "未发信",
+    "pillHint": "该邮箱无法发送回复。请连接 Google 或 Microsoft，或添加 SMTP。",
+    "title": "该邮箱无法发送回复",
+    "body": "从 {{email}} 发出的回复会经由你自己的邮件服务商发送。请连接 Google 或 Microsoft，或用你的邮件服务器或 Resend、Postmark 等发信服务添加 SMTP。在此之前无法发送回复。",
+    "choose": "选择 SMTP，或在下方连接你的服务商。",
+    "none": "未设置"
+  },
+  "smtpPresets": {
+    "label": "使用发信服务？",
+    "hint": {
+      "resend": "密码是 Resend 的 API 密钥。请先在 Resend 中验证你的域名。",
+      "postmark": "用户名和密码都是你的 Postmark 服务器 API 令牌。请先在 Postmark 中验证你的域名。",
+      "sendgrid": "密码是具备邮件发送权限的 SendGrid API 密钥。请先在 SendGrid 中验证你的域名。",
+      "mailgun": "使用 Mailgun 中你域名对应的 SMTP 用户名和密码。欧盟区域的域名使用 smtp.eu.mailgun.org。",
+      "brevo": "使用 Brevo 的 SMTP 和 API 设置中的 SMTP 登录名和 SMTP 密钥。请先在 Brevo 中验证你的域名。",
+      "ses": "使用 Amazon SES 控制台中的 SMTP 凭据，并在服务器名称中填入你的区域。请先在 SES 中验证你的域名。"
+    }
+  },
+  "detail": {
+    "fallbackTitle": "邮箱",
+    "back": "邮箱",
+    "notFound": "未找到邮箱",
+    "notFoundBody": "它可能已被移除。",
+    "backToList": "返回邮箱列表",
+    "connection": "连接",
+    "testConnection": "测试连接",
+    "lastSyncFailed": "上次同步失败",
+    "foldersSkipped": "部分文件夹未被读取",
+    "lastSynced": "上次同步",
+    "never": "从未",
+    "forwardingInstant": "转发的邮件一经发出就会到达。",
+    "lastReceived": "最近收到的邮件",
+    "lastReceivedHint": "通过任意途径到达该地址的邮件，包括未转成工单的邮件。",
+    "noMail": "还没有邮件",
+    "quietNeverTitle": "还没有收到任何邮件",
+    "quietTitle_other": "已 {{count}} 天无邮件",
+    "quietForwarding": "如果客户写信到 {{email}}，请确认它仍在转发到下面的地址，然后从另一个地址发一封测试邮件。",
+    "quietConnected": "如果客户写信到 {{email}}，请测试连接，若访问权限已被撤销则重新连接。",
+    "account": "账户",
+    "accountHint": "已通过 {{provider}} 连接。如果访问权限被撤销或密码已更改，请重新连接。",
+    "accountHintNoImap": "已通过 {{provider}} 连接。重新连接后仅用于发信，其邮件将通过转发到达。",
+    "accountSendOnly": "已通过 {{provider}} 连接，仅用于发信。opendesk 无法读取该邮箱。如果访问权限被撤销，请重新连接。",
+    "accountDirect": "通过 {{provider}} 直接读取收件箱。新邮件会自动变成工单。如果访问权限被撤销，请重新连接。",
+    "directTitle": "直接读取收件箱",
+    "directHint": "新邮件会自动变成工单，无需设置转发。你需要使用 {{provider}} 登录以授权。",
+    "directButton": "直接读取收件箱",
+    "syncTitle": "通过 IMAP 读取收件箱",
+    "syncHint": "opendesk 会自行从 {{email}} 拉取新邮件，而不必等待转发的邮件。邮箱及其工单保持不变。你需要使用 {{provider}} 登录，授权它读取该邮箱。",
+    "syncButton": "连接 {{provider}}",
+    "reconnect": "重新连接",
+    "incoming": "收信（IMAP）",
+    "outgoing": "发信（SMTP）",
+    "send": {
+      "title": "发信",
+      "hint": "该邮箱的回复如何送达客户。",
+      "via": "回复发送方式",
+      "server": "SMTP 服务器",
+      "passwordNeeded": "请输入此服务器的密码。",
+      "testHint": "仅登录服务器，不发送任何内容。",
+      "saveToTest": "保存即可测试新设置。保存时会先登录。",
+      "providerBody": "从 {{email}} 本身发出，通过 {{provider}} 发送。",
+      "with": "使用 {{provider}}",
+      "connectTitle": "使用 {{provider}} 发信",
+      "connectHint": "回复会从 {{email}} 本身发出。连接仅允许 opendesk 以该地址发信，不会读取邮箱。",
+      "connect": "连接 {{provider}}"
+    },
+    "sending": "名称与地址",
+    "sendingHint": "该邮箱在你的团队和客户眼中的显示方式。",
+    "name": "名称",
+    "nameHint": "向你的团队显示。",
+    "senderName": "发件人名称",
+    "senderNameHint": "在发件人名称中填入 {mailbox}。留空则使用名称。",
+    "team": "团队",
+    "teamHint": "来自该邮箱的新工单会分配给此团队。",
+    "noTeam": "无团队",
+    "signature": "签名",
+    "signatureHint": "会添加到从该地址发出的每封回复下方，除非工单所属团队有自己的签名。用 {{tag}} 包含每位发件人自己的签名行。",
+    "signaturePlaceholder": "Company 的支持团队",
+    "autoReply": "自动回复",
+    "autoReplyHint": "客户通过邮件新建工单时发送一次。",
+    "autoReplyToggle": "发送自动回复",
+    "subject": "主题",
+    "subjectPlaceholder": "我们已收到你的消息",
+    "message": "消息",
+    "messagePlaceholder": "感谢来信。我们通常会在几小时内回复。",
+    "autoReplyLabel": "自动回复内容",
+    "danger": "危险区域",
+    "enableTitle": "启用邮箱",
+    "disableTitle": "停用邮箱",
+    "enableHint": "重新开始收发邮件。",
+    "disableHint": "停止同步和发信，但不移除任何内容。",
+    "enable": "启用",
+    "disable": "停用",
+    "removeTitle": "移除邮箱",
+    "removeHint": "现有工单会保留。发往该地址的新邮件将不再到达。",
+    "remove": "移除",
+    "saved": "邮箱已保存",
+    "testRunFailed": "测试无法运行",
+    "server": "服务器",
+    "port": "端口",
+    "username": "用户名",
+    "password": "密码",
+    "passwordKeep": "留空则保留已保存的密码。",
+    "security": "安全",
+    "tlsNone": "无",
+    "preview": "预览",
+    "subjectVariable": "插入变量",
+    "autoReplyNoAgent": "自动回复中，发件人变量（如客服姓名）为空。"
+  },
+  "new": {
+    "title": "添加邮箱",
+    "description": "选择邮件进入 opendesk 的方式。详细信息稍后可以修改。",
+    "limitTitle": "你已达到免费套餐的限制",
+    "upgrade": "升级到 Pro"
+  },
+  "wizard": {
+    "methodsLabel": "连接方式",
+    "stepDone": "完成",
+    "continue": "继续",
+    "continueGoogle": "使用 Google 继续",
+    "continueMicrosoft": "使用 Microsoft 继续",
+    "connectTest": "连接并测试",
+    "create": "创建邮箱",
+    "back": "返回",
+    "cancel": "取消",
+    "done": "完成",
+    "chooseMethod": "选择该邮箱的连接方式。",
+    "fixFields": "请修正标出的字段后继续。",
+    "discardTitle": "放弃这个邮箱？",
+    "discardBody": "你填写的信息将会丢失。",
+    "discard": "放弃",
+    "name": "名称",
+    "nameHint": "向你的团队显示，例如支持或账单。",
+    "namePlaceholder": "支持",
+    "email": "邮箱地址",
+    "senderName": "发件人名称",
+    "senderNameHint": "在发件人名称中填入 {mailbox}。留空则使用名称。",
+    "senderPlaceholder": "公司客服",
+    "oauthNote": "你将被带到 {{provider}} 授权，然后返回这里。opendesk 仅针对该地址读写邮件，你可以随时断开连接。",
+    "incoming": "收信（IMAP）",
+    "outgoing": "发信（SMTP）",
+    "sameCredentials": "使用与 IMAP 相同的用户名和密码",
+    "syncStart": "起始范围",
+    "syncStartRecent": "最近 7 天",
+    "syncStartNew": "仅新邮件",
+    "syncStartRecentHint": "最近 7 天的邮件会变成工单，最多 200 封，之后到达的新邮件也会进入。",
+    "syncStartNewHint": "只有从现在起到达的邮件会变成工单。如果历史邮件已通过导入带入，请选择此项。",
+    "server": "服务器",
+    "port": "端口",
+    "security": "安全",
+    "noTls": "密码将以未加密方式传输。仅在私有网络中使用。",
+    "tlsNone": "无",
+    "username": "用户名",
+    "password": "密码",
+    "passwordHint": "如果你的服务商要求，请使用应用专用密码。",
+    "connected": "{{name}} 已连接",
+    "created": "{{name}} 已就绪",
+    "createdForward": "把它的邮件转发到下面的地址即可开始收信。",
+    "testRunning": "连接测试仍在进行。请稍后查看邮箱状态。",
+    "fixLater": "你可以在邮箱页面修正服务器设置并重新测试。",
+    "err": {
+      "name": "请给邮箱起个名称，例如支持。",
+      "email": "请输入客户写信的地址。",
+      "emailInvalid": "这看起来不是有效的邮箱地址。",
+      "imapHost": "请输入服务器名称，例如 imap.example.com。",
+      "imapUser": "通常是你的完整邮箱地址。",
+      "imapPassword": "请输入密码或应用专用密码。",
+      "smtpHost": "请输入服务器名称，例如 smtp.example.com。",
+      "smtpUser": "请输入 SMTP 用户名。",
+      "smtpPassword": "请输入 SMTP 密码。",
+      "port": "请输入 1 到 65535 之间的端口。"
+    },
+    "stepAddress": "地址",
+    "stepConnect": "连接",
+    "emailHint": "客户写信的地址。",
+    "connect": "连接"
+  },
+  "forwarding": {
+    "forwardTo": "把发往 <code>{{email}}</code> 的邮件转发到",
+    "checkIt": "想确认是否生效，请用另一个账户给 <code>{{email}}</code> 发一封邮件。它会作为新工单出现在“未分配”中。",
+    "gmail": "Gmail",
+    "workspace": "Google Workspace",
+    "microsoft": "Microsoft 365",
+    "outlook": "Outlook.com",
+    "other": "其他",
+    "microsoftBlocked": "Microsoft 365 默认阻止向外部地址自动转发。需要管理员先允许一次，然后再在邮箱上设置转发。",
+    "open": {
+      "gmail": "打开 Gmail 转发设置",
+      "googleAdmin": "在管理控制台中打开 Gmail 路由",
+      "defender": "打开反垃圾邮件策略",
+      "exchange": "在 Exchange 管理中心打开邮箱",
+      "outlookForwarding": "打开 Outlook 转发设置",
+      "outlookCom": "打开 Outlook.com 转发设置"
+    },
+    "help": "{{provider}} 的指南",
+    "docs": "opendesk 文档中的完整指南",
+    "sendTest": "写一封测试邮件",
+    "testSubject": "测试 opendesk",
+    "steps": {
+      "gmail": {
+        "s1": "以这个地址登录，打开 Gmail 的<b>转发和 POP/IMAP</b>设置。",
+        "s2": "选择<b>添加转发地址</b>，粘贴上面的地址。",
+        "s3": "Gmail 会发一封确认邮件。它会作为工单到达 opendesk：打开工单点击链接，或把验证码复制到 Gmail 中。",
+        "s4": "回到 Gmail，选择<b>将收到的邮件副本转发到</b>新地址并保存。"
+      },
+      "workspace": {
+        "s1": "只涉及一个邮箱时，以该用户身份登录并按 Gmail 的步骤操作。",
+        "s2": "涉及群组或多个用户时，由管理员在 Google 管理控制台（<b>应用</b>、<b>Google Workspace</b>、<b>Gmail</b>）中打开<b>路由</b>。",
+        "s3": "为发往该地址的<b>入站</b>邮件添加路由规则，选择<b>修改邮件</b>，再选择<b>添加更多收件人</b>，然后添加上面的地址。",
+        "s4": "保存。更改可能需要几分钟才会生效。"
+      },
+      "microsoft": {
+        "s1": "管理员在 Microsoft Defender 中打开<b>反垃圾邮件</b>策略，编辑<b>出站</b>策略，并把<b>自动转发规则</b>设为<b>开启</b>。",
+        "s2": "在 <b>Exchange 管理中心</b>中打开<b>邮箱</b>，然后选择该邮箱。",
+        "s3": "在<b>邮件流设置</b>下编辑<b>电子邮件转发</b>：打开开关，粘贴上面的地址，并在邮箱中保留副本。",
+        "s4": "无法访问管理中心？完成第 1 步后，以该邮箱身份打开 Outlook 设置中的<b>转发</b>，打开开关，粘贴上面的地址并保留副本。"
+      },
+      "outlook": {
+        "s1": "以这个地址登录，打开 Outlook.com 的<b>转发</b>设置。",
+        "s2": "打开<b>启用转发</b>，并粘贴上面的地址。",
+        "s3": "打开<b>保留已转发邮件的副本</b>并保存。"
+      },
+      "other": {
+        "s1": "在你的邮件服务商设置中找到转发功能。有些服务商称它为重定向或别名。",
+        "s2": "把这个地址收到的所有邮件转发到上面的地址，需要的话保留副本。"
+      }
+    }
+  },
+  "addressing": {
+    "brand": "品牌",
+    "brandHint": "发往这个地址的工单属于这个品牌，其回复会带有品牌的名称和标志。",
+    "team": "发往这个地址的新工单归属",
+    "teamHint": "拥有发往这个地址邮件的团队。路由规则仍可把工单送到其他团队。",
+    "noTeam": "无团队",
+    "privateTeam": "{{name}} 是私有团队：只有其成员能看到发往这个地址的工单，并从该地址发信。",
+    "fromName": "发件人名称",
+    "previewMailbox": "客服",
+    "fromNameHint": "客户看到的发件人。点击变量即可添加。",
+    "fromInvalid": "请先修正发件人名称。",
+    "previewReply": "一封回复",
+    "previewAuto": "自动回复",
+    "fromErrors": {
+      "long": "请控制在 {{max}} 个字符以内。",
+      "chars": "不要包含 < > 和引号。",
+      "variable": "只能使用下面的变量。"
+    },
+    "vars": {
+      "agent": "作者的全名",
+      "agent_first": "作者的名字",
+      "team": "工单所属团队，没有则用品牌",
+      "brand": "品牌名称",
+      "mailbox": "这个地址的发件人名称"
+    },
+    "aliases": "别名",
+    "aliasesHint": "投递到这个邮箱的其他地址，例如 help@。回复会以客户写信时用的地址发出。最多 20 个。别名属于其他项目时，可单独为它指定团队。",
+    "noAliases": "无别名",
+    "aliasSame": "这就是这个邮箱自己的地址。",
+    "aliasTeams": "发往每个别名的新工单归属",
+    "aliasTeamSame": "{{name}}，与邮箱相同",
+    "aliasTeamNone": "无团队，与邮箱相同",
+    "aliasTeamsPrivate": "{{name}} 是私有团队，因此发往每个别名的新工单也归它。"
+  },
+  "forms": {
+    "title": "联系表单",
+    "hint": "添加你网站联系表单的发信地址。当它的邮件通过发件人校验后，填写表单的访客会成为联系人，回复也会发给他。",
+    "empty": "没有联系表单。请输入一个地址或 @domain。",
+    "publicDomain": "{{domain}} 是公共邮箱服务商。请改为输入表单的确切地址。",
+    "ownAddress": "这就是这个邮箱自己的地址。"
+  },
+  "automatic": {
+    "title": "自动邮件",
+    "hint": "有些客服系统会把它发出的每封邮件都标记为自动邮件，即使是人写的也不例外。除非这个邮箱保留这类邮件，否则会被忽略。保留的邮件会照常生成工单，且不会有任何自动内容回复它：没有自动回复、自动化回复或 Ollie 回答。休假自动回复仍会被忽略。",
+    "toggle": "保留自动邮件"
+  },
+  "connect": {
+    "detecting": "正在查询 {{domain}}",
+    "unknownHost": "未知服务商",
+    "source": {
+      "known": "已知的邮箱服务商",
+      "mx": "根据域名的 MX 记录检测",
+      "autoconfig": "来自域名的 autoconfig 文件",
+      "ispdb": "来自 Thunderbird 的服务商数据库",
+      "srv": "来自域名的 DNS 服务记录",
+      "none": "我们无法确定 {{domain}} 的托管方。请手动输入服务器设置，或转发邮件。",
+      "noneForward": "我们无法确定 {{domain}} 的托管方。转发适用于任何服务商。"
+    },
+    "detectFailed": "我们无法查询 {{domain}}。你仍然可以选择连接方式。",
+    "howTitle": "邮件如何到达 opendesk？",
+    "forwardingOnly": "邮件通过转发到达",
+    "forwardingOnlyBody": "你把 {{email}} 转发到 opendesk 提供的私有地址。适用于任何服务商，opendesk 不会读取邮箱。",
+    "anotherWay": "选择其他方式",
+    "suggestedWays": "显示推荐方式",
+    "recommended": "推荐",
+    "advanced": "高级",
+    "method": {
+      "google": "通过同步邮箱接收（IMAP）",
+      "googleBody": "用 Google 登录。opendesk 通过 IMAP 获取新邮件，并以你的地址回复。",
+      "microsoft": "通过同步邮箱接收（IMAP）",
+      "microsoftBody": "用 Microsoft 登录。opendesk 通过 IMAP 获取新邮件，并以你的地址回复。",
+      "google_api": "直接读取收件箱",
+      "google_apiBody": "用 Google 登录。新邮件会自动变成工单，无需设置转发。",
+      "microsoft_api": "直接读取收件箱",
+      "microsoft_apiBody": "用 Microsoft 登录。新邮件会自动变成工单，无需设置转发。",
+      "app_password": "应用专用密码",
+      "app_passwordBody": "在 {{host}} 中创建应用专用密码并粘贴到这里。服务器已为你设置好。",
+      "password": "邮件密码",
+      "passwordBody": "用邮箱的密码登录。服务器已为你设置好。",
+      "forwarding": "把邮件转发到 opendesk",
+      "forwardingBody": "把邮件转发到 opendesk 提供的地址。适用于任何服务商，opendesk 不会读取邮箱。",
+      "imap": "其他 IMAP 和 SMTP",
+      "imapBody": "自行输入服务器设置。"
+    },
+    "microsoftNoPassword": "Microsoft 已关闭通过 IMAP 的密码登录，因此不使用 Microsoft 登录时，这个邮箱只能通过转发接收邮件。",
+    "protonNoImap": "Proton Mail 只能通过 Proton Mail Bridge 提供 IMAP，这个应用运行在你自己的电脑上，opendesk 无法访问。请改为从 Proton 转发邮件（Proton 的付费套餐支持转发）。",
+    "notConfigured": {
+      "title": "此服务器未配置 {{provider}} 登录",
+      "body": "使用 {{provider}} 登录连接邮箱需要 OAuth 客户端。把这些添加到 opendesk 环境变量并重启：",
+      "docs": "设置指南",
+      "alternatives": "下面的方式无需任何配置。"
+    },
+    "servers": {
+      "title": "服务器设置，已为你填好",
+      "edit": "编辑",
+      "imap": "IMAP",
+      "smtp": "SMTP",
+      "tls": "TLS",
+      "starttls": "STARTTLS"
+    },
+    "password": "密码",
+    "passwordPlaceholder": "邮箱的密码",
+    "appPassword": "应用专用密码",
+    "appPasswordPlaceholder": "粘贴应用专用密码",
+    "zohoTwoFactor": "开启双重验证了吗？Zoho 需要应用专用密码而不是账户密码。",
+    "checking": "正在检查与 {{host}} 的登录",
+    "checkingGeneric": "正在检查与服务器的登录",
+    "verifiedNote": "opendesk 会在保存前先登录两个服务器。",
+    "addressing": "团队、品牌和发件人名称",
+    "addressingHint": "可选。这些之后都可以修改。",
+    "sending": "回复如何发送",
+    "send": {
+      "google": "连接 Google",
+      "googleBody": "回复直接从 {{email}} 发出。这只允许 opendesk 以该地址发信，不会读取邮箱。",
+      "microsoft": "连接 Microsoft",
+      "microsoftBody": "回复直接从 {{email}} 发出。这只允许 opendesk 以该地址发信，不会读取邮箱。",
+      "smtp": "你的 SMTP 服务器",
+      "smtpBody": "回复通过你的邮件服务器，或 Resend、Postmark 之类的发送服务从 {{email}} 发出。",
+      "system": "通过 opendesk",
+      "systemBody": "以你邮箱的名称从 {{sender}} 发出。客户的回复会回到 {{email}}。"
+    },
+    "sendOnlyNote": "你会前往 {{provider}} 允许发信，然后回来设置转发。opendesk 只申请发信权限。",
+    "sendSystem": "通过 opendesk",
+    "sendSystemBody": "以你邮箱的名称从 {{sender}} 发出，给客户的回复会回到 {{email}}。",
+    "sendSmtp": "通过你的 SMTP 服务器",
+    "sendSmtpBody": "直接从 {{email}} 发出。",
+    "sendSmtpMicrosoft": "Microsoft 正在逐步停用 Exchange Online 中 SMTP AUTH 的密码登录，很多管理员也已经关闭了它。如果登录被拒绝，请改用 Microsoft 发信或通过发送服务发信。",
+    "failedTitle": "无法连接",
+    "legInbound": "IMAP",
+    "legOutbound": "SMTP",
+    "gmail": {
+      "banner": "用应用专用密码通过 IMAP 和 SMTP 连接 Gmail 或 Google Workspace，大约两分钟即可完成。",
+      "p1": "两步验证",
+      "p2": "应用专用密码",
+      "p3": "连接",
+      "s1Title": "开启两步验证",
+      "s1Sub": "Google 只为已开启两步验证的账户提供应用专用密码。",
+      "s1a": "打开 Google 账户的安全页面，在“你登录 Google 的方式”下找到<b>两步验证</b>。",
+      "s1b": "通过手机提示、身份验证器应用或短信开启。",
+      "s1Open": "打开 Google 安全设置",
+      "s1Note": "在 Google Workspace 中，管理员可以为组织强制要求或禁止两步验证。加入高级保护计划的账户无法使用应用专用密码。",
+      "s1Already": "已经开启了？直接继续即可。",
+      "s1Next": "已开启，继续",
+      "s2Title": "创建应用专用密码",
+      "s2Sub": "Google 为单个应用生成的 16 位密码。opendesk 会加密存储它。",
+      "s2a": "打开应用专用密码页面。Google 可能会要求你重新登录。",
+      "s2b": "在应用名称中输入<b>opendesk</b>，然后选择<b>创建</b>。",
+      "s2c": "复制它显示的 16 位字符。空格不影响。",
+      "s2Open": "打开应用专用密码",
+      "s2Note": "没有应用专用密码页面？要么两步验证还未开启，要么你的 Google Workspace 管理员为组织关闭了应用专用密码。请让管理员为你的账户启用应用专用密码。",
+      "s2Next": "我已拿到，继续",
+      "s3Title": "连接邮箱",
+      "s3Sub": "粘贴应用专用密码，无需填写其他内容。",
+      "lengthHint": "Google 应用专用密码是 16 位字符。这看起来像别的内容，也许是账户密码。无论如何，连接时都会校验。",
+      "s3Note": "请使用你登录 Google 的地址，而不是别名。在 Google 账户中删除应用专用密码会断开这个邮箱。"
+    },
+    "guide": {
+      "title": "创建应用专用密码",
+      "yahoo": {
+        "s1": "登录 Yahoo，打开<b>账户安全</b>。",
+        "s2": "选择<b>生成应用专用密码</b>，命名为<b>opendesk</b>，然后选择<b>生成密码</b>。",
+        "s3": "复制密码并粘贴到下面。",
+        "open": "打开 Yahoo 账户安全"
+      },
+      "aol": {
+        "s1": "登录 AOL，打开<b>账户安全</b>。",
+        "s2": "选择<b>生成应用专用密码</b>，命名为<b>opendesk</b>，然后选择<b>生成密码</b>。",
+        "s3": "复制密码并粘贴到下面。",
+        "open": "打开 AOL 账户安全"
+      },
+      "icloud": {
+        "s1": "在 account.apple.com 登录，打开<b>登录与安全</b>。必须开启双重验证。",
+        "s2": "选择<b>App 专用密码</b>，添加一个名为<b>opendesk</b> 的密码。",
+        "s3": "复制密码并粘贴到下面。地址必须是你的 iCloud 地址，而不是别名。",
+        "open": "打开你的 Apple 账户"
+      },
+      "fastmail": {
+        "s1": "在 Fastmail 中打开<b>设置</b>、<b>隐私与安全</b>，然后打开<b>管理应用专用密码</b>。",
+        "s2": "创建一个名为<b>opendesk</b> 的密码，允许访问 IMAP 和 SMTP。",
+        "s3": "复制密码并粘贴到下面。",
+        "open": "打开 Fastmail 应用专用密码"
+      },
+      "zoho": {
+        "s1": "在 Zoho 账户中打开<b>安全</b>，然后打开<b>应用专用密码</b>。",
+        "s2": "生成一个名为<b>opendesk</b> 的密码。",
+        "s3": "复制并粘贴到下面。另外请在 Zoho Mail 设置的“邮件账户”中确认已开启 IMAP 访问。",
+        "open": "打开 Zoho 应用专用密码"
+      },
+      "yandex": {
+        "s1": "打开 Yandex ID，然后打开<b>安全</b>和<b>应用专用密码</b>。",
+        "s2": "为<b>邮件</b>创建一个名为<b>opendesk</b> 的密码。",
+        "s3": "复制并粘贴到下面。另外请在 Yandex Mail 设置的“邮件客户端”中允许 IMAP。",
+        "open": "打开 Yandex 应用专用密码"
+      }
+    },
+    "method_label": {
+      "signin": "登录",
+      "app_password": "应用专用密码",
+      "password": "密码",
+      "forwarding": "转发",
+      "sendsWith": "使用 {{provider}} 发信",
+      "direct": "通过 {{provider}} 直接读取收件箱"
+    },
+    "forwardingIntro": "你会得到一个私有地址，用来转发这个邮箱的邮件。opendesk 只能看到你转发的邮件。",
+    "directNote": "opendesk 通过 {{provider}} 读取收件箱中的新邮件，并以你的地址回复。新邮件会自动变成工单，无需设置转发。"
+  },
+  "provider": {
+    "title": "在 {{app}} 中",
+    "replies": "回复会出现在客户邮件所在的同一个 {{app}} 会话中，也会出现在“已发送”中。",
+    "markRead": "邮件变成工单后，在 {{app}} 中标记为已读",
+    "archive": "工单解决后，在 {{app}} 中归档",
+    "label": "在 {{app}} 中给邮件加上“opendesk”标签",
+    "labelOutlook": "Outlook 会把它显示为类别。"
+  },
+  "supportChannels": {
+    "title": "支持渠道",
+    "description": "把邮件工单镜像到 Slack、Discord 和 Telegram。同事可以在工单的会话串里回复、添加备注并处理工单。",
+    "linkAccount": "关联我的账户",
+    "linkError": "无法创建关联码。",
+    "link": {
+      "title": "关联你的聊天账户",
+      "description": "在你的聊天账户里把这段代码发给机器人：Slack 中用 /opendesk link {{code}}，Discord 和 Telegram 中用 /link {{code}}。代码只能使用一次，10 分钟后失效。",
+      "done": "完成"
+    },
+    "connections": {
+      "title": "连接",
+      "description": "机器人凭据加密存储。opendesk 会帮你配置 Discord 和 Telegram；Slack 需要在其自身的设置中完成几步。",
+      "webhook": "事件地址"
+    },
+    "delivery": {
+      "title": "投递动态",
+      "description": "最近发送到各服务商频道的工单事件。失败的事件会留在这里，直到重试。",
+      "emptyTitle": "暂无投递动态",
+      "emptyBody": "工单事件发送到支持渠道后会显示在这里。",
+      "refresh": "刷新投递记录",
+      "loadMore": "加载更多",
+      "ticket": "工单 #{{number}}",
+      "event": "事件 {{seq}}",
+      "eventCreated": "工单已创建",
+      "eventUpdated": "工单已更新",
+      "eventMessage": "已添加消息",
+      "waiting": "等待首次尝试",
+      "attempts_other": "{{count}} 次尝试",
+      "retry": "重试",
+      "retryQueued": "投递已加入重试队列。",
+      "retryError": "无法重试这条投递。",
+      "status": {
+        "queued": "排队中",
+        "retrying": "重试中",
+        "delivered": "已投递",
+        "failed": "失败"
+      }
+    },
+    "operations": {
+      "title": "可靠性",
+      "description": "最近 24 小时的连接健康度、投递延迟和入站 Webhook 动态。",
+      "refresh": "刷新指标",
+      "unavailable": "无法加载运行指标。",
+      "alerted_other": "{{count}} 个连接已连续异常至少 15 分钟。管理员已收到通知。",
+      "connectionHealth": "连接健康度",
+      "healthyCount": "{{total}} 个连接中 {{healthy}} 个正常",
+      "unhealthy_other": "{{count}} 个需要处理",
+      "allHealthy": "没有异常的连接",
+      "deliveryLatency": "平均投递延迟",
+      "oldestPending": "最长等待 {{age}}",
+      "maximumLatency": "最长 {{duration}}",
+      "webhookRejections": "被拒绝的 Webhook",
+      "duplicatesSuppressed": "已抑制的重复项",
+      "lastHours": "最近 24 小时",
+      "window": "最近 24 小时的投递总量"
+    },
+    "ollie": {
+      "title": "支持渠道中的 Ollie",
+      "description": "Ollie 会总结每个新的工单会话串、推荐回复、回答问题，并提醒 SLA 和不满的客户。你可以选择它自行决定时可以做哪些更改。",
+      "error": "无法保存 Ollie 可执行的操作。",
+      "commands": "reply、note、status 等手动输入的命令由客服自己发出，始终有效。Ollie 对客户回复、新建工单或关闭工单提出的更改仍需确认。",
+      "actions": {
+        "reply": {
+          "title": "发送回复",
+          "hint": "Ollie 可以为客户准备回复。只有客服确认后才会发送。"
+        },
+        "note": {
+          "title": "添加内部备注",
+          "hint": "Ollie 可以添加客户看不到的备注。"
+        },
+        "assign_self": {
+          "title": "分配工单",
+          "hint": "Ollie 可以把工单分配给它当前在交谈的客服。"
+        },
+        "status": {
+          "title": "更改状态",
+          "hint": "Ollie 可以更改工单状态。关闭工单需要确认。"
+        },
+        "priority": {
+          "title": "更改优先级",
+          "hint": "Ollie 可以调高或调低工单的优先级。"
+        },
+        "create_ticket": {
+          "title": "创建工单",
+          "hint": "确认后，Ollie 可以从渠道消息创建工单。"
+        }
+      },
+      "channel": {
+        "label": "{{name}} 的 Ollie 设置",
+        "title": "#{{name}} 中的 Ollie",
+        "description": "Ollie 在这个渠道的工单会话串中如何工作。",
+        "summary": "总结新的会话串",
+        "summaryHint": "工单会话串开启时，Ollie 会发布客户的需求、他们已尝试的办法、情绪和紧急程度。会消耗 AI 额度。",
+        "warnings": "SLA 与情绪提醒",
+        "warningsHint": "当 SLA 目标临近或已超出，或客户听起来不满时，Ollie 会在会话串中提醒。",
+        "length": "回复长度",
+        "lengthHint": "Ollie 在这个渠道中的回答和建议有多长。",
+        "lengthValues": {
+          "brief": "简短",
+          "standard": "标准",
+          "detailed": "详细"
+        },
+        "personality": "性格",
+        "personalityHint": "Ollie 在这里的语气。它只影响语调，绝不会改变 Ollie 可以做的事。",
+        "personalityPlaceholder": "友好活泼，用词简单，不用行话",
+        "personalityInvalid": "性格描述不能包含 < 或 >。",
+        "submit": "保存",
+        "cancel": "取消",
+        "saved": "Ollie 设置已保存。",
+        "error": "无法保存 Ollie 的设置。"
+      }
+    },
+    "empty": {
+      "title": "还没有支持渠道",
+      "body": "连接一个机器人，然后选择每个团队的邮件工单显示在哪里。",
+      "tipThreads": "每个工单都有独立的会话串",
+      "tipOllie": "在工单的会话串里向 Ollie 提问",
+      "tipCreate": "在频道里提到机器人即可创建工单"
+    },
+    "status": {
+      "connected": "已连接",
+      "error": "需要处理"
+    },
+    "health": {
+      "unknown": "未测试",
+      "healthy": "已连接",
+      "action_required": "完成设置",
+      "error": "检查失败",
+      "test": "测试连接",
+      "tested": "连接正常。",
+      "testError": "无法测试连接。",
+      "testedAttention": "已检查。连接仍需处理。"
+    },
+    "rotate": {
+      "label": "轮换 {{name}} 的凭据",
+      "title": "轮换 {{name}} 的凭据",
+      "description": "输入同一渠道商账户的替换凭据。目标和工单会话串保持连接。",
+      "submit": "轮换凭据",
+      "cancel": "取消",
+      "rotated": "凭据已轮换。",
+      "error": "无法轮换凭据。"
+    },
+    "allTeams": "所有团队",
+    "withNotes": "含备注",
+    "addDestination": "添加目标",
+    "removeDestinationLabel": "移除 {{name}}",
+    "removeDestinationTitle": "移除目标",
+    "removeDestinationBody": "停止把工单镜像到 {{name}}？已发布的会话串会留在频道中。",
+    "remove": "移除",
+    "destinationRemoved": "目标已移除。",
+    "destinationRemoveError": "无法移除目标。",
+    "disconnect": "断开连接",
+    "disconnectLabel": "断开 {{name}}",
+    "disconnectTitle": "断开支持渠道",
+    "disconnectBody": "断开 {{name}}？它的目标会被移除，工单会话串也会停止更新。",
+    "disconnected": "支持渠道已断开。",
+    "disconnectError": "无法断开支持渠道。",
+    "providers": {
+      "title": "可用的渠道商",
+      "descriptionAdmin": "为团队使用的每个聊天产品连接一个机器人账户。",
+      "description": "管理员可以连接渠道商账户。"
+    },
+    "provider": {
+      "slack": {
+        "description": "把邮件工单镜像到 Slack 会话串，并通过与 Ollie 交流来处理。",
+        "setup": "创建一个 Slack 应用，为它添加 chat:write、app_mentions:read、channels:read、groups:read、channels:history、groups:history 和 files:read 机器人权限范围，安装后粘贴它的机器人 令牌 和签名密钥。连接后，opendesk 会显示在 Slack 中需要完成的设置步骤。",
+        "steps": [
+          "在 Slack 应用中打开 Event Subscriptions，启用它，并把上面的地址粘贴为 Request URL。",
+          "在 Subscribe to bot events 下添加 app_mention、message.channels 和 message.groups，然后保存。",
+          "打开 Interactivity & Shortcuts，启用它，并把同一地址用作它的 Request URL。",
+          "打开 Slash Commands，创建 /opendesk，并把同一地址用作它的 Request URL。",
+          "把机器人邀请到你路由工单的每个频道：/invite @your-bot。"
+        ],
+        "noChannels": "机器人还不在任何频道中。在 Slack 中用 /invite @your-bot 邀请它，然后刷新。"
+      },
+      "discord": {
+        "description": "把邮件工单镜像到 Discord 会话串，并通过与 Ollie 交流来处理。",
+        "setup": "创建一个 Discord 机器人，开启它的 Message Content intent，并复制其 令牌 和公钥。opendesk 会找到它所在的服务器，并注册交互端点和命令。",
+        "noChannels": "没有找到文字频道。给机器人访问此服务器中某个文字频道的权限，然后刷新。"
+      },
+      "telegram": {
+        "description": "把邮件工单镜像到 Telegram 论坛话题，并通过与 Ollie 交流来处理。",
+        "setup": "用 BotFather 创建一个机器人，关闭它的隐私模式（/setprivacy），并粘贴其 令牌。opendesk 会配置 Webhook。然后把机器人设为论坛群组的管理员。",
+        "noChannels": "还没有论坛群组。把机器人设为已开启话题的群组的管理员，或在它已加入的群组中发一条消息，然后刷新。"
+      },
+      "google_chat": {
+        "description": "把邮件工单镜像到 Google Chat 空间，并通过与 Ollie 交流来处理。",
+        "setup": "启用 Google Chat API，并创建带 chat.bot 权限范围的服务账号密钥。为同一项目配置标准 Chat 应用，而不是 Google Workspace 附加应用，并把它添加到你想要使用的空间。",
+        "steps": [
+          "在 Google Cloud Console 中启用 Google Chat API，并为此服务账号所用的项目配置标准 Chat 应用，而不是 Google Workspace 附加应用。",
+          "把连接 URL 和身份验证受众设为上面的 Webhook 地址。身份验证受众请选择 HTTP endpoint URL。",
+          "添加 /opendesk 斜杠命令，并让应用订阅 message、message update、message delete、card click、app added 和 app removed 事件。",
+          "把 Chat 应用添加到你想要路由工单的每个空间，然后刷新空间列表。"
+        ],
+        "noChannels": "没有可用的空间。把 Chat 应用添加到具名空间，然后刷新。"
+      },
+      "mattermost": {
+        "description": "把邮件工单镜像到 Mattermost 会话串，并通过与 Ollie 交流来处理。",
+        "setup": "在 Mattermost 中创建机器人账户（Integrations、Bot Accounts），复制其访问 令牌，并连同服务器地址一起粘贴。opendesk 会找到机器人所在的团队。把机器人添加到工单要进入的频道。",
+        "steps": [
+          "在 Mattermost 中，把机器人添加到团队以及你路由工单的每个频道。",
+          "在工单的会话串里跟它说话：@ 它即可使用 Ollie，或以 !reply、!note、!assign、!status 或 !priority 开头发消息。",
+          "工单消息上的按钮会从你的 Mattermost 服务器访问 opendesk。如果 opendesk 位于私有地址，请在 System Console、Developer、Allow untrusted internal connections 中允许它。"
+        ],
+        "noChannels": "机器人还不在任何频道中。在 Mattermost 中把它添加到某个频道，然后刷新。",
+        "findAccounts": "查找团队",
+        "accountPlaceholder": "选择团队",
+        "refreshAccounts": "刷新团队",
+        "noAccounts": "此机器人还不是任何团队的成员。请在 Mattermost 中把它添加到某个团队。",
+        "discoveryError": "无法加载 {{name}} 的团队。请检查服务器地址和 令牌。",
+        "help": {
+          "server_url": "你的 Mattermost 地址，例如 https://chat.example.com。",
+          "bot_token": "机器人账户的访问 令牌，不是个人账户的。"
+        }
+      }
+    },
+    "field": {
+      "bot_token": "机器人 令牌",
+      "signing_secret": "签名密钥",
+      "public_key": "交互公钥",
+      "guild_id": "服务器",
+      "webhook_secret": "Webhook 密钥",
+      "service_account_json": "服务账号 JSON",
+      "server_url": "服务器地址",
+      "team_id": "团队",
+      "webhook_token": "按钮 令牌"
+    },
+    "connect": {
+      "title": "连接 {{name}}",
+      "name": "连接名称",
+      "submit": "连接",
+      "findAccounts": "查找服务器",
+      "accountPlaceholder": "选择服务器",
+      "refreshAccounts": "刷新服务器",
+      "noAccounts": "此机器人还没有安装到任何服务器。",
+      "discoveryError": "无法加载 {{name}} 的服务器。",
+      "cancel": "取消",
+      "connected": "{{name}} 已连接。",
+      "error": "无法连接 {{name}}。"
+    },
+    "destination": {
+      "title": "添加目标",
+      "description": "选择哪些邮件工单进入此频道：公开团队、优先级和任意条件。更具体的路由优先。",
+      "team": "团队",
+      "teamPlaceholder": "选择团队",
+      "allTeams": "所有公开团队",
+      "priority": "优先级",
+      "allPriorities": "所有优先级",
+      "priorityValues": {
+        "low": "低",
+        "normal": "普通",
+        "high": "高",
+        "urgent": "紧急"
+      },
+      "routeExists": "已有目标使用此团队和优先级。",
+      "channel": "渠道商频道",
+      "channelHint": "机器人可以发帖的频道。",
+      "channelPlaceholder": "选择频道",
+      "loading": "正在加载频道",
+      "refresh": "刷新频道",
+      "none": "没有找到频道。给机器人访问某个频道的权限，然后刷新。",
+      "loadError": "无法从渠道商加载频道。",
+      "displayName": "显示名称",
+      "displayNamePlaceholder": "support",
+      "notes": "包含内部备注",
+      "notesHint": "默认关闭。开启后，备注会发布到此频道，Ollie 在此处的回答中可以使用它们。",
+      "messageLimit": "消息长度",
+      "messageLimitHint": "较长的消息会被截短，并附上“在 opendesk 中查看”链接。渠道商可能使用更低的上限。",
+      "messageLimitValue": "{{count}} 个字符",
+      "submit": "添加目标",
+      "cancel": "取消",
+      "added": "目标已添加。",
+      "error": "无法添加目标。",
+      "enterId": "改为输入频道 ID",
+      "pickFromList": "改为从列表中选择",
+      "channelId": "频道 ID",
+      "channelIdHint": "渠道商为该频道提供的 ID，例如 Slack 中的 C0123ABCD 或 Telegram 中的 -1001234567890。"
+    },
+    "noDestinations": "工单目前还没有投递到任何地方。",
+    "addFirstDestination": "添加目标",
+    "setup": {
+      "title": "完成应用设置",
+      "show": "显示设置步骤",
+      "hide": "隐藏",
+      "generic": "在渠道商的设置中把这个地址填为它发送事件的地址。",
+      "waiting": "渠道商发出第一个事件后，这里会变为已连接。在频道中 @ 机器人即可发一个事件。"
+    },
+    "routing": {
+      "mode": "发布方式",
+      "modeValues": {
+        "route": "路由到这里",
+        "copy": "同时发布到这里"
+      },
+      "modeHint": {
+        "route": "连接会把每个工单发布到最匹配的具体路由：先看团队，再看优先级，最后看条件更多的路由。",
+        "copy": "除了按路由发布，还会把每个匹配的工单也发布到这里，例如升级频道中的紧急工单。"
+      },
+      "conditions": "仅当",
+      "conditionsHint": "条件决定工单的会话串在哪里开始。一旦工单在这里有了会话串，就会一直跟着该工单。",
+      "addCondition": "添加条件",
+      "incomplete": "请填写每个条件，或将其移除。",
+      "mirror": "在会话串中显示",
+      "mirrorHint": "工单卡片始终是最新的。",
+      "mirrorValues": {
+        "customer_replies": "客户回复",
+        "agent_replies": "客服回复",
+        "status_changes": "状态变更",
+        "assignee_changes": "负责人变更",
+        "priority_changes": "优先级变更"
+      },
+      "conditionCount_other": "{{count}} 个条件",
+      "alsoPosts": "也会发布",
+      "label": "{{name}} 的路由",
+      "title": "#{{name}} 的路由",
+      "description": "选择哪些工单在此频道开始会话串，以及它们的会话串显示什么。",
+      "submit": "保存",
+      "cancel": "取消",
+      "saved": "路由已保存。",
+      "error": "无法保存路由。"
+    }
+  },
+  "aliases": {
+    "title": "别名",
+    "hint": "其他投递到这个邮箱的地址，例如 help@ 或某个副项目的 hello@。每个别名都像一个独立邮箱，有自己的发件人名称、签名、团队和品牌。别名在所有套餐中免费，不计入邮箱数量。最多 20 个。",
+    "identities": "每个别名",
+    "edit": "编辑 {{alias}}",
+    "badgeSelf": "以自身地址发送",
+    "badgeVia": "通过 {{email}} 回复",
+    "openTickets": "打开它的工单",
+    "senderName": "发件人名称",
+    "senderNameHint": "{mailbox} 在发件人名称中显示的内容。留空则使用邮箱的名称。",
+    "team": "新工单归入",
+    "brand": "品牌",
+    "brandHint": "发往此别名的新工单会使用该品牌的邮件、帮助中心和满意度调查。",
+    "signature": "签名",
+    "signatureLabel": "{{alias}} 的签名",
+    "signaturePlaceholder": "留空则使用团队或邮箱的签名",
+    "signatureHint": "发往此别名的邮件会带上它，并排在团队和邮箱签名之前。",
+    "sendAs": {
+      "label": "回复",
+      "smtp": "从此地址发出。",
+      "system": "从 {{sender}} 发出，回复发往此地址。",
+      "gmailVerified": "从此地址发出。Gmail 已将它列为可代发的地址。",
+      "gmailUnverified": "从 {{email}} 发出，回复发往此地址。Gmail 未将它列为可代发的地址。",
+      "gmailClaimed": "从此地址发出，因为 Gmail 可以用它代发。",
+      "replyTo": "从 {{email}} 发出，回复发往此地址。",
+      "gmailClaim": "Gmail 可以用此地址代发",
+      "gmailHow": "请先在 Gmail 中添加：Settings > Accounts > Send mail as。然后再开启此项。",
+      "microsoft": "在 Microsoft 允许的情况下从此地址发出，否则从 {{email}} 发出。",
+      "microsoftRefused": "Microsoft 拒绝用此地址发送，因此会从 {{email}} 发出，回复发往此地址。",
+      "tryAgain": "重试"
+    },
+    "gmail": {
+      "title": "来自 Gmail",
+      "hint": "{{account}} 在 Gmail 中可代发的其他地址。添加一个即可在此接收并回复它的邮件。",
+      "checkedAt": "已于 {{when}} 检查。",
+      "check": "重新检查",
+      "checked": "已检查 Gmail 的代发地址",
+      "add": "添加",
+      "addLabel": "把 {{email}} 添加为别名",
+      "pending": "等待在 Gmail 中确认",
+      "none": "Gmail 未列出其他地址。",
+      "sendOnly": "对于仅发送的连接，Google 不会共享此账户的其他代发地址。请在上方手动添加。"
+    }
+  },
+  "phone": {
+    "title": "电话",
+    "description": "连接你的云电话系统。每通电话都会记录到来电人的工单上，包括由谁接听、通话时长和录音。",
+    "connections": {
+      "title": "电话系统",
+      "description": "这些账户的来电都会记录在工单上。"
+    },
+    "empty": {
+      "title": "还没有电话系统",
+      "body": "连接 Aircall 或 Voys，每通电话都会记录到来电人的工单上。",
+      "tipTimeline": "工单时间线中的通话",
+      "tipMissed": "未接来电不会没人处理",
+      "tipAutomations": "通话结束时触发自动化"
+    },
+    "health": {
+      "healthy": "接听正常",
+      "action_required": "需要处理",
+      "error": "无法使用",
+      "unknown": "尚未检测",
+      "test": "测试",
+      "tested": "连接正常。",
+      "testedAttention": "连接需要处理。",
+      "testError": "无法测试连接。",
+      "waiting": "等待第一通来电"
+    },
+    "healthCode": {
+      "receiving": "来电已发送到 opendesk。",
+      "webhook_missing": "电话系统没有把来电发送到 opendesk。测试连接以重新设置。",
+      "credentials_refused": "电话系统拒绝了凭据。请替换为可用的凭据。",
+      "provider_unreachable": "无法连接电话系统。请稍后再试。",
+      "webhookManual": "还没有来电。请在 {{name}} 中添加下面的 Webhook 地址，然后拨打一个测试电话。"
+    },
+    "lastEvent": "最近一次通话事件 {{when}}",
+    "noEventYet": "还没有通话。来电一响，通话就会出现在工单上。",
+    "webhook": "Webhook 地址，由 opendesk 在你的账户中注册",
+    "rotate": {
+      "label": "更换 {{name}} 的凭据",
+      "title": "更换 {{name}} 的凭据",
+      "submit": "更换",
+      "saved": "凭据已更换。"
+    },
+    "disconnectLabel": "断开 {{name}}",
+    "disconnectTitle": "断开电话系统？",
+    "disconnectBody": "opendesk 会从 {{name}} 中移除自己的 Webhook，并停止记录新的来电。已记录在工单上的通话会保留。",
+    "disconnect": "断开",
+    "disconnected": "电话系统已断开。",
+    "disconnectError": "无法断开电话系统。",
+    "saveError": "无法保存修改。",
+    "placement": {
+      "title": "来自 {{name}} 的通话",
+      "description": "通话会去哪里，以及在那边做什么。",
+      "reuse": "使用最近已解决的工单",
+      "reuseHint": "来电人没有待处理工单时，通话会记录在其于所选时间内最近解决的工单上。",
+      "reuseNever": "来电人没有待处理工单时，通话会新建一张工单。",
+      "never": "从不",
+      "day": "1 天内",
+      "daysN": "{{n}} 天内",
+      "assign": "分配已接听的来电",
+      "assignHint": "没有归属的工单会分配给接听该通话的同事。同事按邮箱匹配。",
+      "cards": "在 Aircall 中显示来电人",
+      "cardsHint": "通话响铃时，Aircall 会显示来电人、这通电话要记录的工单以及其最近的工单。",
+      "dial": "从 opendesk 拨号",
+      "dialHint": "联系人和工单上的电话号码会打开你的电话应用。把 {{name}} 设为电话链接的默认应用，即可用它拨号。"
+    },
+    "automations": {
+      "title": "自动化",
+      "description": "通话结束时可以运行自动化，条件包括通话结果、方向、线路、标签以及是否在工作时间之外。",
+      "docs": "电话指南",
+      "docsHint": "设置步骤和自动化示例。",
+      "openDocs": "打开指南"
+    },
+    "example": {
+      "name": "工作时间外的未接来电",
+      "hint": "重新打开来电人的工单，添加备注并提高优先级。创建后处于关闭状态，供你查看。",
+      "create": "创建此自动化",
+      "note": "工作时间外的未接来电：请回电。",
+      "created": "自动化已创建，处于关闭状态。",
+      "error": "无法创建自动化。"
+    },
+    "providers": {
+      "title": "可以连接的电话系统",
+      "descriptionAdmin": "选择一个，用它的 API 密钥连接。",
+      "description": "管理员可以连接电话系统。"
+    },
+    "provider": {
+      "aircall": "云电话系统。通话、录音和 AI 摘要都会记录到工单上。",
+      "voys": "荷兰的云电话系统。通话、Voys Intelligence 转写和摘要都会记录到工单上。"
+    },
+    "field": {
+      "api_id": "API ID",
+      "api_token": "API 令牌"
+    },
+    "connect": {
+      "title": "连接 {{name}}",
+      "aircallSetup": "在 Aircall 中打开 Integrations & API，再打开 API keys，创建一个密钥。把它的 API ID 和 令牌 粘贴到这里：opendesk 会在你的账户中注册自己的 Webhook，不会动其他的。",
+      "cancel": "取消",
+      "submit": "连接",
+      "connected": "{{name}} 已连接。",
+      "error": "无法连接 {{name}}。",
+      "voysSetup": "在 Voys Freedom 中打开你的个人设置，复制你的 API 令牌。请使用有通话录音权限的管理员 令牌，这样转写和摘要也会一并获取。接下来，在 Voys 中添加 opendesk 的 Webhook 地址。"
+    },
+    "webhookManual": "Webhook 地址，需在 {{name}} 中添加为通话通知",
+    "disconnectBodyManual": "opendesk 会停止记录来自 {{name}} 的新来电。请同时在 {{name}} 中移除通话通知。已记录在工单上的通话会保留。",
+    "hook": {
+      "title": "在 {{name}} 中添加 opendesk",
+      "description": "把该地址添加为通话通知后，{{name}} 就会把来电发送到这里。",
+      "done": "完成",
+      "rotate": "生成新地址",
+      "rotateLabel": "为 {{name}} 生成新的 Webhook 地址",
+      "rotateTitle": "生成新的 Webhook 地址？",
+      "rotateBody": "当前地址会立即失效。请在 {{name}} 中粘贴新地址，以继续接收来电。",
+      "rotateError": "无法生成新的 Webhook 地址。"
+    },
+    "voys": {
+      "step1": "在 Voys Freedom 中打开 Integratie，再打开 Gespreksnotificaties，然后点击 Toevoegen。",
+      "step2": "输入描述，例如 opendesk，并把服务选择为 Custom。",
+      "step3": "把 Webhook 地址粘贴为“Web hook URL”。",
+      "step4": "勾选摘要和转写事件（需要 Voys Intelligence），然后点击 Opslaan。",
+      "step5": "拨打一个测试电话：来电一接入，连接状态就会显示“接听正常”。"
+    }
+  },
+  "folders": {
+    "title": "文件夹",
+    "description": "opendesk 会从你的 IMAP 服务器上的这些文件夹收取邮件。请选择服务器规则把支持邮件归入的文件夹，例如发往别名的邮件。同一封邮件出现在多个文件夹中时，只会成为一条工单消息。",
+    "inbox": "收件箱",
+    "choose": "选择文件夹",
+    "done": "完成",
+    "failed": "无法列出文件夹",
+    "retry": "重试",
+    "hint": "最多选择 {{max}} 个文件夹。保存后生效。",
+    "full": "一个邮箱最多读取 {{max}} 个文件夹。取消勾选一个才能选择其他文件夹。",
+    "saveFirst": "请先保存服务器设置，再选择文件夹。",
+    "special": {
+      "sent": "已发送邮件",
+      "drafts": "草稿",
+      "trash": "垃圾箱",
+      "junk": "垃圾邮件",
+      "all": "全部邮件"
+    }
+  },
+  "sentCopy": {
+    "title": "在服务器上保留已发送邮件",
+    "hint": "像邮件应用那样，把这个邮箱发出的每封邮件保存一份到你的 IMAP 服务器上的文件夹中，这样你的邮箱里就有完整的会话。",
+    "folder": "已发送邮件的文件夹",
+    "choose": "选择文件夹",
+    "loading": "正在加载文件夹…"
+  }
+}
