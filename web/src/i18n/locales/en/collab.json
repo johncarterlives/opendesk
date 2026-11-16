@@ -217,6 +217,7 @@
     "labelCreated": "Label created",
     "snooze": "Snooze",
     "snoozeNeedsHandling": "Snooze works on shared accounts with Handling on. Turn it on in the account's settings.",
+    "snoozeNeedsSharing": "Snooze works on shared accounts with Handling on. Share the account and turn on Handling in its settings.",
     "snoozeGmailNote": "Snooze here, not in Gmail: everyone sees it here. An email snoozed in Gmail shows here as archived until Gmail brings it back.",
     "assignTo": "Assign to…",
     "shareWith": "Share with…",

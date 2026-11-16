@@ -72,6 +72,7 @@ import { SearchCoverage, SpamBesideWork, StorageFullBanner } from "@/components/
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "@/components/collab/pickers";
 import { ListShareDialog, SnoozeItems } from "@/components/collab/ThreadMenu";
 import { SelectAllBar } from "@/components/collab/SelectAllBar";
+import { SnoozeUnavailable } from "@/components/collab/SnoozeUnavailable";
 import { ThreadRow, type AIDraftAction } from "@/components/collab/ThreadRow";
 import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { useConfirm } from "@/components/ui/confirm";
@@ -1073,7 +1074,7 @@ export default function MailPage() {
                     // Always in view, greyed out with the reason, rather than missing (GH#532).
                     <>
                       <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
-                      <SnoozeMenu onSnooze={() => {}} unavailable={t("action.snoozeNeedsHandling")} />
+                      <SnoozeUnavailable accounts={[...new Set(selectedThreads.map((x) => x.account_id))].flatMap((id) => accountsById.get(id) ?? [])} />
                     </>
                   ) : (
                     <>

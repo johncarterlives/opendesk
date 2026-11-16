@@ -210,6 +210,7 @@
     "labelCreated": "Label erstellt",
     "snooze": "Zurückstellen",
     "snoozeNeedsHandling": "Zurückstellen gibt es bei geteilten Konten mit aktivierter Bearbeitung. Aktiviere sie in den Kontoeinstellungen.",
+    "snoozeNeedsSharing": "Zurückstellen gibt es bei geteilten Konten mit aktivierter Bearbeitung. Teile das Konto und aktiviere die Bearbeitung in seinen Einstellungen.",
     "snoozeGmailNote": "Stelle hier zurück, nicht in Gmail: Hier sehen es alle. Eine in Gmail zurückgestellte E-Mail erscheint hier als archiviert, bis Gmail sie zurückbringt.",
     "assignTo": "Zuweisen an…",
     "shareWith": "Teilen mit…",

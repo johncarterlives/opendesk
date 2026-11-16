@@ -71,6 +71,7 @@ import { MailMessageItem } from "./MailMessageItem";
 import { PersonPanel } from "./PersonPanel";
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "./pickers";
 import { ShareDialog } from "./ShareDialog";
+import { SnoozeUnavailable } from "./SnoozeUnavailable";
 import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { weekdayClock } from "@/lib/format";
 
@@ -537,7 +538,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
             </HeaderButton>
             {!account?.handling_enabled ? (
               // Always in view, so it is found where Gmail and Outlook keep it, and says why it is off (GH#532).
-              <SnoozeMenu onSnooze={() => {}} unavailable={t("action.snoozeNeedsHandling")} />
+              <SnoozeUnavailable accounts={account ? [account] : []} />
             ) : (
               <>
                 <HeaderButton label={th.needs_action ? t("action.done") : t("action.needsAction")} pressed={!th.needs_action} onClick={() => onAction(th.needs_action ? "done" : "needs_action", { silent: true })}>

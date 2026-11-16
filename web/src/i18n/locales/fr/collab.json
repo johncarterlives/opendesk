@@ -216,6 +216,7 @@
     "labelCreated": "Étiquette créée",
     "snooze": "Mettre en pause",
     "snoozeNeedsHandling": "La mise en pause fonctionne sur les comptes partagés avec le Traitement activé. Activez-le dans les paramètres du compte.",
+    "snoozeNeedsSharing": "La mise en pause fonctionne sur les comptes partagés avec le Traitement activé. Partagez le compte et activez le Traitement dans ses paramètres.",
     "snoozeGmailNote": "Mettez en pause ici, pas dans Gmail : tout le monde le voit ici. Un e-mail mis en pause dans Gmail apparaît ici comme archivé jusqu’à ce que Gmail le fasse revenir.",
     "assignTo": "Attribuer à…",
     "shareWith": "Partager avec…",

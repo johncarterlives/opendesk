@@ -17,6 +17,7 @@ export function SnoozeMenu({
   open: openProp,
   onOpenChange,
   unavailable,
+  unavailableAction,
   trigger,
   note,
 }: {
@@ -24,8 +25,10 @@ export function SnoozeMenu({
   disabled?: boolean;
   open?: boolean;
   onOpenChange?: (o: boolean) => void;
-  /** Why Snooze cannot be used here: the button stays, greyed out, and says why instead of opening. */
+  /** Why Snooze cannot be used here: the button stays, greyed out, and opens on why instead of the choices. */
   unavailable?: string;
+  /** Under the reason, e.g. a link to where it is turned on. */
+  unavailableAction?: ReactNode;
   /** A trigger of the caller's own (a Tooltip around a button), e.g. a list row's hover button. */
   trigger?: ReactNode;
   /** A line under the choices, e.g. that a snooze set at the provider is not seen here. */
@@ -50,13 +53,26 @@ export function SnoozeMenu({
   const now = new Date();
   const opts = snoozePresets(workspace?.settings).map((p) => ({ label: snoozeLabel(p, t), at: snoozeAt(p, now) }));
   if (unavailable) {
-    // A disabled button gets no pointer events, so the focusable wrapper carries the explanation.
+    // Greyed out but still a button: tap, click or keyboard opens the reason, which a tooltip alone would hide on touch.
     return (
-      <Tooltip content={unavailable}>
-        <span tabIndex={0} aria-label={`${t("snooze.title")}: ${unavailable}`} className="flex rounded-md outline-none focus-visible:shadow-[0_0_0_2px_var(--focus)]">
-          <Button variant="ghost" size="sm" square aria-hidden tabIndex={-1} disabled icon={<AlarmClock className="size-3.5" />} />
-        </span>
-      </Tooltip>
+      <Popover
+        open={open}
+        onOpenChange={setOpen}
+        align="end"
+        className="w-[248px] p-2.5"
+        trigger={
+          <Tooltip content={unavailable}>
+            <Button variant="ghost" size="sm" square aria-disabled="true" aria-label={`${t("snooze.title")}: ${unavailable}`} icon={<AlarmClock className="size-3.5 opacity-40" />} />
+          </Tooltip>
+        }
+      >
+        <p className="text-[12px] leading-snug text-fg-2">{unavailable}</p>
+        {unavailableAction && (
+          <div className="mt-2 text-[12px]" onClick={() => setOpen(false)}>
+            {unavailableAction}
+          </div>
+        )}
+      </Popover>
     );
   }
   return (
