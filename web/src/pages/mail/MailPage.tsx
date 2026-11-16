@@ -368,6 +368,7 @@ export default function MailPage() {
     (x: MailThread, a: MailThreadAction) => actRef.current([x], a, { silent: a !== "archive" && a !== "trash" && a !== "done" && a !== "needs_action" }),
     [],
   );
+  const onRowSnooze = useCallback((x: MailThread, at: Date) => actRef.current([x], "snooze", { until: at.toISOString() }), []);
 
   // ── AI drafts in place (Ready for review and Needs action, GH#430) ─────────
   // Send goes as saved; Edit opens the conversation with the draft in the composer;
@@ -1051,7 +1052,13 @@ export default function MailPage() {
                   <BulkButton label={t("action.star")} shortcut="s" onClick={star}>
                     <Star />
                   </BulkButton>
-                  {selectionHandling && (
+                  {!selectionHandling ? (
+                    // Always in view, greyed out with the reason, rather than missing (GH#532).
+                    <>
+                      <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
+                      <SnoozeMenu onSnooze={() => {}} unavailable={t("action.snoozeNeedsHandling")} />
+                    </>
+                  ) : (
                     <>
                       <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
                       {selectedThreads.every((x) => x.needs_action) ? (
@@ -1141,6 +1148,7 @@ export default function MailPage() {
                       onToggle={toggle}
                       onHover={prefetch}
                       onAction={canAct ? onRowAction : undefined}
+                      onSnooze={canAct ? onRowSnooze : undefined}
                       handling={handlingOn(x)}
                       onDragOut={canAct ? onDragOut : undefined}
                       onDraft={draftsInRows ? onRowDraft : undefined}

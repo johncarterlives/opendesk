@@ -532,7 +532,10 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
             <HeaderButton label={th.unread ? t("action.read") : t("action.unread")} shortcut={th.unread ? "shift i" : "shift u"} onClick={() => onAction(th.unread ? "read" : "unread", { silent: true })}>
               {th.unread ? <MailOpen /> : <Mail />}
             </HeaderButton>
-            {account?.handling_enabled && (
+            {!account?.handling_enabled ? (
+              // Always in view, so it is found where Gmail and Outlook keep it, and says why it is off (GH#532).
+              <SnoozeMenu onSnooze={() => {}} unavailable={t("action.snoozeNeedsHandling")} />
+            ) : (
               <>
                 <HeaderButton label={th.needs_action ? t("action.done") : t("action.needsAction")} pressed={!th.needs_action} onClick={() => onAction(th.needs_action ? "done" : "needs_action", { silent: true })}>
                   <Check />

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { setHours, setMinutes, format } from "date-fns";
 import { AlarmClock } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Popover } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,23 @@ import { weekdayClock } from "@/lib/format";
 import { q } from "@/lib/queries";
 import { snoozeAt, snoozeLabel, snoozePresets } from "./snooze";
 
-export function SnoozeMenu({ onSnooze, disabled, open: openProp, onOpenChange }: { onSnooze: (at: Date) => void; disabled?: boolean; open?: boolean; onOpenChange?: (o: boolean) => void }) {
+export function SnoozeMenu({
+  onSnooze,
+  disabled,
+  open: openProp,
+  onOpenChange,
+  unavailable,
+  trigger,
+}: {
+  onSnooze: (at: Date) => void;
+  disabled?: boolean;
+  open?: boolean;
+  onOpenChange?: (o: boolean) => void;
+  /** Why Snooze cannot be used here: the button stays, greyed out, and says why instead of opening. */
+  unavailable?: string;
+  /** A trigger of the caller's own (a Tooltip around a button), e.g. a list row's hover button. */
+  trigger?: ReactNode;
+}) {
   const { t } = useTranslation("inbox");
   const [innerOpen, setInnerOpen] = useState(false);
   const open = openProp ?? innerOpen;
@@ -30,6 +46,16 @@ export function SnoozeMenu({ onSnooze, disabled, open: openProp, onOpenChange }:
   const { data: workspace } = useQuery(q.workspace());
   const now = new Date();
   const opts = snoozePresets(workspace?.settings).map((p) => ({ label: snoozeLabel(p, t), at: snoozeAt(p, now) }));
+  if (unavailable) {
+    // A disabled button gets no pointer events, so the focusable wrapper carries the explanation.
+    return (
+      <Tooltip content={unavailable}>
+        <span tabIndex={0} aria-label={`${t("snooze.title")}: ${unavailable}`} className="flex rounded-md outline-none focus-visible:shadow-[0_0_0_2px_var(--focus)]">
+          <Button variant="ghost" size="sm" square aria-hidden tabIndex={-1} disabled icon={<AlarmClock className="size-3.5" />} />
+        </span>
+      </Tooltip>
+    );
+  }
   return (
     <Popover
       open={open}
@@ -37,9 +63,11 @@ export function SnoozeMenu({ onSnooze, disabled, open: openProp, onOpenChange }:
       align="end"
       className="w-[264px] p-1"
       trigger={
-        <Tooltip content={t("snooze.title")} shortcut="ticket.snooze">
-          <Button variant="ghost" size="sm" square aria-label={t("snooze.title")} disabled={disabled} icon={<AlarmClock className="size-3.5" />} />
-        </Tooltip>
+        trigger ?? (
+          <Tooltip content={t("snooze.title")} shortcut="ticket.snooze">
+            <Button variant="ghost" size="sm" square aria-label={t("snooze.title")} disabled={disabled} icon={<AlarmClock className="size-3.5" />} />
+          </Tooltip>
+        )
       }
     >
       <div className="label-caps px-2 pb-1 pt-1.5">{t("snooze.until")}</div>

@@ -1,11 +1,11 @@
 // One conversation in a mail list: unread weight, participants, subject, snippet,
 // time, star, attachment, the account's dot when the list spans accounts, labels,
-// assignees, shared and comment marks. Hover offers archive, trash, read and star (and Done or
-// Needs action with Handling on); a right click opens its menu and the row drags to the sidebar.
+// assignees, shared and comment marks. Hover offers archive, trash, read and star (and Snooze, and
+// Done or Needs action, with Handling on); a right click opens its menu and the row drags to the sidebar.
 // A waiting AI draft shows under it with Send, Edit and Discard where the list offers them.
 
 import { motion, useReducedMotion } from "motion/react";
-import { Archive, CircleCheck, CircleDot, Mail, MailOpen, MessageSquare, Paperclip, PencilLine, Send, Sparkles, Star, Trash2, Users } from "lucide-react";
+import { AlarmClock, Archive, CircleCheck, CircleDot, Mail, MailOpen, MessageSquare, Paperclip, PencilLine, Send, Sparkles, Star, Trash2, Users } from "lucide-react";
 import { forwardRef, memo, type CSSProperties, type DragEvent, type HTMLAttributes, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { MailCategory, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
@@ -18,6 +18,7 @@ import { AvatarStack } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip } from "@/components/ui/tooltip";
 import { rowMotion } from "@/components/tickets/motion";
+import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { AccountDot, LabelPill } from "./bits";
 import { ThreadMenu } from "./ThreadMenu";
 
@@ -43,6 +44,8 @@ export type ThreadRowProps = {
   onAction?: (t: MailThread, a: MailThreadAction) => void;
   /** Its account has Handling on: hover offers Done or Needs action. */
   handling?: boolean;
+  /** Snoozing from the hover buttons (with Handling on), as Gmail offers it there. */
+  onSnooze?: (t: MailThread, at: Date) => void;
   /** Dragging the row (or the selection it is in) toward the sidebar; left out, it does not drag. */
   onDragOut?: (t: MailThread, e: DragEvent) => void;
   /** Acting on its waiting AI draft in place (Ready for review); left out where it is not offered. */
@@ -100,6 +103,9 @@ function AIDraftStrip({ t, busy, onDraft }: { t: MailThread; busy?: boolean; onD
   );
 }
 
+const quickClass =
+  "flex size-6 items-center justify-center rounded-sm text-fg-3 outline-none transition-colors duration-100 hover:bg-hover hover:text-fg focus-visible:bg-hover focus-visible:text-fg active:scale-95 [&_svg]:size-3.5";
+
 function Quick({ label, shortcut, onClick, children }: { label: string; shortcut?: string; onClick: () => void; children: ReactNode }) {
   return (
     <Tooltip content={label} shortcut={shortcut}>
@@ -110,7 +116,7 @@ function Quick({ label, shortcut, onClick, children }: { label: string; shortcut
           e.stopPropagation();
           onClick();
         }}
-        className="flex size-6 items-center justify-center rounded-sm text-fg-3 outline-none transition-colors duration-100 hover:bg-hover hover:text-fg focus-visible:bg-hover focus-visible:text-fg active:scale-95 [&_svg]:size-3.5"
+        className={quickClass}
       >
         {children}
       </button>
@@ -119,7 +125,7 @@ function Quick({ label, shortcut, onClick, children }: { label: string; shortcut
 }
 
 const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function ThreadRow(
-  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, handling, onDragOut, onDraft, draftBusy, style, ...trigger },
+  { thread: t, active, focused, selected, selecting, compact, accountColor, accountName, labels, category, ownEmails, onOpen, onToggle, onHover, onAction, handling, onSnooze, onDragOut, onDraft, draftBusy, style, ...trigger },
   ref,
 ) {
   const { t: tr } = useTranslation("collab");
@@ -228,9 +234,10 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function T
   ) : null;
   const pills = [tab, alias, ...labels.slice(0, compact ? 2 : 3).map((l) => <LabelPill key={l.id} name={l.name} color={l.color} />)];
 
+  const snoozing = !!(onAction && handling && onSnooze);
   const end = (
-    // Room for the hover buttons, so they never cover the marks beside them (a fourth with Handling on).
-    <span className={cn("relative flex shrink-0 items-center justify-end", compact ? "h-4" : "h-6", onAction && handling ? "min-w-[104px]" : compact ? "min-w-[52px]" : "min-w-[72px]")}>
+    // Room for the hover buttons, so they never cover the marks beside them (Done and Snooze with Handling on).
+    <span className={cn("relative flex shrink-0 items-center justify-end", compact ? "h-4" : "h-6", snoozing ? "min-w-[130px]" : onAction && handling ? "min-w-[104px]" : compact ? "min-w-[52px]" : "min-w-[72px]")}>
       <span className={cn("flex items-center gap-2 transition-opacity duration-100", onAction && "md:group-hover:opacity-0 md:group-focus-within:opacity-0")}>
         {!compact && assignees}
         <time
@@ -252,6 +259,21 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function T
           <Quick label={t.unread ? tr("action.read") : tr("action.unread")} shortcut={t.unread ? "shift i" : "shift u"} onClick={() => onAction(t, t.unread ? "read" : "unread")}>
             {t.unread ? <MailOpen /> : <Mail />}
           </Quick>
+          {snoozing && (
+            // Clicks in the picker (portalled, but inside the row in React's tree) must not open the conversation.
+            <span className="flex" onClick={(e) => e.stopPropagation()}>
+              <SnoozeMenu
+                onSnooze={(at) => onSnooze!(t, at)}
+                trigger={
+                  <Tooltip content={tr("action.snooze")}>
+                    <button type="button" aria-label={tr("action.snooze")} className={quickClass}>
+                      <AlarmClock />
+                    </button>
+                  </Tooltip>
+                }
+              />
+            </span>
+          )}
           {handling && (
             <Quick label={t.needs_action ? tr("action.done") : tr("action.needsAction")} onClick={() => onAction(t, t.needs_action ? "done" : "needs_action")}>
               {t.needs_action ? <CircleCheck /> : <CircleDot />}

@@ -215,6 +215,7 @@
     "createLabel": "Créer l’étiquette",
     "labelCreated": "Étiquette créée",
     "snooze": "Mettre en pause",
+    "snoozeNeedsHandling": "La mise en pause fonctionne sur les comptes partagés avec le Traitement activé. Activez-le dans les paramètres du compte.",
     "assignTo": "Attribuer à…",
     "shareWith": "Partager avec…",
     "moveTo": "Déplacer vers…",

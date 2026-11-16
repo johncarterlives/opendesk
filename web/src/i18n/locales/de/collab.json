@@ -209,6 +209,7 @@
     "createLabel": "Label erstellen",
     "labelCreated": "Label erstellt",
     "snooze": "Zurückstellen",
+    "snoozeNeedsHandling": "Zurückstellen gibt es bei geteilten Konten mit aktivierter Bearbeitung. Aktivieren Sie sie in den Kontoeinstellungen.",
     "assignTo": "Zuweisen an…",
     "shareWith": "Teilen mit…",
     "moveTo": "Verschieben nach…",
