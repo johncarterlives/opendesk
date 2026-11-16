@@ -1029,6 +1029,7 @@ export default function MailPage() {
             matching={!!query.q}
             onToggle={toggleAll}
             onSelectEvery={() => void every.start()}
+            compact={compact}
             actions={
               selecting ? (
                 <>
