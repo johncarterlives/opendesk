@@ -1,0 +1,90 @@
+{
+  "status": {
+    "open": "待处理",
+    "pending": "等待中",
+    "on_hold": "挂起",
+    "solved": "已解决",
+    "closed": "已关闭"
+  },
+  "priority": {
+    "urgent": "紧急",
+    "high": "高",
+    "normal": "普通",
+    "low": "低"
+  },
+  "severity": {
+    "sev1": "Sev 1",
+    "sev2": "Sev 2",
+    "sev3": "Sev 3",
+    "sev4": "Sev 4"
+  },
+  "severityHint": {
+    "sev1": "严重故障",
+    "sev2": "重大影响",
+    "sev3": "轻微影响",
+    "sev4": "影响较小"
+  },
+  "channel": {
+    "email": "邮件",
+    "chat": "聊天",
+    "api": "API",
+    "portal": "客户门户",
+    "phone": "电话"
+  },
+  "sentiment": {
+    "positive": "正面",
+    "neutral": "中性",
+    "negative": "负面",
+    "frustrated": "不满"
+  },
+  "spam": "垃圾邮件",
+  "noPriority": "无优先级",
+  "sla": {
+    "over": "超时 {{duration}}",
+    "firstResponse": {
+      "on_track": "首次回复期限",
+      "due_soon": "首次回复即将到期",
+      "breached": "首次回复已超时"
+    },
+    "resolution": {
+      "on_track": "解决期限",
+      "due_soon": "解决即将到期",
+      "breached": "解决已超时"
+    }
+  },
+  "reports": {
+    "created": "已创建",
+    "solved": "已解决",
+    "day": "天",
+    "tableCaption": "每天新建和解决的工单",
+    "chartLabel_other": "每天新建和解决的工单，共 {{count}} 天。用方向键逐天查看。",
+    "range": {
+      "last7": "最近 7 天",
+      "last30": "最近 30 天",
+      "last90": "最近 90 天",
+      "thisMonth": "本月",
+      "lastMonth": "上月",
+      "label": "日期范围",
+      "custom": "自定义范围",
+      "from": "从",
+      "to": "至",
+      "apply": "应用范围"
+    }
+  },
+  "tickets": {
+    "bulkActions": "批量操作",
+    "addLabels": "添加标签",
+    "closeTicket": "关闭工单",
+    "previousTicket": "上一个工单",
+    "nextTicket": "下一个工单",
+    "moreActions": "更多操作",
+    "toggleDetails": "展开或收起详情",
+    "ticketDetails": "工单详情",
+    "conversation": "会话",
+    "mentionTeammate": "提及同事",
+    "mergeSearch": "按主题、客户或 #number 搜索",
+    "remove": "移除 {{name}}",
+    "addAddress": "添加 {{address}}",
+    "openFile": "打开 {{name}}"
+  }
+}

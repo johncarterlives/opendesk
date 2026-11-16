@@ -1,0 +1,47 @@
+{
+  "everywhere": {
+    "title": "Všude",
+    "mine": "Moje tikety",
+    "mail": "Veškerá pošta",
+    "mineTitle": "Moje tikety všude",
+    "mailTitle": "Veškerá pošta všude",
+    "mineHint": "Tikety přiřazené vám ve všech workspace, od nejnovější aktivity.",
+    "mailHint": "Vaše schránky ve všech workspace s Collab, od nejnovějších zpráv.",
+    "emptyMine": "Nic vám není přiřazeno",
+    "emptyMineHint": "Zde se zobrazí tikety přiřazené vám v kterémkoli workspace.",
+    "emptyMail": "Zatím žádná pošta",
+    "emptyMailHint": "Zde se zobrazí konverzace z vašich e-mailových účtů ve všech workspace.",
+    "noMail": "Žádný z vašich workspace nemá Collab",
+    "noMailHint": "Veškerá pošta sdružuje e-mailové účty workspace, které mají Collab.",
+    "failed": "{{name}} se nepodařilo načíst",
+    "retry": "Zkusit znovu",
+    "openIn": "Otevře se ve workspace {{name}}",
+    "workspaces": "Workspace v tomto seznamu",
+    "allWorkspaces": "Všechny workspace",
+    "more": "Starší položky najdete v seznamu příslušného workspace."
+  },
+  "customize": {
+    "arrange": "Uspořádat workspace",
+    "title": "Workspace",
+    "description": "Uspořádání workspace, do kterých patříte, v přepínači workspace. Toto nastavení vidíte pouze vy.",
+    "order": "Pořadí a viditelnost",
+    "orderHint": "Pořadí změníte přetažením nebo klávesou Alt se šipkou nahoru či dolů. Skrytý workspace se v přepínači sbalí a nezobrazí se ve zvonku ani v seznamech „Všude“.",
+    "drag": "Změnit pořadí workspace {{name}}",
+    "show": "Zobrazit workspace {{name}}",
+    "failed": "Uložení se nepodařilo. Vaše změna byla vrácena zpět.",
+    "single": "Patříte do jednoho workspace",
+    "singleHint": "Až se připojíte k dalšímu, můžete je zde uspořádat a spojit do Space.",
+    "moved": "Workspace {{name}} je nyní na pozici {{n}}",
+    "hiddenNow": "Skrytý",
+    "current": "Právě otevřený"
+  },
+  "badge": {
+    "in": "Ve workspace {{name}}"
+  },
+  "switcher": {
+    "hidden_one": "{{count}} skrytý workspace",
+    "hidden_few": "{{count}} skryté workspace",
+    "hidden_many": "{{count}} skrytého workspace",
+    "hidden_other": "{{count}} skrytých workspace"
+  }
+}

@@ -26,7 +26,8 @@ type Destination = { id: string; connection_id: string; team_id: string|null;
   include_notes: boolean; message_limit: number;
   mode: "route"|"copy"; conditions: Condition[]; mirror: Mirror[];
   ollie_summary: boolean; ollie_warnings: boolean; ollie_personality: string;
-  ollie_length: "brief"|"standard"|"detailed"; created_at: string };
+  ollie_length: "brief"|"standard"|"detailed";
+  min_role: "agent"|"admin"; allowed_user_ids: string[]; /* "Access" */ created_at: string };
 type Mirror = "customer_replies"|"agent_replies"|"status_changes"|"assignee_changes"|"priority_changes";
 type OllieSettings = { actions: ("reply"|"note"|"assign_self"|"status"|"priority"|"create_ticket")[] };
 type Delivery = { event_seq: number; event_type: string; ticket_number?: number;
@@ -53,8 +54,8 @@ type Operations = { window_started_at: string; generated_at: string;
 | GET | `/v1/support-channels/deliveries` | admin, `settings:read` | `limit?`, `cursor?` → `Page<Delivery>` |
 | GET | `/v1/support-channels/operations` | admin, `settings:read` | → `Operations`, a rolling 24-hour view |
 | POST | `/v1/support-channels/deliveries/{event_seq}/retry` | admin user | → 202 `{event_seq,status:"queued"}` for a failed event |
-| POST | `/v1/support-channels/destinations` | admin user | `{connection_id,team_id?,priority?,external_channel_id,external_channel_name?,include_notes?,message_limit?,mode?,conditions?,mirror?,ollie_summary?,ollie_warnings?,ollie_personality?,ollie_length?}` → 201 `Destination` |
-| PATCH | `/v1/support-channels/destinations/{id}` | admin user | `{include_notes?,mode?,conditions?,mirror?,ollie_summary?,ollie_warnings?,ollie_personality?,ollie_length?}` → `Destination` |
+| POST | `/v1/support-channels/destinations` | admin user | `{connection_id,team_id?,priority?,external_channel_id,external_channel_name?,include_notes?,message_limit?,mode?,conditions?,mirror?,min_role?,allowed_user_ids?,ollie_summary?,ollie_warnings?,ollie_personality?,ollie_length?}` → 201 `Destination` |
+| PATCH | `/v1/support-channels/destinations/{id}` | admin user | `{include_notes?,mode?,conditions?,mirror?,min_role?,allowed_user_ids?,ollie_summary?,ollie_warnings?,ollie_personality?,ollie_length?}` → `Destination` |
 | GET | `/v1/support-channels/ollie` | viewer, `settings:read` | → `OllieSettings` |
 | PUT | `/v1/support-channels/ollie` | admin user | `OllieSettings` → `OllieSettings`, replaces the list |
 | DELETE | `/v1/support-channels/destinations/{id}` | admin user | → 204, including its thread mappings |
@@ -111,6 +112,34 @@ Version 1 mirrors email tickets only.
 Without it, only customer and agent replies are posted, and Ollie reads only the public
 conversation when it answers in that destination's threads, so a note can't surface there
 through an answer either.
+
+### Access
+
+A destination says who may act from its threads. By default every linked agent, admin and owner
+may (the roles that can work tickets at all); two settings narrow it:
+
+- `min_role` (`agent`, the default, or `admin`): `admin` lets only admins and owners act.
+- `allowed_user_ids` (at most 100 members, each an agent, admin or owner of the workspace; `422`
+  otherwise): when not empty, only those people may act. An empty list lets everyone with the role.
+  The two are one or the other: `min_role` `admin` with a non-empty list is `422`.
+
+A person on the list who is removed from the workspace or becomes a viewer stops matching at once. They
+stay on the stored list, and if they are added back as an agent or admin they regain access unless an
+admin has taken them off it. Saving the list drops anyone on it who no longer qualifies instead of
+refusing the save; a newly added id that does not qualify is still `422`, and so is a save that would
+drop everyone (an empty list would let everyone with the role).
+
+"Acting" is everything a person does in a thread: typed commands (`reply`, `note`, `assign`, `status`,
+`priority`), a press of a card's or a preview's button, asking Ollie, and asking Ollie to create a
+ticket from that channel's general channel. A linked person without access is told "You can't use
+opendesk from this channel. Ask an admin for access." (privately where the provider can), nothing is
+changed, and a provider-side edit or deletion of a message of theirs is dropped without a word. Linking an
+account (`link <code>`) is not acting and always works; the person's ticket visibility is the same
+everywhere (`domain.LoadVisibleTicket`), so access narrows a channel, never widens it. The rule is
+read when the message is handled, not when it was sent. Both settings are changed by an admin person
+(`422` for a bad value), published as `support_channel_destination.updated` and audit-logged with
+`min_role` and `allowed_user_ids` among the changed keys (`support_channel.destination_updated`);
+creating a destination logs `min_role` and how many people it names.
 
 ## Ollie
 

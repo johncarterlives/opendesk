@@ -713,6 +713,8 @@
     "ownAddress": "Eigene Adresse",
     "ownAddressHint": "Vom eigenen E-Mail-Konto der schreibenden Person gesendet statt von der Adresse des Tickets. Die Antworten des Kunden kommen in dieses Ticket zurück.",
     "toAddress": "an {{address}}",
+    "toAndOthers": "an {{to}} +{{others}}",
+    "receivedAt": "eingegangen bei {{address}}",
     "replyTo": "Reply-To <m>{{address}}</m>",
     "replyToUsed": "Antworten gehen an diese Adresse, wie vom Absender gewünscht",
     "replyToOther": "Der Absender möchte Antworten an diese Adresse. Sie gehört nicht zu seiner Organisation, daher gehen Antworten an {{address}}",

@@ -730,6 +730,8 @@
     "ownAddress": "Adresse personnelle",
     "ownAddressHint": "Envoyé depuis le compte de messagerie de son auteur plutôt que depuis l’adresse du ticket. Les réponses du client reviennent sur ce ticket.",
     "toAddress": "à {{address}}",
+    "toAndOthers": "à {{to}} +{{others}}",
+    "receivedAt": "reçu sur {{address}}",
     "replyTo": "Reply-To <m>{{address}}</m>",
     "replyToUsed": "Les réponses sont envoyées à cette adresse, comme l’expéditeur l’a demandé",
     "replyToOther": "L’expéditeur a demandé que les réponses soient envoyées ici. Cette adresse est hors de son organisation, donc les réponses vont à {{address}}",

@@ -393,6 +393,20 @@ describe("mock backend", () => {
     expect((await call("DELETE", `/v1/support-channels/connections/${created.body.id}`)).status).toBe(204);
   });
 
+  it("limits who may act from a destination: admins only, or chosen people", async () => {
+    const created = await call("POST", "/v1/support-channels/connections", { provider: "slack", credentials: { bot_token: "t", signing_secret: "s" } });
+    const route = await call("POST", "/v1/support-channels/destinations", { connection_id: created.body.id, external_channel_id: "C07ACCESS" });
+    expect(route.body).toMatchObject({ min_role: "agent", allowed_user_ids: [] });
+    const url = `/v1/support-channels/destinations/${route.body.id}`;
+    expect((await call("PATCH", url, { min_role: "owner" })).status).toBe(422);
+    expect((await call("PATCH", url, { min_role: "admin" })).body).toMatchObject({ min_role: "admin" });
+    const picked = await call("PATCH", url, { min_role: "agent", allowed_user_ids: ["u1", "u1", "u2"] });
+    expect(picked.body).toMatchObject({ min_role: "agent", allowed_user_ids: ["u1", "u2"] });
+    expect((await call("PATCH", url, { min_role: "admin" })).status).toBe(422);
+    expect((await call("PATCH", url, { allowed_user_ids: [] })).body.allowed_user_ids).toEqual([]);
+    expect((await call("DELETE", `/v1/support-channels/connections/${created.body.id}`)).status).toBe(204);
+  });
+
   it("sends presence_state when a ticket topic is joined", async () => {
     const [tid] = [...teammatePresence.keys()];
     const wid = db.workspaces[0].workspace.id;

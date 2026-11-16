@@ -717,6 +717,8 @@
     "ownAddress": "Own address",
     "ownAddressHint": "Sent from the writer's own mail account instead of the ticket's address. The customer's answers come back to this ticket.",
     "toAddress": "to {{address}}",
+    "toAndOthers": "to {{to}} +{{others}}",
+    "receivedAt": "received at {{address}}",
     "replyTo": "Reply-To <m>{{address}}</m>",
     "replyToUsed": "Replies go to this address, which the sender asked for",
     "replyToOther": "The sender asked for replies here. It is outside their organisation, so replies go to {{address}}",

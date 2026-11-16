@@ -1,0 +1,899 @@
+{
+  "sortable": {
+    "handle": "Pořadí změníte přetažením. Přesunout můžete také podržením Alt a stisknutím šipek.",
+    "hint": "Přetažením změnit pořadí"
+  },
+  "cancel": "Zrušit",
+  "labels": {
+    "title": "Štítky",
+    "description": "Barevné štítky třídí tikety, kontakty a firmy, aby se snadno hledaly, filtrovaly a zahrnovaly do přehledů. Smazáním se štítek odebere ze všech záznamů, které ho mají.",
+    "newLabel": "Nový štítek",
+    "newGroup": "Nová skupina",
+    "filter": "Filtrovat štítky",
+    "count_one": "{{count}} štítek",
+    "count_few": "{{count}} štítky",
+    "count_many": "{{count}} štítku",
+    "count_other": "{{count}} štítků",
+    "ungrouped": "Ostatní štítky",
+    "emptyGroup": "V této skupině zatím nejsou žádné štítky",
+    "editAria": "Upravit štítek {{name}}",
+    "actionsAria": "Akce pro štítek {{name}}",
+    "reorderAria": "Změnit pořadí štítku {{name}}. Přesunout můžete také podržením Alt a stisknutím šipek.",
+    "usageHint": "Tikety: {{tickets}}, kontakty: {{contacts}}, firmy: {{companies}}",
+    "createdToast": "Štítek „{{name}}“ vytvořen",
+    "savedToast": "Štítek uložen",
+    "archivedToast": "Archivován štítek „{{name}}“",
+    "restoredToast": "Obnoven štítek „{{name}}“",
+    "archivedSection_one": "{{count}} archivovaný štítek",
+    "archivedSection_few": "{{count}} archivované štítky",
+    "archivedSection_many": "{{count}} archivovaného štítku",
+    "archivedSection_other": "{{count}} archivovaných štítků",
+    "summary": {
+      "labels": "Štítky",
+      "groups": "Skupiny",
+      "onTickets": "Na tiketech",
+      "archived": "Archivované"
+    },
+    "columns": {
+      "label": "Štítek",
+      "appliesTo": "Platí pro",
+      "uses": "Použití"
+    },
+    "scope": {
+      "tickets": "Tikety",
+      "contacts": "Kontakty",
+      "companies": "Firmy",
+      "not": "Nelze použít pro: {{what}}"
+    },
+    "empty": {
+      "title": "Zatím žádné štítky",
+      "description": "Zde se zobrazují štítky přidané k tiketům. Pro začátek vytvořte několik štítků, například fakturace nebo chyba.",
+      "tips": {
+        "groups": "Skupiny mohou povolit vždy jen jeden štítek",
+        "who": "Administrátoři určují, kdo může vytvářet štítky"
+      }
+    },
+    "noMatch": {
+      "title": "Žádné odpovídající štítky",
+      "description": "Zkuste jiný název."
+    },
+    "menu": {
+      "edit": "Upravit",
+      "colour": "Barva",
+      "moveTo": "Přesunout do skupiny",
+      "merge": "Sloučit s jiným štítkem",
+      "archive": "Archivovat",
+      "restore": "Obnovit",
+      "delete": "Smazat"
+    },
+    "delete": {
+      "title": "Smazat tento štítek?",
+      "body": {
+        "before": "Štítek",
+        "after": "se odebere ze všech tiketů, kontaktů a firem, které ho mají. Tuto akci nelze vrátit zpět."
+      },
+      "confirm": "Smazat štítek"
+    },
+    "dialog": {
+      "newTitle": "Nový štítek",
+      "editTitle": "Upravit štítek",
+      "newDescription": "Agenti ho mohou ihned přidávat k tiketům.",
+      "name": "Název",
+      "newName": "Název nového štítku",
+      "namePlaceholder": "fakturace",
+      "preview": "Náhled",
+      "colour": "Barva",
+      "description": "Popis",
+      "descriptionHint": "Zobrazuje se při výběru, aby všichni používali štítek stejně.",
+      "descriptionPlaceholder": "Dotazy k fakturám, vrácení peněz a platebním metodám",
+      "group": "Skupina",
+      "noGroup": "Bez skupiny",
+      "exclusiveHint": "Záznam může mít vždy jen jeden štítek z této skupiny.",
+      "appliesTo": "Platí pro",
+      "create": "Vytvořit štítek",
+      "save": "Uložit štítek",
+      "duplicate": "Štítek s tímto názvem již existuje.",
+      "badChars": "Použijte písmena, číslice, mezery a - _ . / : & + #.",
+      "nameRequired": "Zadejte název štítku.",
+      "scopeRequired": "Zvolte, kde lze štítek použít."
+    },
+    "group": {
+      "newTitle": "Nová skupina",
+      "editTitle": "Upravit skupinu",
+      "description": "Skupiny sdružují související štítky, například Typ nebo Tarif.",
+      "name": "Název",
+      "namePlaceholder": "Typ",
+      "nameRequired": "Zadejte název skupiny.",
+      "exclusive": "Vždy jen jeden štítek",
+      "exclusiveHint": "Záznam může mít vždy jen jeden štítek z této skupiny.",
+      "exclusiveBadge": "Vždy jen jeden",
+      "create": "Vytvořit skupinu",
+      "save": "Uložit skupinu",
+      "actionsAria": "Akce pro skupinu {{name}}",
+      "addLabel": "Přidat štítek",
+      "edit": "Upravit skupinu",
+      "delete": "Smazat skupinu",
+      "deleteTitle": "Smazat tuto skupinu?",
+      "deleteBody": "Štítky ze skupiny {{name}} zůstanou zachované a přesunou se do skupiny „Ostatní štítky“.",
+      "deleteConfirm": "Smazat skupinu"
+    },
+    "merge": {
+      "title": "Sloučit štítek",
+      "description": "Vše označené štítkem {{name}} místo něj dostane vybraný štítek a štítek {{name}} se smaže.",
+      "search": "Hledat štítky",
+      "choose": "Zvolte štítek",
+      "confirm": "Sloučit"
+    },
+    "creation": {
+      "title": "Vytváření štítků",
+      "label": "Kdo může vytvářet štítky",
+      "anyone": "Kdokoli",
+      "admins": "Pouze administrátoři",
+      "anyoneHint": "Zadáním nového názvu při výběru štítku se štítek vytvoří.",
+      "adminsHint": "Agenti vybírají z existujících štítků. Nové vytvářejí pouze administrátoři.",
+      "saved": "Nastavení štítků uloženo"
+    }
+  },
+  "members": {
+    "title": "Členové",
+    "description": "Všichni, kdo se mohou přihlásit do tohoto workspace, a jejich oprávnění.",
+    "count_one": "{{count}} člen",
+    "count_few": "{{count}} členové",
+    "count_many": "{{count}} člena",
+    "count_other": "{{count}} členů",
+    "search": "Filtrovat členy",
+    "leave": "Opustit workspace",
+    "invite": "Pozvat lidi",
+    "you": "Vy",
+    "noMatch": "Žádní odpovídající členové",
+    "noMatchHint": "Zkuste jiné jméno nebo e-mail.",
+    "filter": {
+      "label": "Filtrovat členy",
+      "allRoles": "Všechny role",
+      "roleLabel": "Role: {{value}}",
+      "searchRoles": "Hledat role",
+      "allTeams": "Všechny týmy",
+      "noTeam": "Bez týmu",
+      "unknownTeam": "Neznámý tým",
+      "teamLabel": "Tým: {{value}}",
+      "searchTeams": "Hledat týmy",
+      "anyStatus": "Libovolný stav",
+      "statusLabel": "Stav: {{value}}",
+      "searchStatuses": "Hledat stavy",
+      "shown": "{{shown}} z {{total}}",
+      "clear": "Zrušit filtry",
+      "noMatchHint": "Zkuste jiné filtry nebo je zrušte a zobrazte všechny."
+    },
+    "emptyTitle": "Zatím jen vy",
+    "emptyHint": "Pozvěte kolegy ke sdílení schránky.",
+    "columns": {
+      "person": "Osoba",
+      "joined": "Datum připojení",
+      "role": "Role"
+    },
+    "remove": "Odebrat z workspace",
+    "removeTitle": "Odebrat člena?",
+    "removeConfirm": "Odebrat",
+    "removeBody": "Osoba {{name}} ihned ztratí přístup. Její tikety zůstanou nepřiřazené.",
+    "summary": {
+      "members": "Členové",
+      "admins": "Administrátoři",
+      "agents": "Agenti",
+      "viewers": "Čtenáři",
+      "invited": "Pozvaní"
+    },
+    "invites": {
+      "title": "Nevyřízené pozvánky",
+      "description": "Platnost pozvánek vyprší za 7 dní. Pokud e-mail nedorazí, zkopírujte odkaz a odešlete ho sami.",
+      "by": "Pozváno uživatelem {{name}} {{when}}",
+      "at": "Pozváno {{when}}",
+      "expired": "Platnost vypršela",
+      "expires": "Platnost vyprší {{date}}",
+      "revoke": "Zneplatnit",
+      "revokeTitle": "Zneplatnit pozvánku?",
+      "revokeBody": "Odkaz na pozvánku pro adresu {{email}} přestane fungovat.",
+      "copyLink": "Kopírovat odkaz",
+      "linkCopied": "Odkaz na pozvánku zkopírován",
+      "linkCopiedHint": "Pošlete ho na adresu {{email}} libovolným způsobem. Pozvaná osoba se připojí registrací s touto adresou.",
+      "resend": "Znovu odeslat e-mail",
+      "resent": "Pozvánka znovu odeslána na {{email}}",
+      "actions": "Akce pro pozvánku na adresu {{email}}"
+    },
+    "inviteDialog": {
+      "description": "Pozvaní dostanou e-mail s odkazem pro připojení. Odkaz můžete také zkopírovat z nevyřízených pozvánek. Platnost odkazů vyprší za 7 dní.",
+      "send": "Odeslat pozvánky",
+      "emails": "E-mailové adresy",
+      "emailsHint": "Adresy oddělujte čárkami nebo mezerami."
+    },
+    "emptyTips": {
+      "roles": "Role určují oprávnění jednotlivých osob",
+      "expire": "Platnost pozvánek vyprší za 7 dní"
+    },
+    "editProfile": "Upravit profil",
+    "profileTitle": "Profil pro zákazníky",
+    "profileHint": "Co zákazníci vidí v podpisech osoby {{name}}: funkci, telefon, zájmena a osobní podpis.",
+    "discardTitle": "Zahodit změny?",
+    "discardBody": "Vaše úpravy tohoto profilu nejsou uložené.",
+    "discardConfirm": "Zahodit",
+    "save": "Uložit profil",
+    "deleteRule": "Může mazat zprávy",
+    "deleteDefault": "Výchozí nastavení workspace ({{rule}})",
+    "deletes": {
+      "off": "Nemůže mazat zprávy",
+      "own": "Může mazat vlastní poznámky",
+      "all": "Může mazat poznámky a odpovědi všech agentů"
+    }
+  },
+  "teams": {
+    "title": "Týmy",
+    "description": "Seskupte agenty, aby bylo možné směrovat tikety a schránky správným lidem.",
+    "new": "Nový tým",
+    "count_one": "{{count}} tým",
+    "count_few": "{{count}} týmy",
+    "count_many": "{{count}} týmu",
+    "count_other": "{{count}} týmů",
+    "members_one": "{{count}} člen",
+    "members_few": "{{count}} členové",
+    "members_many": "{{count}} člena",
+    "members_other": "{{count}} členů",
+    "emptyTitle": "Zatím žádné týmy",
+    "emptyHint": "Vytvořte tým Podpora, Fakturace nebo Vývoj a přiřazujte tikety celému týmu.",
+    "edit": "Upravit",
+    "delete": "Smazat",
+    "deleteTitle": "Smazat tým?",
+    "deleteBody": "Tikety a schránky směrované týmu {{name}} si ponechají řešitele, ale ztratí tým.",
+    "saved": "Tým uložen",
+    "created": "Tým vytvořen",
+    "discardTitle": "Zahodit změny?",
+    "discardBody": "Vaše změny tohoto týmu se ztratí.",
+    "discard": "Zahodit",
+    "editTitle": "Upravit tým",
+    "nameRequired": "Zadejte název týmu.",
+    "name": "Název",
+    "namePlaceholder": "Podpora",
+    "membersLabel": "Členové",
+    "searchMembers": "Hledat členy",
+    "addMembers": "Přidat členy",
+    "remove": "Odebrat",
+    "noMembers": "Zatím žádní členové",
+    "save": "Uložit tým",
+    "create": "Vytvořit tým",
+    "andMore_one": " a {{count}} další",
+    "andMore_few": " a {{count}} další",
+    "andMore_many": " a {{count}} dalšího",
+    "andMore_other": " a {{count}} dalších",
+    "mailboxes_one": "{{count}} schránka",
+    "mailboxes_few": "{{count}} schránky",
+    "mailboxes_many": "{{count}} schránky",
+    "mailboxes_other": "{{count}} schránek",
+    "emptyTips": {
+      "mailbox": "Schránky mohou směrovat nové tikety týmu",
+      "delete": "Smazáním týmu se řešitelé tiketů nezmění"
+    }
+  },
+  "profile": {
+    "title": "Profil",
+    "description": "Jak se zobrazujete kolegům v tiketech, poznámkách a zmínkách.",
+    "saved": "Profil uložen",
+    "verifySent": "Ověřovací e-mail odeslán",
+    "verifySentHint": "Odkaz najdete v doručené poště.",
+    "name": "Jméno",
+    "photo": "Fotografie",
+    "photoHint": "Zobrazuje se u vašich odpovědí, zmínek a v celé aplikaci. Bez fotografie se zobrazí iniciály.",
+    "email": "E-mail",
+    "emailHint": "Slouží k přihlášení a zasílání oznámení.",
+    "emailUnverified": "Pro příjem oznámení ověřte svůj e-mail.",
+    "verified": "Ověřeno",
+    "resend": "Znovu odeslat ověření",
+    "appearance": "Vzhled",
+    "appearanceHint": "Platí pro tento prohlížeč.",
+    "conversation": {
+      "label": "Rozvržení konverzace",
+      "hint": "Zprávy zákazníka vlevo, odpovědi a poznámky vašeho týmu vpravo, jako v chatu. Na úzké obrazovce přes celou šířku."
+    },
+    "conversationWidth": {
+      "label": "Šířka konverzace",
+      "hint": "Omezená šířka zachová zprávy a pole pro odpověď snadno čitelné i na široké obrazovce. Plná šířka jim umožní využít celou šířku tiketu.",
+      "limited": "Omezená",
+      "full": "Plná šířka"
+    },
+    "properties": {
+      "label": "Vlastnosti tiketu",
+      "hint": "Stav, priorita, řešitel, tým a štítky ve sloupci podrobností nebo v liště nad konverzací s úpravami přímo na místě. Při použití lišty začíná sloupec podrobností zákazníkem a údaji, které o něm znají vaše aplikace.",
+      "column": "Ve sloupci podrobností",
+      "bar": "V liště nad konverzací"
+    },
+    "nextTicket": {
+      "label": "Po akci „{{action}}“ otevřít další tiket",
+      "hint": "Také po odeslání se stavem, který tiket odebere ze seznamu. Otevře se další tiket ze seznamu nebo pohledu, ze kterého jste přišli, se zachováním filtrů a řazení. Po posledním se vrátíte na seznam. Vrácení odeslání vás vrátí k tiketu."
+    },
+    "alwaysShowImages": {
+      "label": "Vždy zobrazovat obrázky",
+      "hint": "Vzdálené obrázky v přijatých e-mailech se načtou rovnou, bez volby „Načíst obrázky“. Načítají se ze serverů odesílatele, který tak může zjistit, kdy byl e-mail otevřen."
+    },
+    "sounds": {
+      "title": "Zvuky",
+      "hint": "Platí pro tento prohlížeč. Živý chat má výraznější zvuk, ostatní zvuky jsou tiché.",
+      "preview": "Přehrát tento zvuk",
+      "chat": "Čekající živý chat",
+      "chatHint": "Návštěvník čeká v chatu bez obsluhy. Každou minutu zazní tišší připomenutí, dokud se někdo chatu neujme.",
+      "ticket": "Nové konverzace",
+      "ticketHint": "Přijde nový tiket od zákazníka, kolegy nebo integrace, nepřiřazený nebo přiřazený vám.",
+      "reply": "Odpovědi zákazníků",
+      "replyHint": "Zákazník odpoví na některý z vašich tiketů, pokud ho právě nemáte otevřený.",
+      "assigned": "Přiřazení a zmínky",
+      "assignedHint": "Něco vám je přiřazeno, někdo vás zmíní nebo je u vašeho tiketu porušeno SLA."
+    },
+    "assignee": {
+      "label": "Řešitel v seznamu tiketů",
+      "hint": "Kolegové, kteří právě pracují na tiketu, se vždy zobrazují zeleně spolu s tím, co dělají.",
+      "photo": "Fotografie",
+      "name": "Křestní jméno",
+      "none": "Nic"
+    },
+    "lastNote": {
+      "label": "Zobrazovat poslední interní poznámku",
+      "hint": "U každého tiketu v seznamu se zobrazí nejnovější interní poznámka, takže ji můžete přečíst bez otevření tiketu."
+    },
+    "theme": {
+      "label": "Motiv",
+      "light": "Světlý",
+      "dark": "Tmavý",
+      "system": "Podle systému"
+    },
+    "clock": {
+      "title": "Čas",
+      "hint": "Platí pro váš účet ve všech prohlížečích.",
+      "label": "Formát času",
+      "labelHint": "Pro časy v aplikaci a e-mailových oznámeních. Automatický formát se v aplikaci řídí jazykem a oblastí prohlížeče a v e-mailech používá 24hodinový formát.",
+      "auto": "Automatický",
+      "h12": "12hodinový (2:05 PM)",
+      "h24": "24hodinový (14:05)",
+      "saved": "Formát času uložen"
+    }
+  },
+  "pages": {
+    "title": "Stránky",
+    "description": "Vlastní stránky, databáze a plátna vašeho týmu. Jsou vedle wiki, v postranním panelu a v sekci „Stránky“.",
+    "product": "Produkt",
+    "productHint": "Vypnutím produktu Stránky ho skryjete všem. Nic se nesmaže a po zapnutí se vše vrátí.",
+    "use": "Používat Stránky",
+    "useOn": "Stránky jsou zapnuté: členové je vidí v postranním panelu a mohou přidávat stránky.",
+    "useOff": "Stránky jsou vypnuté: jsou skryté a jejich stránky zůstávají zachované.",
+    "lastProduct": "Stránky jsou jediný zapnutý produkt",
+    "lastProductHint": "Nejprve zapněte Tikety nebo Poštu v sekci „Obecné“: jeden produkt musí vždy zůstat zapnutý.",
+    "saved": "Uloženo",
+    "saveFailed": "Změnu se nepodařilo uložit",
+    "teamspaces": "Teamspaces",
+    "teamspacesHint": "Každý tým má pro své stránky teamspace. Stránky soukromého týmu vidí pouze jeho členové.",
+    "manageTeams": "Spravovat týmy",
+    "privateTeam": "Soukromý tým",
+    "privateTeamHint": "Jeho stránky vidí pouze jeho členové",
+    "pageCount_one": "{{count}} stránka",
+    "pageCount_few": "{{count}} stránky",
+    "pageCount_many": "{{count}} stránky",
+    "pageCount_other": "{{count}} stránek",
+    "noTeams": "Zatím žádné týmy",
+    "noTeamsHint": "Přidáním týmu pro něj vytvoříte teamspace.",
+    "port": "Import a export",
+    "portHint": "Přeneste sem stránky z Notion, Obsidian a dalších nástrojů nebo si je odneste jinam.",
+    "import": "Importovat stránky",
+    "importHint": "Export z Notion nebo Obsidian, případně soubory Markdown, HTML, CSV a textové soubory.",
+    "importAction": "Importovat",
+    "export": "Exportovat Stránky",
+    "exportHint": "Všechny stránky, které vidíte, jako složka souborů Markdown nebo HTML v archivu ZIP.",
+    "exportAction": "Exportovat",
+    "trash": "Koš",
+    "trashHint": "Stránky zůstávají v koši 30 dní, poté se trvale smažou.",
+    "inTrash_one": "{{count}} stránka v koši",
+    "inTrash_few": "{{count}} stránky v koši",
+    "inTrash_many": "{{count}} stránky v koši",
+    "inTrash_other": "{{count}} stránek v koši",
+    "openTrash": "Otevřít koš"
+  },
+  "saveBar": {
+    "region": "Neuložené změny",
+    "message": "Máte neuložené změny",
+    "discard": "Zahodit",
+    "save": "Uložit změny"
+  },
+  "workspace": {
+    "title": "Obecné",
+    "description": "Nastavení platná pro všechny v tomto workspace.",
+    "saved": "Workspace uložen",
+    "name": "Název workspace",
+    "url": "URL workspace",
+    "urlHint": "Používá ji centrum nápovědy a chatovací widget.",
+    "timezone": "Časové pásmo",
+    "timezoneHint": "Používají ho přehledy, pracovní dny SLA a časové údaje v e-mailech.",
+    "searchTimezones": "Hledat časová pásma",
+    "language": "Jazyk zákazníků",
+    "languageHint": "Centrum nápovědy, dotazník spokojenosti a chatovací widget se řídí jazykem prohlížeče návštěvníka. Tento jazyk se použije, pokud jazyk návštěvníka nepodporujeme.",
+    "languageFixed": "Používat pro všechny",
+    "languageFixedHint": "Zobrazovat centrum nápovědy, dotazník spokojenosti a chatovací widget v jazyce {{language}} všem návštěvníkům bez ohledu na jazyk prohlížeče. Značka s vlastním jazykem používá svůj jazyk.",
+    "searchLanguages": "Hledat jazyky",
+    "products": "Produkty",
+    "productsHint": "Zvolte, co tento workspace používá. Alespoň jeden produkt zůstane zapnutý.",
+    "productTickets": "Tikety",
+    "productTicketsHint": "Sdílené schránky, živý chat, centrum nápovědy a přehledy. Vypnutím je skryjete a pozastavíte zpracování nových tiketů.",
+    "productMail": "Pošta",
+    "productMailHint": "Vlastní e-mailové účty členů synchronizované s jejich schránkami.",
+    "productPages": "Stránky",
+    "productPagesHint": "Vlastní stránky, databáze a plátna vašeho týmu, oddělené od wiki.",
+    "mailUnavailable": {
+      "instance_disabled": "Pošta je pro tuto instanci vypnutá.",
+      "plan": "Pošta není součástí tarifu tohoto workspace."
+    },
+    "productKept": "Nic se nesmaže",
+    "productKeptHint": "Při vypnutí produktu zůstanou tikety, pošta, stránky a připojení zachované. Příchozí e-maily, hovory a zprávy chatu počkají a jejich zpracování se obnoví po opětovném zapnutí produktu Tikety.",
+    "helpCenter": "Centrum nápovědy",
+    "helpCenterHint": "Veřejný web s publikovanými články znalostní báze.",
+    "publish": "Zveřejnit centrum nápovědy",
+    "publishOn": "Publikované články si může přečíst kdokoli s odkazem.",
+    "publishOff": "Články vidí pouze váš tým.",
+    "hcTitle": "Název",
+    "publicAddress": "Veřejná adresa",
+    "copyLink": "Kopírovat odkaz",
+    "conversations": "Konverzace",
+    "csat": "Dotazník spokojenosti",
+    "csatHint": "Po vyřešení tiketu požádat zákazníky o hodnocení konverzace.",
+    "autoAssign": "Přiřazování",
+    "brand": "Barva značky",
+    "brandHint": "Používá ji chatovací widget a tlačítka v odchozích e-mailech.",
+    "brandHex": "Hexadecimální kód barvy značky",
+    "autoAssignLink": "Otevřít přiřazování",
+    "assignModes": {
+      "none": "Vypnuto. Nové tikety čekají v sekci „Nepřiřazené“, dokud se jich někdo neujme.",
+      "round_robin": "Postupné střídání. Online kolegové se střídají.",
+      "load_balanced": "Podle vytížení. Nové tikety dostává ten, kdo má nejméně otevřených."
+    },
+    "logo": "Logo",
+    "logoHint": "Zobrazuje se v přepínači workspace, v e-mailech a v centru nápovědy.",
+    "hcLogo": "Logo centra nápovědy",
+    "hcLogoHint": "Široké logo pro záhlaví centra nápovědy. Bez něj se použije logo a název workspace.",
+    "hcFavicon": "Ikona webu",
+    "hcFaviconHint": "Malá ikona na kartě prohlížeče.",
+    "pictures": "Obrázky kontaktů a firem",
+    "picturesHint": "Obrázky usnadňují orientaci v Doručených. Nahrané obrázky mají vždy přednost.",
+    "gravatar": "Obrázky z Gravataru",
+    "gravatarHint": "Odesílá hash e-mailových adres kontaktů službě Gravatar pro vyhledání jejich obrázků.",
+    "domainLogos": "Loga firem",
+    "domainLogosHint": "Načítá logo každé firmy z jejího webu.",
+    "subjectNumber": "Číslo tiketu v předmětech",
+    "subjectNumberOn": "Předměty e-mailů zákazníkům končí číslem tiketu, například [#1042]. Odpovědi se přiřazují k tiketu podle tohoto označení i podle vlákna.",
+    "subjectNumberOff": "Předměty se odesílají bez čísla tiketu a odpovědi se k tiketu přiřazují podle vlákna. E-mail zahajující konverzaci, například první zpráva tiketu založeného agentem, si číslo ponechá, pokud schránka odesílá způsobem, který mění ID e-mailu (Microsoft, některá připojení Google, Amazon SES). Odpověď zákazníka tak vždy najde svůj tiket.",
+    "reports": "Přehledy",
+    "onlineTime": "Čas agentů online",
+    "onlineTimeOn": "Zaznamenává dobu, po kterou má každý člen otevřený opendesk se stavem „Online“, pro sekci „Přehledy“ → „Agenti“. Vypněte, pokud záznam vyžaduje souhlas týmu nebo rady zaměstnanců.",
+    "onlineTimeOff": "Čas online se nezaznamenává ani nezobrazuje v přehledech. Uložením s vypnutou volbou se dosud zaznamenaný čas online smaže.",
+    "undoSend": "Vrácení odeslání e-mailu",
+    "undoSendHint": "Odpovědi e-mailem před odesláním počkají po tuto dobu, aby je bylo možné vzít zpět nebo změnit na poznámku.",
+    "undoSendChat": "Vrácení odeslání v chatu",
+    "undoSendChatHint": "Odpovědi v chatu počkají po tuto dobu, než je zákazník uvidí. Ve výchozím nastavení vypnuto, aby chat probíhal v reálném čase.",
+    "undoOff": "Vypnuto",
+    "undoSeconds": "{{n}} s",
+    "snoozePresets": "Možnosti odložení",
+    "snoozePresetsHint": "Časy nabízené v nabídce odložení tiketu v tomto pořadí, podle místního času každého agenta. Agenti si mohou zvolit i jiný den a čas.",
+    "snoozeKind": "Typ času",
+    "snoozeKindHours": "Za … hodin",
+    "snoozeKindDays": "Za … dní",
+    "snoozeKindWeek": "Příští týden (pondělí)",
+    "snoozeHours": "Hodiny",
+    "snoozeDays": "Dny",
+    "snoozeAt": "v",
+    "snoozeTime": "Denní čas",
+    "snoozeRemove": "Odebrat tento čas",
+    "snoozeAdd": "Přidat čas",
+    "snoozeReset": "Obnovit výchozí nastavení",
+    "messageDelete": "Agenti mohou mazat zprávy",
+    "messageDeleteHint": "Vlastní poznámky: agenti mažou své interní poznámky. Zprávy všech agentů: také poznámky a odpovědi všech agentů. Po smazané zprávě zůstává označení. Administrátoři mohou mazat libovolné zprávy, číst smazané zprávy a obnovovat je. V sekci „Členové“ mohou agentovi nastavit jiné pravidlo.",
+    "messageDeleteOff": "Vypnuto",
+    "messageDeleteOwn": "Vlastní poznámky",
+    "messageDeleteAll": "Zprávy všech agentů",
+    "collabReplies": "Odpovídat z vlastní pošty",
+    "collabRepliesHint": "Členové mohou na e-mailový tiket odpovědět z některého ze svých připojených e-mailových účtů místo adresy tiketu. Volba platí pro jednotlivou odpověď. Odpovědi zákazníka se stále vracejí do tiketu. Každá schránka si může nastavit vlastní pravidla.",
+    "collabReplyTo": "Kam chodí odpovědi",
+    "collabReplyToHint": "Adresa Reply-To takové odpovědi, pokud člen nezvolí jinou. Vlastní adresa: odpovědi chodí na adresu, ze které byla zpráva odeslána, a odtud se vracejí do tiketu. Adresa tiketu: odpovědi chodí na adresu týmu jako u běžného e-mailu.",
+    "collabReplyToAddress": "Vlastní adresa",
+    "collabReplyToMailbox": "Adresa tiketu"
+  },
+  "display": {
+    "title": "Stavy a priority",
+    "description": "Přejmenujte je nebo změňte jejich barvy pro svůj tým a skryjte nepoužívané stavy v nabídkách pro agenty. Tiket ve skrytém stavu si ho ponechá. Filtry, automatizace a API fungují dál jako dříve.",
+    "statuses": "Stavy",
+    "priorities": "Priority",
+    "labelFor": "Zobrazovaný název pro {{name}}",
+    "colourFor": "Barva pro {{name}}",
+    "reset": "Obnovit výchozí",
+    "resetFor": "Obnovit výchozí pro {{name}}",
+    "hideFor": "Skrýt {{name}} v nabídkách",
+    "showFor": "Zobrazit {{name}} v nabídkách",
+    "finishButton": "Tlačítko {{action}}",
+    "finishButtonHint": "Zobrazit v poli odpovědi vedle tlačítka „Odeslat“ tlačítko, které jedním kliknutím odešle odpověď a vyřeší tiket, nejen položku v sousední nabídce. Používá název akce dokončení nastavený pro workspace a vždy nastaví stav na „Vyřešený“.",
+    "severity": "Závažnost",
+    "severityOn": "Tikety mají vedle priority také závažnost od Sev 1 do Sev 4. Pokud týmu stačí priorita, závažnost vypněte.",
+    "severityOff": "Závažnost se nebude zobrazovat v tiketech, seznamech, filtrech, pohledech, hromadných změnách, automatizacích, třídění ani přehledech a Ollie ji přestane nastavovat a navrhovat. Tikety si ponechají dosavadní závažnost a API ji dál umožní číst i zapisovat."
+  },
+  "danger": {
+    "title": "Nebezpečné operace",
+    "transferred": "Vlastnictví převedeno",
+    "transfer": "Převést vlastnictví",
+    "transferHint": "Předejte vlastnictví jinému členovi. Stanete se administrátorem.",
+    "chooseMember": "Zvolit člena",
+    "transferButton": "Převést",
+    "delete": "Smazat workspace",
+    "deleteHint": "Odstraní všechny tikety, kontakty, články a nastavení. Tuto akci nelze vrátit zpět.",
+    "deleteBody": "Všechna data workspace {{name}} se odstraní pro všechny. Členové ihned ztratí přístup.",
+    "deleteTitle": "Smazat workspace?",
+    "transferTitle": "Předat vlastnictví členovi {{name}}?",
+    "transferBody": "Získá plnou kontrolu včetně možnosti smazat workspace. Vy zůstanete administrátorem."
+  },
+  "fields": {
+    "reorderAria": "Změnit pořadí pole {{name}}. Podržte Alt a přesuňte ho šipkami.",
+    "title": "Vlastní pole",
+    "description": "Další údaje, které tým zaznamenává u tiketů, kontaktů a firem, například tarif, číslo objednávky nebo datum obnovení.",
+    "new": "Nové pole",
+    "listTitle": "Pole: {{entity}}",
+    "ticketHint": "Pole označená jako povinná je nutné vyplnit před vyřešením tiketu.",
+    "requiredBadge": "Povinné pro vyřešení",
+    "archivedBadge": "Archivováno",
+    "actionsAria": "Akce pro {{name}}",
+    "archivedTitle_one": "{{count}} archivované pole",
+    "archivedTitle_few": "{{count}} archivovaná pole",
+    "archivedTitle_many": "{{count}} archivovaného pole",
+    "archivedTitle_other": "{{count}} archivovaných polí",
+    "created": "Pole vytvořeno",
+    "saved": "Pole uloženo",
+    "deleteTitle": "Smazat toto pole?",
+    "deleteBody": "Pole {{name}} a všechny hodnoty v něm budou odstraněny. Tuto akci nelze vrátit zpět.",
+    "deleteConfirm": "Smazat pole",
+    "menu": {
+      "edit": "Upravit",
+      "archive": "Archivovat",
+      "restore": "Obnovit",
+      "delete": "Smazat"
+    },
+    "entity": {
+      "ticket": "Tiket",
+      "contact": "Kontakt",
+      "company": "Firma"
+    },
+    "entityPlural": {
+      "ticket": "Tikety",
+      "contact": "Kontakty",
+      "company": "Firmy"
+    },
+    "empty": {
+      "title": "Zatím žádná pole: {{entity}}",
+      "ticket": "Přidejte pole jako číslo objednávky nebo oblast produktu pro zaznamenání podrobností u každého tiketu.",
+      "contact": "Přidejte pole jako tarif nebo správce účtu, abyste měli údaje o zákazníkovi na jednom místě.",
+      "company": "Přidejte pole jako datum obnovení nebo počet licencí pro sledování zákaznických účtů.",
+      "tips": {
+        "required": "Pole tiketu mohou být povinná pro vyřešení",
+        "sidebar": "Agenti je vyplňují v postranním panelu záznamu"
+      }
+    },
+    "type": {
+      "text": "Text",
+      "long_text": "Dlouhý text",
+      "number": "Číslo",
+      "select": "Výběr",
+      "multi_select": "Vícenásobný výběr",
+      "date": "Datum",
+      "checkbox": "Zaškrtávací políčko",
+      "url": "Odkaz",
+      "email": "E-mail",
+      "user": "Osoba"
+    },
+    "dialog": {
+      "newTitle": "Nové pole: {{entity}}",
+      "editTitle": "Upravit pole",
+      "newDescription": "Agenti ho vyplňují v postranním panelu záznamu.",
+      "editDescription": "Klíč a typ nelze změnit, aby uložené hodnoty dál fungovaly.",
+      "name": "Název",
+      "namePlaceholder": "Úroveň tarifu",
+      "key": "Klíč",
+      "keyHint": "Používá se v API, filtrech a automatizacích.",
+      "keyFixed": "Klíče nelze měnit.",
+      "keyRule": "Začněte písmenem. Používejte malá písmena, číslice a _.",
+      "keyTaken": "Tento klíč už používá jiné pole.",
+      "type": "Typ",
+      "typeFixed": "Po vytvoření pole nelze typ změnit.",
+      "options": "Možnosti",
+      "optionLabel": "Možnost {{n}}",
+      "optionPlaceholder": "Název možnosti",
+      "optionColour": "Barva pro {{name}}",
+      "addOption": "Přidat možnost",
+      "moveUp": "Posunout nahoru",
+      "moveDown": "Posunout dolů",
+      "removeOption": "Odebrat možnost",
+      "removeHint": "Odebraná možnost se vymaže ze záznamů, které ji mají nastavenou.",
+      "description": "Popis",
+      "descriptionHint": "Zobrazuje se agentům vedle pole.",
+      "required": "Povinné pro vyřešení",
+      "requiredHint": "Dokud je toto pole prázdné, tiket nelze vyřešit ani uzavřít.",
+      "create": "Vytvořit pole",
+      "save": "Uložit pole",
+      "nameRequired": "Zadejte název pole.",
+      "optionsRequired": "Přidejte alespoň jednu možnost."
+    }
+  },
+  "notifications": {
+    "title": "Oznámení",
+    "description": "Zvolte, co vám má chodit mimo aplikaci a jak často. Pod zvonkem se vždy zobrazuje vše.",
+    "saveFailed": "Nastavení oznámení se nepodařilo uložit",
+    "email": {
+      "title": "Rozvrh e-mailů",
+      "description": "Jak se odesílají e-maily s oznámeními. Platí pro všechny workspace, ve kterých jste členy.",
+      "digestAt": "Odesílat souhrn v",
+      "digestAtHint": "Ve vašem časovém pásmu. Každý workspace posílá vlastní souhrn.",
+      "timezone": "Časové pásmo",
+      "limits": "Nejvýše {{perHour}} e-mailů za hodinu nebo {{perDay}} za den. Při používání opendesk v tomto workspace se nic neposílá. Co si přečtete v aplikaci, se e-mailem nikdy neodesílá. Více oznámení se slučuje do jednoho e-mailu.",
+      "sentTo": "Odesílá se na",
+      "confirmed": "Potvrzeno",
+      "notConfirmed": "Nepotvrzeno",
+      "unverifiedHint": "E-maily s oznámeními se posílají pouze na potvrzenou adresu.",
+      "confirmLink": "Potvrdit v profilu",
+      "unverified": "Nejprve potvrďte svou e-mailovou adresu. E-maily s oznámeními se posílají pouze na potvrzenou adresu.",
+      "test": "Poslat mi zkušební e-mail",
+      "testSent": "Zkušební e-mail odeslán",
+      "testSentHint": "Za minutu nebo dvě zkontrolujte schránku {{email}}."
+    },
+    "cadence": {
+      "instant": "Ihned",
+      "instantPaced_one": "První e-mail přibližně {{count}} minutu po události. Při dalších událostech nejvýše jeden za interval {{gap}}, naléhavá oznámení dříve.",
+      "instantPaced_few": "První e-mail přibližně {{count}} minuty po události. Při dalších událostech nejvýše jeden za interval {{gap}}, naléhavá oznámení dříve.",
+      "instantPaced_many": "První e-mail přibližně {{count}} minuty po události. Při dalších událostech nejvýše jeden za interval {{gap}}, naléhavá oznámení dříve.",
+      "instantPaced_other": "První e-mail přibližně {{count}} minut po události. Při dalších událostech nejvýše jeden za interval {{gap}}, naléhavá oznámení dříve.",
+      "instantHint_one": "Přibližně {{count}} minutu po události, pokud si oznámení do té doby nepřečtete v aplikaci.",
+      "instantHint_few": "Přibližně {{count}} minuty po události, pokud si oznámení do té doby nepřečtete v aplikaci.",
+      "instantHint_many": "Přibližně {{count}} minuty po události, pokud si oznámení do té doby nepřečtete v aplikaci.",
+      "instantHint_other": "Přibližně {{count}} minut po události, pokud si oznámení do té doby nepřečtete v aplikaci.",
+      "hourly": "Hodinový souhrn",
+      "hourlyHint": "Jeden e-mail za hodinu s tím, co jste ještě nečetli.",
+      "daily": "Denní souhrn",
+      "dailyHint": "Jeden e-mail denně ve zvolenou hodinu s tím, co jste ještě nečetli.",
+      "off": "Vypnuto",
+      "offHint": "Žádné e-maily s oznámeními. V aplikaci stále uvidíte vše."
+    },
+    "pause": {
+      "title": "Pozastavit oznámení",
+      "description": "Na čas zastaví oznámení e-mailem, v telefonu i na počítači. Pod zvonkem se dál zobrazuje vše a nic se neodešle dodatečně.",
+      "off": "Nepozastaveno",
+      "offHint": "Pozastavte na hodinu, do zítřejšího rána nebo na týden.",
+      "until": "Pozastaveno do {{when}}",
+      "onHint": "Do té doby nepřijde nic e-mailem, do telefonu ani na počítač.",
+      "pause": "Pozastavit",
+      "change": "Změnit",
+      "resume": "Obnovit",
+      "hour": "Na 1 hodinu",
+      "tomorrow": "Do zítřejšího rána",
+      "week": "Na 1 týden"
+    },
+    "channels": {
+      "app": "V aplikaci",
+      "email": "E-mail",
+      "push": "Telefon",
+      "desktop": "Počítač"
+    },
+    "groups": {
+      "tickets": "Tikety",
+      "team": "Tým",
+      "mail": "Pošta",
+      "wiki": "Wiki",
+      "ai_billing": "AI a fakturace",
+      "workspace": "Workspace"
+    },
+    "types": {
+      "title": "Která oznámení vám kam chodí",
+      "description": "Pouze pro workspace {{workspace}}. Každý workspace má vlastní nastavení.",
+      "thisWorkspace": "tento workspace",
+      "type": "Oznámení",
+      "alwaysOn": "V aplikaci vždy zapnuto",
+      "emailOffShort": "vypnuto",
+      "emailOff": "E-maily s oznámeními jsou vypnuté. Pro obnovení odesílání zvolte výše rozvrh. Zdejší volby zůstanou zachované.",
+      "phoneHint": "Telefon: aplikace opendesk pro iPhone. V nastavení aplikace lze na každém telefonu také ztlumit jednotlivé typy oznámení.",
+      "desktopHint": "Počítač: v počítačové aplikaci opendesk nebo v tomto prohlížeči po povolení oznámení, když je opendesk na pozadí nebo zavřený.",
+      "urgent": "Naléhavé",
+      "urgentHint": "Lze odeslat e-mailem dříve, nejvýše jednou za interval {{gap}}"
+    },
+    "teams": {
+      "title": "Vaše týmy",
+      "description": "Nové tikety týmu a odpovědi, kterých se nikdo neujal. Oznámení o tiketech přiřazených vám a o zmínkách vám chodí vždy.",
+      "switch": "Oznámení z týmu {{team}}"
+    },
+    "kinds": {
+      "assigned": {
+        "label": "Přiřazené vám",
+        "hint": "Tiket je přiřazen vám"
+      },
+      "new_ticket": {
+        "label": "Nové tikety",
+        "hint": "Nové tikety bez řešitele. Příjemci oznámení se nastavují v části „Přiřazování“"
+      },
+      "mentioned": {
+        "label": "Zmínky",
+        "hint": "Někdo vás zmíní v poznámce"
+      },
+      "customer_replied": {
+        "label": "Odpovědi zákazníků",
+        "hint": "U tiketů přiřazených vám a u tiketů, které zatím nemají řešitele"
+      },
+      "thread_replied": {
+        "label": "Odpovědi ve vedlejších konverzacích",
+        "hint": "Někdo mimo váš tým odpoví ve vedlejší konverzaci tiketu přiřazeného vám"
+      },
+      "sla_breached": {
+        "label": "Porušení SLA",
+        "hint": "Tiket přiřazený vám nesplní stanovený cíl"
+      },
+      "scheduled_reply_failed": {
+        "label": "Neodeslané naplánované odpovědi",
+        "hint": "Naplánovanou odpověď se nepodařilo odeslat a vrátila se do vašich konceptů"
+      },
+      "ai_handoff": {
+        "label": "Předání člověku",
+        "hint": "Ollie předá konverzaci týmu"
+      },
+      "collab_assigned": {
+        "label": "Pošta přiřazená vám",
+        "hint": "Kolega vám přiřadí konverzaci z e-mailového účtu"
+      },
+      "collab_mention": {
+        "label": "Zmínky v komentářích k poště",
+        "hint": "Někdo vás zmíní v komentáři k e-mailové konverzaci"
+      },
+      "wiki_mention": {
+        "label": "Zmínky ve wiki",
+        "hint": "Někdo vás zmíní na stránce wiki nebo v komentáři k ní"
+      },
+      "wiki_comment": {
+        "label": "Komentáře ve wiki",
+        "hint": "Nové komentáře na sledovaných stránkách a ve vláknech, do kterých jste psali"
+      },
+      "wiki_reminder": {
+        "label": "Připomenutí ve wiki",
+        "hint": "Nastal čas připomenutí nastaveného na stránce wiki"
+      },
+      "team_joined": {
+        "label": "Změny týmu",
+        "hint": "Administrátor se připojí k týmu, který vedete"
+      },
+      "ai_cap_reached": {
+        "label": "Dosažen limit AI agenta",
+        "hint": "Ollie dosáhl měsíčního limitu útraty"
+      },
+      "ai_key_failed": {
+        "label": "Problémy s klíčem AI",
+        "hint": "Vlastní klíč AI workspace přestal fungovat"
+      },
+      "ai_balance_low": {
+        "label": "Nízký kredit na AI",
+        "hint": "Kredit na AI dochází"
+      },
+      "ai_balance_out": {
+        "label": "Vyčerpaný kredit na AI",
+        "hint": "Ollie se pozastaví do doplnění kreditu na AI"
+      },
+      "auto_recharge_failed": {
+        "label": "Automatické dobití selhalo",
+        "hint": "Platba za automatické dobití selhala"
+      },
+      "import_finished": {
+        "label": "Importy",
+        "hint": "Vámi spuštěný import byl dokončen, zastaven nebo potřebuje nové přihlašovací údaje"
+      },
+      "support_channel_unhealthy": {
+        "label": "Problémy s kanálem podpory",
+        "hint": "Problém s připojením poskytovatele trvá alespoň 15 minut"
+      }
+    },
+    "gap": {
+      "hour": "hodina",
+      "hours_one": "{{count}} hodina",
+      "hours_few": "{{count}} hodiny",
+      "hours_many": "{{count}} hodiny",
+      "hours_other": "{{count}} hodin",
+      "minutes_one": "{{count}} minuta",
+      "minutes_few": "{{count}} minuty",
+      "minutes_many": "{{count}} minuty",
+      "minutes_other": "{{count}} minut"
+    },
+    "holds": {
+      "unsubscribed": "E-maily s oznámeními z workspace {{workspace}} jsou vypnuté",
+      "unsubscribedHint": "Použili jste odkaz pro odhlášení odběru v některém z našich e-mailů. Opětovné zapnutí e-mailů obnoví vaše předchozí volby.",
+      "turnEmailOn": "Znovu zapnout e-maily",
+      "resubscribed": "E-maily s oznámeními jsou znovu zapnuté",
+      "paused": "Oznámení jsou pozastavená do {{when}}",
+      "pausedHint": "Do té doby nepřijde nic e-mailem, do telefonu ani na počítač. Pod zvonkem se dál zobrazuje vše.",
+      "resume": "Obnovit nyní",
+      "emailOff": "E-maily s oznámeními jsou vypnuté",
+      "emailOffHint": "V aplikaci stále uvidíte vše. Po opětovném zapnutí se oznámení budou odesílat ihned, s rozestupy, aby nezaplnila vaši schránku."
+    },
+    "desktop": {
+      "blocked": "Oznámení pro opendesk jsou na tomto počítači zablokovaná. Povolte je v systémovém nastavení: na Macu v části „Nastavení systému“, „Oznámení“, „opendesk“; ve Windows v části „Nastavení“, „Systém“, „Oznámení“.",
+      "blockedBrowser": "Oznámení pro opendesk jsou v tomto prohlížeči zablokovaná. Povolte je v nastavení webu vedle adresního řádku.",
+      "ask": "opendesk zatím tento počítač nepožádal o povolení zobrazovat oznámení.",
+      "askBrowser": "opendesk zatím tento prohlížeč nepožádal o povolení zobrazovat oznámení.",
+      "allow": "Povolit oznámení"
+    }
+  },
+  "memberProfile": {
+    "title": "Profil pro zákazníky",
+    "description": "Co o vás vidí zákazníci ve workspace {{workspace}}. Vyplňuje proměnné odesílatele v podpisech a odpovědích.",
+    "jobTitle": "Pracovní pozice",
+    "jobTitlePlaceholder": "Specialista podpory",
+    "phone": "Telefon",
+    "phonePlaceholder": "+1 555 010 0199",
+    "pronouns": "Zájmena",
+    "pronounsPlaceholder": "ona/jí",
+    "fills": "Vyplňuje {{tag}}",
+    "signature": "Osobní podpis",
+    "signatureHint": "Přidává se k vašim e-mailovým odpovědím. Pokud má tým nebo adresa vlastní podpis, váš se zobrazí pouze tam, kde je v něm uvedeno {{tag}}.",
+    "signaturePlaceholder": "Jane Cooper, podpora",
+    "preview": "Náhled",
+    "previewOther": "V náhledu se jméno a údaje odesílatele vyplní vašimi údaji.",
+    "saved": "Profil uložen"
+  },
+  "signatureEditor": {
+    "block": "Podpis",
+    "edit": "Upravit podpis",
+    "remove": "Odebrat podpis",
+    "preview": "Náhled",
+    "none": "Bez podpisu"
+  },
+  "peer": {
+    "title": "Komunikace mezi agenty",
+    "description": "Umožněte asistentům {{name}} kolegů ptát se vašeho asistenta na vaši poštu, když potřebují něco, co vidíte jen vy.",
+    "enabled": "Umožnit asistentům {{name}} kolegů ptát se mého asistenta",
+    "enabledHint": "Váš asistent {{name}} odpovídá podle vašich pravidel z vašich vlastních e-mailových účtů. Kolegové dostanou odpověď, nikdy vaši poštu.",
+    "offTitle": "Váš workspace tuto funkci nezapnul",
+    "offHint": "Administrátor ji může povolit v části „Nastavení“, „AI“.",
+    "offAdmin": "Povolte ji v části „Nastavení“, „AI“ pomocí volby „Umožnit asistentům {{name}} kolegů vzájemně se ptát“. Každý člen pak rozhodne o své poště.",
+    "openAi": "Otevřít nastavení AI",
+    "unavailable": "Komunikace mezi agenty není dostupná",
+    "people": "Lidé",
+    "peopleHint": "Kdo se smí ptát vašeho asistenta {{name}}. Změny platí od další otázky.",
+    "shareWith": "Sdílet s",
+    "everyone": "Všichni",
+    "everyoneHint": "Všichni členové tohoto workspace.",
+    "chosen": "Vybraní lidé a týmy",
+    "chosenHint": "Pouze vybraní lidé a týmy.",
+    "accounts": "Účty",
+    "accountsHint": "Ze kterých vašich vlastních e-mailových účtů smí asistent {{name}} čerpat. Pošta, kterou s vámi sdílejí ostatní, se nikdy nepoužívá.",
+    "useFrom": "Používat informace z",
+    "modesHint": "Režim „Doslovně“ může citovat vaši poštu. Režim „Pouze shrnutí“ odpovídá vlastními slovy. Režim „Nic“ účet vynechá.",
+    "allAccounts": "Všechny účty",
+    "chosenAccounts": "Vybrané účty",
+    "modeFor": "Co smí účet {{account}} sdílet",
+    "newAccounts": "Nové účty",
+    "newAccountsHint": "Toto nastavení se použije pro účty, které připojíte později.",
+    "noAccounts": "Nemáte žádné vlastní e-mailové účty",
+    "noAccountsHint": "Připojte účet v části „E-mailové účty“ a pak zde zvolte, co smí sdílet.",
+    "connect": "Připojit účet",
+    "mode": {
+      "verbatim": "Doslovně",
+      "summary": "Pouze shrnutí",
+      "none": "Nic"
+    },
+    "rules": "Pravidla sdílení",
+    "rulesHint": "Váš asistent {{name}} se jimi řídí při odpovídání. Používá také zdravý rozum a soukromé záležitosti ponechává soukromé.",
+    "rulesSuggestion": "Sdílejte termíny, rozhodnutí a další kroky. Nikdy nesdílejte ceny, smlouvy, osobní záležitosti ani nic označeného jako důvěrné.",
+    "useSuggestion": "Použít návrh",
+    "asks": "Nedávné dotazy",
+    "asksHint": "Otázky, které kolegové položili vašemu asistentovi {{name}}, a jeho odpovědi. Uchovávají se 90 dní.",
+    "noAsks": "Zatím se nikdo neptal",
+    "noAsksHint": "Když se asistent {{name}} kolegy zeptá vašeho asistenta, otázka i odpověď se zobrazí zde.",
+    "showMore": "Zobrazit více",
+    "result": {
+      "answered_one": "Zodpovězeno na základě 1 konverzace",
+      "answered_few": "Zodpovězeno na základě {{count}} konverzací",
+      "answered_many": "Zodpovězeno na základě {{count}} konverzace",
+      "answered_other": "Zodpovězeno na základě {{count}} konverzací",
+      "declined": "Odmítnuto",
+      "not_shared": "Nesdíleno",
+      "failed": "Nepodařilo se odpovědět"
+    },
+    "saveFailed": "Nastavení komunikace mezi agenty se nepodařilo uložit."
+  }
+}

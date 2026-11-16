@@ -1,0 +1,159 @@
+{
+  "setup": {
+    "title": "让你的 AI 客服准备就绪",
+    "description": "每一步都能让 Ollie 的回答更好。可选步骤有帮助，但不是必须的。",
+    "progress": "已完成 {{done}} 个，共 {{total}} 个",
+    "progressLabel": "已完成 {{done}} 个必需步骤，共 {{total}} 个",
+    "optional": "可选",
+    "stepDone": "已完成",
+    "stepTodo": "尚未完成",
+    "complete": "你的 AI 客服已配置好",
+    "completeBody": "Ollie 已经具备了所需的信息。可以用演练场和下面的问题继续改进。",
+    "showSteps": "显示步骤",
+    "hideSteps": "隐藏步骤",
+    "needsAi": "请先启用 AI",
+    "error": "无法加载配置步骤。",
+    "retry": "重试",
+    "steps": {
+      "ai_on": {
+        "title": "启用 AI",
+        "why": "Ollie 需要先为工作区启用 AI，才能回答任何人。",
+        "action": "打开 AI 设置"
+      },
+      "identity": {
+        "title": "为 AI 客服起名并说明它该如何提供帮助",
+        "why": "名称、头像和指令能让回答听起来像你们团队的风格。",
+        "action": "设置身份"
+      },
+      "knowledge": {
+        "title": "为它提供可参考的知识",
+        "why": "Ollie 只会依据已发布的帮助文章和就绪的知识来源回答。",
+        "action": "添加知识"
+      },
+      "tools": {
+        "title": "连接工具",
+        "why": "让 Ollie 在你自己的系统中查询订单或账户。",
+        "action": "连接工具"
+      },
+      "playground": {
+        "title": "在演练场中测试",
+        "why": "先问几个真实问题，在访客之前检查回答。",
+        "action": "打开演练场"
+      },
+      "widget": {
+        "title": "安装聊天组件",
+        "why": "访客通过你网站上的组件联系 Ollie。",
+        "action": "安装组件"
+      },
+      "answers_on": {
+        "title": "让 Ollie 回答聊天",
+        "why": "启用回答，让 Ollie 回复访客，并在需要时转交人工。",
+        "action": "启用回答"
+      },
+      "email_answers": {
+        "title": "同时回答邮件",
+        "why": "为某个邮箱启用 Ollie，以起草或发送邮件回复。",
+        "action": "选择邮箱"
+      }
+    }
+  },
+  "clients": {
+    "title": "AI 客户端",
+    "description": "在 Claude、ChatGPT、Cursor、VS Code 和其他 MCP 客户端中使用 opendesk。它们会按你授予的权限处理工单、联系人和帮助文章。",
+    "server": "MCP 服务器 URL",
+    "serverHint": "使用 OAuth 登录的客户端只需要这个地址。",
+    "setupTitle": "连接客户端",
+    "setupHint": "选择你的客户端，然后按步骤操作。",
+    "oauthBadge": "登录",
+    "keyBadge": "API 密钥",
+    "keyPlaceholder": "od_live_...",
+    "steps": {
+      "claude": "在 Claude 中打开设置，进入连接器，选择添加自定义连接器。粘贴 URL 并选择连接。登录 opendesk 并批准。",
+      "chatgpt": "在 ChatGPT 中，用开发者模式添加连接器，填入此 URL 并使用 OAuth 认证。登录 opendesk 并批准。",
+      "claudeCode": "在你的终端中运行。首次使用该服务器时，Claude Code 会打开 opendesk 让你登录。",
+      "claudeCodeKey": "或者不登录，改为在请求头中发送 API 密钥：",
+      "claudeDesktop": "建议使用支持登录的连接器（参见 Claude）。若要使用 API 密钥，请打开设置，进入开发者，然后编辑配置，添加以下内容并重启 Claude Desktop。需要 Node.js。",
+      "cursor": "把这内容加到 ~/.cursor/mcp.json 可对所有项目生效，或加到单个项目的 .cursor/mcp.json。然后在 Cursor 设置中查看 MCP。",
+      "vscode": "将其作为 .vscode/mcp.json 添加到你的工作区。VS Code 会在首次使用时要求输入密钥，并安全存储。",
+      "other": "任何支持 Streamable HTTP 的客户端都可以：如果它支持 MCP 授权规范，就用 OAuth；否则在 Authorization 请求头中使用 API 密钥。"
+    },
+    "keyNeeded": "此客户端会在请求头中发送 API 密钥。",
+    "keyCreate": "为它创建密钥",
+    "keyAskAdmin": "请管理员为它创建 API 密钥。",
+    "keyShownOnce": "现在就复制。它只显示一次，并在你离开此页面前自动填入上方的代码片段。",
+    "keyDialog": {
+      "title": "为 AI 客户端创建 API 密钥",
+      "description": "该客户端只能使用这些范围允许的工具。",
+      "name": "名称",
+      "namePlaceholder": "我笔记本上的 Cursor",
+      "access": "访问权限",
+      "read": "只读",
+      "readHint": "搜索并读取工单、联系人和文章。",
+      "write": "读写",
+      "writeHint": "还可以回复、添加备注、更新工单和起草文章。",
+      "expires": "有效期",
+      "in30": "30 天后",
+      "in90": "90 天后",
+      "in365": "一年后",
+      "create": "创建密钥",
+      "cancel": "取消",
+      "nameRequired": "请为密钥起个名称。",
+      "error": "无法创建密钥。"
+    },
+    "tools": "提供的工具",
+    "toolsHint": "只有当客户端的访问权限包含某个工具的范围时，它才能看到该工具。",
+    "readOnly": "读取",
+    "changes": "会修改数据",
+    "connections": "已连接的客户端",
+    "connectionsHint": "通过登录连接的客户端。它们以连接者的身份操作。",
+    "connectionsHintAdmin": "所有成员通过登录连接的客户端。它们以连接者的身份操作。",
+    "lastUsed": "上次使用：{{when}}",
+    "connectedBy": "连接者：{{name}}",
+    "you": "你",
+    "onComputer": "这台电脑上的应用",
+    "revoke": "断开连接",
+    "revokeTitle": "断开与 {{name}} 的连接？",
+    "revokeBody": "它会立即失效，需要重新登录才能再次连接。",
+    "revokeError": "无法断开该客户端。",
+    "emptyTitle": "还没有连接任何客户端",
+    "emptyBody": "用上面的 URL 在 Claude 或 ChatGPT 中将 opendesk 添加为连接器。批准后它会显示在这里。",
+    "emptyTipSignIn": "登录即可，无需复制密钥",
+    "emptyTipRole": "权限不会超过你的角色允许的范围",
+    "error": "无法加载已连接的客户端。",
+    "retry": "重试"
+  },
+  "scopes": {
+    "tickets:read": "读取工单",
+    "tickets:write": "回复并更新工单",
+    "contacts:read": "读取联系人",
+    "contacts:write": "更新联系人",
+    "kb:read": "读取帮助文章",
+    "kb:write": "起草帮助文章",
+    "wiki:read": "读取团队 wiki",
+    "wiki:write": "编写团队 wiki",
+    "settings:read": "读取同事、团队和报表"
+  },
+  "consent": {
+    "title": "将 {{name}} 连接到 opendesk",
+    "subtitle": "{{name}} 想以你的身份在 opendesk 中操作。",
+    "workspace": "工作区",
+    "access": "它将可以",
+    "notIncluded": "不包含：你在该工作区中的角色无法执行此操作",
+    "noScopes": "你在该工作区中的角色无法使用这些功能。请选择其他工作区，或联系管理员。",
+    "redirect": "做出选择后，你会回到 {{host}}。",
+    "redirectLocal": "做出选择后，你会回到这台电脑上的应用（{{host}}）。",
+    "trust": "只连接你信任的应用。你可以随时在设置、AI 客户端中断开连接。",
+    "approve": "批准",
+    "deny": "拒绝",
+    "approving": "连接中",
+    "returning": "正在返回 {{name}}",
+    "expiredTitle": "此请求已结束",
+    "expiredBody": "它已过期或已被处理。请从你的 AI 客户端重新开始。",
+    "invalidTitle": "此应用无法连接",
+    "invalidBody": "连接请求无效。请从你的 AI 客户端重新开始，或向它的开发者寻求帮助。",
+    "noWorkspaceTitle": "你还不在任何工作区中",
+    "noWorkspaceBody": "创建或加入一个工作区，然后重新连接该应用。",
+    "error": "出了点问题。请重试。",
+    "goHome": "前往 opendesk"
+  }
+}

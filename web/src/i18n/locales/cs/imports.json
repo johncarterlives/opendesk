@@ -1,0 +1,377 @@
+{
+  "title": "Import",
+  "description": "Přeneste historii týmu z jiného helpdesku nebo souboru CSV: všechny tikety s celou konverzací, lidi, kteří vám psali, i centrum nápovědy.",
+  "pick": {
+    "title": "Kde je nyní vaše historie?",
+    "again": "Importovat odjinud",
+    "hint": "Připojte účet, který nyní používáte. Nic se v něm nezmění a můžete v něm pracovat až do přechodu.",
+    "oneAtATime": "Současně může běžet jeden import. Další spusťte po jeho dokončení.",
+    "adminsOnly": "Historii mohou importovat administrátoři.",
+    "guide": "Jak import funguje"
+  },
+  "promise": {
+    "quiet": {
+      "title": "Bez rozruchu.",
+      "body": "Žádný zákazník nedostane e-mail. U importovaných tiketů se nespustí automatizace, časovače SLA, webhooky ani oznámení."
+    },
+    "people": {
+      "title": "Vaši lidé, správně přiřazení.",
+      "body": "Agenti se stanou členy a skupiny týmy podle e-mailu a názvu. Před spuštěním zkontrolujete každé přiřazení."
+    },
+    "undo": {
+      "title": "Kdykoli vrátit zpět.",
+      "body": "Jedním kliknutím odstraníte vše, co import přinesl. To, co tým od té doby napsal, zůstane."
+    }
+  },
+  "sources": {
+    "zendesk": {
+      "with": "Token API",
+      "blurb": "Tikety s odpověďmi a poznámkami, uživatelé, organizace a články Guide."
+    },
+    "helpscout": {
+      "with": "ID aplikace a tajný klíč",
+      "blurb": "Konverzace ze všech schránek, zákazníci a články Docs."
+    },
+    "freshdesk": {
+      "with": "Klíč API",
+      "blurb": "Tikety s odpověďmi a poznámkami, kontakty, firmy a články s řešeními."
+    },
+    "intercom": {
+      "with": "Přístupový token",
+      "blurb": "Konverzace s poznámkami a soubory, kontakty, firmy a články."
+    },
+    "front": {
+      "with": "Token API",
+      "blurb": "Konverzace ze všech sdílených schránek s komentáři, soubory a kontakty."
+    },
+    "csv": {
+      "with": "Libovolný helpdesk",
+      "blurb": "Export z jakéhokoli jiného helpdesku, jeden řádek na tiket nebo zprávu."
+    },
+    "freescout": {
+      "with": "URL instance a klíč API",
+      "blurb": "Konverzace ze všech schránek s odpověďmi, interními poznámkami, přílohami a zákazníky."
+    }
+  },
+  "steps": {
+    "connect": "Připojení",
+    "upload": "Nahrání",
+    "columns": "Sloupce",
+    "review": "Kontrola",
+    "options": "Výběr a spuštění"
+  },
+  "wizard": {
+    "title": "Import ze služby {{name}}",
+    "description": "Připojte účet ve službě {{name}}. Pouze z něj čteme a nikdy v něm nic neměníme.",
+    "csvDescription": "Nahrajte export ze současného helpdesku a určete, co obsahují jednotlivé sloupce.",
+    "whatComes": "Co se přenese",
+    "facts": {
+      "conversations": "Každý tiket se všemi odpověďmi, poznámkami a přílohami s původními daty.",
+      "people": "Zákazníci a firmy, agenti jako členové a skupiny jako týmy.",
+      "articles": "Kolekce a články centra nápovědy.",
+      "quiet": "Nikdo nedostane e-mail a nespustí se žádná automatizace."
+    },
+    "guide": "Přečíst průvodce importem",
+    "connect": "Připojit",
+    "checking": "Kontrola služby {{name}}",
+    "preview": "Náhled",
+    "continue": "Pokračovat",
+    "start": "Spustit import",
+    "back": "Zpět",
+    "cancel": "Zrušit",
+    "startedToast": "Import byl spuštěn. Stránku můžete opustit, po dokončení vás upozorníme.",
+    "leaveTitle": "Opustit tento import?",
+    "leaveBody": "Zatím se nic neimportovalo. Vaše volby se ztratí.",
+    "leave": "Odejít"
+  },
+  "connect": {
+    "whereToFind": "Kde údaj najít",
+    "show": "Zobrazit",
+    "hide": "Skrýt",
+    "safety": "Pouze čtení. Přihlašovací údaje jsou šifrované a slouží jen ke čtení ze služby {{name}}. Odstraní se 30 dní po posledním běhu nebo kdykoli na vaše přání.",
+    "same": "Stejné jako minule"
+  },
+  "review": {
+    "connected": "Připojeno",
+    "tickets_one": "{{n}} tiket",
+    "tickets_few": "{{n}} tikety",
+    "tickets_many": "{{n}} tiketu",
+    "tickets_other": "{{n}} tiketů",
+    "ticketsUnknown": "Tikety se počítají při přenosu",
+    "articles_one": "{{n}} článek",
+    "articles_few": "{{n}} články",
+    "articles_many": "{{n}} článku",
+    "articles_other": "{{n}} článků",
+    "agents_one": "{{count}} agent",
+    "agents_few": "{{count}} agenti",
+    "agents_many": "{{count}} agenta",
+    "agents_other": "{{count}} agentů",
+    "sampleTitle": "Jak budou vaše tikety vypadat",
+    "noSamples": "Zatím nejsou tikety k náhledu. Import přesto přenese vše, co najde.",
+    "noSubject": "(bez předmětu)",
+    "previous": "Předchozí tiket",
+    "next": "Další tiket",
+    "messages_one": "{{count}} zpráva",
+    "messages_few": "{{count}} zprávy",
+    "messages_many": "{{count}} zprávy",
+    "messages_other": "{{count}} zpráv",
+    "more_one": "a {{count}} další zpráva",
+    "more_few": "a {{count}} další zprávy",
+    "more_many": "a {{count}} další zprávy",
+    "more_other": "a {{count}} dalších zpráv",
+    "note": "Interní poznámka",
+    "unknown": "Neznámé",
+    "empty": "Bez textu",
+    "agentsTitle": "Agenti",
+    "agentsHint": "Jejich odpovědi, poznámky a tikety se přiřadí vybranému členovi. U nepřiřazených autorů zůstane u jejich obsahu původní jméno.",
+    "matched": "Přiřazeno {{n}} z {{total}}",
+    "sameEmail": "Stejný e-mail",
+    "keepName": "Ponechat jen jméno",
+    "agentFor": "Člen pro {{name}}",
+    "groupsTitle": "Skupiny",
+    "groupsHint": "Tikety každé skupiny se přiřadí vybranému týmu.",
+    "noTeam": "Žádný tým",
+    "teamFor": "Tým pro {{name}}",
+    "ready": "Připraveno"
+  },
+  "csv": {
+    "drop": "Přetáhněte sem soubor CSV nebo ho vyberte kliknutím",
+    "dropNow": "Pusťte soubor pro nahrání",
+    "dropHint": "Jeden řádek na tiket nebo jeden řádek na zprávu s ID tiketu pro seskupení. První řádek obsahuje názvy sloupců.",
+    "reading": "Čtení souboru {{name}}",
+    "formats": "UTF-8 nebo UTF-16, oddělené čárkami, středníky nebo tabulátory. Nejvýše 50 MB a 500 000 řádků.",
+    "template": "Stáhnout šablonu",
+    "tooLarge": "Soubor má více než 50 MB. Rozdělte ho na menší soubory a importujte je postupně.",
+    "wrongType": "Vyberte soubor .csv. V tabulkovém editoru ho uložíte přes „Soubor“ a poté „Stáhnout“ nebo „Exportovat“ jako CSV.",
+    "summary": "Řádky: {{rows}}, sloupce: {{columns}}",
+    "replace": "Zvolit jiný soubor",
+    "notInFile": "Není v souboru",
+    "emptyColumn": "Tento sloupec je v prvních řádcích prázdný",
+    "needBody": "Vyberte sloupec se zprávou nebo alespoň s předmětem.",
+    "grouping": "Řádky se stejným ID tiketu se spojí do jednoho tiketu, každý jako zpráva v časovém pořadí. Bez sloupce s ID tiketu bude každý řádek samostatným tiketem.",
+    "fields": {
+      "ticket_id": {
+        "label": "ID tiketu",
+        "hint": "Seskupuje řádky do tiketů"
+      },
+      "subject": {
+        "label": "Předmět",
+        "hint": "Název tiketu"
+      },
+      "body": {
+        "label": "Zpráva",
+        "hint": "Prostý text nebo HTML"
+      },
+      "created_at": {
+        "label": "Datum",
+        "hint": "Kdy byla zpráva napsána"
+      },
+      "from_email": {
+        "label": "E-mail odesílatele",
+        "hint": "Kdo zprávu napsal"
+      },
+      "from_name": {
+        "label": "Jméno odesílatele",
+        "hint": "Jméno autora"
+      },
+      "author": {
+        "label": "Typ autora",
+        "hint": "customer, agent nebo note"
+      },
+      "status": {
+        "label": "Stav",
+        "hint": "open, pending, solved, closed"
+      },
+      "priority": {
+        "label": "Priorita",
+        "hint": "low, normal, high, urgent"
+      },
+      "tags": {
+        "label": "Štítky",
+        "hint": "Oddělené čárkami"
+      },
+      "assignee_email": {
+        "label": "E-mail řešitele",
+        "hint": "Přiřadí se ke členovi"
+      },
+      "team": {
+        "label": "Tým",
+        "hint": "Přiřadí se k týmu podle názvu"
+      },
+      "company": {
+        "label": "Firma",
+        "hint": "Firma zákazníka"
+      },
+      "message_id": {
+        "label": "Message-ID",
+        "hint": "Vlastní ID e-mailu pro propojení odpovědí do vlákna"
+      },
+      "in_reply_to": {
+        "label": "In-Reply-To",
+        "hint": "Message-ID zprávy, na kterou odpovídá"
+      },
+      "references": {
+        "label": "References",
+        "hint": "Předchozí hodnoty Message-ID ve vlákně"
+      }
+    }
+  },
+  "options": {
+    "what": "Co přenést",
+    "tickets": "Tikety",
+    "ticketsHint_one": "{{n}} tiket s konverzací.",
+    "ticketsHint_few": "{{n}} tikety s konverzacemi.",
+    "ticketsHint_many": "{{n}} tiketu s konverzacemi.",
+    "ticketsHint_other": "{{n}} tiketů s konverzacemi.",
+    "ticketsHintUnknown": "Každý tiket s konverzací.",
+    "articles": "Články centra nápovědy",
+    "articlesHint_one": "{{n}} článek s kolekcí. Přenesou se i obrázky.",
+    "articlesHint_few": "{{n}} články s kolekcemi. Přenesou se i obrázky.",
+    "articlesHint_many": "{{n}} článku s kolekcemi. Přenesou se i obrázky.",
+    "articlesHint_other": "{{n}} článků s kolekcemi. Přenesou se i obrázky.",
+    "articlesHintUnknown": "Každý článek s kolekcí.",
+    "articlesNone": "Tento účet nemá centrum nápovědy k přenosu.",
+    "articlesNoDocs": "Pro přenos článků Docs přidejte v prvním kroku klíč API pro Docs.",
+    "drafts": "Přenést články jako koncepty",
+    "draftsHint": "Zkontrolujte je před zveřejněním v centru nápovědy.",
+    "attachments": "Přílohy",
+    "attachmentsHint": "Soubory do 25 MB každý. Pro rychlejší import ponechte vypnuté.",
+    "how": "Způsob přenosu",
+    "since": "Od kdy",
+    "sinceHint": "Starší tikety se nepřenesou. Články se vždy přenášejí celé.",
+    "allHistory": "Celá historie",
+    "fromDate": "Od data",
+    "statuses": "Stavy",
+    "keep": "Zachovat",
+    "closeAll": "Všechny uzavřít",
+    "keepHint": "Otevřené tikety zůstanou otevřené a zařadí se do front.",
+    "closedHint": "Vše se přenese jako uzavřené, takže fronty zůstanou beze změny.",
+    "label": "Štítek",
+    "labelHint": "Přidá se ke každému importovanému tiketu pro snadné vyhledání.",
+    "noLabel": "Žádný štítek",
+    "mailbox": "Odpovídat ze schránky",
+    "mailboxHint": "Odpovědi na importované e-mailové tikety se odesílají z této schránky.",
+    "noMailbox": "Zvolit při odpovědi",
+    "articlesUnsupported": "API FreeScout nezpřístupňuje články znalostní báze."
+  },
+  "summary": {
+    "lead": "Přenese se: {{what}}.",
+    "and": " a ",
+    "tickets_one": "{{n}} tiket",
+    "tickets_few": "{{n}} tikety",
+    "tickets_many": "{{n}} tiketu",
+    "tickets_other": "{{n}} tiketů",
+    "ticketsUnknown": "každý tiket",
+    "articles_one": "{{n}} článek",
+    "articles_few": "{{n}} články",
+    "articles_many": "{{n}} článku",
+    "articles_other": "{{n}} článků",
+    "articlesUnknown": "každý článek",
+    "quiet": "Nikdo nedostane e-mail a nespustí se automatizace, časovače SLA ani webhooky.",
+    "after": "Velké účty chvíli trvají. Import běží u nás, takže stránku můžete zavřít. Po dokončení vás upozorníme a pozdější změny můžete kdykoli přenést."
+  },
+  "current": {
+    "running": "Probíhá",
+    "runningHint": "Průběžně se aktualizuje. Stránku můžete opustit a vrátit se.",
+    "latest": "Poslední import"
+  },
+  "state": {
+    "running": "Importování",
+    "paused": "Pozastaveno",
+    "completed": "Hotovo",
+    "failed": "Zastaveno",
+    "canceled": "Zrušeno",
+    "undoing": "Vracení zpět",
+    "undone": "Vráceno zpět",
+    "waiting": "Čekání",
+    "needsCredentials": "Vyžaduje přihlašovací údaje"
+  },
+  "status": {
+    "open": "Otevřený",
+    "pending": "Čekající",
+    "on_hold": "Pozastavený",
+    "solved": "Vyřešený",
+    "closed": "Uzavřený"
+  },
+  "progress": {
+    "run": "Aktualizace {{n}}",
+    "startedBy": "Spuštěno uživatelem {{name}} {{when}}",
+    "started": "Spuštěno {{when}}",
+    "finished": "dokončeno {{when}}",
+    "articles": "Přenos článků centra nápovědy",
+    "tickets": "Přenos tiketů",
+    "changes": "Přenos změn",
+    "threading": "Propojování odpovědí s e-maily: {{done}} z {{total}}",
+    "undoing": "Odstraňování importovaného obsahu",
+    "paused": "Pozastaveno. Po obnovení se bude pokračovat odtud.",
+    "waiting": "Služba {{name}} požádala o zpomalení. Pokračování za {{seconds}} s.",
+    "left": "zbývá přibližně {{time}}",
+    "lessThanMinute": "minuta",
+    "minutes_one": "{{count}} minuta",
+    "minutes_few": "{{count}} minuty",
+    "minutes_many": "{{count}} minuty",
+    "minutes_other": "{{count}} minut",
+    "hours_one": "{{count}} hodina",
+    "hours_few": "{{count}} hodiny",
+    "hours_many": "{{count}} hodiny",
+    "hours_other": "{{count}} hodin",
+    "pause": "Pozastavit",
+    "resume": "Obnovit",
+    "retry": "Zkusit znovu",
+    "sync": "Přenést změny",
+    "actions": "Akce importu",
+    "openSource": "Otevřít {{name}}",
+    "cancel": "Zrušit import",
+    "cancelTitle": "Zrušit tento import?",
+    "cancelBody": "Již přenesený obsah zůstane. Přihlašovací údaje se odstraní a import můžete později vrátit zpět.",
+    "canceledToast": "Import zrušen",
+    "undo": "Vrátit import zpět",
+    "undoPauseFirst": "Pro vrácení zpět pozastavit",
+    "undoTitle": "Vrátit import ze služby {{name}} zpět?",
+    "undoBody_one": "Odstraní se {{tickets}} přenesený tiket a přenesené články ({{articles}}) spolu s kontakty, firmami a štítky, které se jinde nepoužívají. Tikety, do kterých tým od té doby psal, zůstanou.",
+    "undoBody_few": "Odstraní se {{tickets}} přenesené tikety a přenesené články ({{articles}}) spolu s kontakty, firmami a štítky, které se jinde nepoužívají. Tikety, do kterých tým od té doby psal, zůstanou.",
+    "undoBody_many": "Odstraní se {{tickets}} přeneseného tiketu a přenesené články ({{articles}}) spolu s kontakty, firmami a štítky, které se jinde nepoužívají. Tikety, do kterých tým od té doby psal, zůstanou.",
+    "undoBody_other": "Odstraní se {{tickets}} přenesených tiketů a přenesené články ({{articles}}) spolu s kontakty, firmami a štítky, které se jinde nepoužívají. Tikety, do kterých tým od té doby psal, zůstanou.",
+    "undoneHint": "Vráceno zpět. Obsah přenesený tímto importem byl odstraněn.",
+    "forget": "Odebrat přihlašovací údaje",
+    "forgetTitle": "Odebrat přihlašovací údaje?",
+    "forgetBody": "Import již nebude moci přenášet změny ze služby {{name}}. Přenesený obsah zůstane.",
+    "credentialsRemoved": "Přihlašovací údaje odebrány",
+    "needsCredentials": "Služba {{name}} přestala přijímat přihlašovací údaje.",
+    "resumeWith": "Obnovit s těmito údaji",
+    "failedHint": "Přenesený obsah zůstane. Zkuste to znovu a pokračujte od místa přerušení.",
+    "done": "Vše ze služby {{name}} je zde.",
+    "syncDone_one": "Aktualizován {{count}} tiket.",
+    "syncDone_few": "Aktualizovány {{count}} tikety.",
+    "syncDone_many": "Aktualizováno {{count}} tiketu.",
+    "syncDone_other": "Aktualizováno {{count}} tiketů.",
+    "seeTickets": "Zobrazit importované tikety",
+    "problems_one": "{{count}} položku se nepodařilo přenést",
+    "problems_few": "{{count}} položky se nepodařilo přenést",
+    "problems_many": "{{count}} položky se nepodařilo přenést",
+    "problems_other": "{{count}} položek se nepodařilo přenést",
+    "moreProblems_one": "a {{count}} další",
+    "moreProblems_few": "a {{count}} další",
+    "moreProblems_many": "a {{count}} dalšího",
+    "moreProblems_other": "a {{count}} dalších",
+    "kept": "Přihlašovací údaje se uchovávají, abyste mohli přenášet změny až do přechodu. Odstraní se 30 dní po posledním běhu."
+  },
+  "figures": {
+    "tickets": "Tikety",
+    "messages": "Zprávy",
+    "contacts": "Kontakty",
+    "articles": "Články",
+    "attachments": "Soubory",
+    "updated": "Aktualizováno"
+  },
+  "history": {
+    "title": "Dřívější importy",
+    "hint": "Otevřete import pro přenos změn, vrácení zpět nebo zobrazení nepřenesených položek.",
+    "brought_one": "{{tickets}} tiket, články: {{articles}}",
+    "brought_few": "{{tickets}} tikety, články: {{articles}}",
+    "brought_many": "{{tickets}} tiketu, články: {{articles}}",
+    "brought_other": "{{tickets}} tiketů, články: {{articles}}",
+    "undone": "Odstraněno",
+    "none": "Zatím žádné importy."
+  }
+}

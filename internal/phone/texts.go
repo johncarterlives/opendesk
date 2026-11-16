@@ -55,12 +55,47 @@ var callTexts = map[string]map[string]string{
 		"status.solved":  "Gelöst",
 		"status.closed":  "Geschlossen",
 	},
+	"cs": {
+		"from":           "Příchozí hovor: ",
+		"to":             "Odchozí hovor: ",
+		"withheld":       "Hovor ze skrytého čísla",
+		"number":         "Skryté číslo",
+		"ticket":         "Tiket",
+		"earlier":        "Dřívější tikety",
+		"status.open":    "Otevřený",
+		"status.pending": "Čekající",
+		"status.on_hold": "Pozastavený",
+		"status.solved":  "Vyřešený",
+		"status.closed":  "Uzavřený",
+	},
+	// Simplified Chinese, for the agent app's zh-CN; see callLanguage for which tags get it.
+	"zh": {
+		"from":           "来电：",
+		"to":             "去电：",
+		"withheld":       "隐藏号码来电",
+		"number":         "隐藏号码",
+		"ticket":         "工单",
+		"earlier":        "以往工单",
+		"status.open":    "打开",
+		"status.pending": "待处理",
+		"status.on_hold": "保留",
+		"status.solved":  "已解决",
+		"status.closed":  "已关闭",
+	},
 }
 
 // callLanguage is a callTexts language for a workspace locale (BCP 47): its base language
-// when there are words for it, else English.
+// when there are words for it, else English. Chinese has Simplified words only, so only a
+// Simplified tag (zh, zh-CN, zh-Hans) gets them; Traditional (zh-TW, zh-Hant) gets English.
 func callLanguage(locale string) string {
-	base, _, _ := strings.Cut(strings.ToLower(strings.ReplaceAll(strings.TrimSpace(locale), "_", "-")), "-")
+	tag := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(locale), "_", "-"))
+	base, _, _ := strings.Cut(tag, "-")
+	if base == "zh" {
+		if tag == "zh" || tag == "zh-cn" || tag == "zh-hans" {
+			return "zh"
+		}
+		return "en"
+	}
 	if _, ok := callTexts[base]; ok {
 		return base
 	}

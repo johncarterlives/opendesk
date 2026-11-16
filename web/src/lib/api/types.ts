@@ -1331,12 +1331,16 @@ export type SupportChannelDestination = {
   /** How Ollie sounds in this channel's threads; empty for the default. */
   ollie_personality: string;
   ollie_length: SupportChannelOllieLength;
+  /** The lowest role that may act on tickets from this channel's threads. */
+  min_role: "agent" | "admin";
+  /** When not empty, only these members may act from this channel. */
+  allowed_user_ids: string[];
   created_at: string;
 };
 export type SupportChannelDestinationMode = "route" | "copy";
 export type SupportChannelMirror = "customer_replies" | "agent_replies" | "status_changes" | "assignee_changes" | "priority_changes";
 /** Where a destination's threads start and what they show; the create and update bodies share it. */
-export type SupportChannelRouting = Partial<Pick<SupportChannelDestination, "mode" | "conditions" | "mirror" | "include_notes">>;
+export type SupportChannelRouting = Partial<Pick<SupportChannelDestination, "mode" | "conditions" | "mirror" | "include_notes" | "min_role" | "allowed_user_ids">>;
 export type SupportChannelOllieLength = "brief" | "standard" | "detailed";
 /** Ticket changes Ollie may choose in support channel threads. */
 export type SupportChannelOllieAction = "reply" | "note" | "assign_self" | "status" | "priority" | "create_ticket";

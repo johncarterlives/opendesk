@@ -329,7 +329,7 @@ function Delivery({ m, onRetry }: { m: Message; onRetry?: () => void }) {
     );
   if (m.delivery_status === "sent")
     return (
-      <Tooltip content={t("message.deliveredTo", { to: m.to.join(", ") || t("composer.theCustomer") })}>
+      <Tooltip content={<span data-ph-mask>{t("message.deliveredTo", { to: m.to.join(", ") || t("composer.theCustomer") })}</span>}>
         <span className="flex items-center gap-1 text-[11px] text-fg-4 animate-fade-in">
           <Check className={`size-3 ${tone.green.text}`} /> {t("message.sent")}
         </span>
@@ -337,7 +337,7 @@ function Delivery({ m, onRetry }: { m: Message; onRetry?: () => void }) {
     );
   return (
     <span className="flex items-center gap-2">
-      <Tooltip content={m.delivery_error || t("message.refused")}>
+      <Tooltip content={<span data-ph-mask>{m.delivery_error || t("message.refused")}</span>}>
         <span className={`inline-flex h-5 items-center gap-1.5 rounded-sm px-1.5 text-[11px] font-medium ${tone.red.chip}`}>
           <span className={`size-1.5 rounded-full ${tone.red.solid}`} />
           {m.delivery_status === "bounced" ? t("message.bounced") : t("message.notDelivered")}
@@ -399,6 +399,41 @@ function useMessageAddress(m: Message, receivedAt?: string | null) {
     return m.to.find(ours) ?? mb?.email ?? (receivedAt || null);
   }
   return m.from_email || mb?.email || null;
+}
+
+/**
+ * The To header of an inbound email that names none of our addresses: a copy forwarded from another
+ * address, or one we got in Cc or Bcc. Null when it names the address the email was received at.
+ */
+export function originalRecipients(m: Message): { to: string[]; address: string } | null {
+  const at = m.received_at?.trim().toLowerCase();
+  if (m.direction !== "inbound" || !at) return null;
+  const to = m.to.map((a) => a.trim()).filter(Boolean);
+  return to.length > 0 && !to.some((a) => a.toLowerCase() === at) ? { to, address: at } : null;
+}
+
+/** Who an inbound email was written to when that is not us, and the address of ours that got it. */
+function OriginalRecipients({ to, address }: { to: string[]; address: string }) {
+  const { t } = useTranslation("inbox");
+  const first = to.length > 1 ? t("message.toAndOthers", { to: to[0], others: to.length - 1 }) : t("message.to", { to: to[0] });
+  const received = t("message.receivedAt", { address });
+  return (
+    <Tooltip
+      content={
+        <span className="block max-w-[320px] break-words font-normal leading-snug" data-ph-mask>
+          {t("message.to", { to: to.join(", ") })}
+          <br />
+          {received}
+        </span>
+      }
+    >
+      <span tabIndex={0} className="rounded-sm text-fg-4 outline-none focus-visible:shadow-[inset_0_0_0_1px_var(--focus)]">
+        <span className="text-fg-3">{first}</span>
+        {" · "}
+        {received}
+      </span>
+    </Tooltip>
+  );
 }
 
 /** What can be done to a thread from its latest message. */
@@ -598,6 +633,7 @@ export const MessageItem = memo(function MessageItem({
     );
   const address = useMessageAddress(m, receivedAt);
   const inbound = m.direction === "inbound" && !note;
+  const originalTo = inbound ? originalRecipients(m) : null;
   // Loaded for this message, or for every email (Settings → Profile → Appearance).
   const loaded = useImagesLoadedFor(m.id);
   const remote = useAlwaysShowImages() || loaded;
@@ -647,7 +683,12 @@ export const MessageItem = memo(function MessageItem({
           ) : (
             <span className="min-w-0 truncate text-[11.5px] text-fg-3" data-ph-mask>
               {m.from_email}
-              {address && <span className="text-fg-4"> {t("message.toAddress", { address })}</span>}
+              {originalTo && " "}
+              {originalTo ? (
+                <OriginalRecipients {...originalTo} />
+              ) : (
+                address && <span className="text-fg-4"> {t("message.toAddress", { address })}</span>
+              )}
             </span>
           )}
         </div>
@@ -727,9 +768,7 @@ export const MessageItem = memo(function MessageItem({
             )}
             {replyTo && (
               <Tooltip
-                content={
-                  m.reply_address ? t("message.replyToUsed") : t("message.replyToOther", { address: m.from_email })
-                }
+                content={<span data-ph-mask>{m.reply_address ? t("message.replyToUsed") : t("message.replyToOther", { address: m.from_email })}</span>}
               >
                 <span className="flex min-w-0 items-center gap-1.5">
                   <Reply className="size-3 shrink-0 text-fg-4" />

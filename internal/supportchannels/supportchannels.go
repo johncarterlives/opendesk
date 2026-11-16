@@ -113,18 +113,21 @@ type destination struct {
 	Conditions []hd.Condition `json:"conditions"`
 	Mirror     []string       `json:"mirror"`
 	// Ollie in this destination's threads (contracts/support-channels.md "Ollie").
-	OllieSummary     bool      `json:"ollie_summary"`
-	OllieWarnings    bool      `json:"ollie_warnings"`
-	OlliePersonality string    `json:"ollie_personality"`
-	OllieLength      string    `json:"ollie_length" enum:"brief,standard,detailed"`
-	CreatedAt        time.Time `json:"created_at"`
+	OllieSummary     bool   `json:"ollie_summary"`
+	OllieWarnings    bool   `json:"ollie_warnings"`
+	OlliePersonality string `json:"ollie_personality"`
+	OllieLength      string `json:"ollie_length" enum:"brief,standard,detailed"`
+	// Access: who may act from this destination's threads (contracts/support-channels.md "Access").
+	MinRole        string      `json:"min_role" enum:"agent,admin"`
+	AllowedUserIDs []uuid.UUID `json:"allowed_user_ids"`
+	CreatedAt      time.Time   `json:"created_at"`
 }
 
 // destinationColumns are a destination's columns in the order scanDestination reads them.
-const destinationColumns = `id,connection_id,team_id,priority,external_channel_id,external_channel_name,enabled,include_notes,message_limit,mode,conditions,mirror,ollie_summary,ollie_warnings,ollie_personality,ollie_length,created_at`
+const destinationColumns = `id,connection_id,team_id,priority,external_channel_id,external_channel_name,enabled,include_notes,message_limit,mode,conditions,mirror,ollie_summary,ollie_warnings,ollie_personality,ollie_length,min_role,allowed_user_ids,created_at`
 
 func destinationScan(d *destination) []any {
-	return []any{&d.ID, &d.ConnectionID, &d.TeamID, &d.Priority, &d.ExternalChannelID, &d.ExternalChannelName, &d.Enabled, &d.IncludeNotes, &d.MessageLimit, &d.Mode, &d.Conditions, &d.Mirror, &d.OllieSummary, &d.OllieWarnings, &d.OlliePersonality, &d.OllieLength, &d.CreatedAt}
+	return []any{&d.ID, &d.ConnectionID, &d.TeamID, &d.Priority, &d.ExternalChannelID, &d.ExternalChannelName, &d.Enabled, &d.IncludeNotes, &d.MessageLimit, &d.Mode, &d.Conditions, &d.Mirror, &d.OllieSummary, &d.OllieWarnings, &d.OlliePersonality, &d.OllieLength, &d.MinRole, &d.AllowedUserIDs, &d.CreatedAt}
 }
 
 type delivery struct {

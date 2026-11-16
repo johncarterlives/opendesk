@@ -1,0 +1,159 @@
+{
+  "setup": {
+    "title": "Připravit agenta",
+    "description": "Každý krok zlepšuje odpovědi Ollieho. Nepovinné kroky pomáhají, ale nejsou nutné.",
+    "progress": "Hotovo {{done}} z {{total}}",
+    "progressLabel": "Hotovo {{done}} z {{total}} povinných kroků",
+    "optional": "Nepovinné",
+    "stepDone": "Hotovo",
+    "stepTodo": "Zatím nehotovo",
+    "complete": "Agent je nastavený",
+    "completeBody": "Ollie má vše potřebné. Dál ho vylepšujte ve zkušebním prostředí a pomocí otázek níže.",
+    "showSteps": "Zobrazit kroky",
+    "hideSteps": "Skrýt kroky",
+    "needsAi": "Nejprve zapněte AI",
+    "error": "Kroky nastavení se nepodařilo načíst.",
+    "retry": "Zkusit znovu",
+    "steps": {
+      "ai_on": {
+        "title": "Zapnout AI",
+        "why": "Aby mohl Ollie odpovídat, musí být ve workspace zapnutá AI.",
+        "action": "Otevřít nastavení AI"
+      },
+      "identity": {
+        "title": "Pojmenovat agenta a určit, jak má pomáhat",
+        "why": "Jméno, obrázek a pokyny pomohou sladit odpovědi s vaším týmem.",
+        "action": "Nastavit identitu"
+      },
+      "knowledge": {
+        "title": "Přidat znalosti",
+        "why": "Ollie odpovídá pouze podle zveřejněných článků nápovědy a připravených zdrojů znalostí.",
+        "action": "Přidat znalosti"
+      },
+      "tools": {
+        "title": "Připojit nástroje",
+        "why": "Umožněte Olliemu vyhledávat objednávky nebo účty ve vašich systémech.",
+        "action": "Připojit nástroj"
+      },
+      "playground": {
+        "title": "Otestovat ve zkušebním prostředí",
+        "why": "Položte několik skutečných otázek a zkontrolujte odpovědi dříve než návštěvníci.",
+        "action": "Otevřít zkušební prostředí"
+      },
+      "widget": {
+        "title": "Nainstalovat chatovací widget",
+        "why": "Návštěvníci se s Olliem spojí přes widget na vašem webu.",
+        "action": "Nainstalovat widget"
+      },
+      "answers_on": {
+        "title": "Nechat Ollieho odpovídat v chatu",
+        "why": "Zapněte odpovědi, aby Ollie odpovídal návštěvníkům a podle potřeby předával konverzace týmu.",
+        "action": "Zapnout odpovědi"
+      },
+      "email_answers": {
+        "title": "Odpovídat i na e-maily",
+        "why": "Zapněte Ollieho pro schránku, aby připravoval koncepty nebo odesílal e-mailové odpovědi.",
+        "action": "Zvolit schránku"
+      }
+    }
+  },
+  "clients": {
+    "title": "AI klienti",
+    "description": "Používejte opendesk z Claude, ChatGPT, Cursor, VS Code a dalších MCP klientů. S vašimi tikety, kontakty a články nápovědy pracují podle udělených oprávnění.",
+    "server": "URL MCP serveru",
+    "serverHint": "Klientům s přihlášením přes OAuth stačí tato adresa.",
+    "setupTitle": "Připojit klienta",
+    "setupHint": "Vyberte klienta a postupujte podle pokynů.",
+    "oauthBadge": "Přihlásit se",
+    "keyBadge": "Klíč API",
+    "keyPlaceholder": "od_live_...",
+    "steps": {
+      "claude": "V Claude otevřete „Nastavení“, pak „Konektory“ a zvolte „Přidat vlastní konektor“. Vložte URL a vyberte „Připojit“. Přihlaste se do opendesk a potvrďte přístup.",
+      "chatgpt": "V ChatGPT přidejte v režimu vývojáře konektor s touto URL a ověřováním OAuth. Přihlaste se do opendesk a potvrďte přístup.",
+      "claudeCode": "Spusťte tento příkaz v terminálu. Při prvním použití serveru otevře Claude Code opendesk pro přihlášení.",
+      "claudeCodeKey": "Nebo místo přihlášení odešlete klíč API v hlavičce:",
+      "claudeDesktop": "Upřednostněte konektor s přihlášením (viz Claude). Pro klíč API otevřete „Nastavení“, pak „Vývojář“ a „Upravit konfiguraci“, přidejte tento obsah a restartujte Claude Desktop. Vyžaduje Node.js.",
+      "cursor": "Přidejte tento obsah do ~/.cursor/mcp.json pro všechny projekty nebo do .cursor/mcp.json pro jeden projekt. Pak zkontrolujte „Nastavení Cursor“, „MCP“.",
+      "vscode": "Přidejte tento obsah jako .vscode/mcp.json do svého workspace. VS Code si při prvním použití vyžádá klíč a bezpečně ho uloží.",
+      "other": "Funguje každý klient podporující Streamable HTTP: přes OAuth, pokud podporuje specifikaci autorizace MCP, jinak s klíčem API v hlavičce Authorization."
+    },
+    "keyNeeded": "Tento klient odesílá klíč API v hlavičce.",
+    "keyCreate": "Vytvořit pro něj klíč",
+    "keyAskAdmin": "Požádejte administrátora, aby pro něj vytvořil klíč API.",
+    "keyShownOnce": "Zkopírujte ho nyní. Zobrazí se pouze jednou a bude vyplněný v ukázkách výše, dokud tuto stránku neopustíte.",
+    "keyDialog": {
+      "title": "Vytvořit klíč API pro AI klienta",
+      "description": "Klient získá jen nástroje povolené těmito rozsahy oprávnění.",
+      "name": "Název",
+      "namePlaceholder": "Cursor na mém notebooku",
+      "access": "Přístup",
+      "read": "Pouze čtení",
+      "readHint": "Vyhledávat a číst tikety, kontakty a články.",
+      "write": "Čtení a zápis",
+      "writeHint": "Také odpovídat, přidávat poznámky, aktualizovat tikety a připravovat koncepty článků.",
+      "expires": "Platnost vyprší",
+      "in30": "Za 30 dní",
+      "in90": "Za 90 dní",
+      "in365": "Za rok",
+      "create": "Vytvořit klíč",
+      "cancel": "Zrušit",
+      "nameRequired": "Zadejte název klíče.",
+      "error": "Klíč se nepodařilo vytvořit."
+    },
+    "tools": "Nabízené nástroje",
+    "toolsHint": "Klient vidí nástroj pouze tehdy, když má potřebné rozsahy oprávnění.",
+    "readOnly": "Čtení",
+    "changes": "Mění data",
+    "connections": "Připojení klienti",
+    "connectionsHint": "Klienti připojení pomocí přihlášení. Jednají jménem osoby, která je připojila.",
+    "connectionsHintAdmin": "Klienti připojení pomocí přihlášení za všechny členy. Jednají jménem osoby, která je připojila.",
+    "lastUsed": "Naposledy použito {{when}}",
+    "connectedBy": "Připojeno uživatelem {{name}}",
+    "you": "vy",
+    "onComputer": "aplikace na tomto počítači",
+    "revoke": "Odpojit",
+    "revokeTitle": "Odpojit {{name}}?",
+    "revokeBody": "Ihned přestane fungovat a pro opětovné připojení bude nutné nové přihlášení.",
+    "revokeError": "Klienta se nepodařilo odpojit.",
+    "emptyTitle": "Zatím nejsou připojení žádní klienti",
+    "emptyBody": "Přidejte opendesk jako konektor v Claude nebo ChatGPT pomocí URL výše. Po potvrzení přístupu se zobrazí zde.",
+    "emptyTipSignIn": "Přihlášení bez kopírování klíče",
+    "emptyTipRole": "Nikdy více, než dovoluje vaše role",
+    "error": "Připojené klienty se nepodařilo načíst.",
+    "retry": "Zkusit znovu"
+  },
+  "scopes": {
+    "tickets:read": "Číst tikety",
+    "tickets:write": "Odpovídat na tikety a aktualizovat je",
+    "contacts:read": "Číst kontakty",
+    "contacts:write": "Aktualizovat kontakty",
+    "kb:read": "Číst články nápovědy",
+    "kb:write": "Připravovat koncepty článků nápovědy",
+    "wiki:read": "Číst týmovou wiki",
+    "wiki:write": "Psát do týmové wiki",
+    "settings:read": "Číst údaje o kolezích, týmech a přehledy"
+  },
+  "consent": {
+    "title": "Připojit {{name}} k opendesk",
+    "subtitle": "{{name}} chce v opendesk jednat vaším jménem.",
+    "workspace": "Workspace",
+    "access": "Bude možné",
+    "notIncluded": "Nezahrnuto: vaše role v tomto workspace to neumožňuje",
+    "noScopes": "Vaše role v tomto workspace neumožňuje žádnou z těchto činností. Zvolte jiný workspace nebo požádejte administrátora.",
+    "redirect": "Po rozhodnutí se vrátíte na {{host}}.",
+    "redirectLocal": "Po rozhodnutí se vrátíte do aplikace na tomto počítači ({{host}}).",
+    "trust": "Připojujte jen aplikace, kterým důvěřujete. Kdykoli je můžete odpojit v části „Nastavení“, „AI klienti“.",
+    "approve": "Schválit",
+    "deny": "Odmítnout",
+    "approving": "Připojování",
+    "returning": "Návrat do {{name}}",
+    "expiredTitle": "Tento požadavek již není aktivní",
+    "expiredBody": "Jeho platnost vypršela nebo již byl vyřízen. Začněte znovu ve svém AI klientovi.",
+    "invalidTitle": "Tuto aplikaci nelze připojit",
+    "invalidBody": "Požadavek na připojení není platný. Začněte znovu ve svém AI klientovi nebo požádejte jeho vývojáře o pomoc.",
+    "noWorkspaceTitle": "Zatím nejste v žádném workspace",
+    "noWorkspaceBody": "Vytvořte workspace nebo se k nějakému připojte a poté aplikaci znovu připojte.",
+    "error": "Něco se nepovedlo. Zkuste to znovu.",
+    "goHome": "Přejít do opendesk"
+  }
+}

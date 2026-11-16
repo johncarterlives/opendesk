@@ -1,0 +1,44 @@
+{
+  "everywhere": {
+    "title": "全部",
+    "mine": "我的工单",
+    "mail": "全部邮件",
+    "mineTitle": "我的工单（全部工作区）",
+    "mailTitle": "全部邮件（全部工作区）",
+    "mineHint": "所有工作区中分配给你的工单，按最新动态排序。",
+    "mailHint": "所有已启用 Collab 的工作区中的收件箱，按最新排序。",
+    "emptyMine": "没有分配给你的工单",
+    "emptyMineHint": "任何工作区中分配给你的工单都会显示在这里。",
+    "emptyMail": "还没有邮件",
+    "emptyMailHint": "所有工作区中来自你邮件账户的会话都会显示在这里。",
+    "noMail": "你的工作区都没有启用 Collab",
+    "noMailHint": "全部邮件会汇总启用了 Collab 的工作区的邮件账户。",
+    "failed": "{{name}} 加载失败",
+    "retry": "重试",
+    "openIn": "在 {{name}} 中打开",
+    "workspaces": "此列表中的工作区",
+    "allWorkspaces": "所有工作区",
+    "more": "更早的内容在各工作区自己的列表中。"
+  },
+  "customize": {
+    "arrange": "整理工作区",
+    "title": "工作区",
+    "description": "你所在的工作区在工作区切换器中的排列方式。这些设置只有你能看到。",
+    "order": "顺序与可见性",
+    "orderHint": "拖动可调整顺序，也可以按住 Alt 加向上或向下方向键。隐藏的工作区会在切换器中收起，也不会出现在通知铃和全部列表中。",
+    "drag": "调整 {{name}} 的顺序",
+    "show": "显示 {{name}}",
+    "failed": "无法保存。你的修改已撤销。",
+    "single": "你只属于一个工作区",
+    "singleHint": "加入另一个工作区后，你可以在这里整理它们，并把它们汇总到一个空间。",
+    "moved": "{{name}} 现在是第 {{n}} 个",
+    "hiddenNow": "已隐藏",
+    "current": "当前打开"
+  },
+  "badge": {
+    "in": "在 {{name}} 中"
+  },
+  "switcher": {
+    "hidden_other": "{{count}} 个隐藏的工作区"
+  }
+}
