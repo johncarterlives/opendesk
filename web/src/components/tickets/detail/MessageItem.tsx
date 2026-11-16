@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertCircle, ArrowDown, Check, CheckCheck, Download, FileText, Forward, Globe, ImageOff, Lock, Mail, MessagesSquare, MoreHorizontal, Pencil, Printer, Quote, Reply, RotateCcw, RotateCw, Send, ShieldAlert, Trash2, Undo2 } from "lucide-react";
+import { AlertCircle, ArrowDown, Check, CheckCheck, Download, FileCode, FileText, Forward, Globe, ImageOff, Lock, Mail, MessagesSquare, MoreHorizontal, Pencil, Printer, Quote, Reply, RotateCcw, RotateCw, Send, ShieldAlert, Trash2, Undo2 } from "lucide-react";
 import { memo, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { tone } from "@/lib/tones";
@@ -27,6 +27,7 @@ import { SentEmail } from "./SentEmail";
 import { RichEditor } from "@/components/editor/RichEditor";
 import { mentionExtension, useSuggest } from "./suggestions";
 import { useConfirm } from "@/components/ui/confirm";
+import { SourceDialog } from "@/components/messages/SourceDialog";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { toast } from "@/components/ui/toast";
 import { useNow } from "@/lib/useNow";
@@ -576,6 +577,7 @@ export const MessageItem = memo(function MessageItem({
   seenAt?: string;
 }) {
   const [showOriginal, setShowOriginal] = useState(false);
+  const [source, setSource] = useState(false);
   const [viewingSent, setViewingSent] = useState(false);
   const ollie = useAssistantName();
   // A message sent as a bot shows it (contracts/bots.md): an AI reply's, or the bot an API
@@ -595,7 +597,10 @@ export const MessageItem = memo(function MessageItem({
   const confirm = useConfirm();
   const meUser = useSession((s) => s.user);
   const me = meUser?.id;
-  const admin = atLeast(useRole(), "admin");
+  const role = useRole();
+  const admin = atLeast(role, "admin");
+  // An email that arrived at a mailbox keeps its raw source, which agents may read (contracts/api.md, `GET /v1/messages/{id}/source`).
+  const hasSource = atLeast(role, "agent") && m.kind === "reply" && m.direction === "inbound" && !!m.mailbox_id && !m.deleted_at;
   const mine = !!me && m.author.user?.id === me;
   const editableNote = note && mine;
   // Who may delete what is the workspace's rule for agents (settings.message_delete); admins any message.
@@ -739,6 +744,11 @@ export const MessageItem = memo(function MessageItem({
                   {t("message.retract")}
                 </MenuItem>
               )}
+              {hasSource && (
+                <MenuItem icon={<FileCode />} onSelect={() => setSource(true)}>
+                  {t("message.viewSource")}
+                </MenuItem>
+              )}
               <MenuItem icon={<Printer />} onSelect={print}>
                 {t("print.action")}
               </MenuItem>
@@ -814,6 +824,9 @@ export const MessageItem = memo(function MessageItem({
           </div>
         )}
         <Attachments items={m.attachments} />
+        {hasSource && (
+          <SourceDialog open={source} onOpenChange={setSource} title={m.subject} queryKey={qk.of("message-source", m.id)} load={() => api.messages.source(m.id)} file={() => api.messages.sourceFile(m.id)} />
+        )}
         {m.ai_action && <AiActionCard action={m.ai_action} />}
         {failed && m.delivery_error && (
           <p className="mt-3 flex items-start gap-1.5 rounded-md bg-sunken px-2.5 py-2 text-xs text-fg-2">

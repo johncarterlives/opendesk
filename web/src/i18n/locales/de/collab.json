@@ -759,7 +759,8 @@
     "spoofedTitle": "Vorsicht bei dieser Nachricht",
     "spoofedBody": "Sie hat die Prüfungen ihres Absenders nicht bestanden und kommt daher vielleicht nicht wirklich von {{domain}}. Meide ihre Links und Dateien und antworte nicht mit persönlichen Daten.",
     "unverifiedTitle": "Dieser Absender konnte nicht verifiziert werden",
-    "unverifiedBody": "Nichts bestätigt, dass diese Nachricht von {{domain}} kommt. Sei vorsichtig mit ihren Links und Dateien."
+    "unverifiedBody": "Nichts bestätigt, dass diese Nachricht von {{domain}} kommt. Sei vorsichtig mit ihren Links und Dateien.",
+    "showSource": "Quelltext anzeigen"
   },
   "addresses": {
     "title": "Adressen",

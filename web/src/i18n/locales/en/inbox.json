@@ -758,7 +758,8 @@
     "showReply": "Show reply",
     "showNote": "Show note",
     "hideNote": "Hide note",
-    "forward": "Forward"
+    "forward": "Forward",
+    "viewSource": "View source"
   },
   "merge": {
     "title": "Merge #{{number}} into another ticket",
@@ -1160,5 +1161,15 @@
   "wiki": {
     "title": "Wiki",
     "untitled": "Untitled"
+  },
+  "source": {
+    "title": "Original message",
+    "download": "Download .eml",
+    "copy": "Copy source",
+    "close": "Close",
+    "error": "The original of this message isn't available. Only email that arrived at a mailbox keeps one, and a purged message's is gone.",
+    "loadError": "Couldn't load the original message. Try again.",
+    "downloadError": "Couldn't download the message.",
+    "truncated": "Only the first part is shown. The download has the whole message ({{size}} KB)."
   }
 }

@@ -738,7 +738,8 @@
     "unverified": "Expéditeur non vérifié",
     "unverifiedHint": "Le domaine de l’expéditeur a échoué à la vérification d’authentification des e-mails. L’expéditeur n’est peut-être pas celui qu’il prétend être. Soyez prudent avec les liens et les demandes de ce message.",
     "viaForm": "Envoyé via le formulaire à l’adresse <m>{{address}}</m>",
-    "forward": "Transférer"
+    "forward": "Transférer",
+    "viewSource": "Afficher la source"
   },
   "merge": {
     "title": "Fusionner #{{number}} avec un autre ticket",
@@ -1142,5 +1143,15 @@
   "wiki": {
     "title": "Wiki",
     "untitled": "Sans titre"
+  },
+  "source": {
+    "title": "Message d’origine",
+    "download": "Télécharger le .eml",
+    "copy": "Copier la source",
+    "close": "Fermer",
+    "error": "L’original de ce message n’est pas disponible. Seul un e-mail arrivé dans une boîte en garde un, et celui d’un message supprimé définitivement n’existe plus.",
+    "loadError": "Impossible de charger le message d’origine. Réessayez.",
+    "downloadError": "Impossible de télécharger le message.",
+    "truncated": "Seule la première partie est affichée. Le téléchargement contient tout le message ({{size}} Ko)."
   }
 }

@@ -786,7 +786,8 @@
     "spoofedTitle": "Méfiez-vous de ce message",
     "spoofedBody": "Il a échoué aux vérifications de son expéditeur et ne vient peut-être pas vraiment de {{domain}}. Évitez ses liens et ses fichiers, et ne répondez pas avec des informations personnelles.",
     "unverifiedTitle": "Cet expéditeur n’a pas pu être vérifié",
-    "unverifiedBody": "Rien ne confirme que ce message vient de {{domain}}. Soyez prudent avec ses liens et ses fichiers."
+    "unverifiedBody": "Rien ne confirme que ce message vient de {{domain}}. Soyez prudent avec ses liens et ses fichiers.",
+    "showSource": "Afficher la source"
   },
   "addresses": {
     "title": "Adresses",

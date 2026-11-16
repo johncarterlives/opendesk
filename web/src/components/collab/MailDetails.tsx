@@ -10,7 +10,9 @@ import { useTranslation } from "react-i18next";
 import type { MailAddress, MailMessage, MailMessageDetails } from "@/lib/api/types";
 import { formatAddress } from "@/lib/collab/recipients";
 import { fullDate } from "@/lib/format";
-import { q } from "@/lib/queries";
+import { q, qk } from "@/lib/queries";
+import { api } from "@/lib/api/endpoints";
+import { SourceDialog } from "@/components/messages/SourceDialog";
 import { cn } from "@/lib/cn";
 import { tone } from "@/lib/tones";
 import { Popover } from "@/components/ui/popover";
@@ -31,6 +33,7 @@ export function DetailsTrigger({ m, details: given, loading: givenLoading }: { m
   const { t } = useTranslation("collab");
   const [open, setOpen] = useState(false);
   const [headers, setHeaders] = useState(false);
+  const [source, setSource] = useState(false);
   const own = useQuery({ ...q.mailMessageDetails(m.id), enabled: open && !m.draft && !given });
   const details = given ?? own.data;
   const loading = givenLoading || own.isLoading;
@@ -57,9 +60,12 @@ export function DetailsTrigger({ m, details: given, loading: givenLoading }: { m
           </button>
         }
       >
-        <DetailsCard m={m} details={details} loading={loading} onHeaders={() => (setOpen(false), setHeaders(true))} />
+        <DetailsCard m={m} details={details} loading={loading} onHeaders={() => (setOpen(false), setHeaders(true))} onSource={() => (setOpen(false), setSource(true))} />
       </Popover>
       <HeadersDialog open={headers} onOpenChange={setHeaders} details={details} subject={m.subject} />
+      {!m.draft && (
+        <SourceDialog open={source} onOpenChange={setSource} title={m.subject} queryKey={qk.mailMessageSource(m.id)} load={() => api.collab.messageSource(m.id)} file={() => api.collab.messageSourceFile(m.id)} />
+      )}
     </>
   );
 }
@@ -77,7 +83,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 const resultTone = (r: string) => (r === "pass" ? tone.green.chip : r === "fail" ? tone.red.chip : r === "softfail" ? tone.amber.chip : tone.gray.chip);
 
-function DetailsCard({ m, details, loading, onHeaders }: { m: MailMessage; details: MailMessageDetails | undefined; loading: boolean; onHeaders: () => void }) {
+function DetailsCard({ m, details, loading, onHeaders, onSource }: { m: MailMessage; details: MailMessageDetails | undefined; loading: boolean; onHeaders: () => void; onSource: () => void }) {
   const { t } = useTranslation("collab");
   const checks = details ? (["spf", "dkim", "dmarc"] as const).filter((k) => details[k]) : [];
   return (
@@ -110,10 +116,15 @@ function DetailsCard({ m, details, loading, onHeaders }: { m: MailMessage; detai
           </Row>
         )}
       </dl>
-      {details && details.headers.length > 0 && (
-        <div className="mt-2.5 border-t border-line pt-2">
-          <button type="button" onClick={onHeaders} className="rounded-sm text-[12px] text-fg-3 underline-offset-2 outline-none hover:text-fg hover:underline focus-visible:shadow-[0_0_0_2px_var(--focus)]">
-            {t("details.showHeaders")}
+      {!m.draft && (
+        <div className="mt-2.5 flex gap-3 border-t border-line pt-2">
+          {details && details.headers.length > 0 && (
+            <button type="button" onClick={onHeaders} className="rounded-sm text-[12px] text-fg-3 underline-offset-2 outline-none hover:text-fg hover:underline focus-visible:shadow-[0_0_0_2px_var(--focus)]">
+              {t("details.showHeaders")}
+            </button>
+          )}
+          <button type="button" onClick={onSource} className="rounded-sm text-[12px] text-fg-3 underline-offset-2 outline-none hover:text-fg hover:underline focus-visible:shadow-[0_0_0_2px_var(--focus)]">
+            {t("details.showSource")}
           </button>
         </div>
       )}

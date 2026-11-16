@@ -664,6 +664,9 @@ export const api = {
   },
   messages: {
     original: (id: string) => http.get<{ full_html: string }>(`/v1/messages/${id}/original`),
+    /** The raw email a message arrived as; the download is the whole message as an .eml file. */
+    source: (id: string) => http.get<T.MailSource>(`/v1/messages/${id}/source`),
+    sourceFile: (id: string) => download(`/v1/messages/${id}/source.eml`),
   },
   contacts: {
     ...crud<T.Contact, Partial<Pick<T.Contact, "name" | "email" | "phone" | "notes" | "external_id" | "blocked" | "custom">> & { company_id?: string | null } & LabelWrites>("/v1/contacts"),
@@ -1037,6 +1040,8 @@ export const api = {
     send: (b: CollabSendBody) => http.create<T.MailMessage>("/v1/collab/messages", b),
     /** Read from the message's source at the provider (502 provider_error). */
     messageDetails: (id: string) => http.get<T.MailMessageDetails>(`/v1/collab/messages/${id}/details`),
+    messageSource: (id: string) => http.get<T.MailSource>(`/v1/collab/messages/${id}/source`),
+    messageSourceFile: (id: string) => download(`/v1/collab/messages/${id}/source.eml`),
     /** Drafts, kept at the provider (contracts/collab.md "Drafts"). */
     drafts: {
       create: (b: CollabSendBody) => http.create<T.MailMessage>("/v1/collab/drafts", b),
