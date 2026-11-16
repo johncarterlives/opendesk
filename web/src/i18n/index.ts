@@ -7,7 +7,7 @@
 // itself loads only `common`, so a help center or CSAT visitor never downloads
 // the agent app's catalogs.
 //
-// The agent app ships English, French and German (AGENT_LOCALES), following the
+// The agent app ships English, French, German and Czech (AGENT_LOCALES), following the
 // browser's language. A key a translation does not have yet falls back to
 // English (fallbackLng), so a new English string never shows a raw key. The customer-facing surfaces (help center, CSAT,
 // widget) ship every SUPPORTED language, picked from the visitor's browser with
@@ -61,7 +61,7 @@ export function pickLocale(opts: { explicit?: string | null; browser?: readonly 
 }
 
 /** The languages the agent app is translated into. */
-export const AGENT_LOCALES = ["en", "fr", "de"] as const;
+export const AGENT_LOCALES = ["en", "fr", "de", "cs"] as const;
 export type AgentLocale = (typeof AGENT_LOCALES)[number];
 
 /** The agent app's language from the browser's; a language it is not translated into gets English. */
@@ -129,8 +129,8 @@ export function loadAgentCatalogs(lng: string = pickAgentLocale()): Promise<void
 
 /**
  * A label (a field's entity, a view's name, a rewrite mode) placed inside a
- * sentence. English and French lowercase it; German keeps its capital, which
- * its nouns need.
+ * sentence. English, French and Czech lowercase it; German keeps its capital,
+ * which its nouns need.
  */
 export function inSentence(label: string): string {
   return i18n.resolvedLanguage === "de" ? label : label.toLowerCase();
@@ -176,7 +176,7 @@ export function resetLocale() {
 resetLocale();
 
 /**
- * The language the app shows, as a lowercase base tag ("en", "fr", "de"): what a server that
+ * The language the app shows, as a lowercase base tag ("en", "fr", "de", "cs"): what a server that
  * writes text for this reader is told (a ticket panel's URL, contracts/integrations.md).
  */
 export function uiLanguage(): string {

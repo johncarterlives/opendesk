@@ -1,0 +1,93 @@
+{
+  "status": {
+    "open": "Otevřený",
+    "pending": "Čekající",
+    "on_hold": "Pozastavený",
+    "solved": "Vyřešený",
+    "closed": "Uzavřený"
+  },
+  "priority": {
+    "urgent": "Naléhavá",
+    "high": "Vysoká",
+    "normal": "Normální",
+    "low": "Nízká"
+  },
+  "severity": {
+    "sev1": "Záv. 1",
+    "sev2": "Záv. 2",
+    "sev3": "Záv. 3",
+    "sev4": "Záv. 4"
+  },
+  "severityHint": {
+    "sev1": "Kritický výpadek",
+    "sev2": "Zásadní dopad",
+    "sev3": "Menší dopad",
+    "sev4": "Malý dopad"
+  },
+  "channel": {
+    "email": "E-mail",
+    "chat": "Chat",
+    "api": "API",
+    "portal": "Portál",
+    "phone": "Telefon"
+  },
+  "sentiment": {
+    "positive": "Pozitivní",
+    "neutral": "Neutrální",
+    "negative": "Negativní",
+    "frustrated": "Frustrovaná"
+  },
+  "spam": "Spam",
+  "noPriority": "Bez priority",
+  "sla": {
+    "over": "Překročeno o {{duration}}",
+    "firstResponse": {
+      "on_track": "Čeká se na první odpověď",
+      "due_soon": "Blíží se termín první odpovědi",
+      "breached": "Termín první odpovědi překročen"
+    },
+    "resolution": {
+      "on_track": "Čeká se na vyřešení",
+      "due_soon": "Blíží se termín vyřešení",
+      "breached": "Termín vyřešení překročen"
+    }
+  },
+  "reports": {
+    "created": "Vytvořené",
+    "solved": "Vyřešené",
+    "day": "Den",
+    "tableCaption": "Tikety vytvořené a vyřešené za den",
+    "chartLabel_one": "Tikety vytvořené a vyřešené za den, {{count}} den. Jednotlivé dny procházejte šipkami.",
+    "chartLabel_few": "Tikety vytvořené a vyřešené za den, {{count}} dny. Jednotlivé dny procházejte šipkami.",
+    "chartLabel_many": "Tikety vytvořené a vyřešené za den, {{count}} dne. Jednotlivé dny procházejte šipkami.",
+    "chartLabel_other": "Tikety vytvořené a vyřešené za den, {{count}} dní. Jednotlivé dny procházejte šipkami.",
+    "range": {
+      "last7": "Posledních 7 dní",
+      "last30": "Posledních 30 dní",
+      "last90": "Posledních 90 dní",
+      "thisMonth": "Tento měsíc",
+      "lastMonth": "Minulý měsíc",
+      "label": "Období",
+      "custom": "Vlastní období",
+      "from": "Od",
+      "to": "Do",
+      "apply": "Použít období"
+    }
+  },
+  "tickets": {
+    "bulkActions": "Hromadné akce",
+    "addLabels": "Přidat štítky",
+    "closeTicket": "Zavřít tiket",
+    "previousTicket": "Předchozí tiket",
+    "nextTicket": "Další tiket",
+    "moreActions": "Další akce",
+    "toggleDetails": "Zobrazit či skrýt podrobnosti",
+    "ticketDetails": "Podrobnosti tiketu",
+    "conversation": "Konverzace",
+    "mentionTeammate": "Zmínit kolegu",
+    "mergeSearch": "Hledat podle předmětu, zákazníka nebo #čísla",
+    "remove": "Odebrat {{name}}",
+    "addAddress": "Přidat {{address}}",
+    "openFile": "Otevřít {{name}}"
+  }
+}

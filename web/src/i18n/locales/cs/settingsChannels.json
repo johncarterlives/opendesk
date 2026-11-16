@@ -1,0 +1,1107 @@
+{
+  "personal": {
+    "title": "Odpovědi z vlastních adres členů",
+    "description": "S Collab mohou členové na tikety této adresy odpovídat ze svých e-mailových účtů. Adresu volí pro každou odpověď zvlášť. Odpovědi zákazníka se stále vracejí do tiketu.",
+    "workspaceLink": "Výchozí nastavení workspace",
+    "allowed": "Povoleno",
+    "allowedOn": "Členové mohou v poli pro odpověď na tiketech této adresy vybrat jednu ze svých adres.",
+    "allowedOff": "Odpovědi na tikety této adresy se vždy odesílají z této adresy.",
+    "workspaceDefault": "Výchozí ({{value}})",
+    "on": "Zapnuto",
+    "off": "Vypnuto",
+    "replyTo": "Odpovědi směřují na",
+    "replyToHint": "Kam směřují odpovědi zákazníka, pokud člen nezvolí jinou možnost. V obou případech se vracejí do tiketu.",
+    "replyToAddress": "Adresu člena",
+    "replyToMailbox": "Tuto adresu",
+    "accounts": "Povolené adresy",
+    "accountsAny": "Libovolná adresa účtu, ze kterého může člen odesílat, soukromého i sdíleného.",
+    "accountsShared": "Pouze účty sdílené s týmem, nikdy soukromá pošta členů.",
+    "accountsDomain": "Pouze adresy na doménách {{domains}}.",
+    "any": "Libovolné",
+    "shared": "Sdílené účty",
+    "domain": "Na doméně {{domain}}"
+  },
+  "ollie": {
+    "description": "Nechte agenta {{name}} odpovídat na e-maily v této schránce na základě vašich znalostí.",
+    "toggle": "Agent {{name}} odpovídá na e-maily v této schránce",
+    "toggleHint": "Ve výchozím stavu vypnuto. Na spam, automatické odpovědi, zprávy z poštovních konferencí a poštu od vašeho týmu se nikdy neodpovídá.",
+    "aiOff": "AI je v tomto workspace vypnutá.",
+    "aiOffLink": "Zapnout v sekci „Nastavení“ > „AI“",
+    "mode": "Režim",
+    "draft": "Připravit koncept ke kontrole",
+    "send": "Odesílat automaticky",
+    "draftHint": "Agent {{name}} připraví v tiketu návrh odpovědi. Kolega jej může jedním kliknutím odeslat, upravit nebo zahodit.",
+    "sendHint": "Agent {{name}} ihned odpoví e-mailem a při nejistotě předá e-mail vašemu týmu.",
+    "outsideHours": "Pouze mimo pracovní dobu",
+    "outsideHoursHint": "V pracovní době odpovídá váš tým jako obvykle.",
+    "hoursOff": "Pracovní doba je vypnutá, takže toto nastavení nemá žádný účinek.",
+    "cost": "Každá odpověď stojí s modelem agenta přibližně {{cost}}.",
+    "handoff": "Když agent {{name}} nedokáže pomoci, tiket zůstane nepřiřazený a počká na váš tým.",
+    "behaviourLink": "Chování agenta"
+  },
+  "kind": {
+    "google": "Google",
+    "microsoft": "Microsoft 365",
+    "imap": "IMAP a SMTP",
+    "forwarding": "Přeposílání"
+  },
+  "status": {
+    "active": "Aktivní",
+    "error": "Vyžaduje pozornost",
+    "disabled": "Vypnutá"
+  },
+  "list": {
+    "title": "E-mailové schránky",
+    "description": "E-mailové adresy, jejichž pošta se mění na tikety. Odpovědi se odesílají ze stejné adresy.",
+    "add": "Přidat schránku",
+    "addFirst": "Přidat schránku",
+    "count_one": "{{count}} schránka",
+    "count_few": "{{count}} schránky",
+    "count_many": "{{count}} schránky",
+    "count_other": "{{count}} schránek",
+    "emptyTitle": "Zatím žádné schránky",
+    "emptyBody": "Nastavte přeposílání ze své adresy podpory u libovolného poskytovatele a poté zvolte způsob odesílání odpovědí.",
+    "never": "Zatím nesynchronizováno",
+    "noMail": "Zatím žádná pošta",
+    "quiet": "Počet dní bez pošty: {{count}}",
+    "instant": "Okamžitě",
+    "syncedAgo": "Synchronizováno {{when}}",
+    "actionsFor": "Akce pro {{email}}",
+    "test": "Otestovat připojení",
+    "enable": "Zapnout",
+    "disable": "Vypnout",
+    "remove": "Odebrat",
+    "connected": "Schránka připojena",
+    "connectedForward": "Připojeno. Dokončete nastavení přeposíláním pošty ze schránky do opendesk.",
+    "connectFailed": "Schránku se nepodařilo připojit.",
+    "noTeam": "Žádný tým",
+    "colAddress": "Adresa",
+    "colConnection": "Připojení",
+    "colTeam": "Tým",
+    "colStatus": "Stav",
+    "colSynced": "Poslední pošta",
+    "emptyTips": {
+      "forward": "Přeposílání funguje s každým poskytovatelem",
+      "team": "Každá schránka může směrovat poštu týmu"
+    }
+  },
+  "summary": {
+    "total": "Schránky",
+    "active": "Aktivní",
+    "attention": "Vyžaduje pozornost",
+    "disabled": "Vypnuté",
+    "allGood": "Všechny přijímají poštu",
+    "checkThese": "Otevřením zobrazíte chybu",
+    "paused": "Nesynchronizuje se"
+  },
+  "oauthErrors": {
+    "access_denied": "Připojení bylo zrušeno.",
+    "invalid_state": "Platnost připojení vypršela. Zkuste to znovu.",
+    "provider_error": "Poskytovatel vrátil chybu. Zkuste to znovu.",
+    "provider_unavailable": "Tento poskytovatel není na serveru nastavený."
+  },
+  "actions": {
+    "removeTitle": "Odebrat schránku?",
+    "removeBody": "Pošta zaslaná na {{email}} přestane přicházet do opendesk. Stávající tikety zůstanou zachovány.",
+    "removeBodyTickets_one": "Pošta zaslaná na {{email}} přestane přicházet do opendesk. Tiket, ze kterého se odpovídá touto adresou, zůstane zachován (otevřené: {{open}}), ale jeho odpovědi se již nebudou odesílat z adresy {{email}}.",
+    "removeBodyTickets_few": "Pošta zaslaná na {{email}} přestane přicházet do opendesk. Počet zachovaných tiketů, ze kterých se odpovídá touto adresou: {{count}} (otevřené: {{open}}). Jejich odpovědi se však již nebudou odesílat z adresy {{email}}.",
+    "removeBodyTickets_many": "Pošta zaslaná na {{email}} přestane přicházet do opendesk. Počet zachovaných tiketů, ze kterých se odpovídá touto adresou: {{count}} (otevřené: {{open}}). Jejich odpovědi se však již nebudou odesílat z adresy {{email}}.",
+    "removeBodyTickets_other": "Pošta zaslaná na {{email}} přestane přicházet do opendesk. Počet zachovaných tiketů, ze kterých se odpovídá touto adresou: {{count}} (otevřené: {{open}}). Jejich odpovědi se však již nebudou odesílat z adresy {{email}}.",
+    "removeConfirm": "Odebrat",
+    "removed": "Schránka odebrána",
+    "testTitle": "Test připojení",
+    "testFailed": "Test se nepodařilo spustit. Zkuste to za chvíli znovu.",
+    "done": "Hotovo"
+  },
+  "test": {
+    "receiving": "Příjem",
+    "sending": "Odesílání",
+    "works": "{{what}} funguje",
+    "failed": "Neúspěšný test: {{what}}",
+    "detail": "Odpověď serveru"
+  },
+  "receiving": {
+    "pill": "Nepřijímá poštu",
+    "pillHint": "Příjem přes IMAP je v této instanci vypnutý. Přepněte schránku na přeposílání.",
+    "offTitle": "Tato schránka nepřijímá poštu",
+    "offBody": "Příjem přes IMAP je v této instanci vypnutý, takže opendesk již nestahuje poštu z adresy {{email}}. Pro další příjem přepněte na přeposílání. Způsob odesílání odpovědí se nemění.",
+    "switch": "Přepnout na přeposílání",
+    "confirmTitle": "Přepnout na přeposílání?",
+    "confirmBody": "opendesk se přestane přihlašovat k účtu {{email}} a stahovat poštu. Přidělí mu adresu pro přeposílání. Nová pošta začne přicházet po nastavení přeposílání. Způsob odesílání odpovědí se nemění.",
+    "switched": "Přepnuto na přeposílání. Nastavte je níže.",
+    "title": "Příjem",
+    "imapHint": "opendesk se přihlašuje ke schránce a stahuje novou poštu. Přeposílání funguje bez přihlašování.",
+    "apiHint": "opendesk čte novou poštu přes službu {{provider}}. Přeposílání funguje i bez ní."
+  },
+  "sendingOff": {
+    "pill": "Neodesílá poštu",
+    "pillHint": "Tato schránka nemá jak odesílat odpovědi. Připojte Google nebo Microsoft, případně přidejte SMTP.",
+    "title": "Tato schránka nemůže odesílat odpovědi",
+    "body": "Odpovědi z adresy {{email}} se odesílají přes vašeho poskytovatele e-mailu. Připojte Google nebo Microsoft, případně přidejte SMTP svého poštovního serveru či služby pro odesílání, například Resend nebo Postmark. Do té doby nelze odpovědi odesílat.",
+    "choose": "Vyberte SMTP nebo níže připojte svého poskytovatele.",
+    "none": "Nenastaveno"
+  },
+  "smtpPresets": {
+    "label": "Používáte službu pro odesílání?",
+    "hint": {
+      "resend": "Heslem je klíč API služby Resend. Nejprve ve službě Resend ověřte svou doménu.",
+      "postmark": "Uživatelské jméno i heslo tvoří token API vašeho serveru Postmark. Nejprve ve službě Postmark ověřte svou doménu.",
+      "sendgrid": "Heslem je klíč API služby SendGrid s oprávněním Mail Send. Nejprve ve službě SendGrid ověřte svou doménu.",
+      "mailgun": "Použijte uživatelské jméno a heslo SMTP své domény ve službě Mailgun. Domény v regionu EU používají smtp.eu.mailgun.org.",
+      "brevo": "Použijte přihlašovací jméno SMTP a klíč SMTP z nastavení SMTP a API služby Brevo. Nejprve ve službě Brevo ověřte svou doménu.",
+      "ses": "Použijte přihlašovací údaje SMTP z konzole Amazon SES a v názvu serveru uveďte svůj region. Nejprve v SES ověřte svou doménu."
+    }
+  },
+  "detail": {
+    "fallbackTitle": "Schránka",
+    "back": "Schránky",
+    "notFound": "Schránka nenalezena",
+    "notFoundBody": "Možná byla odebrána.",
+    "backToList": "Zpět na schránky",
+    "connection": "Připojení",
+    "testConnection": "Otestovat připojení",
+    "lastSyncFailed": "Poslední synchronizace se nezdařila",
+    "foldersSkipped": "Některé složky nebyly načteny",
+    "lastSynced": "Poslední synchronizace",
+    "never": "Nikdy",
+    "forwardingInstant": "Přeposlaná pošta přichází ihned po odeslání.",
+    "lastReceived": "Poslední přijatá pošta",
+    "lastReceivedHint": "Pošta, která na tuto adresu dorazila jakoukoli cestou, včetně pošty, ze které nevznikl tiket.",
+    "noMail": "Zatím žádná pošta",
+    "quietNeverTitle": "Zatím nedorazila žádná pošta",
+    "quietTitle_one": "Žádná pošta po dobu {{count}} dne",
+    "quietTitle_few": "Žádná pošta po dobu {{count}} dní",
+    "quietTitle_many": "Žádná pošta po dobu {{count}} dne",
+    "quietTitle_other": "Žádná pošta po dobu {{count}} dní",
+    "quietForwarding": "Pokud zákazníci píšou na {{email}}, ověřte, že se pošta stále přeposílá na níže uvedenou adresu. Poté odešlete zkušební zprávu z jiné adresy.",
+    "quietConnected": "Pokud zákazníci píšou na {{email}}, otestujte připojení. Jestliže byl přístup odebrán, připojte schránku znovu.",
+    "account": "Účet",
+    "accountHint": "Připojeno přes službu {{provider}}. Pokud byl přístup odebrán nebo se změnilo heslo, připojte účet znovu.",
+    "accountHintNoImap": "Připojeno přes službu {{provider}}. Opětovné připojení povolí pouze odesílání a pošta pak bude přicházet přeposíláním.",
+    "accountSendOnly": "Připojeno přes službu {{provider}} pouze pro odesílání. opendesk nemůže číst schránku. Pokud byl přístup odebrán, připojte účet znovu.",
+    "accountDirect": "Čte doručenou poštu přímo přes službu {{provider}}. Nové e-maily se samy mění na tikety. Pokud byl přístup odebrán, připojte účet znovu.",
+    "directTitle": "Číst doručenou poštu přímo",
+    "directHint": "Nové e-maily se samy mění na tikety. Přeposílání není potřeba nastavovat. Pro udělení přístupu se přihlásíte přes službu {{provider}}.",
+    "directButton": "Číst doručenou poštu přímo",
+    "syncTitle": "Číst doručenou poštu přes IMAP",
+    "syncHint": "opendesk bude sám stahovat novou poštu z adresy {{email}} místo čekání na přeposlanou poštu. Schránka i její tikety zůstanou zachovány. Přihlášením přes službu {{provider}} povolíte čtení schránky.",
+    "syncButton": "Připojit službu {{provider}}",
+    "reconnect": "Znovu připojit",
+    "incoming": "Příchozí pošta (IMAP)",
+    "outgoing": "Odchozí pošta (SMTP)",
+    "send": {
+      "title": "Odesílání",
+      "hint": "Jak se odpovědi z této schránky dostávají k zákazníkům.",
+      "via": "Odpovědi se odesílají",
+      "server": "Server SMTP",
+      "passwordNeeded": "Zadejte heslo k tomuto serveru.",
+      "testHint": "Přihlásí se k serveru, aniž by cokoli odeslal.",
+      "saveToTest": "Pro otestování nového nastavení je uložte. Před uložením se nejprve ověří přihlášení.",
+      "providerBody": "Přímo z adresy {{email}} přes službu {{provider}}.",
+      "with": "Přes službu {{provider}}",
+      "connectTitle": "Odesílat přes službu {{provider}}",
+      "connectHint": "Odpovědi se odesílají přímo z adresy {{email}}. Připojením povolíte opendesk pouze odesílání z této adresy. Schránku nečte.",
+      "connect": "Připojit službu {{provider}}"
+    },
+    "sending": "Název a adresy",
+    "sendingHint": "Jak se tato schránka zobrazuje vašemu týmu a zákazníkům.",
+    "name": "Název",
+    "nameHint": "Zobrazuje se vašemu týmu.",
+    "senderName": "Jméno odesílatele",
+    "senderNameHint": "Vyplní {mailbox} ve jménu v poli „Od“. Prázdná hodnota použije název.",
+    "team": "Tým",
+    "teamHint": "Nové tikety z této schránky se přiřadí tomuto týmu.",
+    "noTeam": "Žádný tým",
+    "signature": "Podpis",
+    "signatureHint": "Přidává se pod každou odpověď odeslanou z této adresy, pokud tým tiketu nemá vlastní podpis. Vlastní text jednotlivých odesílatelů vložíte pomocí {{tag}}.",
+    "signaturePlaceholder": "Tým podpory firmy",
+    "autoReply": "Automatická odpověď",
+    "autoReplyHint": "Odešle se jednou, když zákazník e-mailem založí nový tiket.",
+    "autoReplyToggle": "Odeslat automatickou odpověď",
+    "subject": "Předmět",
+    "subjectPlaceholder": "Vaši zprávu jsme obdrželi",
+    "message": "Zpráva",
+    "messagePlaceholder": "Děkujeme, že jste nám napsali. Obvykle odpovídáme do několika hodin.",
+    "autoReplyLabel": "Text automatické odpovědi",
+    "danger": "Rizikové akce",
+    "enableTitle": "Zapnout schránku",
+    "disableTitle": "Vypnout schránku",
+    "enableHint": "Znovu začít přijímat a odesílat poštu.",
+    "disableHint": "Zastavit synchronizaci a odesílání, aniž by se cokoli odebralo.",
+    "enable": "Zapnout",
+    "disable": "Vypnout",
+    "removeTitle": "Odebrat schránku",
+    "removeHint": "Stávající tikety zůstanou zachovány. Nová pošta na tuto adresu přestane přicházet.",
+    "remove": "Odebrat",
+    "saved": "Schránka uložena",
+    "testRunFailed": "Test se nepodařilo spustit",
+    "server": "Server",
+    "port": "Port",
+    "username": "Uživatelské jméno",
+    "password": "Heslo",
+    "passwordKeep": "Ponechte prázdné, pokud chcete zachovat uložené heslo.",
+    "security": "Zabezpečení",
+    "tlsNone": "Žádné",
+    "preview": "Náhled",
+    "subjectVariable": "Vložit proměnnou",
+    "autoReplyNoAgent": "Proměnné odesílatele, například jméno agenta, jsou v automatických odpovědích prázdné."
+  },
+  "new": {
+    "title": "Přidat schránku",
+    "description": "Zvolte, jak bude pošta přicházet do opendesk. Podrobnosti můžete později změnit.",
+    "limitTitle": "Dosáhli jste limitu tarifu Zdarma",
+    "upgrade": "Přejít na Pro"
+  },
+  "wizard": {
+    "methodsLabel": "Způsob připojení",
+    "stepDone": "Hotovo",
+    "continue": "Pokračovat",
+    "continueGoogle": "Pokračovat přes Google",
+    "continueMicrosoft": "Pokračovat přes Microsoft",
+    "connectTest": "Připojit a otestovat",
+    "create": "Vytvořit schránku",
+    "back": "Zpět",
+    "cancel": "Zrušit",
+    "done": "Hotovo",
+    "chooseMethod": "Zvolte způsob připojení této schránky.",
+    "fixFields": "Pro pokračování opravte zvýrazněná pole.",
+    "discardTitle": "Zahodit tuto schránku?",
+    "discardBody": "Zadané údaje se ztratí.",
+    "discard": "Zahodit",
+    "name": "Název",
+    "nameHint": "Zobrazuje se vašemu týmu, například Podpora nebo Fakturace.",
+    "namePlaceholder": "Podpora",
+    "email": "E-mailová adresa",
+    "senderName": "Jméno odesílatele",
+    "senderNameHint": "Vyplní {mailbox} ve jménu v poli „Od“. Prázdná hodnota použije název.",
+    "senderPlaceholder": "Podpora firmy",
+    "oauthNote": "Přejdete do služby {{provider}}, kde povolíte přístup, a pak se vrátíte sem. opendesk čte a odesílá poštu pouze pro tuto adresu. Připojení můžete kdykoli zrušit.",
+    "incoming": "Příchozí pošta (IMAP)",
+    "outgoing": "Odchozí pošta (SMTP)",
+    "sameCredentials": "Použít stejné uživatelské jméno a heslo jako pro IMAP",
+    "syncStart": "Začít s",
+    "syncStartRecent": "Posledních 7 dní",
+    "syncStartNew": "Pouze nové e-maily",
+    "syncStartRecentHint": "Z e-mailů za posledních 7 dní vznikne až 200 tiketů. Poté budou tikety vznikat z nových příchozích e-mailů.",
+    "syncStartNewHint": "Tiket vznikne pouze z e-mailů, které přijdou od této chvíle. Tuto možnost zvolte, pokud jste historii již přenesli importem.",
+    "server": "Server",
+    "port": "Port",
+    "security": "Zabezpečení",
+    "noTls": "Hesla se přenášejí nešifrovaně. Používejte pouze v soukromé síti.",
+    "tlsNone": "Žádné",
+    "username": "Uživatelské jméno",
+    "password": "Heslo",
+    "passwordHint": "Heslo aplikace, pokud je váš poskytovatel vyžaduje.",
+    "connected": "Schránka {{name}} je připojena",
+    "created": "Schránka {{name}} je připravena",
+    "createdForward": "Pro zahájení příjmu přeposílejte její poštu na níže uvedenou adresu.",
+    "testRunning": "Test připojení stále probíhá. Za minutu zkontrolujte stav schránky.",
+    "fixLater": "Nastavení serveru můžete opravit na stránce schránky a test zopakovat.",
+    "err": {
+      "name": "Pojmenujte schránku, například Podpora.",
+      "email": "Zadejte adresu, na kterou píšou zákazníci.",
+      "emailInvalid": "Toto nevypadá jako e-mailová adresa.",
+      "imapHost": "Zadejte název serveru, například imap.example.com.",
+      "imapUser": "Obvykle vaše celá e-mailová adresa.",
+      "imapPassword": "Zadejte heslo nebo heslo aplikace.",
+      "smtpHost": "Zadejte název serveru, například smtp.example.com.",
+      "smtpUser": "Zadejte uživatelské jméno SMTP.",
+      "smtpPassword": "Zadejte heslo SMTP.",
+      "port": "Zadejte port od 1 do 65535."
+    },
+    "stepAddress": "Adresa",
+    "stepConnect": "Připojit",
+    "emailHint": "Adresa, na kterou píšou zákazníci.",
+    "connect": "Připojit"
+  },
+  "forwarding": {
+    "forwardTo": "Přeposílat poštu pro <code>{{email}}</code> na",
+    "checkIt": "Funkčnost ověříte odesláním e-mailu na <code>{{email}}</code> z jiného účtu. Zobrazí se jako nový tiket v sekci „Nepřiřazené“.",
+    "gmail": "Gmail",
+    "workspace": "Google Workspace",
+    "microsoft": "Microsoft 365",
+    "outlook": "Outlook.com",
+    "other": "Jiný",
+    "microsoftBlocked": "Microsoft 365 ve výchozím nastavení blokuje automatické přeposílání na externí adresy. Administrátor je nejprve povolí a poté se přeposílání nastaví ve schránce.",
+    "open": {
+      "gmail": "Otevřít nastavení přeposílání v Gmailu",
+      "googleAdmin": "Otevřít směrování Gmailu v administrátorské konzoli",
+      "defender": "Otevřít zásady ochrany proti spamu",
+      "exchange": "Otevřít schránky v centru pro správu Exchange",
+      "outlookForwarding": "Otevřít nastavení přeposílání v Outlooku",
+      "outlookCom": "Otevřít nastavení přeposílání v Outlook.com"
+    },
+    "help": "Průvodce služby {{provider}}",
+    "docs": "Úplný průvodce v dokumentaci opendesk",
+    "sendTest": "Napsat zkušební e-mail",
+    "testSubject": "Testování opendesk",
+    "steps": {
+      "gmail": {
+        "s1": "Přihlaste se v Gmailu touto adresou a otevřete nastavení <b>„Přeposílání a protokol POP/IMAP“</b>.",
+        "s2": "Zvolte <b>„Přidat adresu pro přeposílání“</b> a vložte výše uvedenou adresu.",
+        "s3": "Gmail odešle potvrzovací e-mail. Do opendesk dorazí jako tiket: otevřete jej a klikněte na odkaz nebo zkopírujte kód do Gmailu.",
+        "s4": "Vraťte se do Gmailu, vyberte <b>„Přeposílat kopii příchozí pošty na adresu“</b>, zvolte novou adresu a uložte změny."
+      },
+      "workspace": {
+        "s1": "Pro jednu schránku postupujte podle návodu pro Gmail, přihlášeni jako příslušný uživatel.",
+        "s2": "Pro skupinu nebo více uživatelů otevře administrátor v konzoli Google Admin <b>„Směrování“</b> (<b>„Aplikace“</b>, <b>„Google Workspace“</b>, <b>„Gmail“</b>).",
+        "s3": "Přidejte pravidlo směrování pro <b>„Příchozí“</b> poštu na danou adresu, zvolte <b>„Upravit zprávu“</b>, pak <b>„Přidat další příjemce“</b> a přidejte výše uvedenou adresu.",
+        "s4": "Uložte změny. Jejich použití může trvat několik minut."
+      },
+      "microsoft": {
+        "s1": "Administrátor otevře v Microsoft Defenderu zásady <b>„Ochrana proti spamu“</b>, upraví zásadu pro <b>„Odchozí“</b> poštu a nastaví <b>„Pravidla automatického přeposílání“</b> na <b>„Zapnuto“</b>.",
+        "s2": "V <b>„Centru pro správu Exchange“</b> otevřete <b>„Poštovní schránky“</b> a vyberte schránku.",
+        "s3": "V části <b>„Nastavení toku pošty“</b> upravte <b>„Přeposílání e-mailů“</b>: zapněte je, vložte výše uvedenou adresu a ponechte kopii ve schránce.",
+        "s4": "Nemáte přístup do centra pro správu? Po kroku 1 se přihlaste ke schránce v Outlooku, v nastavení otevřete <b>„Přeposílání“</b>, zapněte je, vložte výše uvedenou adresu a ponechte kopii."
+      },
+      "outlook": {
+        "s1": "Přihlaste se v Outlook.com touto adresou a otevřete nastavení <b>„Přeposílání“</b>.",
+        "s2": "Zapněte <b>„Povolit přeposílání“</b> a vložte výše uvedenou adresu.",
+        "s3": "Zapněte <b>„Ponechat kopii přeposlaných zpráv“</b> a uložte změny."
+      },
+      "other": {
+        "s1": "V nastavení svého poskytovatele e-mailu najděte přeposílání. Někteří je označují jako přesměrování nebo alias.",
+        "s2": "Přeposílejte veškerou poštu pro tuto adresu na výše uvedenou adresu. Pokud chcete, ponechte si kopii."
+      }
+    }
+  },
+  "addressing": {
+    "brand": "Značka",
+    "brandHint": "Tikety na tuto adresu patří této značce a odpovědi nesou její název a logo.",
+    "team": "Nové tikety na tuto adresu se přiřadí",
+    "teamHint": "Tým, kterému patří e-maily na tuto adresu. Pravidla směrování mohou tiket přesto poslat jinam.",
+    "noTeam": "Žádný tým",
+    "privateTeam": "Tým {{name}} je soukromý: pouze jeho členové vidí tikety na tuto adresu a mohou z ní odesílat poštu.",
+    "fromName": "Jméno v poli „Od“",
+    "previewMailbox": "Podpora",
+    "fromNameHint": "Co zákazníci vidí jako jméno odesílatele. Kliknutím přidáte proměnnou.",
+    "fromInvalid": "Nejprve opravte jméno v poli „Od“.",
+    "previewReply": "Odpověď",
+    "previewAuto": "Automatická odpověď",
+    "fromErrors": {
+      "long": "Použijte méně než {{max}} znaků.",
+      "chars": "Vynechte < > a uvozovky.",
+      "variable": "Používejte pouze níže uvedené proměnné."
+    },
+    "vars": {
+      "agent": "Celé jméno autora",
+      "agent_first": "Křestní jméno autora",
+      "team": "Tým tiketu, jinak značka",
+      "brand": "Název značky",
+      "mailbox": "Jméno odesílatele této adresy"
+    },
+    "aliases": "Aliasy",
+    "aliasesHint": "Další adresy doručované do této schránky, například help@. Odpovědi se odesílají z adresy, na kterou zákazník napsal. Nejvýše 20 aliasů. Pokud alias patří jinému projektu, přiřaďte mu vlastní tým.",
+    "noAliases": "Žádné aliasy",
+    "aliasSame": "To je vlastní adresa této schránky.",
+    "aliasTeams": "Nové tikety na jednotlivé aliasy se přiřadí",
+    "aliasTeamSame": "Tým {{name}}, stejně jako u schránky",
+    "aliasTeamNone": "Žádný tým, stejně jako u schránky",
+    "aliasTeamsPrivate": "Tým {{name}} je soukromý, proto se mu přiřadí i nové tikety na všechny aliasy."
+  },
+  "forms": {
+    "title": "Kontaktní formuláře",
+    "hint": "Přidejte adresu, ze které odesílá kontaktní formulář vašeho webu. Pokud e-mail projde ověřením odesílatele, kontaktem se stane návštěvník, který formulář vyplnil, a odpovědi budou směřovat jemu.",
+    "empty": "Žádné kontaktní formuláře. Zadejte adresu nebo @doménu.",
+    "publicDomain": "Doména {{domain}} patří veřejnému poskytovateli e-mailu. Zadejte místo ní přesnou adresu formuláře.",
+    "ownAddress": "To je vlastní adresa této schránky."
+  },
+  "automatic": {
+    "title": "Automatické e-maily",
+    "hint": "Některé systémy podpory označují každý odeslaný e-mail jako automatický, i když jej napsal člověk. Takové e-maily se ignorují, pokud je tato schránka neuchovává. Z uchovaného e-mailu vznikne tiket jako obvykle, ale nic na něj automaticky neodpoví: ani automatická odpověď, ani odpověď z automatizace, ani Ollie. Odpovědi o nepřítomnosti se nadále ignorují.",
+    "toggle": "Uchovávat automatické e-maily"
+  },
+  "connect": {
+    "detecting": "Zjišťování údajů o doméně {{domain}}",
+    "unknownHost": "Neznámý poskytovatel",
+    "source": {
+      "known": "Známý poskytovatel e-mailu",
+      "mx": "Zjištěno ze záznamů MX domény",
+      "autoconfig": "Z automatického konfiguračního souboru domény",
+      "ispdb": "Z databáze poskytovatelů Thunderbirdu",
+      "srv": "Ze záznamů služeb v DNS domény",
+      "none": "Nepodařilo se zjistit, kdo zajišťuje poštu pro doménu {{domain}}. Zadejte nastavení serveru nebo přeposílejte poštu.",
+      "noneForward": "Nepodařilo se zjistit, kdo zajišťuje poštu pro doménu {{domain}}. Přeposílání funguje s každým poskytovatelem."
+    },
+    "detectFailed": "Nepodařilo se zjistit údaje o doméně {{domain}}. Způsob připojení přesto můžete zvolit.",
+    "howTitle": "Jak má pošta přicházet do opendesk?",
+    "forwardingOnly": "Pošta přichází přeposíláním",
+    "forwardingOnlyBody": "Poštu z adresy {{email}} přeposíláte na soukromou adresu přidělenou opendesk. Funguje s každým poskytovatelem a opendesk nikdy nečte schránku.",
+    "anotherWay": "Zvolit jiný způsob",
+    "suggestedWays": "Zobrazit navržené způsoby",
+    "recommended": "Doporučeno",
+    "advanced": "Pokročilé",
+    "method": {
+      "google": "Přijímat synchronizací schránky (IMAP)",
+      "googleBody": "Přihlaste se přes Google. opendesk stahuje novou poštu přes IMAP a odpovídá z vaší adresy.",
+      "microsoft": "Přijímat synchronizací schránky (IMAP)",
+      "microsoftBody": "Přihlaste se přes Microsoft. opendesk stahuje novou poštu přes IMAP a odpovídá z vaší adresy.",
+      "google_api": "Číst doručenou poštu přímo",
+      "google_apiBody": "Přihlaste se přes Google. Nové e-maily se samy mění na tikety. Přeposílání není potřeba nastavovat.",
+      "microsoft_api": "Číst doručenou poštu přímo",
+      "microsoft_apiBody": "Přihlaste se přes Microsoft. Nové e-maily se samy mění na tikety. Přeposílání není potřeba nastavovat.",
+      "app_password": "Heslo aplikace",
+      "app_passwordBody": "Ve službě {{host}} vytvořte heslo aplikace a vložte je sem. Servery jsou již přednastavené.",
+      "password": "Heslo k e-mailu",
+      "passwordBody": "Přihlaste se heslem ke schránce. Servery jsou již přednastavené.",
+      "forwarding": "Přeposílat poštu do opendesk",
+      "forwardingBody": "Přeposílejte poštu na adresu přidělenou opendesk. Funguje s každým poskytovatelem a opendesk nikdy nečte schránku.",
+      "imap": "Jiné připojení IMAP a SMTP",
+      "imapBody": "Zadejte nastavení serveru ručně."
+    },
+    "microsoftNoPassword": "Microsoft vypnul přihlašování heslem přes IMAP, takže bez přihlášení přes Microsoft tato schránka přijímá poštu přeposíláním.",
+    "protonNoImap": "Proton Mail nabízí IMAP pouze prostřednictvím aplikace Proton Mail Bridge na vašem počítači, ke které se opendesk nemůže připojit. Místo toho přeposílejte poštu z Protonu (přeposílání je dostupné v placených tarifech Protonu).",
+    "notConfigured": {
+      "title": "Přihlášení přes službu {{provider}} není na tomto serveru nastavené",
+      "body": "Připojení schránek pomocí přihlášení přes službu {{provider}} vyžaduje klienta OAuth. Přidejte tyto hodnoty do prostředí opendesk a restartujte jej:",
+      "docs": "Průvodce nastavením",
+      "alternatives": "Níže uvedené způsoby žádné nastavení nevyžadují."
+    },
+    "servers": {
+      "title": "Přednastavené servery",
+      "edit": "Upravit",
+      "imap": "IMAP",
+      "smtp": "SMTP",
+      "tls": "TLS",
+      "starttls": "STARTTLS"
+    },
+    "password": "Heslo",
+    "passwordPlaceholder": "Heslo ke schránce",
+    "appPassword": "Heslo aplikace",
+    "appPasswordPlaceholder": "Vložte heslo aplikace",
+    "zohoTwoFactor": "Máte zapnuté dvoufaktorové ověřování? Zoho vyžaduje místo vašeho hesla heslo aplikace.",
+    "checking": "Ověřování přihlášení ke službě {{host}}",
+    "checkingGeneric": "Ověřování přihlášení k serveru",
+    "verifiedNote": "Než opendesk cokoli uloží, přihlásí se k oběma serverům.",
+    "addressing": "Tým, značka a jméno v poli „Od“",
+    "addressingHint": "Nepovinné. Později můžete změnit.",
+    "sending": "Způsob odesílání odpovědí",
+    "send": {
+      "google": "Připojit Google",
+      "googleBody": "Odpovědi se odesílají přímo z adresy {{email}}. Tím povolíte opendesk pouze odesílání z této adresy. Schránku nečte.",
+      "microsoft": "Připojit Microsoft",
+      "microsoftBody": "Odpovědi se odesílají přímo z adresy {{email}}. Tím povolíte opendesk pouze odesílání z této adresy. Schránku nečte.",
+      "smtp": "Váš server SMTP",
+      "smtpBody": "Odpovědi se odesílají z adresy {{email}} přes váš poštovní server nebo službu pro odesílání, například Resend či Postmark.",
+      "system": "Přes opendesk",
+      "systemBody": "Z adresy {{sender}} s názvem vaší schránky. Odpovědi zákazníků se vracejí na {{email}}."
+    },
+    "sendOnlyNote": "Přejdete do služby {{provider}}, kde povolíte odesílání, a poté se vrátíte k nastavení přeposílání. opendesk žádá pouze o oprávnění odesílat.",
+    "sendSystem": "Přes opendesk",
+    "sendSystemBody": "Z adresy {{sender}} s názvem vaší schránky. Odpovědi zákazníka se vracejí na {{email}}.",
+    "sendSmtp": "Přes váš server SMTP",
+    "sendSmtpBody": "Přímo z adresy {{email}}.",
+    "sendSmtpMicrosoft": "Microsoft postupně ruší přihlašování heslem pro SMTP AUTH v Exchange Online a mnoho administrátorů je již vypnulo. Pokud je přihlášení odmítnuto, odesílejte přes Microsoft nebo přes službu pro odesílání.",
+    "failedTitle": "Připojení se nezdařilo",
+    "legInbound": "IMAP",
+    "legOutbound": "SMTP",
+    "gmail": {
+      "banner": "Heslo aplikace připojí Gmail nebo Google Workspace přes IMAP a SMTP přibližně za dvě minuty.",
+      "p1": "Dvoufázové ověření",
+      "p2": "Heslo aplikace",
+      "p3": "Připojit",
+      "s1Title": "Zapnout dvoufázové ověření",
+      "s1Sub": "Google nabízí hesla aplikací pouze u účtů, které mají dvoufázové ověření zapnuté.",
+      "s1a": "Otevřete stránku zabezpečení svého účtu Google a v části „Jak se přihlašujete do Googlu“ najděte <b>„Dvoufázové ověření“</b>.",
+      "s1b": "Zapněte je pomocí výzvy v telefonu, ověřovací aplikace nebo SMS.",
+      "s1Open": "Otevřít nastavení zabezpečení Google",
+      "s1Note": "V Google Workspace může administrátor dvoufázové ověření pro organizaci vyžadovat nebo blokovat. Účty s pokročilou ochranou nemohou používat hesla aplikací.",
+      "s1Already": "Už je zapnuté? Pokračujte dál.",
+      "s1Next": "Pokračovat po zapnutí",
+      "s2Title": "Vytvořit heslo aplikace",
+      "s2Sub": "Heslo o 16 písmenech, které Google vytvoří pro jednu aplikaci. opendesk je ukládá zašifrované.",
+      "s2a": "Otevřete stránku hesel aplikací. Google vás může požádat o opětovné přihlášení.",
+      "s2b": "Jako název aplikace zadejte <b>opendesk</b> a zvolte <b>„Vytvořit“</b>.",
+      "s2c": "Zkopírujte zobrazených 16 písmen. Na mezerách nezáleží.",
+      "s2Open": "Otevřít hesla aplikací",
+      "s2Note": "Stránka hesel aplikací chybí? Dvoufázové ověření je stále vypnuté nebo administrátor Google Workspace zakázal hesla aplikací pro vaši organizaci. Požádejte jej o povolení hesel aplikací pro váš účet.",
+      "s2Next": "Pokračovat s heslem",
+      "s3Title": "Připojit schránku",
+      "s3Sub": "Vložte heslo aplikace. Nic dalšího zadávat nemusíte.",
+      "lengthHint": "Hesla aplikací Google mají 16 písmen. Toto vypadá jako něco jiného, možná heslo k účtu. Při připojení se heslo v každém případě ověří.",
+      "s3Note": "Použijte adresu, kterou se přihlašujete ke Googlu, nikoli alias. Smazáním hesla aplikace ve svém účtu Google schránku odpojíte."
+    },
+    "guide": {
+      "title": "Vytvořit heslo aplikace",
+      "yahoo": {
+        "s1": "Přihlaste se do Yahoo a otevřete <b>„Zabezpečení účtu“</b>.",
+        "s2": "Zvolte <b>„Vygenerovat heslo aplikace“</b>, pojmenujte je <b>opendesk</b> a zvolte <b>„Vygenerovat heslo“</b>.",
+        "s3": "Zkopírujte heslo a vložte je níže.",
+        "open": "Otevřít zabezpečení účtu Yahoo"
+      },
+      "aol": {
+        "s1": "Přihlaste se do AOL a otevřete <b>„Zabezpečení účtu“</b>.",
+        "s2": "Zvolte <b>„Vygenerovat heslo aplikace“</b>, pojmenujte je <b>opendesk</b> a zvolte <b>„Vygenerovat heslo“</b>.",
+        "s3": "Zkopírujte heslo a vložte je níže.",
+        "open": "Otevřít zabezpečení účtu AOL"
+      },
+      "icloud": {
+        "s1": "Přihlaste se na account.apple.com a otevřete <b>„Přihlášení a zabezpečení“</b>. Dvoufaktorové ověřování musí být zapnuté.",
+        "s2": "Zvolte <b>„Hesla pro konkrétní aplikace“</b> a přidejte heslo s názvem <b>opendesk</b>.",
+        "s3": "Zkopírujte heslo a vložte je níže. Adresa musí být vaše adresa iCloud, nikoli alias.",
+        "open": "Otevřít účet Apple"
+      },
+      "fastmail": {
+        "s1": "Ve Fastmailu otevřete <b>„Nastavení“</b>, <b>„Soukromí a zabezpečení“</b> a poté <b>„Správa hesel aplikací“</b>.",
+        "s2": "Vytvořte heslo s názvem <b>opendesk</b> a přístupem k IMAP a SMTP.",
+        "s3": "Zkopírujte heslo a vložte je níže.",
+        "open": "Otevřít hesla aplikací Fastmail"
+      },
+      "zoho": {
+        "s1": "V Zoho Accounts otevřete <b>„Zabezpečení“</b> a poté <b>„Hesla aplikací“</b>.",
+        "s2": "Vygenerujte heslo s názvem <b>opendesk</b>.",
+        "s3": "Zkopírujte je a vložte níže. Také ověřte, že je v nastavení Zoho Mail v části „Poštovní účty“ zapnutý přístup IMAP.",
+        "open": "Otevřít hesla aplikací Zoho"
+      },
+      "yandex": {
+        "s1": "Otevřete Yandex ID, poté <b>„Zabezpečení“</b> a <b>„Hesla aplikací“</b>.",
+        "s2": "Vytvořte heslo pro <b>„Poštu“</b> s názvem <b>opendesk</b>.",
+        "s3": "Zkopírujte je a vložte níže. Také povolte IMAP v nastavení Yandex Mail v části „E-mailoví klienti“.",
+        "open": "Otevřít hesla aplikací Yandex"
+      }
+    },
+    "method_label": {
+      "signin": "Přihlášení",
+      "app_password": "Heslo aplikace",
+      "password": "Heslo",
+      "forwarding": "Přeposílání",
+      "sendsWith": "Odesílá přes službu {{provider}}",
+      "direct": "Čte doručenou poštu přímo přes službu {{provider}}"
+    },
+    "forwardingIntro": "Získáte soukromou adresu pro přeposílání pošty z této schránky. opendesk uvidí pouze poštu, kterou přepošlete.",
+    "directNote": "opendesk čte novou doručenou poštu přes službu {{provider}} a odpovídá z vaší adresy. Nové e-maily se samy mění na tikety. Přeposílání není potřeba nastavovat."
+  },
+  "provider": {
+    "title": "V aplikaci {{app}}",
+    "replies": "Odpovědi se v aplikaci {{app}} zobrazují ve stejné konverzaci jako e-mail zákazníka a také v odeslané poště.",
+    "markRead": "Označit e-maily v aplikaci {{app}} jako přečtené, jakmile se změní na tikety",
+    "archive": "Archivovat v aplikaci {{app}} po vyřešení tiketu",
+    "label": "Označit e-maily v aplikaci {{app}} štítkem „opendesk“",
+    "labelOutlook": "Outlook jej zobrazuje jako kategorii."
+  },
+  "supportChannels": {
+    "title": "Kanály podpory",
+    "description": "Zrcadlete e-mailové tikety do Slacku, Discordu a Telegramu. Kolegové mohou přímo ve vlákně tiketu odpovídat, přidávat poznámky a tiket vyřizovat.",
+    "linkAccount": "Propojit můj účet",
+    "linkError": "Nepodařilo se vytvořit kód pro propojení.",
+    "link": {
+      "title": "Propojit váš chatový účet",
+      "description": "Ze svého chatového účtu pošlete botovi tento kód: ve Slacku /opendesk link {{code}}, v Discordu a Telegramu /link {{code}}. Kód je jednorázový a platí 10 minut.",
+      "done": "Hotovo"
+    },
+    "connections": {
+      "title": "Připojení",
+      "description": "Přihlašovací údaje botů se ukládají šifrovaně. Discord a Telegram za vás nastaví opendesk. Slack vyžaduje několik kroků ve vlastním nastavení.",
+      "webhook": "Adresa pro události"
+    },
+    "delivery": {
+      "title": "Přehled doručování",
+      "description": "Nedávné události tiketů odeslané do kanálů poskytovatelů. Události, které se nepodařilo doručit, zde zůstávají až do dalšího pokusu.",
+      "emptyTitle": "Zatím žádná doručení",
+      "emptyBody": "Události tiketů se zde zobrazí po odeslání do kanálu podpory.",
+      "refresh": "Obnovit přehled doručování",
+      "loadMore": "Načíst další",
+      "ticket": "Tiket #{{number}}",
+      "event": "Událost {{seq}}",
+      "eventCreated": "Tiket vytvořen",
+      "eventUpdated": "Tiket aktualizován",
+      "eventMessage": "Zpráva přidána",
+      "waiting": "Čeká na první pokus",
+      "attempts_one": "{{count}} pokus",
+      "attempts_few": "{{count}} pokusy",
+      "attempts_many": "{{count}} pokusu",
+      "attempts_other": "{{count}} pokusů",
+      "retry": "Zkusit znovu",
+      "retryQueued": "Opakované doručení bylo zařazeno do fronty.",
+      "retryError": "Nepodařilo se zopakovat doručení.",
+      "status": {
+        "queued": "Ve frontě",
+        "retrying": "Opakuje se pokus",
+        "delivered": "Doručeno",
+        "failed": "Selhalo"
+      }
+    },
+    "operations": {
+      "title": "Spolehlivost",
+      "description": "Stav připojení, prodleva doručování a aktivita příchozích webhooků za posledních 24 hodin.",
+      "refresh": "Obnovit metriky",
+      "unavailable": "Nepodařilo se načíst provozní metriky.",
+      "alerted_one": "{{count}} připojení je už alespoň 15 minut v nepořádku. Administrátoři byli upozorněni.",
+      "alerted_few": "{{count}} připojení jsou už alespoň 15 minut v nepořádku. Administrátoři byli upozorněni.",
+      "alerted_many": "{{count}} připojení je už alespoň 15 minut v nepořádku. Administrátoři byli upozorněni.",
+      "alerted_other": "{{count}} připojení je už alespoň 15 minut v nepořádku. Administrátoři byli upozorněni.",
+      "connectionHealth": "Stav připojení",
+      "healthyCount": "V pořádku: {{healthy}} z {{total}}",
+      "unhealthy_one": "{{count}} vyžaduje pozornost",
+      "unhealthy_few": "{{count}} vyžadují pozornost",
+      "unhealthy_many": "{{count}} vyžaduje pozornost",
+      "unhealthy_other": "{{count}} vyžaduje pozornost",
+      "allHealthy": "Všechna připojení jsou v pořádku",
+      "deliveryLatency": "Průměrná prodleva doručování",
+      "oldestPending": "Nejstarší čekající: {{age}}",
+      "maximumLatency": "Maximum: {{duration}}",
+      "webhookRejections": "Odmítnuté webhooky",
+      "duplicatesSuppressed": "Potlačené duplicity",
+      "lastHours": "Posledních 24 hodin",
+      "window": "Souhrn doručení za posledních 24 hodin"
+    },
+    "ollie": {
+      "title": "Ollie v kanálech podpory",
+      "description": "Ollie shrnuje každé nové vlákno tiketu, navrhuje odpovědi, odpovídá na otázky a upozorňuje na SLA a nespokojené zákazníky. Zvolte, které změny smí provádět z vlastního rozhodnutí.",
+      "error": "Nepodařilo se uložit, co smí Ollie dělat.",
+      "commands": "Příkazy zadané agentem, například reply, note a status, jsou jeho vlastní akce a fungují vždy. Změny, které Ollie navrhne v odpovědi zákazníkovi, při vytváření nového tiketu nebo při uzavírání tiketu, nadále vyžadují potvrzení.",
+      "actions": {
+        "reply": {
+          "title": "Odesílat odpovědi",
+          "hint": "Ollie smí připravit odpověď zákazníkovi. Odešle se až po potvrzení agentem."
+        },
+        "note": {
+          "title": "Přidávat interní poznámky",
+          "hint": "Ollie smí přidat poznámku, kterou zákazník neuvidí."
+        },
+        "assign_self": {
+          "title": "Přiřazovat tikety",
+          "hint": "Ollie smí přiřadit tiket agentovi, který s ním mluví."
+        },
+        "status": {
+          "title": "Měnit stav",
+          "hint": "Ollie smí změnit stav tiketu. Uzavření vyžaduje potvrzení."
+        },
+        "priority": {
+          "title": "Měnit prioritu",
+          "hint": "Ollie smí zvýšit nebo snížit prioritu tiketu."
+        },
+        "create_ticket": {
+          "title": "Vytvářet tikety",
+          "hint": "Ollie smí po potvrzení vytvořit tiket ze zprávy v kanálu."
+        }
+      },
+      "channel": {
+        "label": "Nastavení Ollieho pro kanál {{name}}",
+        "title": "Ollie v kanálu #{{name}}",
+        "description": "Jak Ollie pracuje ve vláknech tiketů v tomto kanálu.",
+        "summary": "Shrnovat nová vlákna",
+        "summaryHint": "Při otevření vlákna tiketu Ollie zveřejní, co zákazník potřebuje, co už vyzkoušel, jakou má náladu a jak je věc naléhavá. Čerpá kredit na AI.",
+        "warnings": "Upozornění na SLA a náladu zákazníka",
+        "warningsHint": "Ollie ve vlákně upozorní na blížící se nebo zmeškaný termín SLA a na nespokojenost zákazníka.",
+        "length": "Délka odpovědí",
+        "lengthHint": "Jak dlouhé jsou odpovědi a návrhy Ollieho v tomto kanálu.",
+        "lengthValues": {
+          "brief": "Stručné",
+          "standard": "Standardní",
+          "detailed": "Podrobné"
+        },
+        "personality": "Osobnost",
+        "personalityHint": "Jak zde Ollie komunikuje. Ovlivňuje pouze tón, nikdy nemění, co smí Ollie dělat.",
+        "personalityPlaceholder": "Přátelský a pozitivní tón, jednoduchá slova, žádný žargon",
+        "personalityInvalid": "Popis osobnosti nesmí obsahovat < ani >.",
+        "submit": "Uložit",
+        "cancel": "Zrušit",
+        "saved": "Nastavení Ollieho bylo uloženo.",
+        "error": "Nepodařilo se uložit nastavení Ollieho."
+      }
+    },
+    "empty": {
+      "title": "Zatím žádné kanály podpory",
+      "body": "Připojte bota a pak zvolte, kde se zobrazí e-mailové tikety jednotlivých týmů.",
+      "tipThreads": "Každý tiket má vlastní vlákno",
+      "tipOllie": "Ptejte se Ollieho na tiket v jeho vlákně",
+      "tipCreate": "Zmínkou bota v kanálu vytvoříte tiket"
+    },
+    "status": {
+      "connected": "Připojeno",
+      "error": "Vyžaduje pozornost"
+    },
+    "health": {
+      "unknown": "Neotestováno",
+      "healthy": "Připojeno",
+      "action_required": "Dokončit nastavení",
+      "error": "Kontrola selhala",
+      "test": "Otestovat připojení",
+      "tested": "Připojení funguje.",
+      "testError": "Nepodařilo se otestovat připojení.",
+      "testedAttention": "Zkontrolováno. Připojení stále vyžaduje pozornost."
+    },
+    "rotate": {
+      "label": "Vyměnit přihlašovací údaje pro připojení {{name}}",
+      "title": "Vyměnit přihlašovací údaje pro připojení {{name}}",
+      "description": "Zadejte nové přihlašovací údaje ke stejnému účtu u poskytovatele. Cíle a vlákna tiketů zůstanou propojené.",
+      "submit": "Vyměnit přihlašovací údaje",
+      "cancel": "Zrušit",
+      "rotated": "Přihlašovací údaje byly vyměněny.",
+      "error": "Nepodařilo se vyměnit přihlašovací údaje."
+    },
+    "allTeams": "Všechny týmy",
+    "withNotes": "s poznámkami",
+    "addDestination": "Přidat cíl",
+    "removeDestinationLabel": "Odebrat cíl {{name}}",
+    "removeDestinationTitle": "Odebrat cíl",
+    "removeDestinationBody": "Zastavit zrcadlení tiketů do cíle {{name}}? Již zveřejněná vlákna v kanálu zůstanou.",
+    "remove": "Odebrat",
+    "destinationRemoved": "Cíl byl odebrán.",
+    "destinationRemoveError": "Nepodařilo se odebrat cíl.",
+    "disconnect": "Odpojit",
+    "disconnectLabel": "Odpojit {{name}}",
+    "disconnectTitle": "Odpojit kanál podpory",
+    "disconnectBody": "Odpojit {{name}}? Jeho cíle se odeberou a vlákna tiketů se přestanou aktualizovat.",
+    "disconnected": "Kanál podpory byl odpojen.",
+    "disconnectError": "Nepodařilo se odpojit kanál podpory.",
+    "providers": {
+      "title": "Dostupní poskytovatelé",
+      "descriptionAdmin": "Připojte účet bota pro každou chatovou službu, kterou váš tým používá.",
+      "description": "Účty poskytovatelů může připojit administrátor."
+    },
+    "provider": {
+      "slack": {
+        "description": "Zrcadlete e-mailové tikety do vláken ve Slacku a vyřizujte je pomocí konverzace s Olliem.",
+        "setup": "Vytvořte aplikaci pro Slack s oprávněními bota chat:write, app_mentions:read, channels:read, groups:read, channels:history, groups:history a files:read, nainstalujte ji a pak vložte token bota a podpisový tajný klíč. Po připojení opendesk zobrazí kroky, kterými nastavení ve Slacku dokončíte.",
+        "steps": [
+          "V aplikaci pro Slack otevřete „Event Subscriptions“, zapněte odběr událostí a vložte výše uvedenou adresu do pole „Request URL“.",
+          "V části „Subscribe to bot events“ přidejte app_mention, message.channels a message.groups a poté nastavení uložte.",
+          "Otevřete „Interactivity & Shortcuts“, zapněte interaktivitu a do pole „Request URL“ vložte stejnou adresu.",
+          "Otevřete „Slash Commands“, vytvořte příkaz /opendesk a do pole „Request URL“ vložte stejnou adresu.",
+          "Pozvěte bota do každého kanálu, kam směrujete tikety: /invite @your-bot."
+        ],
+        "noChannels": "Bot zatím není v žádném kanálu. Ve Slacku ho pozvěte příkazem /invite @your-bot a poté obnovte seznam."
+      },
+      "discord": {
+        "description": "Zrcadlete e-mailové tikety do vláken v Discordu a vyřizujte je pomocí konverzace s Olliem.",
+        "setup": "Vytvořte bota pro Discord, zapněte mu oprávnění „Message Content“ a zkopírujte jeho token a veřejný klíč. opendesk vyhledá jeho servery a zaregistruje koncový bod pro interakce a příkazy.",
+        "noChannels": "Nebyly nalezeny žádné textové kanály. Povolte botovi přístup k textovému kanálu na tomto serveru a poté obnovte seznam."
+      },
+      "telegram": {
+        "description": "Zrcadlete e-mailové tikety do témat fóra v Telegramu a vyřizujte je pomocí konverzace s Olliem.",
+        "setup": "Pomocí BotFather vytvořte bota, vypněte mu režim soukromí (/setprivacy) a vložte jeho token. opendesk nastaví webhook. Poté bota nastavte jako administrátora skupiny s fórem.",
+        "noChannels": "Zatím žádné skupiny s fórem. Nastavte bota jako administrátora skupiny se zapnutými tématy nebo pošlete zprávu do skupiny, ve které už je, a poté obnovte seznam."
+      },
+      "google_chat": {
+        "description": "Zrcadlete e-mailové tikety do prostorů v Google Chatu a vyřizujte je pomocí konverzace s Olliem.",
+        "setup": "Zapněte Google Chat API a vytvořte klíč účtu služby s oprávněním chat.bot. Pro stejný projekt nastavte standardní aplikaci Chat, nikoli doplněk Google Workspace, a přidejte ji do prostorů, které chcete používat.",
+        "steps": [
+          "V Google Cloud Console zapněte Google Chat API a pro projekt tohoto účtu služby nastavte standardní aplikaci Chat, nikoli doplněk Google Workspace.",
+          "Jako adresu URL připojení a cílovou skupinu ověřování nastavte výše uvedenou adresu webhooku. Jako cílovou skupinu ověřování zvolte „HTTP endpoint URL“.",
+          "Přidejte příkaz /opendesk a přihlaste aplikaci k odběru událostí o zprávách, úpravách a smazání zpráv, kliknutích na karty a přidání a odebrání aplikace.",
+          "Přidejte aplikaci Chat do každého prostoru, kam chcete směrovat tikety, a poté obnovte seznam prostorů."
+        ],
+        "noChannels": "Nejsou dostupné žádné prostory. Přidejte aplikaci Chat do pojmenovaného prostoru a poté obnovte seznam."
+      },
+      "mattermost": {
+        "description": "Zrcadlete e-mailové tikety do vláken v Mattermostu a vyřizujte je pomocí konverzace s Olliem.",
+        "setup": "V Mattermostu vytvořte účet bota v části „Integrations“, „Bot Accounts“, zkopírujte jeho přístupový token a vložte ho spolu s adresou serveru. opendesk vyhledá týmy, ve kterých bot je. Přidejte bota do kanálů, kam mají chodit tikety.",
+        "steps": [
+          "V Mattermostu přidejte bota do týmu a do každého kanálu, kam směrujete tikety.",
+          "Komunikujte s botem ve vlákně tiketu: zmínkou oslovíte Ollieho, případně začněte zprávu příkazem !reply, !note, !assign, !status nebo !priority.",
+          "Tlačítka ve zprávě tiketu volají opendesk z vašeho serveru Mattermost. Pokud opendesk běží na privátní adrese, povolte ji v části „System Console“, „Developer“, „Allow untrusted internal connections“."
+        ],
+        "noChannels": "Bot zatím není v žádném kanálu. Přidejte ho do kanálu v Mattermostu a poté obnovte seznam.",
+        "findAccounts": "Najít týmy",
+        "accountPlaceholder": "Zvolte tým",
+        "refreshAccounts": "Obnovit týmy",
+        "noAccounts": "Bot zatím není členem žádného týmu. Přidejte ho do týmu v Mattermostu.",
+        "discoveryError": "Nepodařilo se načíst týmy pro připojení {{name}}. Zkontrolujte adresu serveru a token.",
+        "help": {
+          "server_url": "Adresa vašeho Mattermostu, například https://chat.example.com.",
+          "bot_token": "Přístupový token účtu bota, nikoli osobního účtu."
+        }
+      }
+    },
+    "field": {
+      "bot_token": "Token bota",
+      "signing_secret": "Podpisový tajný klíč",
+      "public_key": "Veřejný klíč pro interakce",
+      "guild_id": "Server",
+      "webhook_secret": "Tajný klíč webhooku",
+      "service_account_json": "JSON účtu služby",
+      "server_url": "Adresa serveru",
+      "team_id": "Tým",
+      "webhook_token": "Token tlačítek"
+    },
+    "connect": {
+      "title": "Připojit {{name}}",
+      "name": "Název připojení",
+      "submit": "Připojit",
+      "findAccounts": "Najít servery",
+      "accountPlaceholder": "Zvolte server",
+      "refreshAccounts": "Obnovit servery",
+      "noAccounts": "Bot zatím není nainstalovaný na žádném serveru.",
+      "discoveryError": "Nepodařilo se načíst servery pro připojení {{name}}.",
+      "cancel": "Zrušit",
+      "connected": "Připojení {{name}} bylo navázáno.",
+      "error": "Nepodařilo se připojit {{name}}."
+    },
+    "destination": {
+      "title": "Přidat cíl",
+      "description": "Zvolte, které e-mailové tikety mají chodit do tohoto kanálu: vyberte veřejný tým, prioritu a případné podmínky. Konkrétnější pravidla směrování mají přednost.",
+      "team": "Tým",
+      "teamPlaceholder": "Zvolte tým",
+      "allTeams": "Všechny veřejné týmy",
+      "priority": "Priorita",
+      "allPriorities": "Všechny priority",
+      "priorityValues": {
+        "low": "Nízká",
+        "normal": "Normální",
+        "high": "Vysoká",
+        "urgent": "Naléhavá"
+      },
+      "routeExists": "Tento tým a prioritu už používá jiný cíl.",
+      "channel": "Kanál u poskytovatele",
+      "channelHint": "Kanály, do kterých může bot přispívat.",
+      "channelPlaceholder": "Zvolte kanál",
+      "loading": "Načítání kanálů",
+      "refresh": "Obnovit kanály",
+      "none": "Nebyly nalezeny žádné kanály. Povolte botovi přístup ke kanálu a poté obnovte seznam.",
+      "loadError": "Nepodařilo se načíst kanály od poskytovatele.",
+      "displayName": "Zobrazovaný název",
+      "displayNamePlaceholder": "podpora",
+      "notes": "Zahrnout interní poznámky",
+      "notesHint": "Ve výchozím nastavení vypnuto. Po zapnutí se poznámky zveřejňují v tomto kanálu a Ollie je tam může používat v odpovědích.",
+      "messageLimit": "Délka zprávy",
+      "messageLimitHint": "Delší zprávy se zkrátí a doplní odkazem „Zobrazit v opendesk“. Poskytovatelé mohou uplatňovat nižší limit.",
+      "messageLimitValue": "Počet znaků: {{count}}",
+      "submit": "Přidat cíl",
+      "cancel": "Zrušit",
+      "added": "Cíl byl přidán.",
+      "error": "Nepodařilo se přidat cíl.",
+      "enterId": "Místo toho zadat ID kanálu",
+      "pickFromList": "Místo toho vybrat ze seznamu",
+      "channelId": "ID kanálu",
+      "channelIdHint": "ID kanálu u poskytovatele, například C0123ABCD ve Slacku nebo -1001234567890 v Telegramu."
+    },
+    "noDestinations": "Tikety se zatím nikam neposílají.",
+    "addFirstDestination": "Přidat cíl",
+    "setup": {
+      "title": "Dokončit nastavení aplikace",
+      "show": "Zobrazit postup nastavení",
+      "hide": "Skrýt",
+      "generic": "V nastavení poskytovatele zadejte tuto adresu jako cíl odesílání událostí.",
+      "waiting": "Jakmile poskytovatel odešle první událost, stav se změní na „Připojeno“. Událost odešlete zmínkou bota v kanálu."
+    },
+    "routing": {
+      "mode": "Zveřejňování",
+      "modeValues": {
+        "route": "Směrovat sem",
+        "copy": "Zveřejňovat i zde"
+      },
+      "modeHint": {
+        "route": "Připojení zveřejní každý tiket podle nejkonkrétnějšího odpovídajícího pravidla směrování: nejprve rozhoduje tým, pak priorita a poté vyšší počet podmínek.",
+        "copy": "Každý odpovídající tiket zveřejní i zde, vedle cíle určeného směrováním. Například naléhavé tikety v eskalačním kanálu."
+      },
+      "conditions": "Pouze když",
+      "conditionsHint": "Podmínky určují, kde vznikne vlákno tiketu. Jakmile zde tiket má vlákno, změny tiketu se v něm promítají i nadále.",
+      "addCondition": "Přidat podmínku",
+      "incomplete": "Vyplňte každou podmínku, nebo ji odeberte.",
+      "mirror": "Zobrazovat ve vláknech",
+      "mirrorHint": "Karta tiketu je vždy aktuální.",
+      "mirrorValues": {
+        "customer_replies": "Odpovědi zákazníků",
+        "agent_replies": "Odpovědi agentů",
+        "status_changes": "Změny stavu",
+        "assignee_changes": "Změny řešitele",
+        "priority_changes": "Změny priority"
+      },
+      "conditionCount_one": "{{count}} podmínka",
+      "conditionCount_few": "{{count}} podmínky",
+      "conditionCount_many": "{{count}} podmínky",
+      "conditionCount_other": "{{count}} podmínek",
+      "alsoPosts": "zveřejňuje i zde",
+      "label": "Směrování pro kanál {{name}}",
+      "title": "Směrování pro kanál #{{name}}",
+      "description": "Zvolte, které tikety založí vlákno v tomto kanálu a co se v jejich vláknech zobrazí.",
+      "submit": "Uložit",
+      "cancel": "Zrušit",
+      "saved": "Směrování bylo uloženo.",
+      "error": "Nepodařilo se uložit směrování."
+    }
+  },
+  "aliases": {
+    "title": "Aliasy",
+    "hint": "Další adresy doručované do této schránky, například help@ nebo hello@ vedlejšího projektu. Každý alias funguje jako samostatná schránka s vlastním jménem odesílatele, podpisem, týmem a značkou. Aliasy jsou ve všech tarifech zdarma a nepočítají se jako schránky. Nejvýše 20 aliasů.",
+    "identities": "Jednotlivé aliasy",
+    "edit": "Upravit {{alias}}",
+    "badgeSelf": "Odesílá z vlastní adresy",
+    "badgeVia": "Odpovědi z adresy {{email}}",
+    "openTickets": "Otevřít tikety aliasu",
+    "senderName": "Jméno odesílatele",
+    "senderNameHint": "Hodnota {mailbox} ve jménu v poli „Od“. Prázdná hodnota použije jméno schránky.",
+    "team": "Nové tikety se přiřadí",
+    "brand": "Značka",
+    "brandHint": "Nové tikety na tento alias používají e-maily, centrum nápovědy a dotazník této značky.",
+    "signature": "Podpis",
+    "signatureLabel": "Podpis pro {{alias}}",
+    "signaturePlaceholder": "Prázdná hodnota použije podpis týmu nebo schránky",
+    "signatureHint": "Používá se pro poštu tohoto aliasu a má přednost před podpisem týmu i schránky.",
+    "sendAs": {
+      "label": "Odpovědi",
+      "smtp": "Odesílají se z této adresy.",
+      "system": "Odesílají se z adresy {{sender}} a odpovědi na ně směřují na tuto adresu.",
+      "gmailVerified": "Odesílají se z této adresy. Gmail ji uvádí mezi adresami, ze kterých může odesílat.",
+      "gmailUnverified": "Odesílají se z adresy {{email}} a odpovědi na ně směřují na tuto adresu. Gmail ji neuvádí mezi adresami, ze kterých může odesílat.",
+      "gmailClaimed": "Odesílají se z této adresy, protože z ní Gmail může odesílat.",
+      "replyTo": "Odesílají se z adresy {{email}} a odpovědi na ně směřují na tuto adresu.",
+      "gmailClaim": "Gmail může odesílat z této adresy",
+      "gmailHow": "Nejprve ji přidejte v Gmailu: „Nastavení“ > „Účty“ > „Odesílat poštu jako“. Poté tuto možnost zapněte.",
+      "microsoft": "Odesílají se z této adresy, pokud to Microsoft povolí, jinak z adresy {{email}}.",
+      "microsoftRefused": "Microsoft odmítl odesílání z této adresy, proto se odesílají z adresy {{email}} a odpovědi na ně směřují tamtéž.",
+      "tryAgain": "Zkusit znovu"
+    },
+    "gmail": {
+      "title": "Z Gmailu",
+      "hint": "Další adresy, ze kterých může účet {{account}} odesílat v Gmailu. Přidáním adresy zde můžete přijímat její poštu a odpovídat na ni.",
+      "checkedAt": "Ověřeno {{when}}.",
+      "check": "Znovu ověřit",
+      "checked": "Adresy pro odesílání v Gmailu ověřeny",
+      "add": "Přidat",
+      "addLabel": "Přidat {{email}} jako alias",
+      "pending": "Čeká na potvrzení v Gmailu",
+      "none": "Gmail neuvádí žádné další adresy.",
+      "sendOnly": "Při připojení pouze pro odesílání Google nesdílí další adresy, ze kterých může tento účet odesílat. Přidejte je výše ručně."
+    }
+  },
+  "phone": {
+    "title": "Telefon",
+    "description": "Připojte svůj cloudový telefonní systém. Každý hovor se zaznamená do tiketu volajícího spolu s nahrávkou a údaji o tom, kdo ho přijal a jak dlouho trval.",
+    "connections": {
+      "title": "Telefonní systémy",
+      "description": "Hovory z těchto účtů se zaznamenávají do tiketů."
+    },
+    "empty": {
+      "title": "Zatím žádný telefonní systém",
+      "body": "Připojte Aircall nebo Voys a každý hovor se zaznamená do tiketu volajícího.",
+      "tipTimeline": "Hovory na časové ose tiketu",
+      "tipMissed": "Zmeškané hovory nezůstanou bez odezvy",
+      "tipAutomations": "Automatizace po skončení hovoru"
+    },
+    "health": {
+      "healthy": "Přijímá hovory",
+      "action_required": "Vyžaduje zásah",
+      "error": "Nefunguje",
+      "unknown": "Zatím nezkontrolováno",
+      "test": "Otestovat",
+      "tested": "Připojení funguje.",
+      "testedAttention": "Připojení vyžaduje pozornost.",
+      "testError": "Nepodařilo se otestovat připojení.",
+      "waiting": "Čeká na první hovor"
+    },
+    "healthCode": {
+      "receiving": "Hovory se odesílají do opendesk.",
+      "webhook_missing": "Telefonní systém neodesílá hovory do opendesk. Otestujte připojení, aby se znovu nastavilo.",
+      "credentials_refused": "Telefonní systém odmítl přihlašovací údaje. Nahraďte je funkčními.",
+      "provider_unreachable": "Nepodařilo se spojit s telefonním systémem. Zkuste to za chvíli znovu.",
+      "webhookManual": "Zatím nepřišel žádný hovor. V systému {{name}} přidejte níže uvedenou adresu webhooku a poté uskutečněte zkušební hovor."
+    },
+    "lastEvent": "Poslední událost hovoru: {{when}}",
+    "noEventYet": "Zatím žádný hovor. Hovory se v tiketech zobrazí hned, jak začnou vyzvánět.",
+    "webhook": "Adresa webhooku, kterou opendesk zaregistroval ve vašem účtu",
+    "rotate": {
+      "label": "Vyměnit přihlašovací údaje pro systém {{name}}",
+      "title": "Vyměnit přihlašovací údaje pro systém {{name}}",
+      "submit": "Vyměnit",
+      "saved": "Přihlašovací údaje byly vyměněny."
+    },
+    "disconnectLabel": "Odpojit {{name}}",
+    "disconnectTitle": "Odpojit telefonní systém?",
+    "disconnectBody": "opendesk odebere svůj webhook ze systému {{name}} a přestane zaznamenávat nové hovory. Hovory již zaznamenané v tiketech zůstanou.",
+    "disconnect": "Odpojit",
+    "disconnected": "Telefonní systém byl odpojen.",
+    "disconnectError": "Nepodařilo se odpojit telefonní systém.",
+    "saveError": "Nepodařilo se uložit změnu.",
+    "placement": {
+      "title": "Hovory ze systému {{name}}",
+      "description": "Kam se hovor přiřadí a co tam vyvolá.",
+      "reuse": "Použít nedávno vyřešený tiket",
+      "reuseHint": "Pokud volající nemá otevřený tiket, hovor se přiřadí k jeho poslednímu tiketu vyřešenému během zvoleného období.",
+      "reuseNever": "Pokud volající nemá otevřený tiket, hovor založí nový.",
+      "never": "Nikdy",
+      "day": "Za poslední 1 den",
+      "daysN": "Počet dní zpětně: {{n}}",
+      "assign": "Přiřazovat přijaté hovory",
+      "assignHint": "Nepřiřazený tiket se přiřadí kolegovi, který hovor přijal. Kolegové se párují podle e-mailu.",
+      "cards": "Zobrazovat volajícího v Aircallu",
+      "cardsHint": "Během vyzvánění Aircall zobrazí volajícího, tiket, ke kterému se hovor přiřadí, a poslední tikety volajícího.",
+      "dial": "Volat z opendesk",
+      "dialHint": "Telefonní čísla u kontaktů a tiketů otevřou vaši telefonní aplikaci. Chcete-li volat přes aplikaci {{name}}, nastavte ji jako výchozí pro telefonní odkazy."
+    },
+    "automations": {
+      "title": "Automatizace",
+      "description": "Automatizace se mohou spouštět po skončení hovoru a zohlednit jeho výsledek, směr, linku, štítky a to, zda přišel mimo pracovní dobu.",
+      "docs": "Průvodce telefonováním",
+      "docsHint": "Postup nastavení a příklady automatizací.",
+      "openDocs": "Otevřít průvodce"
+    },
+    "example": {
+      "name": "Zmeškaný hovor mimo pracovní dobu",
+      "hint": "Znovu otevře tiket volajícího, přidá poznámku a zvýší jeho prioritu. Automatizace se vytvoří vypnutá, abyste ji mohli zkontrolovat.",
+      "create": "Vytvořit tuto automatizaci",
+      "note": "Zmeškaný hovor mimo pracovní dobu: zavolat zpět.",
+      "created": "Automatizace byla vytvořena a je vypnutá.",
+      "error": "Nepodařilo se vytvořit automatizaci."
+    },
+    "providers": {
+      "title": "Telefonní systémy, které můžete připojit",
+      "descriptionAdmin": "Vyberte systém a připojte ho pomocí jeho klíče API.",
+      "description": "Telefonní systém může připojit administrátor."
+    },
+    "provider": {
+      "aircall": "Cloudový telefonní systém. Hovory, nahrávky a AI shrnutí se zaznamenávají do tiketů.",
+      "voys": "Nizozemský cloudový telefonní systém. Hovory, přepisy a shrnutí z Voys Intelligence se zaznamenávají do tiketů."
+    },
+    "field": {
+      "api_id": "ID API",
+      "api_token": "Token API"
+    },
+    "connect": {
+      "title": "Připojit {{name}}",
+      "aircallSetup": "V Aircallu otevřete „Integrations & API“, poté „API keys“ a vytvořte klíč. Sem vložte jeho ID API a token: opendesk ve vašem účtu zaregistruje vlastní webhook a ostatní ponechá beze změny.",
+      "cancel": "Zrušit",
+      "submit": "Připojit",
+      "connected": "Připojení {{name}} bylo navázáno.",
+      "error": "Nepodařilo se připojit {{name}}.",
+      "voysSetup": "Ve Voys Freedom otevřete osobní nastavení a zkopírujte svůj token API. Použijte token administrátora s přístupem k nahrávkám hovorů, aby se přenášely i přepisy a shrnutí. Poté do Voys přidáte adresu webhooku opendesk."
+    },
+    "webhookManual": "Adresa webhooku, kterou je třeba v systému {{name}} přidat jako oznámení o hovoru",
+    "disconnectBodyManual": "opendesk přestane zaznamenávat nové hovory ze systému {{name}}. Odeberte také oznámení o hovoru v systému {{name}}. Hovory již zaznamenané v tiketech zůstanou.",
+    "hook": {
+      "title": "Přidat opendesk do systému {{name}}",
+      "description": "Jakmile tuto adresu přidáte jako oznámení o hovoru, systém {{name}} na ni začne odesílat hovory.",
+      "done": "Hotovo",
+      "rotate": "Vytvořit novou adresu",
+      "rotateLabel": "Vytvořit novou adresu webhooku pro systém {{name}}",
+      "rotateTitle": "Vytvořit novou adresu webhooku?",
+      "rotateBody": "Současná adresa okamžitě přestane fungovat. Chcete-li dál přijímat hovory, vložte novou adresu do systému {{name}}.",
+      "rotateError": "Nepodařilo se vytvořit novou adresu webhooku."
+    },
+    "voys": {
+      "step1": "Ve Voys Freedom otevřete „Integratie“, poté „Gespreksnotificaties“ a klikněte na „Toevoegen“.",
+      "step2": "Zadejte popis, například opendesk, a jako službu zvolte „Custom“.",
+      "step3": "Vložte adresu webhooku do pole „Web hook URL“.",
+      "step4": "Zaškrtněte události shrnutí a přepisu (vyžadují Voys Intelligence) a poté klikněte na „Opslaan“.",
+      "step5": "Uskutečněte zkušební hovor: jakmile dorazí, u připojení se zobrazí stav „Přijímá hovory“."
+    }
+  },
+  "folders": {
+    "title": "Složky",
+    "description": "opendesk načítá poštu z těchto složek na vašem serveru IMAP. Vyberte složky, do kterých pravidla serveru ukládají poštu pro podporu, například poštu na alias. Zpráva ve více vybraných složkách se do tiketu vloží jen jednou.",
+    "inbox": "Doručená pošta",
+    "choose": "Vybrat složky",
+    "done": "Hotovo",
+    "failed": "Seznam složek se nepodařilo načíst",
+    "retry": "Zkusit znovu",
+    "hint": "Vyberte nejvýše {{max}} složek. Změny se použijí po uložení.",
+    "full": "Maximální počet složek, ze kterých schránka načítá poštu, je {{max}}. Pro výběr jiné složky zrušte označení některé z vybraných.",
+    "saveFirst": "Nejprve uložte nastavení serveru a pak vyberte složky.",
+    "special": {
+      "sent": "Odeslaná pošta",
+      "drafts": "Koncepty",
+      "trash": "Koš",
+      "junk": "Spam",
+      "all": "Veškerá pošta"
+    }
+  },
+  "sentCopy": {
+    "title": "Uchovávat odeslané e-maily na serveru",
+    "hint": "Ukládat kopii každého e-mailu odeslaného z této schránky do složky na serveru IMAP, stejně jako to dělá vaše poštovní aplikace. Schránka tak bude obsahovat celou konverzaci.",
+    "folder": "Složka pro odeslané e-maily",
+    "choose": "Vybrat složku",
+    "loading": "Načítání složek…"
+  }
+}

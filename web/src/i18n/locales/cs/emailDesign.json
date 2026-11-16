@@ -1,0 +1,85 @@
+{
+  "title": "Vzhled e-mailů",
+  "description": "Vzhled všech e-mailů zákazníkům: odpovědí, automatických odpovědí i dotazníku spokojenosti. Každá značka má vlastní vzhled.",
+  "brand": "Značka",
+  "docs": "Průvodce šablonami",
+  "tabs": {
+    "layout": "Rozvržení",
+    "csat": "E-mail s dotazníkem spokojenosti",
+    "variables": "Proměnné"
+  },
+  "readOnly": "Vzhled e-mailů mohou měnit pouze administrátoři.",
+  "default": "Výchozí",
+  "customized": "Upravený",
+  "reset": "Obnovit výchozí",
+  "resetLayoutConfirm": "Rozvržení se vrátí na prostý vzhled bez loga a zápatí, s citací předchozí zprávy.",
+  "resetCsatConfirm": "E-mail s dotazníkem spokojenosti se vrátí k výchozímu znění.",
+  "resetTitle": "Obnovit výchozí nastavení?",
+  "resetDone": "Výchozí nastavení obnoveno",
+  "saved": "Vzhled e-mailů uložen",
+  "layout": {
+    "mode": "Rozvržení",
+    "modeHint": "Většině týmů stačí jednoduché rozvržení. Vlastní HTML umožňuje upravit celé tělo e-mailu.",
+    "simple": "Jednoduché",
+    "custom": "Vlastní HTML",
+    "style": "Styl",
+    "plain": "Prostý",
+    "plainHint": "Působí jako e-mail od člověka. Nejvhodnější pro odpovědi.",
+    "branded": "Se značkou",
+    "brandedHint": "Karta s vaším logem a barevnou linkou.",
+    "logo": "Zobrazit logo",
+    "logoHint": "Logo značky v horní části každého e-mailu.",
+    "noLogo": "Tato značka zatím nemá logo.",
+    "addLogo": "Přidat logo",
+    "accent": "Barva zvýraznění",
+    "accentHint": "Odkazy, barevná linka značky a tlačítka dotazníku.",
+    "useBrand": "Barva značky",
+    "accentInvalid": "Použijte barvu ve formátu #2563EB.",
+    "font": "Písmo",
+    "fonts": {
+      "system": "Systémové",
+      "sans": "Helvetica",
+      "serif": "Georgia"
+    },
+    "footer": "Zápatí",
+    "footerHint": "Drobný text pod každým e-mailem, například adresa nebo odkaz na centrum nápovědy. Lze použít proměnné.",
+    "footerPlaceholder": "Acme Inc, 1 Market Street, San Francisco",
+    "customHtml": "HTML rozvržení",
+    "customHint": "Celé tělo e-mailu. opendesk vloží zprávu na místo {{content}}, podpis na místo {{signature}} a předchozí zprávy na místo {{history}}.",
+    "history": "Předchozí zprávy",
+    "historyHint": "Citují se pod každou odpovědí, aby zákazníci měli kontext. Poznámky se nikdy nezahrnují.",
+    "historyNone": "Necitovat",
+    "historyLast": "Předchozí zpráva",
+    "historyAll": "Celá konverzace",
+    "historyHeader": "Řádek před citací",
+    "historyHeaderHint": "Nad každou citovanou zprávou. Použijte {{author}}, {{email}} (adresu odesílatele) a {{date}}."
+  },
+  "csat": {
+    "off": "Dotazníky spokojenosti jsou vypnuté, proto se tento e-mail zatím neodesílá.",
+    "turnOn": "Zapnout dotazníky",
+    "subject": "Předmět",
+    "subjectHint": "Pokud chybí číslo tiketu, doplní se, aby odpovědi zůstaly ve vlákně.",
+    "body": "E-mail",
+    "bodyHint": "Musí obsahovat {{survey}}, kam se vloží pět tlačítek hodnocení."
+  },
+  "variables": {
+    "title": "Proměnné",
+    "description": "Kliknutím zkopírujete značku proměnné. V každé šabloně lze použít všechny proměnné. Hodnota, která se na daný případ nevztahuje, zůstane prázdná.",
+    "logic": "Logika",
+    "logicHint": "Zobrazujte části jen tam, kde mají smysl, vybírejte podle hodnoty a opakujte pro každou položku seznamu. Kliknutím zkopírujete příklad.",
+    "helpers": "Pomocné funkce",
+    "helpersHint": "Filtry mění hodnotu: přidávejte je za znak |, jeden za druhým.",
+    "copy": "Kopírovat",
+    "groups": {
+      "text": "Text",
+      "lists": "Seznamy",
+      "numbers": "Čísla",
+      "dates": "Data"
+    }
+  },
+  "loadError": {
+    "title": "Vzhled e-mailů se nepodařilo načíst",
+    "description": "Při načítání e-mailů této značky se něco nepovedlo. Zkuste to za chvíli znovu.",
+    "retry": "Zkusit znovu"
+  }
+}

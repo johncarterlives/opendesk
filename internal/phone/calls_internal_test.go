@@ -48,6 +48,9 @@ func TestSubject(t *testing.T) {
 	if s := Subject("de", "inbound", "", ""); s != "Anruf von einer unterdrückten Nummer" {
 		t.Fatal(s)
 	}
+	if s := Subject("cs", "outbound", "Jana Nováková", "+420777"); s != "Odchozí hovor: Jana Nováková" {
+		t.Fatal(s)
+	}
 }
 
 // Every language has the call words English has, and a workspace locale picks its base
@@ -63,7 +66,7 @@ func TestCallTexts(t *testing.T) {
 			t.Errorf("%s has %d words, English %d", lang, len(words), len(callTexts["en"]))
 		}
 	}
-	for in, want := range map[string]string{"": "en", "fr": "fr", "fr-BE": "fr", "FR_be": "fr", "de-CH": "de", "nl-BE": "en", "en-GB": "en", "pt-BR": "en"} {
+	for in, want := range map[string]string{"": "en", "fr": "fr", "fr-BE": "fr", "FR_be": "fr", "de-CH": "de", "cs-CZ": "cs", "nl-BE": "en", "en-GB": "en", "pt-BR": "en"} {
 		if got := callLanguage(in); got != want {
 			t.Errorf("callLanguage(%q) = %q, want %q", in, got, want)
 		}

@@ -78,12 +78,33 @@ function write(key: string, value: string | null) {
   }
 }
 
-const rememberedWorkspace = (uid: string) => read(wsKey(uid));
-const remember = (uid: string, wid: string) => write(wsKey(uid), wid);
+// The workspace is kept per tab (it survives a reload there), with the browser-wide copy as the
+// default for a new tab, so switching workspace in one tab never moves another tab's reload.
+function readTab(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
 
-function pickWorkspace(uid: string, memberships: Membership[], prefer?: string | null): string | null {
+function writeTab(key: string, value: string) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+const rememberedWorkspaces = (uid: string) => [readTab(wsKey(uid)), read(wsKey(uid))];
+const remember = (uid: string, wid: string) => {
+  writeTab(wsKey(uid), wid);
+  write(wsKey(uid), wid);
+};
+
+export function pickWorkspace(uid: string, memberships: Membership[], prefer?: string | null): string | null {
   const ids = memberships.map((m) => m.workspace.id);
-  for (const c of [prefer, rememberedWorkspace(uid)]) if (c && ids.includes(c)) return c;
+  for (const c of [prefer, ...rememberedWorkspaces(uid)]) if (c && ids.includes(c)) return c;
   return ids[0] ?? null;
 }
 

@@ -162,7 +162,7 @@ else on their latest ticket solved (`solved_at`) within the connection's `reuse_
 else on a new ticket on the `phone` channel, routed like any new ticket
 (`routing.Resolve` with channel `phone`, so routing rules can send phone tickets to a team),
 named "Call from …" or "Call to …" in the workspace's `locale` when the agent app speaks it
-(French or German; else English, `internal/phone/texts.go`), and running the `ticket_created`
+(French, German or Czech; else English, `internal/phone/texts.go`), and running the `ticket_created`
 automations. Like an `api` ticket, a phone ticket has no reply address: replies there are recorded, not emailed. Merged,
 deleted, spam and closed tickets are never reused. A call is placed once, on its first event,
 so the insight card can show its ticket; the ticket moves up (`updated_at`, `ticket.updated`

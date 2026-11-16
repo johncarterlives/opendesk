@@ -55,6 +55,19 @@ var callTexts = map[string]map[string]string{
 		"status.solved":  "Gelöst",
 		"status.closed":  "Geschlossen",
 	},
+	"cs": {
+		"from":           "Příchozí hovor: ",
+		"to":             "Odchozí hovor: ",
+		"withheld":       "Hovor ze skrytého čísla",
+		"number":         "Skryté číslo",
+		"ticket":         "Tiket",
+		"earlier":        "Dřívější tikety",
+		"status.open":    "Otevřený",
+		"status.pending": "Čekající",
+		"status.on_hold": "Pozastavený",
+		"status.solved":  "Vyřešený",
+		"status.closed":  "Uzavřený",
+	},
 }
 
 // callLanguage is a callTexts language for a workspace locale (BCP 47): its base language

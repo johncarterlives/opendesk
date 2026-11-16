@@ -1,19 +1,21 @@
 // Calendar dates in the agent app's language: the date-fns locale for month and
 // weekday names, and the short patterns each language writes a date in
-// ("Mar 4" in English, "4 mars" in French, "4. März" in German).
+// ("Mar 4" in English, "4 mars" in French, "4. März" in German, "4. 3." in Czech,
+// which writes a short date in numbers).
 
-import { de, fr } from "date-fns/locale";
+import { cs, de, fr } from "date-fns/locale";
 import type { Locale } from "date-fns";
 import { AGENT_LOCALES, type AgentLocale, i18n } from "./index";
 
 export type DatePattern = "dayMonth" | "dayMonthYear" | "weekdayDayMonth" | "field";
 
-const LOCALES: Record<string, Locale> = { fr, de };
+const LOCALES: Record<string, Locale> = { fr, de, cs };
 
 const PATTERNS: Record<AgentLocale, Record<DatePattern, string>> = {
   en: { dayMonth: "MMM d", dayMonthYear: "MMM d, yyyy", weekdayDayMonth: "EEE, MMM d", field: "d MMM yyyy" },
   fr: { dayMonth: "d MMM", dayMonthYear: "d MMM yyyy", weekdayDayMonth: "EEE d MMM", field: "d MMM yyyy" },
   de: { dayMonth: "d. MMM", dayMonthYear: "d. MMM yyyy", weekdayDayMonth: "EEE, d. MMM", field: "d. MMM yyyy" },
+  cs: { dayMonth: "d. M.", dayMonthYear: "d. M. yyyy", weekdayDayMonth: "EEEEEE d. M.", field: "d. M. yyyy" },
 };
 
 function lang(lng?: string): string {

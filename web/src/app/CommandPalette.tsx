@@ -60,6 +60,7 @@ import type { SearchResults } from "@/lib/api/types";
 import { useCollab, useMailAccounts } from "@/lib/collab/hooks";
 import { TICKET_SETTINGS, useProducts } from "@/lib/products";
 import { compose } from "@/lib/collab/compose";
+import { accountView } from "@/lib/collab/accountView";
 import { AccountDot } from "@/components/collab/bits";
 import { WorkspaceBadge } from "@/components/workspaces/WorkspaceBadge";
 import { useWorkspaces } from "@/lib/workspaces";
@@ -364,7 +365,8 @@ export function CommandPalette() {
                       value={`go mail account ${a.name} ${a.email}`}
                       icon={<span className="flex size-4 shrink-0 items-center justify-center"><AccountDot color={a.color} /></span>}
                       hint={tCollab("palette.account")}
-                      {...link({ to: "/mail/$box/{-$threadId}", params: { box: "inbox", threadId: undefined }, search: { account: a.id } })}
+                      // Inbox or Unread, whichever was used last for the account (GH#523).
+                      {...link({ to: "/mail/$box/{-$threadId}", params: { box: accountView(a.id), threadId: undefined }, search: { account: a.id } })}
                     >
                       {a.name || a.email}
                     </Item>
