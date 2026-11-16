@@ -66,7 +66,7 @@ export function SelectAllBar({ loaded, selected, hasMore, loading, scope, matchi
         <Checkbox checked={state} disabled={!loaded} aria-label={selected || loading ? t("list.clear") : t("list.selectAll")} onCheckedChange={onToggle} />
         <span className={cn("mono shrink-0 tabular-nums", actions && compact && "sr-only")}>{selected ? t("list.selected", { count: selected }) : t("list.selectAll")}</span>
         {actions ? (
-          <div role="toolbar" aria-label={t("list.selected", { count: selected })} className="-my-1 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
+          <div role="toolbar" aria-label={t("list.selected", { count: selected })} className="flex min-w-0 flex-1 flex-wrap items-center gap-0.5 py-1">
             <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
             {actions}
           </div>
