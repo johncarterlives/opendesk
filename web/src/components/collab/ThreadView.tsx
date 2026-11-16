@@ -47,6 +47,7 @@ import { compose } from "@/lib/collab/compose";
 import { accountCategories, PRIMARY } from "@/lib/collab/categories";
 import { useReadOnOpen } from "@/lib/collab/useReadOnOpen";
 import { useMailAccounts } from "@/lib/collab/hooks";
+import { useSyncNow } from "@/lib/collab/syncNow";
 import { hasReplyAll, replyTarget, type ComposeMode } from "@/lib/collab/recipients";
 import { identitySignature, ownEmails, replyIdentity } from "@/lib/collab/identities";
 import { cn } from "@/lib/cn";
@@ -403,6 +404,8 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   });
 
   const move = (m: MoveTarget) => onAction(m.action, { folderId: m.folderId, category: m.category, label: m.label });
+  // Shared with the list's sync button, which spins while it runs (GH#522).
+  const syncNow = useSyncNow(accounts?.find((a) => a.id === detail?.account.id));
 
 
   if (isPending) return <ThreadSkeleton />;
@@ -609,11 +612,11 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
               </MenuItem>
               <MenuItem
                 icon={<RefreshCw />}
+                disabled={syncNow.syncing}
                 onSelect={() => {
-                  void api.collab.accounts.sync(detail.account.id).then(
-                    () => toast.info(t("toast.syncing", { name: detail.account.name || detail.account.email })),
-                    (e) => toast.error(e),
-                  );
+                  const onQueued = () => toast.info(t("toast.syncing", { name: detail.account.name || detail.account.email }));
+                  if (account) syncNow.sync(account, { onQueued, onError: (e) => toast.error(e) });
+                  else void api.collab.accounts.sync(detail.account.id).then(onQueued, (e) => toast.error(e));
                 }}
               >
                 {t("action.syncAccount")}

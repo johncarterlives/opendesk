@@ -46,6 +46,7 @@ import { accountCategories, categoryTabs, PRIMARY, ruleSender } from "@/lib/coll
 import { assignChanges, useAllFolders, useAssignThreads, useCanAct, useMailAccounts, useSelectEvery, useSidebarPrefs, useThreadAction } from "@/lib/collab/hooks";
 import { type ComposeMode } from "@/lib/collab/recipients";
 import { identitiesOf, ownEmails as ownEmailsOf } from "@/lib/collab/identities";
+import { useSyncNow } from "@/lib/collab/syncNow";
 import { startThreadDrag, takeThreadDrops, type ThreadDropTarget } from "@/lib/collab/threadDrag";
 import { isTypingTarget } from "@/lib/hotkeys";
 import { openInNewTab, useHref } from "@/lib/links";
@@ -139,6 +140,7 @@ export default function MailPage() {
   const confirm = useConfirm();
 
   const account = search.account ? accounts?.find((a) => a.id === search.account) : undefined;
+  const syncNow = useSyncNow(account);
   const folder: MailFolder | undefined = search.folder ? Object.values(folderMap).flatMap((f) => f ?? []).find((f) => f.id === search.folder) : undefined;
   const folderAccount = folder ? accounts?.find((a) => a.id === folder.account_id) : undefined;
   const spans = !account && !folder && (accounts?.length ?? 0) > 1;
@@ -875,18 +877,21 @@ export default function MailPage() {
               />
             )}
             {account && (
-              <Tooltip content={t("list.refresh")}>
+              <Tooltip content={syncNow.syncing ? t("list.syncing") : t("list.refresh")}>
+                {/* Spins until the sync it asked for ends (GH#522). */}
                 <Button
                   size="sm"
                   variant="ghost"
                   square
-                  aria-label={t("list.refresh")}
-                  icon={<RefreshCw />}
+                  aria-label={syncNow.syncing ? t("list.syncing") : t("list.refresh")}
+                  aria-busy={syncNow.syncing || undefined}
+                  icon={<RefreshCw className={cn(syncNow.syncing && "animate-spin motion-reduce:animate-none")} />}
                   onClick={() =>
-                    void api.collab.accounts.sync(account.id).then(
-                      () => toast.info(t("toast.syncing", { name: accountName(account) })),
-                      (e) => toast.error(e),
-                    )
+                    !syncNow.syncing &&
+                    syncNow.sync(account, {
+                      onQueued: () => toast.info(t("toast.syncing", { name: accountName(account) })),
+                      onError: (e) => toast.error(e),
+                    })
                   }
                 />
               </Tooltip>
