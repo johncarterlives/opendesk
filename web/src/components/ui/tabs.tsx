@@ -62,19 +62,21 @@ export function Segmented<V extends string>({
   options,
   className,
   size = "sm",
+  "aria-label": ariaLabel,
 }: {
   value: V;
   onChange: (v: V) => void;
   options: { value: V; label: ReactNode; icon?: ReactNode }[];
   className?: string;
   size?: "xs" | "sm";
+  "aria-label"?: string;
 }) {
   const id = useId();
   const reduce = useReducedMotion();
   return (
     // Dark mode tints the track with white so it shows on any surface: dialogs and popovers sit on
     // --raised, which is the same grey as --hover.
-    <div role="radiogroup" className={cn("inline-flex items-center rounded-md bg-hover p-0.5 dark:bg-white/[0.07] dark:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.05)]", className)}>
+    <div role="radiogroup" aria-label={ariaLabel} className={cn("inline-flex items-center rounded-md bg-hover p-0.5 dark:bg-white/[0.07] dark:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.05)]", className)}>
       {options.map((o) => (
         <button
           key={o.value}

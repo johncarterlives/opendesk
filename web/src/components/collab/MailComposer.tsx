@@ -371,6 +371,18 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
     if (busy) return toast.error(t("composer.waitUploads"));
     if (!recipients) return toast.error(t("composer.needRecipient"));
     if (recipients > 100) return toast.error(t("composer.tooMany"));
+    // Nothing written but the signature: asked first, as Gmail does. Send sits where Reply
+    // was clicked, so a double click must not mail a blank reply.
+    const html = editor.current?.editor?.getHTML() ?? draft.html;
+    if (isBlankHtml(withoutSignature(html)) && !uploads.length && !keptFiles.length) {
+      confirm.show(t("composer.emptyConfirm"), () => void sendNow(), { title: t("composer.emptyTitle"), confirmLabel: t("composer.sendAnyway") });
+      return;
+    }
+    await sendNow();
+  };
+
+  const sendNow = async () => {
+    if (send.isPending) return;
     // A save on its way finishes first, so the draft it makes is the one sent.
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
@@ -554,8 +566,29 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         className={variant === "floating" ? "min-h-[200px] flex-1" : undefined}
         contentClassName={cn("text-[13px]", variant === "floating" ? "min-h-[180px]" : "min-h-[96px] max-h-[360px]")}
         toolbar="compact"
+        // Send first and on the left, coloured, as Gmail and Outlook put it: where the eye
+        // lands when the writing is done, and the one button that mails someone.
+        toolbarStart={
+          <Tooltip content={busy ? t("composer.waitUploads") : t("composer.send")} shortcut="mod enter">
+            <Button
+              variant="send"
+              size="sm"
+              onClick={() => void submit()}
+              disabled={busy || !recipients}
+              icon={send.isPending ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Send className="size-3.5" />}
+              className="px-3"
+            >
+              {send.isPending ? t("composer.sending") : t("composer.send")}
+            </Button>
+          </Tooltip>
+        }
         toolbarEnd={
           <>
+            {saveState !== "idle" && (
+              <span aria-live="polite" className={cn("mr-1 whitespace-nowrap text-[11px]", saveState === "error" ? "text-tone-red" : "text-fg-4")}>
+                {saveState === "saving" ? t("composer.saving") : saveState === "saved" ? t("composer.saved") : t("composer.saveFailed")}
+              </span>
+            )}
             <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && upload(e.target.files)} />
             <Tooltip content={t("composer.attach")}>
               <button
@@ -579,22 +612,6 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
                 </button>
               </Tooltip>
             )}
-            {saveState !== "idle" && (
-              <span aria-live="polite" className={cn("mr-1 whitespace-nowrap text-[11px]", saveState === "error" ? "text-tone-red" : "text-fg-4")}>
-                {saveState === "saving" ? t("composer.saving") : saveState === "saved" ? t("composer.saved") : t("composer.saveFailed")}
-              </span>
-            )}
-            <Tooltip content={busy ? t("composer.waitUploads") : t("composer.send")} shortcut="mod enter">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => void submit()}
-                disabled={busy || !recipients}
-                icon={send.isPending ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Send className="size-3.5" />}
-              >
-                {send.isPending ? t("composer.sending") : t("composer.send")}
-              </Button>
-            </Tooltip>
           </>
         }
       />

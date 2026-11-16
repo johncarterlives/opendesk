@@ -1,7 +1,8 @@
 // A conversation: its subject, folders and labels, who it is shared with and
 // assigned to, the actions (each mirrored at the provider), the messages oldest
 // first with the older ones folded, the team's comments, and the reply composer.
-// Writing a comment and the reply buttons are pinned under it, whatever its length.
+// Writing a comment and the reply buttons are pinned under it, whatever its length; while a
+// reply is written the buttons give way to it, and its Send (first, coloured) sends.
 // Beside it, who it is with: the people panel (] shows and hides it).
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,7 @@ import {
   Mail,
   MailOpen,
   MessageSquare,
+  MessageSquarePlus,
   MoreHorizontal,
   PanelRight,
   RefreshCw,
@@ -60,6 +62,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/components/ui/menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Segmented } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { AIDraftFeedbackDialog, UnusedAIDraft } from "./AIDraftFeedback";
@@ -464,6 +467,34 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   };
   const composerAccounts = [detail.account];
   const participants = th.participants;
+  const composing = !!(editing || composer);
+  // Replying or commenting, switched at the top of what is being written (the reply's own
+  // kind names it: Reply, Reply all, Forward). A mode switch, never an action button: Send sends.
+  // Nothing written yet (commenting): the reply it would open, the account's usual one.
+  const writing = composer ?? (editing ? "reply" : (replyModes[0] ?? "reply"));
+  const writeKind = writing === "forward" ? { icon: <Forward />, label: t("action.forward") } : writing === "reply_all" ? replyKind.reply_all : replyKind.reply;
+  const writeSwitch = (value: "reply" | "comment") => (
+    <Segmented
+      aria-label={t("thread.replyOrComment")}
+      value={value}
+      onChange={(v) => {
+        if (v === "comment") return setCommentThread(th.id);
+        setCommentThread(null);
+        if (!composing) openComposer(replyModes[0] ?? "reply");
+      }}
+      options={[
+        { value: "reply", label: writeKind.label, icon: writeKind.icon },
+        { value: "comment", label: t("comments.add"), icon: <Lock /> },
+      ]}
+    />
+  );
+  const commentsButton = detail.comments.length > 0 && (
+    <Tooltip content={t("thread.showComments")}>
+      <Button size="md" variant="ghost" icon={<MessageSquare />} aria-label={t("list.comments", { count: detail.comments.length })} onClick={showComments}>
+        <Count n={detail.comments.length} className="text-[11.5px]" />
+      </Button>
+    </Tooltip>
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -743,6 +774,10 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
 
           {canAct && (editing || composer) && (
             <div ref={composerRef} className="mt-1 scroll-mb-4" hidden={commentMode}>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                {writeSwitch("reply")}
+                {commentsButton}
+              </div>
               {editing ? (
                 <MailComposer
                   key={`draft-${editing.id}-${composerKey}`}
@@ -800,72 +835,55 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
         </div>
       </div>
 
+      {/* While a reply is written the bar goes, as Gmail's Reply and Forward do: the composer
+          carries the Reply / Comment switch, and its Send is the only way to send. */}
+      {!(canAct && composing && !commentMode) && (
       <footer className={cn("@container relative z-10 shrink-0 border-t border-line bg-surface transition-shadow duration-200 ease-out", below && "shadow-[0_-8px_16px_-12px_rgb(10_10_10/0.18)] dark:shadow-[0_-8px_16px_-12px_rgb(0_0_0/0.6)]")}>
         <div className="mx-auto w-full max-w-[860px] px-4 py-2.5 md:px-6">
           {canAct ? (
-            <>
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div role="group" aria-label={t("thread.replyOrComment")} className="inline-flex items-center rounded-md bg-sunken p-0.5">
-                  <Button
-                    size="sm"
-                    variant={commentMode ? "ghost" : "subtle"}
-                    aria-pressed={!commentMode}
-                    onClick={() => {
-                      setCommentThread(null);
-                      if (!editing && !composer) openComposer(replyModes[0] ?? "reply");
-                    }}
-                  >
-                    {t("action.reply")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={commentMode ? "subtle" : "ghost"}
-                    aria-pressed={commentMode}
-                    onClick={() => setCommentThread(th.id)}
-                  >
-                    {t("comments.add")}
-                  </Button>
+            commentMode ? (
+              <>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  {writeSwitch("comment")}
+                  {commentsButton}
                 </div>
-                {detail.comments.length > 0 && (
-                  <Tooltip content={t("thread.showComments")}>
-                    <Button size="md" variant="ghost" icon={<MessageSquare />} aria-label={t("list.comments", { count: detail.comments.length })} onClick={showComments}>
-                      <Count n={detail.comments.length} className="text-[11.5px]" />
+                <p className="mb-1.5 flex items-center gap-1.5 rounded-md bg-note px-2.5 py-1.5 text-[11.5px] text-fg-3">
+                  <Lock aria-hidden className="size-3 shrink-0 text-fg-4" />
+                  {t("comments.internalHint")}
+                </p>
+                <CommentBar ref={commentBar} detail={detail} onPosted={(id) => (posted.current = id)} />
+              </>
+            ) : (
+              // Plain actions, each opening what it names: the account's usual reply first and labelled.
+              <div className="flex items-center gap-1.5">
+                {replyModes.map((mode, i) => (
+                  <Tooltip key={mode} content={replyKind[mode].label} shortcut={replyKind[mode].shortcut}>
+                    <Button size="md" variant="secondary" icon={replyKind[mode].icon} aria-label={replyKind[mode].label} onClick={() => openComposer(mode)}>
+                      <span className={i === 0 ? undefined : "hidden @[36rem]:inline"}>{replyKind[mode].label}</span>
                     </Button>
                   </Tooltip>
-                )}
+                ))}
+                <Tooltip content={t("action.forward")} shortcut="f">
+                  <Button size="md" variant="secondary" icon={<Forward />} aria-label={t("action.forward")} onClick={() => openComposer("forward")}>
+                    <span className="hidden @[36rem]:inline">{t("action.forward")}</span>
+                  </Button>
+                </Tooltip>
+                <span className="ml-auto flex items-center gap-1">
+                  <Tooltip content={t("comments.internalHint")} shortcut="shift c">
+                    <Button size="md" variant="ghost" icon={<MessageSquarePlus />} aria-label={t("comments.add")} onClick={() => setCommentThread(th.id)}>
+                      <span className="hidden @[28rem]:inline">{t("comments.add")}</span>
+                    </Button>
+                  </Tooltip>
+                  {commentsButton}
+                </span>
               </div>
-              {commentMode ? (
-                <div>
-                  <p className="mb-1.5 flex items-center gap-1.5 rounded-md bg-note px-2.5 py-1.5 text-[11.5px] text-fg-3">
-                    <Lock aria-hidden className="size-3 shrink-0 text-fg-4" />
-                    {t("comments.internalHint")}
-                  </p>
-                  <CommentBar ref={commentBar} detail={detail} onPosted={(id) => (posted.current = id)} />
-                </div>
-              ) : (
-                !editing && !composer && (
-                  <div className="flex items-center gap-1">
-                    {replyModes.slice(1).map((mode) => (
-                      <Tooltip key={mode} content={replyKind[mode].label} shortcut={replyKind[mode].shortcut}>
-                        <Button size="md" variant="ghost" icon={replyKind[mode].icon} aria-label={replyKind[mode].label} onClick={() => openComposer(mode)}>
-                          <span className="hidden @[36rem]:inline">{replyKind[mode].label}</span>
-                        </Button>
-                      </Tooltip>
-                    ))}
-                    <Tooltip content={t("action.forward")} shortcut="f">
-                      <Button size="md" variant="ghost" icon={<Forward />} aria-label={t("action.forward")} onClick={() => openComposer("forward")}>
-                        <span className="hidden @[36rem]:inline">{t("action.forward")}</span>
-                      </Button>
-                    </Tooltip>
-                  </div>
-                )
-              )}
-            </>
+            )
           ) : (
             <p className="rounded-md bg-sunken px-3 py-2 text-[12px] text-fg-3">{t("thread.readOnly")}</p>
           )}
         </div>
       </footer>
+      )}
       </div>
       <AnimatePresence initial={false}>
         {panelOpen &&
