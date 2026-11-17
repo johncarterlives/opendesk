@@ -20,6 +20,8 @@ Only published articles are returned. `{workspace_slug}` is the brand's help cen
 curl https://api.opendesk.sh/v1/public/help/example/search?q=password
 ```
 
+Images in `body_html` point at the help center's own address, `<help center>/_help/files/<id>`, a link that does not expire, so you can show bodies as they come. The same goes for changelog entries.
+
 The rendered help center is served at its own address, not under `/v1` ([Help center addresses](/guides/help-center-addresses/)). For a proxy that issues certificates on demand, `GET /v1/public/help-domains/tls?domain=<hostname>` answers `200` when the instance serves a help center on that hostname and `404` otherwise.
 
 ## Changelog

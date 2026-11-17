@@ -74,8 +74,8 @@ func (p *page) Dated(e kb.ChangelogEntry) time.Time {
 	return e.UpdatedAt
 }
 
-func (s *Server) entryView(e kb.ChangelogEntry) entryView {
-	return entryView{ChangelogEntry: e, Body: articleBody(e.BodyHTML, strings.TrimRight(s.d.Cfg.APIURL, "/"))}
+func (p *page) entryView(e kb.ChangelogEntry) entryView {
+	return entryView{ChangelogEntry: e, Body: articleBody(e.BodyHTML, p.base)}
 }
 
 func (s *Server) changelog(ctx context.Context, p *page, hc kb.HelpCenter, query url.Values) error {
@@ -105,7 +105,7 @@ func (s *Server) changelog(ctx context.Context, p *page, hc kb.HelpCenter, query
 	p.path = "/changelog"
 	c := &changelogData{Categories: cats, Category: category, Page: n}
 	for _, e := range entries {
-		c.Entries = append(c.Entries, s.entryView(e))
+		c.Entries = append(c.Entries, p.entryView(e))
 	}
 	p.Changelog = c
 	if n > 1 {
@@ -130,7 +130,7 @@ func (s *Server) entry(ctx context.Context, p *page, hc kb.HelpCenter, slug stri
 	if err != nil {
 		return err
 	}
-	v := s.entryView(e)
+	v := p.entryView(e)
 	p.Kind = "entry"
 	p.path = "/changelog/" + e.Slug
 	p.Entry = &v
@@ -233,7 +233,7 @@ func (s *Server) feed(w http.ResponseWriter, r *http.Request, hc kb.HelpCenter, 
 		u := page + "/" + url.PathEscape(e.Slug)
 		x := atomEntry{ID: u, Title: e.Title, Link: atomLink{Href: u, Rel: "alternate", Type: "text/html"},
 			Published: stamp(p.Dated(e)), Updated: stamp(e.UpdatedAt), Summary: e.Excerpt,
-			Content: atomText{Type: "html", Body: string(articleBody(e.BodyHTML, strings.TrimRight(s.d.Cfg.APIURL, "/")))}}
+			Content: atomText{Type: "html", Body: string(articleBody(e.BodyHTML, p.base))}}
 		if e.Author != nil && e.Author.Name != "" {
 			x.Authors = []atomPerson{{Name: e.Author.Name}}
 		}

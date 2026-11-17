@@ -313,13 +313,15 @@ type Uploader struct {
 }
 
 // CheckAttachments confirms every id is an unattached upload in the workspace made by by:
-// the same agent, API key or visitor (contracts/api.md "Attachments").
+// the same agent, API key or visitor, that no knowledge base article or changelog entry holds
+// (contracts/api.md "Attachments").
 func CheckAttachments(ctx context.Context, q db.Querier, wid uuid.UUID, attIDs []uuid.UUID, by Uploader) error {
 	if len(attIDs) == 0 {
 		return nil
 	}
 	var n int
 	if err := q.QueryRow(ctx, `SELECT count(*) FROM attachments WHERE workspace_id = $1 AND id = ANY($2) AND message_id IS NULL
+		AND kb_article_id IS NULL AND changelog_entry_id IS NULL
 		AND uploaded_by IS NOT DISTINCT FROM $3 AND uploaded_by_api_key_id IS NOT DISTINCT FROM $4
 		AND uploaded_by_contact_id IS NOT DISTINCT FROM $5`, wid, attIDs, by.User, by.APIKey, by.Contact).Scan(&n); err != nil {
 		return err

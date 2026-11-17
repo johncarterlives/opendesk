@@ -185,4 +185,4 @@ curl https://api.opendesk.sh/v1/attachments \
 { "id": "0192f0c5-...", "filename": "invoice.pdf", "content_type": "application/pdf", "size_bytes": 48211, "inline": false, "url": "..." }
 ```
 
-Uploaded attachments are unattached until a message that references them is sent. `GET /v1/attachments/{id}` redirects to a short-lived signed URL, or streams the file when the storage driver cannot sign. For `<img>` tags, where you cannot set headers, the `url` is signed (`?exp=&sig=`) and expires within two hours; fetch the message again for a fresh one.
+Uploaded attachments are unattached until a message that references them is sent. `GET /v1/attachments/{id}` redirects to a short-lived signed URL, or streams the file when the storage driver cannot sign. For `<img>` tags, where you cannot set headers, the `url` is signed (`?exp=&sig=`) and expires within two hours; fetch the message again for a fresh one. Images in a published knowledge base article or changelog entry don't expire: the help center serves them at `/_help/files/<id>`.

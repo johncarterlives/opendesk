@@ -146,6 +146,9 @@ func registerArticles(d *deps.Deps, api huma.API) {
 					` ORDER BY ts_rank(a.search, ` + tsq + `) DESC, a.updated_at DESC, a.id LIMIT ` + arg(limit)
 				rows, err := d.DB.Pool.Query(ctx, sql, args...)
 				out, err := collectRows(rows, err, scanArticle)
+				if err == nil {
+					err = signArticles(ctx, d.DB.Pool, p.WorkspaceID, out)
+				}
 				if err != nil {
 					return nil, httpx.Wrap(err)
 				}
@@ -161,6 +164,9 @@ func registerArticles(d *deps.Deps, api huma.API) {
 			sql := articleSelect + ` WHERE ` + strings.Join(where, " AND ") + ` ORDER BY a.updated_at DESC, a.id DESC LIMIT ` + arg(limit+1)
 			rows, err := d.DB.Pool.Query(ctx, sql, args...)
 			out, err := collectRows(rows, err, scanArticle)
+			if err == nil {
+				err = signArticles(ctx, d.DB.Pool, p.WorkspaceID, out)
+			}
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -263,6 +269,7 @@ func registerArticles(d *deps.Deps, api huma.API) {
 				if b.BodyHTML != nil {
 					cur.BodyHTML = hd.SanitizeRich(*b.BodyHTML)
 				}
+				cur.BodyHTML = hd.PlainFiles(cur.BodyHTML)
 				switch {
 				case b.Excerpt != nil:
 					if cur.Excerpt = cleanExcerpt(*b.Excerpt); cur.Excerpt == "" {
@@ -288,6 +295,9 @@ func registerArticles(d *deps.Deps, api huma.API) {
 					WHERE workspace_id = $1 AND id = $2`,
 					p.WorkspaceID, id, cur.CollectionID, cur.Title, cur.Slug, cur.Excerpt, cur.BodyHTML, cur.Status, cur.BrandID); err != nil {
 					return slugConflict(err)
+				}
+				if err := holdFiles(ctx, tx, p, hd.ArticleFiles, id, cur.BodyHTML); err != nil {
+					return err
 				}
 				if a, err = loadArticle(ctx, tx, p.WorkspaceID, id); err != nil {
 					return err
@@ -324,6 +334,10 @@ func registerArticles(d *deps.Deps, api huma.API) {
 				return nil, err
 			}
 			err = d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				// Its files pass to another article or entry that shows them.
+				if err := holdFiles(ctx, tx, p, hd.ArticleFiles, id, ""); err != nil {
+					return err
+				}
 				tag, err := tx.Exec(ctx, `DELETE FROM kb_articles WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id)
 				if err != nil {
 					return err
@@ -355,7 +369,7 @@ func createArticle(ctx context.Context, d *deps.Deps, p *auth.Principal, b kbArt
 	if status == "" {
 		status = "draft"
 	}
-	body := hd.SanitizeRich(b.BodyHTML)
+	body := hd.PlainFiles(hd.SanitizeRich(b.BodyHTML))
 	excerpt := ""
 	if b.Excerpt != nil {
 		excerpt = cleanExcerpt(*b.Excerpt)
@@ -385,6 +399,9 @@ func createArticle(ctx context.Context, d *deps.Deps, p *auth.Principal, b kbArt
 			status, author_id, published_at, brand_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, CASE WHEN $8 = 'published' THEN now() END, $10)`,
 			id, p.WorkspaceID, cid, title, slug, excerpt, body, status, p.ActorUserID(), brand); err != nil {
 			return slugConflict(err)
+		}
+		if err := holdFiles(ctx, tx, p, hd.ArticleFiles, id, body); err != nil {
+			return err
 		}
 		if a, err = loadArticle(ctx, tx, p.WorkspaceID, id); err != nil {
 			return err

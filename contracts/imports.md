@@ -56,7 +56,9 @@ answers `409 import_running`.
    reply or note added here since, stays and is no longer counted as imported), the
    contacts that only it brought and that have no other tickets or messages, the companies
    no contact belongs to any more, its labels that no ticket, contact or company uses, its
-   articles, and its collections that hold no other article. Records it matched but did not
+   articles (an image one holds passes to an article or entry that stays and shows it;
+   contracts/api.md "Article and changelog files"), and its collections that hold no other
+   article. Records it matched but did not
    create (an existing contact, label, company or collection) are left alone.
 
 ## Shapes

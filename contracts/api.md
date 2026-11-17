@@ -674,9 +674,9 @@ Each value is overridable: `NOTIFY_EMAIL_DELAY`, `NOTIFY_EMAIL_COOLDOWNS` (e.g. 
 | GET/PATCH | `/v1/triage` | GET members → `TriageSettings`; PATCH admin `{auto_triage?, fields?, assign_after_triage?, threshold?}` → `TriageSettings` (stored in `settings.ai`, contracts/ai.md). Audit `triage.updated` |
 | CRUD | `/v1/automations` | |
 | CRUD | `/v1/imports`, `/v1/imports/{id}` | admin users only (reads also API keys with `settings:read`). History imports from Zendesk, Help Scout, Freshdesk, Intercom, Front, FreeScout and CSV files: check, CSV upload, start, pause, resume, cancel, sync, undo and credential removal; see `contracts/imports.md` |
-| CRUD | `/v1/kb/collections`, `/v1/kb/articles` | articles list supports `collection_id`, `status`, `q` and `for_brand_id` (what that brand shows: its own articles and those of every brand; the composer's and assistant's scope for a ticket's brand); both lists `brand_id` (a brand id, or `none` for what every brand shows; an article's brand is its collection's when that has one). Create and PATCH take `brand_id` (a brand of the workspace, or null). An article's `slug` is unique among the articles of its collection (or of none), so two collections may each have `getting-started`: a taken slug is `409`, and so is moving an article (`collection_id`) into a collection where its slug is taken without a new `slug`. Changing an article's slug or collection, a collection's slug, or deleting a collection (its articles leave it, each keeping its slug where it is free among articles in no collection, else taking `<slug>-2` and so on) keeps the old help-center address leading to the new one (`kb_redirects`, contracts/teams.md "Serving") |
+| CRUD | `/v1/kb/collections`, `/v1/kb/articles` | articles list supports `collection_id`, `status`, `q` and `for_brand_id` (what that brand shows: its own articles and those of every brand; the composer's and assistant's scope for a ticket's brand); both lists `brand_id` (a brand id, or `none` for what every brand shows; an article's brand is its collection's when that has one). Create and PATCH take `brand_id` (a brand of the workspace, or null). An article's `slug` is unique among the articles of its collection (or of none), so two collections may each have `getting-started`: a taken slug is `409`, and so is moving an article (`collection_id`) into a collection where its slug is taken without a new `slug`. Changing an article's slug or collection, a collection's slug, or deleting a collection (its articles leave it, each keeping its slug where it is free among articles in no collection, else taking `<slug>-2` and so on) keeps the old help-center address leading to the new one (`kb_redirects`, contracts/teams.md "Serving"). Images: see "Article and changelog files" below |
 | POST | `/v1/kb/articles/from-wiki` | `{page_id, title?, collection_id?, brand_id?}` → 201 `{article: KbArticle, left_out: number}`: a draft copy of a wiki page the caller can see (agent; `kb:write` and `wiki:read`). Wiki blocks become their article equivalents (callouts as quotes, toggles as a bold line and their text, tables as lines, math as code); mentions of teammates and links to wiki pages keep only their text; the workspace's own files and images, databases, ticket lists and subpage links stay in the wiki and are counted in `left_out`. A page without a title needs `title`. Nothing stays linked (`contracts/wiki.md` "Publishing") |
-| CRUD | `/v1/changelog/entries` | Changelog ("Changelog" below). Reads: members and `changelog:read`; writes: agents and `changelog:write`. List: newest first by `published_at`, else `updated_at` (drafts); `status` (`draft`; `published`: live, dated now or earlier; `scheduled`: published with a future date), `category`, `q`, `brand_id` (a brand, or `none`), `for_brand_id`. Create `{title, slug?, body_html?, excerpt?, categories?, status?, published_at?, brand_id?}`; PATCH the same, where `published_at: null` dates it when it is next published. Events `changelog_entry.created` / `.updated` / `.deleted` |
+| CRUD | `/v1/changelog/entries` | Changelog ("Changelog" below). Reads: members and `changelog:read`; writes: agents and `changelog:write`. List: newest first by `published_at`, else `updated_at` (drafts); `status` (`draft`; `published`: live, dated now or earlier; `scheduled`: published with a future date), `category`, `q`, `brand_id` (a brand, or `none`), `for_brand_id`. Create `{title, slug?, body_html?, excerpt?, categories?, status?, published_at?, brand_id?}`; PATCH the same, where `published_at: null` dates it when it is next published. Events `changelog_entry.created` / `.updated` / `.deleted`. Images: see "Article and changelog files" below |
 | GET | `/v1/changelog/categories` | members and `changelog:read` → `{name, count}[]`: the categories the workspace's entries use, most used first |
 | GET | `/v1/wiki/pages` | viewer (`wiki:read`) → `{data: WikiNode[], next_cursor: null}`: every page of the wiki without bodies, the tree (`contracts/wiki.md`) |
 | GET | `/v1/wiki/pages/{id}` | viewer (`wiki:read`) → `WikiPage` with its body, breadcrumbs and subpages |
@@ -693,8 +693,8 @@ Each value is overridable: `NOTIFY_EMAIL_DELAY`, `NOTIFY_EMAIL_COOLDOWNS` (e.g. 
 | GET | `/v1/search?q=&brand_id=` | → `{tickets: Ticket[], contacts: Contact[], articles: KbArticle[], wiki_pages: WikiSearchHit[]}` (5 each; each kind only with its read scope). `brand_id` (optional) narrows the articles to what that brand shows: its own and those of every brand |
 | GET | `/v1/reports/overview?from=&to=&team_id=&brand_id=` | → `{created, solved, open_now, first_response_p50_minutes, resolution_p50_minutes, csat_avg, csat_count, sla_breached, by_day: [{date, created, solved}], by_channel: {...}, by_severity: Record<Severity \| "none", number> /* tickets created in the range */, by_agent: [{user, solved, first_response_p50_minutes}], by_team: [{team_id: string \| null, created, solved, open_now, first_response_p50_minutes}], by_brand: [{brand_id, created, solved, open_now, first_response_p50_minutes}]}`. `team_id` (a team, or `none`) and `brand_id` narrow every figure. Private teams' tickets are counted, with no subjects or contacts; spam, deleted and merged tickets are not. Every `first_response_p50_minutes` is the median, over tickets created in the range, of the time from a ticket's creation to its first response: `first_responded_at`, a person's first public reply (a member's, including one whose account was since deleted or an imported agent's; never Ollie's, a bot's or an automation's), none on a ticket the team started (a team's reply within a minute of its creation, before any customer message) |
 | GET | `/v1/reports/agents?from=&to=&team_id=&brand_id=` | → `{data: ReportAgent[], online_time: "all" \| "self" \| "none" \| "off"}`, one row per member, most solved first; a member who is not an admin gets their own row only ("Agents report"). Same range, roles, scope and filters as the overview |
-| POST | `/v1/attachments` | multipart `file` → `Attachment` (unattached, linked when sent). Only whoever uploaded it (that user, or that API key) may send it in `attachment_ids` (`422` otherwise). An upload nothing holds is deleted after 24 hours; a message, a wiki page, an unsent reply draft, or the body of a knowledge base article or changelog entry of the workspace that links it holds it |
-| GET | `/v1/attachments/{id}` | → 302 to signed URL or streamed. For img tags, the links messages and wiki pages carry are signed (`?exp=&sig=`) and work for one to two hours. A file on a ticket the caller may not see is `404` (contracts/teams.md "Visibility"); a wiki page's file is read by whoever may see the page (`wiki:read` for a key; contracts/wiki.md "Files"); an upload not sent yet is its uploader's alone (`404` for anyone else) |
+| POST | `/v1/attachments` | multipart `file` → `Attachment` (unattached, linked when sent). Only whoever uploaded it (that user, or that API key) may send it in `attachment_ids`, and not once an article or changelog entry owns it (`422` otherwise). An upload nothing holds is deleted after 24 hours; a message, a wiki page, an unsent reply draft, a knowledge base article or changelog entry that owns it, or the body of an article or entry of the workspace that links it holds it |
+| GET | `/v1/attachments/{id}` | → 302 to signed URL or streamed. For img tags, the links messages, wiki pages, articles and changelog entries carry when members read them are signed (`?exp=&sig=`) and work for one to two hours. A file on a ticket the caller may not see is `404` (contracts/teams.md "Visibility"); a wiki page's file is read by whoever may see the page (`wiki:read` for a key; contracts/wiki.md "Files"); an article's or changelog entry's file by any member (`kb:read` or `changelog:read` for a key); an upload not sent yet is its uploader's alone (`404` for anyone else) |
 
 #### Agents report
 
@@ -1075,10 +1075,41 @@ Product updates a workspace publishes on its help centers (contracts/teams.md "S
 - `categories` are free names (up to 5 per entry, 32 characters each, whitespace collapsed); a second spelling
   of one already on the entry is dropped. Filters match them without case. Pages and the app colour each by its
   name (`toneFor`).
-- Body HTML goes through the same sanitizer as articles; images are `/v1/attachments/...` uploads or https URLs.
+- Body HTML goes through the same sanitizer as articles; images are `/v1/attachments/...` uploads or https URLs
+  ("Article and changelog files").
 - A brand's entries go with it when it is deleted (`changelog_entry.deleted` each); null is every brand.
 - The slug is taken from the title unless given; a slug in use is `409 conflict`. Entries and articles have
   separate slugs.
+
+#### Article and changelog files
+
+A knowledge base article or changelog entry names one of our files as `/v1/attachments/<id>` (in `src`,
+`data-src` or `href`). The API stores that plain path: a link to the file at the API's address, signed or not,
+is stored as its path. As an article or entry is created or edited, each upload its body names that the person
+or key saving it uploaded, and that nothing else holds (a message, a wiki page, another article or entry, an
+unsent reply draft), becomes its own (`attachments.kb_article_id` / `changelog_entry_id`, migration `000765`,
+which also gave existing articles and entries the uploads they name, a published one first, then the oldest).
+A file the body no longer names, and every file of an article or entry being deleted, passes to another article
+of the workspace whose body names it (a published one first, then the oldest), else to such a changelog entry
+(a shown one first), so a help center that shows it keeps serving it; a file nothing else holds or names is
+let go. The same happens for the articles and entries that go with a deleted brand (contracts/teams.md) and the
+articles an import's undo removes (contracts/imports.md). An article's or entry's files:
+
+- are kept while it is, published or not; the sweep of uploads nobody sent leaves them, as it leaves any upload
+  the body of an article or entry of the workspace names. One let go is removed by the sweep a day later;
+- stay its own: a reply or note can't send one in `attachment_ids` (`422`), and a message never takes one;
+- are read by any member (`GET /v1/attachments/{id}`; `kb:read` or `changelog:read` for a key), and come signed
+  (one to two hours) in every member's read (`GET /v1/kb/articles`, `/v1/kb/articles/{id}`, the changelog's
+  equivalents, `/v1/search`, and a wiki page whose body names one), whichever article or entry the body
+  belongs to, so the editor shows them to every agent;
+- are public while a body the help center shows names them: a raster image an article or entry of the workspace
+  holds is served from the help center's own address at `/_help/files/<id>` (contracts/teams.md "Serving") when
+  an article the help center shows as published, or a changelog entry it shows (published and dated now or
+  earlier), names it (without case) or holds it. Who holds it doesn't matter: a draft or an entry holding an
+  image never hides it from a published article that names it. An upload no article or entry save claimed is
+  never served there. The help center's pages, its Atom feed and the public API
+  (`/v1/public/help/...` articles, collections, search, changelog) point every link to one of our files there,
+  bodies stored before files were kept as plain paths included. Anything else there is `404`.
 
 ### Customer portal authentication (owner: backend-helpdesk)
 

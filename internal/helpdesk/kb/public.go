@@ -12,6 +12,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/deps"
 	"github.com/useopendesk/opendesk/internal/domain"
+	"github.com/useopendesk/opendesk/internal/helpdesk/brands"
 	"github.com/useopendesk/opendesk/internal/httpx"
 )
 
@@ -55,6 +56,25 @@ func rateLimit(d *deps.Deps, key string, perMinute int) func(huma.Context, func(
 	}
 }
 
+// publicBodies points the files of the articles' bodies at the help center's own address
+// (PublicBody), where a published article's images stay for good.
+func publicBodies(d *deps.Deps, hc HelpCenter, arts []KbArticle) []KbArticle {
+	base := brands.HelpCenterURL(d.Cfg, hc.Slug, hc.ActiveHost)
+	for i := range arts {
+		arts[i].BodyHTML = PublicBody(arts[i].BodyHTML, base)
+	}
+	return arts
+}
+
+// publicEntries is publicBodies for changelog entries.
+func publicEntries(d *deps.Deps, hc HelpCenter, entries []ChangelogEntry) []ChangelogEntry {
+	base := brands.HelpCenterURL(d.Cfg, hc.Slug, hc.ActiveHost)
+	for i := range entries {
+		entries[i].BodyHTML = PublicBody(entries[i].BodyHTML, base)
+	}
+	return entries
+}
+
 // helpCenter resolves a brand slug whose help center is enabled; anything else is 404. The
 // default brand's slug is the workspace slug, so workspace help center links keep working.
 func helpCenter(ctx context.Context, d *deps.Deps, slug string) (HelpCenter, error) {
@@ -90,7 +110,7 @@ func registerPublic(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			home := helpCenterHome{Title: hc.Title, Collections: cols, Featured: featured, Locale: hc.Locale,
+			home := helpCenterHome{Title: hc.Title, Collections: cols, Featured: publicBodies(d, hc, featured), Locale: hc.Locale,
 				LogoURL: hc.Logo, FaviconURL: hc.Favicon}
 			return &struct{ Body helpCenterHome }{home}, nil
 		})
@@ -113,7 +133,7 @@ func registerPublic(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			return &struct{ Body helpCenterCollection }{helpCenterCollection{Collection: c, Articles: arts}}, nil
+			return &struct{ Body helpCenterCollection }{helpCenterCollection{Collection: c, Articles: publicBodies(d, hc, arts)}}, nil
 		})
 
 	huma.Register(api, huma.Operation{OperationID: "public-help-article", Method: http.MethodGet,
@@ -145,7 +165,7 @@ func registerPublic(d *deps.Deps, api huma.API) {
 				hc.WorkspaceID, a.ID).Scan(&a.Views); err != nil && !db.IsNotFound(err) {
 				return nil, httpx.Wrap(err)
 			}
-			return &articleOut{a}, nil
+			return &articleOut{publicBodies(d, hc, []KbArticle{a})[0]}, nil
 		})
 
 	huma.Register(api, huma.Operation{OperationID: "public-help-search", Method: http.MethodGet,
@@ -163,7 +183,7 @@ func registerPublic(d *deps.Deps, api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			return &struct{ Body []KbArticle }{arts}, nil
+			return &struct{ Body []KbArticle }{publicBodies(d, hc, arts)}, nil
 		})
 
 	registerPublicChangelog(d, api, limited, public1)

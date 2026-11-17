@@ -11,11 +11,13 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"html/template"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +28,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/deps"
 	"github.com/useopendesk/opendesk/internal/helpdesk/kb"
 	"github.com/useopendesk/opendesk/internal/httpx"
+	"github.com/useopendesk/opendesk/internal/storage"
 )
 
 // Budgets per client address and minute.
@@ -33,6 +36,7 @@ const (
 	pagesPerMinute  = 300
 	searchPerMinute = 60
 	viewsPerMinute  = 120
+	filesPerMinute  = 600 // a page asks for each of its images
 	featuredLimit   = 6
 	moreLimit       = 5
 )
@@ -222,10 +226,11 @@ func (s *Server) redirect(w http.ResponseWriter, r *http.Request, target string)
 }
 
 // staticAsset answers /_help/<file> on any help center host, even one with no help
-// center, so its 404 page is styled too. The view counter is not a file.
+// center, so its 404 page is styled too. The view counter and articles' files are not
+// assets.
 func (s *Server) staticAsset(w http.ResponseWriter, r *http.Request, sub string) bool {
 	name, ok := strings.CutPrefix(sub, "/_help/")
-	if !ok || name == "views" {
+	if !ok || name == "views" || strings.HasPrefix(name, "files/") {
 		return false
 	}
 	s.asset(w, r, name)
@@ -269,6 +274,10 @@ func (s *Server) allow(w http.ResponseWriter, key string, perMinute int) bool {
 func (s *Server) serveSite(w http.ResponseWriter, r *http.Request, hc kb.HelpCenter, base, sub, ip string) {
 	if sub == "/_help/views" {
 		s.view(w, r, hc, ip)
+		return
+	}
+	if id, ok := strings.CutPrefix(sub, "/_help/files/"); ok {
+		s.file(w, r, hc, id, ip)
 		return
 	}
 	if s.staticAsset(w, r, sub) {
@@ -443,6 +452,58 @@ func (s *Server) view(w http.ResponseWriter, r *http.Request, hc kb.HelpCenter, 
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// file serves an image of the help center's published articles and changelog entries
+// (kb.PublicFile) at /_help/files/<id>; anything else is a 404.
+func (s *Server) file(w http.ResponseWriter, r *http.Request, hc kb.HelpCenter, raw, ip string) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "Method not allowed.", http.StatusMethodNotAllowed)
+		return
+	}
+	if !s.allow(w, "help-files:"+ip, filesPerMinute) {
+		return
+	}
+	ctx := r.Context()
+	id, err := uuid.Parse(raw)
+	if err != nil || id.String() != raw {
+		http.NotFound(w, r)
+		return
+	}
+	f, err := kb.PublicFile(ctx, s.d.DB.Pool, hc, id)
+	if db.IsNotFound(err) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		s.d.Log.Error("help center file", "err", err)
+		http.Error(w, "Something went wrong. Please try again.", http.StatusInternalServerError)
+		return
+	}
+	body, err := s.d.Storage.Get(ctx, f.Key)
+	if errors.Is(err, storage.ErrNotFound) {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		s.d.Log.Error("help center file", "err", err)
+		http.Error(w, "Something went wrong. Please try again.", http.StatusInternalServerError)
+		return
+	}
+	defer body.Close()
+	h := w.Header()
+	h.Set("Content-Type", f.ContentType)
+	h.Set("Content-Length", strconv.FormatInt(f.Size, 10))
+	h.Set("Content-Disposition", "inline")
+	h.Set("Cache-Control", "public, max-age=300")
+	h.Set("X-Content-Type-Options", "nosniff")
+	h.Set("Content-Security-Policy", "default-src 'none'; sandbox")
+	h.Set("Cross-Origin-Resource-Policy", "cross-origin")
+	w.WriteHeader(http.StatusOK)
+	if r.Method != http.MethodHead {
+		_, _ = io.Copy(w, body)
+	}
+}
+
 // newPage starts a page of the help center in the reader's language.
 func (s *Server) newPage(r *http.Request, hc kb.HelpCenter, base, sub string) *page {
 	def := matchLocale(hc.Locale)
@@ -567,7 +628,7 @@ func (s *Server) article(ctx context.Context, p *page, hc kb.HelpCenter, collect
 	p.path = a.Path
 	p.Article = &a
 	p.OGType = "article"
-	p.Body = articleBody(a.BodyHTML, strings.TrimRight(s.d.Cfg.APIURL, "/"))
+	p.Body = articleBody(a.BodyHTML, p.base)
 	trail := []crumb{}
 	if a.CollectionID != nil {
 		cols, err := kb.Collections(ctx, s.d.DB.Pool, hc)
