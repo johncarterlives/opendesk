@@ -67,7 +67,14 @@ export function useReplyDraftSync({
   // A moment after I stop typing.
   const key = keyOf(html, attachmentIds);
   useEffect(() => {
-    if (!enabled || data?.schedule || decided.current !== ticketId || synced.get(ticketId) === key) return;
+    if (!enabled || data?.schedule || decided.current !== ticketId) return;
+    // Back to what the server holds, as when a reply typed a moment ago goes out and empties the
+    // composer: the text waiting to be saved is dropped, or leaving the ticket would save the
+    // sent reply as a draft again.
+    if (synced.get(ticketId) === key) {
+      if (pending.current?.ticketId === ticketId) pending.current = null;
+      return;
+    }
     const snap = { ticketId, html, attachmentIds };
     pending.current = snap;
     const timer = setTimeout(() => push(snap), SAVE_DELAY_MS);

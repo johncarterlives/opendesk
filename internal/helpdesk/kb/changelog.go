@@ -59,8 +59,13 @@ func scanEntry(row pgx.Row) (ChangelogEntry, error) {
 	return e, nil
 }
 
+// loadEntry reads an entry for a member, its files signed.
 func loadEntry(ctx context.Context, q db.Querier, wid, id uuid.UUID) (ChangelogEntry, error) {
-	return scanEntry(q.QueryRow(ctx, entrySelect+` WHERE e.workspace_id = $1 AND e.id = $2`, wid, id))
+	e, err := scanEntry(q.QueryRow(ctx, entrySelect+` WHERE e.workspace_id = $1 AND e.id = $2`, wid, id))
+	if err != nil {
+		return e, err
+	}
+	return e, signFiles(ctx, q, wid, &e.BodyHTML)
 }
 
 // publicEntry strips what an anonymous reader must not see: the author's email.

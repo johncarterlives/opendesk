@@ -1048,8 +1048,10 @@ export const api = {
       /** Saves again under the same id; 404 when it is no longer a draft. */
       update: (id: string, b: CollabDraftBody) => http.put<T.MailMessage>(`/v1/collab/drafts/${id}`, b),
       remove: (id: string) => http.del(`/v1/collab/drafts/${id}`),
-      /** With a body the draft is saved with it first. */
-      send: (id: string, b?: CollabDraftBody) => http.post<T.MailMessage>(`/v1/collab/drafts/${id}/send`, b),
+      /** With a body the draft is saved with it first. `opts` pins the account and workspace a
+       * held send started in (components/collab/outbox.ts), and lets it outlive the page. */
+      send: (id: string, b?: CollabDraftBody, opts?: { keepalive?: boolean; as?: string; workspace?: string }) =>
+        http.post<T.MailMessage>(`/v1/collab/drafts/${id}/send`, b, opts),
     },
     /** A person's feedback on an AI draft, for the key that wrote it (contracts/collab.md "AI draft outcomes"). */
     aiDraftFeedback: (id: string, b: T.AIDraftFeedbackBody) => http.put<void>(`/v1/collab/ai-drafts/${id}/feedback`, b),

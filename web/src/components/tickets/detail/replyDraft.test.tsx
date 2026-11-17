@@ -104,6 +104,30 @@ describe("useReplyDraftSync", () => {
     expect(replyDraft.get).not.toHaveBeenCalled();
     expect(replyDraft.save).not.toHaveBeenCalled();
   });
+  it("does not save a reply sent right after typing as a draft when the ticket is left", async () => {
+    replyDraft.get.mockResolvedValue({ draft: null });
+    const { rerender } = await setup({ ticketId: "sent", html: "" });
+    await waitFor(() => expect(settled).toBe(true));
+    // Typed, then sent within the save delay: the composer empties.
+    await rerender({ ticketId: "sent", html: "<p>Our answer</p>" });
+    await wait(200);
+    await rerender({ ticketId: "sent", html: "" });
+    // On to the next ticket.
+    await rerender({ ticketId: "next", html: "" });
+    await wait(1100);
+    expect(replyDraft.save).not.toHaveBeenCalledWith("sent", expect.anything());
+  });
+
+  it("saves what was typed when the ticket is left before the save delay", async () => {
+    replyDraft.get.mockResolvedValue({ draft: null });
+    const { rerender } = await setup({ ticketId: "unsaved", html: "" });
+    await waitFor(() => expect(settled).toBe(true));
+    await rerender({ ticketId: "unsaved", html: "<p>Half an answer</p>" });
+    await wait(200);
+    await rerender({ ticketId: "other", html: "" });
+    await waitFor(() => expect(replyDraft.save).toHaveBeenCalledWith("unsaved", { body_html: "<p>Half an answer</p>", attachment_ids: [] }));
+  });
+
   it("does not autosave over a scheduled reply", async () => {
     const d = { ...saved("<p>Scheduled</p>"), schedule: { send_at: new Date(Date.now() + 3600000).toISOString(), cc: [], bcc: [], status: null, mailbox_id: "" } };
     replyDraft.get.mockResolvedValue({ draft: d });

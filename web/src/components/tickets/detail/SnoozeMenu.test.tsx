@@ -73,4 +73,73 @@ describe("SnoozeMenu", () => {
     const { labels } = await render({ snooze_presets: [{ kind: "hours", hours: 2 }, { kind: "days", days: 2, time: "08:00" }, { kind: "week", time: "10:00" }] });
     expect(labels()).toEqual(["In 2 Stunden", "In 2 Tagen", "Nächste Woche"]);
   });
+
+  describe("where Snooze is unavailable", () => {
+    const reason = "Snooze works on shared accounts with Handling on.";
+
+    async function renderUnavailable() {
+      const qc = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+      qc.setQueryData<Workspace>(qk.workspace, { id: "w", name: "Acme", settings: {} } as Workspace);
+      const onSnooze = vi.fn<(at: Date) => void>();
+      await act(async () =>
+        root.render(
+          <QueryClientProvider client={qc}>
+            <TooltipProvider>
+              <SnoozeMenu onSnooze={onSnooze} unavailable={reason} unavailableAction={<a href="/settings/x">Account settings</a>} />
+              <p id="outside">Elsewhere</p>
+            </TooltipProvider>
+          </QueryClientProvider>,
+        ),
+      );
+      const trigger = document.querySelector<HTMLButtonElement>("button[aria-disabled='true']");
+      if (!trigger) throw new Error("Missing the greyed out Snooze button");
+      const panel = () => document.querySelector("[role='dialog']");
+      return { trigger, panel, onSnooze };
+    }
+
+    it("is a button that says it is disabled and why, for screen readers", async () => {
+      await i18n.changeLanguage("en");
+      const { trigger } = await renderUnavailable();
+      expect(trigger.tagName).toBe("BUTTON");
+      expect(trigger.disabled).toBe(false);
+      expect(trigger.getAttribute("aria-label")).toBe(`Snooze: ${reason}`);
+    });
+
+    it("opens the reason and its link on a tap or click, never the choices", async () => {
+      await i18n.changeLanguage("en");
+      const { trigger, panel, onSnooze } = await renderUnavailable();
+      expect(panel()).toBeNull();
+      await act(async () => trigger.click());
+      expect(panel()?.textContent).toContain(reason);
+      expect(panel()?.querySelector("a")?.getAttribute("href")).toBe("/settings/x");
+      expect(panel()?.querySelector("form")).toBeNull();
+      expect(onSnooze).not.toHaveBeenCalled();
+    });
+
+    it("takes keyboard focus, and closes on Escape", async () => {
+      await i18n.changeLanguage("en");
+      const { trigger, panel } = await renderUnavailable();
+      trigger.focus();
+      expect(document.activeElement).toBe(trigger);
+      // Enter and Space on a focused button are its click.
+      await act(async () => trigger.click());
+      expect(panel()).not.toBeNull();
+      await act(async () => document.activeElement?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+      expect(panel()).toBeNull();
+    });
+
+    it("closes on a click away", async () => {
+      await i18n.changeLanguage("en");
+      const { trigger, panel } = await renderUnavailable();
+      await act(async () => trigger.click());
+      expect(panel()).not.toBeNull();
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0)); // the layer listens for outside presses from the next tick
+        const outside = document.getElementById("outside")!;
+        outside.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0 }));
+        outside.click();
+      });
+      expect(panel()).toBeNull();
+    });
+  });
 });

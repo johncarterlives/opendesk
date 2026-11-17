@@ -11,6 +11,7 @@ import (
 	"github.com/riverqueue/river"
 
 	"github.com/useopendesk/opendesk/internal/db"
+	"github.com/useopendesk/opendesk/internal/helpdesk/hd"
 	"github.com/useopendesk/opendesk/internal/jobs"
 )
 
@@ -164,6 +165,12 @@ func (s *Service) undoBatch(ctx context.Context, x *row, kind, remove string, em
 		if embeddings && (kind == "ticket" || kind == "article") {
 			if _, err := tx.Exec(ctx, `DELETE FROM ai_embeddings WHERE workspace_id = $1 AND kind = $2 AND ref_id = ANY($3)`,
 				x.WorkspaceID, kind, gone); err != nil {
+				return err
+			}
+		}
+		if kind == "article" {
+			// The files of the articles that go pass to articles and entries that stay and show them.
+			if err := hd.ReleaseFiles(ctx, tx, x.WorkspaceID, hd.ArticleFiles, gone, nil); err != nil {
 				return err
 			}
 		}

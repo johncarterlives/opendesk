@@ -380,12 +380,11 @@ func (p *page) ShortDate(t time.Time) string {
 // QueryLen is the search term's length in characters.
 func (p *page) QueryLen() int { return utf8.RuneCountInString(strings.TrimSpace(p.Query)) }
 
-// articleBody is an article's stored HTML for the page: sanitized again, with images the
-// API stores addressed at the API.
-func articleBody(raw, apiURL string) template.HTML {
-	body := hd.SanitizeRich(raw)
-	body = strings.ReplaceAll(body, `src="/v1/attachments/`, `src="`+apiURL+`/v1/attachments/`)
-	return template.HTML(body)
+// articleBody is an article's or changelog entry's stored HTML for the page of the help
+// center at base: sanitized again, with every link to one of our files (a plain path, or a
+// signed link an older body kept) at the help center's own /_help/files/<id>.
+func articleBody(raw, base string) template.HTML {
+	return template.HTML(kb.PublicBody(hd.SanitizeRich(raw), base))
 }
 
 // render executes the page into a buffer.

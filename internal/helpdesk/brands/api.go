@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -528,13 +529,32 @@ func (h *handler) delete(ctx context.Context, tx pgx.Tx, p *auth.Principal, id u
 	if _, err := tx.Exec(ctx, `UPDATE tickets SET brand_id = $3 WHERE workspace_id = $1 AND brand_id = $2`, wid, id, def); err != nil {
 		return err
 	}
-	rows, err := tx.Query(ctx, `DELETE FROM kb_articles WHERE workspace_id = $1 AND (brand_id = $2
-		OR collection_id IN (SELECT k.id FROM kb_collections k WHERE k.workspace_id = $1 AND k.brand_id = $2)) RETURNING id`, wid, id)
+	// The articles and entries that go with it hand their files to those that stay and show them.
+	rows, err := tx.Query(ctx, `SELECT id FROM kb_articles WHERE workspace_id = $1 AND (brand_id = $2
+		OR collection_id IN (SELECT k.id FROM kb_collections k WHERE k.workspace_id = $1 AND k.brand_id = $2))`, wid, id)
 	if err != nil {
 		return err
 	}
 	articles, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
 	if err != nil {
+		return err
+	}
+	rows, err = tx.Query(ctx, `SELECT id FROM changelog_entries WHERE workspace_id = $1 AND brand_id = $2`, wid, id)
+	if err != nil {
+		return err
+	}
+	entries, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		return err
+	}
+	going := append(slices.Clone(articles), entries...)
+	if err := hd.ReleaseFiles(ctx, tx, wid, hd.ArticleFiles, going, nil); err != nil {
+		return err
+	}
+	if err := hd.ReleaseFiles(ctx, tx, wid, hd.EntryFiles, going, nil); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `DELETE FROM kb_articles WHERE workspace_id = $1 AND id = ANY($2)`, wid, articles); err != nil {
 		return err
 	}
 	for _, a := range articles {
@@ -558,12 +578,7 @@ func (h *handler) delete(ctx context.Context, tx pgx.Tx, p *auth.Principal, id u
 			return err
 		}
 	}
-	rows, err = tx.Query(ctx, `DELETE FROM changelog_entries WHERE workspace_id = $1 AND brand_id = $2 RETURNING id`, wid, id)
-	if err != nil {
-		return err
-	}
-	entries, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
-	if err != nil {
+	if _, err := tx.Exec(ctx, `DELETE FROM changelog_entries WHERE workspace_id = $1 AND id = ANY($2)`, wid, entries); err != nil {
 		return err
 	}
 	for _, e := range entries {

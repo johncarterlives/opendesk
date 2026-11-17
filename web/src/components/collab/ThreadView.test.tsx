@@ -61,21 +61,22 @@ function renderMarkup() {
   );
 }
 
-function alternateReplyButtons() {
+/** The footer's reply buttons, in order: the account's usual reply first. */
+function replyButtons() {
   const html = renderMarkup();
   const doc = new DOMParser().parseFromString(html, "text/html");
   return [...doc.querySelectorAll("footer button[aria-label]")].map((b) => b.getAttribute("aria-label")).filter((name) => name === "Reply" || name === "Reply all");
 }
 
-it("keeps Reply selected by default without opening a composer", () => {
+it("offers plain Reply, Forward and Comment buttons, with no mode toggle and no composer", () => {
   const doc = new DOMParser().parseFromString(renderMarkup(), "text/html");
-  const group = doc.querySelector('footer [role="group"]');
-  expect(group?.getAttribute("aria-label")).toBe("Choose whether to reply to the sender or comment for your team");
-  expect(group?.querySelector('button[aria-pressed="true"]')?.textContent).toBe("Reply");
+  const names = [...doc.querySelectorAll("footer button[aria-label]")].map((b) => b.getAttribute("aria-label"));
+  expect(names).toEqual(["Reply all", "Reply", "Forward", "Comment"]);
+  expect(doc.querySelector("footer [aria-pressed]")).toBeNull();
   expect(doc.querySelector('footer [contenteditable="true"]')).toBeNull();
 });
 
-it("switches to an explicitly internal comment mode", async () => {
+it("switches between an internal comment and a reply whose Send comes first", async () => {
   vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
   vi.stubGlobal("requestAnimationFrame", vi.fn());
@@ -88,37 +89,73 @@ it("switches to an explicitly internal comment mode", async () => {
       <ThreadView threadId={detail.thread.id} onClose={() => undefined} onAction={() => undefined} markReadOnOpen={false} />
     </ConfirmProvider></TooltipProvider></QueryClientProvider>);
   });
-  const comment = [...host.querySelectorAll<HTMLButtonElement>("footer [role='group'] button")].find((button) => button.textContent === "Comment");
+  const switchTo = (name: string) => [...host!.querySelectorAll<HTMLButtonElement>("[role='radiogroup'] [role='radio']")].find((b) => b.textContent === name);
+  const comment = host.querySelector<HTMLButtonElement>("footer button[aria-label='Comment']");
   expect(comment).toBeTruthy();
   await act(async () => comment?.click());
-  expect(comment?.getAttribute("aria-pressed")).toBe("true");
+  expect(host.querySelector("footer [role='radiogroup']")?.getAttribute("aria-label")).toBe("Choose whether to reply to the sender or comment for your team");
+  expect(switchTo("Comment")?.getAttribute("aria-checked")).toBe("true");
   expect(host.textContent).toContain("Only your team sees this. It will not be sent to the sender.");
   expect(host.querySelector('footer [contenteditable="true"]')).not.toBeNull();
-  const reply = host.querySelector<HTMLButtonElement>('footer [role="group"] button[aria-pressed="false"]');
-  await act(async () => reply?.click());
-  expect(reply?.getAttribute("aria-pressed")).toBe("true");
+  // Back to a reply: the account's usual one opens; the reply buttons step aside, the comment entry stays.
+  await act(async () => switchTo("Reply all")?.click());
   expect(host.textContent).not.toContain("Only your team sees this. It will not be sent to the sender.");
+  expect([...host.querySelectorAll("footer button[aria-label]")].map((b) => b.getAttribute("aria-label"))).toEqual(["Comment"]);
+  expect(switchTo("Reply all")?.getAttribute("aria-checked")).toBe("true");
+  // Send is the composer toolbar's first button.
+  const send = [...host.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent === "Send");
+  const toolbar = send?.parentElement?.parentElement;
+  expect(toolbar?.querySelector("button")).toBe(send);
+  expect(toolbar?.querySelectorAll("button").length).toBeGreaterThan(3);
 });
 
-it("uses the account's Reply all default and keeps Reply as the alternative", async () => {
+it("puts the focus back in the open reply when a comment switches back to it", async () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  const frames: FrameRequestCallback[] = [];
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => frames.push(cb));
+  qc.setQueryData(qk.mailThread(detail.thread.id), detail);
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () => {
+    root?.render(<QueryClientProvider client={qc}><TooltipProvider><ConfirmProvider>
+      <ThreadView threadId={detail.thread.id} onClose={() => undefined} onAction={() => undefined} markReadOnOpen={false} />
+    </ConfirmProvider></TooltipProvider></QueryClientProvider>);
+  });
+  const switchTo = (name: string) => [...host!.querySelectorAll<HTMLButtonElement>("[role='radiogroup'] [role='radio']")].find((b) => b.textContent === name);
+  await act(async () => host?.querySelector<HTMLButtonElement>("footer button[aria-label='Reply all']")?.click());
+  await act(async () => switchTo("Comment")?.click());
+  const back = host.querySelector<HTMLButtonElement>("footer [role='radio'][aria-checked='false']");
+  back?.focus();
+  frames.length = 0;
+  await act(async () => back?.click());
+  expect(back?.isConnected).toBe(false);
+  await act(async () => frames.splice(0).forEach((cb) => cb(0)));
+  const editor = host.querySelector<HTMLElement>('[contenteditable="true"]');
+  expect(editor).not.toBeNull();
+  expect(document.activeElement).toBe(editor);
+});
+
+it("uses the account's Reply all default and keeps Reply after it", async () => {
   await api.collab.accounts.update(account.id, { reply_all: true });
   detail.account = (await api.collab.threads.get(detail.thread.id)).account;
-  expect(alternateReplyButtons()).toEqual(["Reply"]);
+  expect(replyButtons()).toEqual(["Reply all", "Reply"]);
 });
 it("uses the live account preference ahead of a stale conversation default", () => {
   qc.setQueryData(qk.mailAccounts, [{ ...account, reply_all: false }]);
-  expect(alternateReplyButtons()).toEqual(["Reply all"]);
+  expect(replyButtons()).toEqual(["Reply", "Reply all"]);
   detail.account.reply_all = false;
   qc.setQueryData(qk.mailAccounts, [{ ...account, reply_all: true }]);
-  expect(alternateReplyButtons()).toEqual(["Reply"]);
+  expect(replyButtons()).toEqual(["Reply all", "Reply"]);
 });
 it("keeps Reply first for disabled preferences and older servers without the field", () => {
   detail.account.reply_all = false;
-  expect(alternateReplyButtons()).toEqual(["Reply all"]);
+  expect(replyButtons()).toEqual(["Reply", "Reply all"]);
   delete detail.account.reply_all;
-  expect(alternateReplyButtons()).toEqual(["Reply all"]);
+  expect(replyButtons()).toEqual(["Reply", "Reply all"]);
 });
 it("offers only Reply when Reply all adds no recipient", () => {
   detail.messages[0].cc = [];
-  expect(alternateReplyButtons()).toEqual([]);
+  expect(replyButtons()).toEqual(["Reply"]);
 });

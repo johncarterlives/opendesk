@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { AIDraftRef, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
+import type { AIDraftRef, MailFolder, MailThread, MailThreadAction, MailThreadDetail } from "@/lib/api/types";
 import { api } from "@/lib/api/endpoints";
 import { inverseAction, leavesList, listPlace, UNDOABLE } from "@/lib/collab/actions";
 import { rememberAccountView } from "@/lib/collab/accountView";
@@ -68,10 +68,12 @@ import { AIDraftFeedbackDialog } from "@/components/collab/AIDraftFeedback";
 import { AccountDot, boxIcon, FolderGlyph } from "@/components/collab/bits";
 import { canOfferCategories, CategoryOffer, CategoryTabs, useCategorySettingsTarget } from "@/components/collab/CategoryTabs";
 import { FolderBar } from "@/components/collab/FolderBar";
+import { holdSend, undoSendSeconds, useUndoneSends } from "@/components/collab/outbox";
 import { SearchCoverage, SpamBesideWork, StorageFullBanner } from "@/components/collab/MailNotices";
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "@/components/collab/pickers";
 import { ListShareDialog, SnoozeItems } from "@/components/collab/ThreadMenu";
 import { SelectAllBar } from "@/components/collab/SelectAllBar";
+import { SnoozeUnavailable } from "@/components/collab/SnoozeUnavailable";
 import { ThreadRow, type AIDraftAction } from "@/components/collab/ThreadRow";
 import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { useConfirm } from "@/components/ui/confirm";
@@ -135,6 +137,7 @@ export default function MailPage() {
   const openId = params.threadId;
   const { data: accounts } = useMailAccounts();
   const { data: counts } = useQuery(q.mailCounts());
+  const { data: workspace } = useQuery(q.workspace());
   const prefs = useSidebarPrefs();
   const folderMap = useAllFolders(accounts);
   const action = useThreadAction();
@@ -375,6 +378,7 @@ export default function MailPage() {
     (x: MailThread, a: MailThreadAction) => actRef.current([x], a, { silent: a !== "archive" && a !== "trash" && a !== "done" && a !== "needs_action" }),
     [],
   );
+  const onRowSnooze = useCallback((x: MailThread, at: Date) => actRef.current([x], "snooze", { until: at.toISOString() }), []);
 
   // ── AI drafts in place (Ready for review and Needs action, GH#430) ─────────
   // Send goes as saved; Edit opens the conversation with the draft in the composer;
@@ -417,7 +421,17 @@ export default function MailPage() {
           },
         );
       };
-      if (a === "send") return run(() => api.collab.drafts.send(d.draft_id), () => toast.success(t("toast.sent", { email: accountsById.get(x.account_id)?.email ?? "" })), t("composer.sendFailed"));
+      if (a === "send") {
+        // Held for the undo window like any other send; Undo opens the conversation with the draft.
+        const reopen = () => {
+          const m = qc.getQueryData<MailThreadDetail>(qk.mailThread(x.id))?.messages.find((y) => y.draft && (y.draft_id ?? y.id) === d.draft_id);
+          if (m) useUndoneSends.setState({ [x.id]: m });
+          else setEditAI(x.id);
+          open(x);
+        };
+        void holdSend({ draftId: d.draft_id, from: accountsById.get(x.account_id)?.email ?? "", reopen }, undoSendSeconds(workspace?.settings));
+        return;
+      }
       const discarded = () => {
         if (!d.record_id) return;
         setFeedbackOpen(false);
@@ -432,7 +446,7 @@ export default function MailPage() {
         danger: true,
       });
     },
-    [open, qc, t, accountsById, confirm, busyDraft],
+    [open, qc, t, accountsById, confirm, busyDraft, workspace],
   );
   const onThreadAction = useCallback(
     (a: MailThreadAction, opts?: ActOpts) => {
@@ -811,6 +825,9 @@ export default function MailPage() {
   const selecting = selected.size > 0;
   const selectedThreads = selecting ? threads.filter((x) => selected.has(x.id)) : [];
   const selectionHandling = selecting && selectedThreads.every(handlingOn);
+  // Gmail's own snooze reaches us as an archive (GH#533): the picker says so on Gmail accounts.
+  const isGmail = (x: MailThread) => accountsById.get(x.account_id)?.provider === "google";
+  const gmailSnoozeNote = t("action.snoozeGmailNote");
   const idx = threads.findIndex((x) => x.id === openId);
   const phone = usePhone();
   const split = !!openId;
@@ -881,11 +898,10 @@ export default function MailPage() {
                 className="w-[220px]"
               />
             )}
-            {canAct && !noAccounts && (
+            {/* Compose leads the sidebar (components/collab/SidebarCompose.tsx); a phone's sidebar is a drawer, so it stays here. */}
+            {canAct && !noAccounts && phone && (
               <Tooltip content={t("list.compose")} shortcut="c">
-                <Button size="sm" variant={compact ? "ghost" : "secondary"} square={compact} icon={<PenSquare />} onClick={() => compose.open({ accountId: account?.id ?? folderAccount?.id })} aria-label={t("list.compose")}>
-                  {compact ? null : t("list.compose")}
-                </Button>
+                <Button size="sm" variant="ghost" square icon={<PenSquare />} onClick={() => compose.open({ accountId: account?.id ?? folderAccount?.id })} aria-label={t("list.compose")} />
               </Tooltip>
             )}
           </div>
@@ -1065,7 +1081,13 @@ export default function MailPage() {
                   <BulkButton label={t("action.star")} shortcut="s" onClick={star}>
                     <Star />
                   </BulkButton>
-                  {selectionHandling && (
+                  {!selectionHandling ? (
+                    // Always in view, greyed out with the reason, rather than missing (GH#532).
+                    <>
+                      <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
+                      <SnoozeUnavailable accounts={[...new Set(selectedThreads.map((x) => x.account_id))].flatMap((id) => accountsById.get(id) ?? [])} />
+                    </>
+                  ) : (
                     <>
                       <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-line" />
                       {selectedThreads.every((x) => x.needs_action) ? (
@@ -1077,7 +1099,7 @@ export default function MailPage() {
                           <CircleDot />
                         </BulkButton>
                       )}
-                      <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} />
+                      <SnoozeMenu onSnooze={(at) => act(targets(), "snooze", { until: at.toISOString() })} note={selectedThreads.some(isGmail) ? gmailSnoozeNote : undefined} />
                     </>
                   )}
                   <AssignPicker
@@ -1155,6 +1177,7 @@ export default function MailPage() {
                       onToggle={toggle}
                       onHover={prefetch}
                       onAction={canAct ? onRowAction : undefined}
+                      onSnooze={canAct ? onRowSnooze : undefined}
                       handling={handlingOn(x)}
                       onDragOut={canAct ? onDragOut : undefined}
                       onDraft={draftsInRows ? onRowDraft : undefined}

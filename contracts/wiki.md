@@ -439,7 +439,8 @@ comment is on is `<span data-comment="<thread id>">`, and a date that reminds so
 A body names one of our files as `/v1/attachments/<id>` (in `src`, `data-src` or `href`). The API
 stores that plain path: a link to the file at the API's address, signed or not, is stored as its path.
 As a page is saved (created, edited, restored, copied from a template, imported), each upload it
-names that the person or key saving it uploaded, and that no message or page holds yet, becomes the
+names that the person or key saving it uploaded, and that no message, page, article or changelog
+entry holds yet, becomes the
 page's own (`attachments.wiki_page_id`, migration `000727`, which also gave pages written before the
 uploads they name). A page's files:
 
@@ -448,9 +449,10 @@ uploads they name). A page's files:
 - are read by whoever may see the page (`GET /v1/attachments/{id}`: a member, or an API key with
   `wiki:read`; "Private pages and teamspaces");
 - come signed in a page read: `GET /v1/wiki/pages/{id}` (and every route answering a `WikiPage`)
-  gives each file of the page's space (held by that page or another page of the same space) as a
-  signed link valid for one to two hours, so `<img>` loads without a token. Any other file keeps
-  its plain path.
+  gives each file of the page's space (held by that page or another page of the same space), and
+  each file a knowledge base article or changelog entry of the workspace holds (any member reads
+  those; contracts/api.md "Article and changelog files"), as a signed link valid for one to two
+  hours, so `<img>` loads without a token. Any other file keeps its plain path.
 
 ## Blocks
 

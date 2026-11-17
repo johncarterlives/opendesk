@@ -9,7 +9,7 @@ import { SidebarDragProvider } from "@/components/collab/SidebarDrag";
 import { SidebarRow, useRowEdit } from "@/components/collab/SidebarRow";
 import { useBuiltinSectionEdit } from "@/components/collab/SectionMenu";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { BarChart3, BookOpen, Check, ChevronRight, ChevronsUpDown, CircleCheck, CircleDashed, Clock, Copy, EyeOff, Inbox, Keyboard, Lock, LogOut, Monitor, Moon, NotebookText, PanelLeftClose, PanelLeftOpen, Pencil, PencilRuler, Plus, Server, Settings, ShieldAlert, SlidersHorizontal, Sun, User, UserPlus, Users } from "lucide-react";
 import { DropdownMenu as M } from "radix-ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -66,6 +66,7 @@ import { ticketRowNumbers } from "@/lib/collab/badges";
 import { badgeFor, hid, isHidden, pickCount, type BadgeNumbers } from "@/lib/collab/sidebarPrefs";
 import { entryKey, visibleEntries } from "@/lib/collab/ownSections";
 import { AddSectionButton, OwnSection } from "@/components/collab/OwnSections";
+import { SidebarCompose } from "@/components/collab/SidebarCompose";
 import { AddInboxButton, InboxOffer, InboxSectionAt } from "@/components/tickets/inboxes/sidebar";
 import { WorkspaceBadge } from "@/components/workspaces/WorkspaceBadge";
 
@@ -685,11 +686,14 @@ export function Sidebar({ drawer }: { drawer?: boolean }) {
   const sectionEdit = useBuiltinSectionEdit(!space);
   const dragRoot = useRef<HTMLDivElement>(null);
   const { t: tc } = useTranslation("collab");
+  // On the mail pages, Compose leads the sidebar (GH#528); the phone drawer leaves it to the list.
+  const onMail = useRouterState({ select: (s) => s.location.pathname.split("/").filter(Boolean)[0] === "mail" });
 
   return (
     <PillCtx.Provider value={drawer ? "nav-pill-drawer" : "nav-pill"}>
     <SectionEditCtx.Provider value={rail ? null : sectionEdit}>
     <nav aria-label={t("nav.main")} className="group/nav flex h-full w-full flex-col">
+      {collab.enabled && onMail && !drawer && !editing && <SidebarCompose rail={rail} />}
       <SidebarMenu enabled={!editing && !rail}>
         <div className="flex-1 overflow-y-auto overflow-x-hidden pb-3 pt-1">
           {waiting ? null : editing ? (

@@ -56,6 +56,8 @@ curl https://api.opendesk.sh/v1/kb/articles \
 
 `body_html` is sanitized before storage. A slug another article of the same collection uses is refused with `409`.
 
+Images in `body_html` are [attachments](/api/resources/messages/) you uploaded, or `https` URLs. An attachment is stored as its plain path, `/v1/attachments/<id>`, and becomes the article's own when you uploaded it, so it is kept while the article is. Deleting the article, or dropping the image from it, passes the image to another article or changelog entry that shows it. An article's image can't be sent as a message attachment. Reads with your credentials give it as a signed link that works for one to two hours; once the article is published, its help center and the public API serve its images from the help center's own address, `/_help/files/<id>`, which does not expire, whichever article or entry holds them.
+
 ## Events
 
 `kb_collection.*` and `kb_article.*`.
