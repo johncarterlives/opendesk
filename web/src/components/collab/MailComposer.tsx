@@ -566,12 +566,12 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         className={variant === "floating" ? "min-h-[200px] flex-1" : undefined}
         contentClassName={cn("text-[13px]", variant === "floating" ? "min-h-[180px]" : "min-h-[96px] max-h-[360px]")}
         toolbar="compact"
-        // Send first and on the left, coloured, as Gmail and Outlook put it: where the eye
-        // lands when the writing is done, and the one button that mails someone.
+        // Send first and on the left, as Gmail and Outlook put it: where the eye lands when
+        // the writing is done.
         toolbarStart={
           <Tooltip content={busy ? t("composer.waitUploads") : t("composer.send")} shortcut="mod enter">
             <Button
-              variant="send"
+              variant="primary"
               size="sm"
               onClick={() => void submit()}
               disabled={busy || !recipients}

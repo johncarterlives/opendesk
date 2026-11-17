@@ -54,11 +54,6 @@
   --inverse: #0a0a0a;
   --inverse-hover: #262626;
   --inverse-fg: #ffffff;
-  /* Send: the one coloured button in a composer, so the action that mails a person stands
-     out from every other primary button (white on it is 4.6:1). */
-  --send: var(--tone-blue-solid);
-  --send-hover: color-mix(in oklab, var(--tone-blue-solid) 86%, black);
-  --send-fg: #ffffff;
   /* Timeline frames: the team's replies carry a blue tint, internal notes an amber one,
      so who wrote a message reads before its words; the customer's stay on the surface. */
   --reply: color-mix(in oklab, var(--tone-blue-solid) 5%, var(--surface));
@@ -165,10 +160,6 @@
   --inverse: #f7f7f7;
   --inverse-hover: #e4e4e4;
   --inverse-fg: #0a0a0a;
-  /* The lighter dark-mode blue takes dark text (7.3:1); white on it would fail. */
-  --send: var(--tone-blue-solid);
-  --send-hover: color-mix(in oklab, var(--tone-blue-solid) 86%, white);
-  --send-fg: #0a0a0a;
   --reply: color-mix(in oklab, var(--tone-blue-solid) 9%, var(--surface));
   --reply-line: color-mix(in oklab, var(--tone-blue-solid) 35%, var(--surface));
   --note: color-mix(in oklab, var(--tone-amber-solid) 11%, var(--surface));
@@ -299,9 +290,6 @@
   --color-inverse: var(--inverse);
   --color-inverse-hover: var(--inverse-hover);
   --color-inverse-fg: var(--inverse-fg);
-  --color-send: var(--send);
-  --color-send-hover: var(--send-hover);
-  --color-send-fg: var(--send-fg);
   --color-reply: var(--reply);
   --color-reply-line: var(--reply-line);
   --color-note: var(--note);

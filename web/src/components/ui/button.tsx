@@ -11,8 +11,6 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary: "bg-inverse text-inverse-fg hover:bg-inverse-hover disabled:opacity-40",
-        /** The composer's Send only: the one coloured button, as mail clients mark it. */
-        send: "bg-send text-send-fg hover:bg-send-hover disabled:opacity-40",
         secondary:
           "border border-line bg-surface text-fg shadow-xs hover:border-line-strong hover:bg-hover disabled:opacity-50",
         ghost: "text-fg-2 hover:bg-hover hover:text-fg disabled:opacity-40",
