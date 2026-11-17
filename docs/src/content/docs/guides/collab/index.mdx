@@ -1,0 +1,67 @@
+---
+title: Collab
+description: Read and answer your own mail in opendesk, privately or with a team, with or without tickets.
+---
+
+import Screenshot from '../../../../components/Screenshot.astro';
+import Steps from '../../../../components/Steps.astro';
+import Step from '../../../../components/Step.astro';
+import Callout from '../../../../components/Callout.astro';
+
+**Collab** is your team's mail client in opendesk. Connect a Google, Microsoft or IMAP account and read and answer its mail under **Mail**. Folders, labels, read and unread, stars, archive, moves, trash and spam sync with the provider, so work done here shows up in your other mail apps too.
+
+Keep an account **Private**, or make it **Shared** with the workspace or selected teams and people. Share just one conversation when you need help without opening the whole account. Assignees, team comments and [Handling](/guides/collab/handling/) keep the team's work together in opendesk.
+
+<Screenshot src="/guides/collab/overview" alt="Mail with Compose ringed as 1, the Work, Personal and Sales accounts as 2, and the folder bar as 3" />
+
+## Mail or tickets?
+
+A Collab account is not a ticket [mailbox](/guides/mailboxes/). Use **Mail** to work with an address as a mail account. Use **Tickets** when incoming messages should become tickets with statuses, SLAs and reports.
+
+Collab conversations stay mail. The link to tickets is a choice a member makes: [reply to a ticket from your own address](/guides/inbox-and-tickets/#reply-from-your-own-address), and the customer's answers come back to that ticket.
+
+## Who has Collab
+
+- **opendesk Cloud**: the **Collab** plan is $38 per seat per month. It includes Pro plus Collab and $20 of AI usage per paid seat instead of $10. Owners and admins subscribe or switch plans in **Settings, Plan and billing**. An instance admin can also grant complimentary Collab access. See [Cloud plans and billing](/guides/billing/).
+- **Self-hosted**: every workspace has Collab unless the instance turns it off with `COLLAB=false`.
+
+The workspace's **Mail** product must also be on.
+
+## Turn products on or off
+
+**Admins only.** A team can use Mail without Tickets.
+
+<Steps>
+<Step title="Open Products">
+
+Open **Settings**, **General**, then **Products**.
+
+</Step>
+<Step title="Choose what the workspace uses">
+
+Leave **Mail** on and turn **Tickets** off, then click **Save changes**. Ticket views, live chat, the help center, reports and ticket settings are hidden, and new ticket work pauses. Mail stays available. At least one product must stay on.
+
+</Step>
+</Steps>
+
+<Screenshot src="/guides/collab/products" alt="General settings with the Products section ringed as 1 and Save changes as 2" />
+
+Nothing is deleted. Turn a product back on in the same place. Turning Mail off keeps the accounts, credentials, mail and settings, but pauses syncing and provider actions. When Mail is available again, syncing resumes and pending work resumes within ten minutes.
+
+<Callout type="note">
+Making an account private controls which teammates can see it. AI access depends on the features and credentials you choose, not just that setting. Read [AI drafts and privacy](/guides/collab/replying/#ai-drafts-and-privacy) before giving an AI client access.
+</Callout>
+
+## Start here
+
+1. [Connect an account](/guides/collab/connect-an-account/).
+2. Decide [who sees it](/guides/collab/shared-and-private-accounts/).
+3. Turn on [Handling](/guides/collab/handling/) for a shared inbox.
+4. [Organise mail](/guides/collab/organising/) and [write replies](/guides/collab/replying/).
+5. Learn the [Collab keyboard shortcuts](/guides/keyboard-shortcuts/#collab).
+
+## Related
+
+- [Inbox categories](/guides/inbox-categories/)
+- [Your sidebar](/guides/sidebar/)
+- [Connect a ticket mailbox](/guides/mailboxes/)

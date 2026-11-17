@@ -103,9 +103,19 @@ export default defineConfig({
           label: 'Guides',
           items: [
             { label: 'Inbox and tickets', slug: 'guides/inbox-and-tickets' },
-            { label: 'Mail and shared inboxes', slug: 'guides/mail' },
+            {
+              label: 'Collab',
+              items: [
+                { label: 'Overview', slug: 'guides/collab' },
+                { label: 'Connect an account', slug: 'guides/collab/connect-an-account' },
+                { label: 'Shared and private accounts', slug: 'guides/collab/shared-and-private-accounts' },
+                { label: 'Handling', slug: 'guides/collab/handling' },
+                { label: 'Organising', slug: 'guides/collab/organising' },
+                { label: 'Replying', slug: 'guides/collab/replying' },
+                { label: 'Keyboard shortcuts', slug: 'guides/keyboard-shortcuts' },
+              ],
+            },
             { label: 'Inbox categories', slug: 'guides/inbox-categories' },
-            { label: 'Collab mail accounts', slug: 'guides/collab' },
             { label: 'Import your history', slug: 'guides/importing' },
             { label: 'Your sidebar', slug: 'guides/sidebar' },
             { label: 'Several workspaces', slug: 'guides/workspaces' },

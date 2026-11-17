@@ -1,0 +1,130 @@
+---
+title: Connect an account
+description: Connect Google, Microsoft or IMAP, choose older mail to import, and check when an account last synced.
+---
+
+import Screenshot from '../../../../components/Screenshot.astro';
+import Steps from '../../../../components/Steps.astro';
+import Step from '../../../../components/Step.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Connect the account you want to read and answer. You need the agent role or above. Whoever connects an account manages it; workspace admins can also manage shared accounts.
+
+## Choose the account
+
+<Steps>
+<Step title="Open Connect a mail account">
+
+Use **Connect a mail account** beside **Mail** in the sidebar, or open **Settings**, **Mail accounts** under **Channels**, and click **Connect an account**.
+
+</Step>
+<Step title="Choose the provider">
+
+Under **Where is the account?**, choose **Google** for Gmail and Google Workspace, **Microsoft** for Outlook and Microsoft 365, or **Other (IMAP)** for a provider without Google or Microsoft. IMAP needs a server for receiving and SMTP for sending.
+
+<Screenshot src="/guides/collab/connect" alt="Connect a mail account with the Google, Microsoft and Other (IMAP) choices ringed as 1" />
+
+</Step>
+<Step title="Choose who sees it and how far back to go">
+
+Choose **Private** or **Shared** under **Who sees it?**. Shared accounts can use **Everyone** or **Choose teams and people**. You can [change this later](/guides/collab/shared-and-private-accounts/).
+
+Under **Older mail**, choose how far back to import. **Last year** is offered first; choose **Only the last 30 days** if you do not want a history import.
+
+</Step>
+<Step title="Connect">
+
+Follow the provider steps below. The newest mail arrives first, with older mail imported in the background.
+
+</Step>
+</Steps>
+
+<Callout type="note">
+On your own instance, Google and Microsoft appear once the instance has OAuth clients for them. **Other (IMAP)** and the Gmail app-password path are offered while `COLLAB_IMAP` is on. See [Google and Microsoft OAuth](/self-hosting/oauth-apps/#mail-accounts) and [Collab configuration](/self-hosting/configuration/#collab-your-own-mail-accounts).
+</Callout>
+
+## Google Workspace: sign in with Google
+
+Collab has its own Google client on opendesk Cloud because it reads and changes mail, separately from the send-only mailbox client. On a self-hosted instance, the operator can configure a separate Collab client or use the configured mailbox client. Trust the client ID shown in this connect dialog, not one copied from another sign-in flow.
+
+Choose **Google**, then **Sign in with Google**. Many Workspace domains allow only apps their admin trusts.
+
+<Steps>
+<Step title="Your Google Workspace admin trusts opendesk">
+
+The admin signs in to [admin.google.com](https://admin.google.com/ac/owl/list?tab=configuredApps), opens **Security**, **API controls**, **App access control**, and chooses **Configure new app**. Search for the client ID shown with a copy button in opendesk's dialog and select the app it finds. Choose **All in your organization** or the organizational units with the accounts. For access to Google data, choose **Trusted**, then **Finish**.
+
+</Step>
+<Step title="Sign in to the account">
+
+Back in opendesk, click **Continue with Google**, sign in and approve access. Google returns you to opendesk and mail starts syncing.
+
+</Step>
+</Steps>
+
+The admin step is needed once per domain, not once per account. If the domain already trusts this client, continue straight to signing in.
+
+## Personal Gmail: an app password
+
+Personal `@gmail.com` and `@googlemail.com` accounts connect with an app password, without Google sign-in. Choose **Google**, then **App password**. Typing a personal Gmail address in the sign-in step offers this path too. It also works for a Workspace account whose admin allows app passwords.
+
+<Steps>
+<Step title="Turn on 2-Step Verification">
+
+Open your [Google Account's security settings](https://myaccount.google.com/security) and turn on **2-Step Verification** with a phone prompt, an authenticator app or a text message. Skip this if it is already on.
+
+</Step>
+<Step title="Create an app password">
+
+Open [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords), type **opendesk** as the app name and choose **Create**. Copy the 16 letters. Spaces do not matter.
+
+</Step>
+<Step title="Connect the account">
+
+Enter your Google sign-in address, not an alias, and paste that account's app password. The servers are filled in: `imap.gmail.com` on port 993 and `smtp.gmail.com` on port 465, both over TLS.
+
+</Step>
+</Steps>
+
+If there is no app-password page, check that 2-Step Verification is on and that your Workspace admin allows app passwords. Deleting the app password stops the connection in opendesk.
+
+This is an IMAP connection. It shows the folders Gmail exposes over IMAP and keeps account settings in opendesk, rather than syncing Gmail settings.
+
+## Microsoft 365 and Outlook
+
+Choose **Microsoft**, then **Continue with Microsoft**. Sign in and approve access. Work and school accounts and personal Outlook.com, Hotmail and Live accounts can connect. A Microsoft 365 organization may need its admin to approve opendesk first, as Microsoft explains during sign-in.
+
+## Other providers
+
+Choose **Other (IMAP)** and enter your address. opendesk fills in servers for common hosts. The form shows app-password steps and a link for hosts such as iCloud, Yahoo, AOL, Fastmail, Zoho and Yandex. Use the password type your provider requires.
+
+For another host, enter its IMAP and SMTP servers, ports and security settings. **Advanced** lets you enter separate usernames or an SMTP password when they differ. Click **Connect account**. opendesk signs in to both servers before saving the account.
+
+## What syncs, and when
+
+Mail is brought into opendesk from your provider. The first sync reads folders and labels, then up to 500 messages from the last 30 days, inbox and sent first. A history import brings older mail within the range you chose. Large inboxes can take several passes. IMAP sync reads at most 30 folders, with special folders first; messages over 30 MB stay at the provider.
+
+After that, changes sync about every minute while someone with access has been active in the last 30 minutes, or every ten minutes otherwise. An active history import syncs every minute. Connecting, reconnecting, a mail action or **Sync now** also queues a sync. Gmail push, when the instance has it configured, can bring changes in seconds.
+
+Read state, stars, folders, labels, archive, trash and spam sync both ways. Drafts save at the provider too. [Handling, snoozes, assignees and comments](/guides/collab/handling/) stay in opendesk. Signatures and other account settings sync only [where the provider supports it](/guides/collab/replying/#signatures).
+
+### Check that an account is up to date
+
+Select one account in Mail. **Sync now** is beside the select-all checkbox above the list, including while conversations are selected. The icon spins while the app waits for the requested sync to finish. It stops waiting after a minute, so the icon stopping alone is not proof of success.
+
+Open **Settings**, **Mail accounts**, then the account. Under **Status**, check **Synced …**, the account's state and any **Last error**. **Sync now** is here too. If you see **Reconnect needed**, use **Reconnect** to approve access again. If the provider asks opendesk to wait, the error and next-try time explain the delay.
+
+### Import older mail
+
+In the account's settings, use **Mail history** to change **How far back**, start an import, or **Pause**, **Resume** or **Stop** it. Stopping keeps mail already imported. Spam and trash are left out unless **Include spam and trash** is selected. The progress and coverage explain what is available to read and search.
+
+## Disconnect
+
+The account's manager opens **Settings**, **Mail accounts**, the account, then **Disconnect**. Its mail, comments, shares and credentials leave opendesk. Disconnecting does not remove mail at the provider. Ordinary mail actions such as moving to trash still sync to the provider; Collab does not permanently delete provider mail.
+
+## Related
+
+- [Shared and private accounts](/guides/collab/shared-and-private-accounts/)
+- [Organising and search](/guides/collab/organising/)
+- [Replying and account settings](/guides/collab/replying/)
+- [Google and Microsoft OAuth for self-hosting](/self-hosting/oauth-apps/#mail-accounts)

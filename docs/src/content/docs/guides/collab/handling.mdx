@@ -1,0 +1,74 @@
+---
+title: Handling
+description: Track Needs action separately from unread mail, mark work done, snooze follow-ups and review AI drafts.
+---
+
+import Screenshot from '../../../../components/Screenshot.astro';
+import Steps from '../../../../components/Steps.astro';
+import Step from '../../../../components/Step.astro';
+import Callout from '../../../../components/Callout.astro';
+
+**Handling** tracks work on a **Shared** account, separately from read and unread. Reading an email does not finish the work. Needs action, Done and Snooze are kept in opendesk and do not change the provider's read state or folders.
+
+## Turn Handling on
+
+The account's owner or a workspace admin can do this.
+
+<Steps>
+<Step title="Open the shared account">
+
+Open **Settings**, **Mail accounts**, then the account. Under **Sharing**, it must be **Shared**.
+
+</Step>
+<Step title="Track conversations needing action">
+
+Under **Handling**, turn on **Track conversations needing action**. New incoming inbox mail will need action until someone answers or marks it done.
+
+</Step>
+<Step title="Choose whether to include the current inbox">
+
+If you want a starting backlog, turn on **Start with the current inbox** before clicking **Save**. It includes inbox conversations whose latest message is from the last 30 days, except snoozed conversations and those the account answered last. Leave it off to start with mail arriving from now on.
+
+</Step>
+</Steps>
+
+## Needs action and Done
+
+Open **Needs action** to see unfinished inbox conversations. Assign a teammate if someone should own the next step. Sending a reply clears Needs action; saving a draft does not. Use **Mark as done** when no reply is needed, or **Mark as needing action** to bring the work back.
+
+New incoming inbox mail sets Needs action again. Spam stays out of Needs action and the AI queue. Check the unread Spam notice so a customer's first email is not overlooked; **Not spam** brings it into the inbox and Needs action.
+
+<Screenshot src="/guides/collab/handling" alt="Sales with Handling enabled: Needs action ringed as 1 in the sidebar and Mark as done as 2 in the selection toolbar above the list" />
+
+## Snooze a follow-up
+
+Hover a conversation row and choose **Snooze**, or use it in the open conversation or selection toolbar. Pick when you want it back. It leaves Needs action and appears in **Snoozed**, then returns to Needs action when the time arrives. Wake-ups are checked every minute.
+
+New inbox mail from someone else wakes it sooner. Your account's own reply does not. **Mark as done** or **Mark as needing action** ends a snooze. The mail stays in the provider's inbox throughout a Collab snooze.
+
+On private accounts or shared accounts with Handling off, **Snooze** is shown greyed out. Its explanation tells you to share the account and turn on Handling, or to turn Handling on for an already shared account.
+
+<Screenshot src="/guides/collab/snooze-unavailable" alt="A private Work conversation with the greyed-out Snooze control ringed as 1 and its explanation about sharing the account and turning on Handling as 2" />
+
+<Callout type="note" title="Snooze here, not in Gmail">
+An email snoozed in Gmail itself shows in Collab as archived, out of Needs action, until Gmail brings it back. Snooze in Collab so the team sees it in **Snoozed** and it returns to **Needs action**. The Gmail reminder in the Snooze menu and Handling settings is shown for Google-connected accounts.
+</Callout>
+
+## Review AI drafts
+
+An AI client with an explicitly granted `collab:draft` key can pick up the longest-waiting Needs action conversation it is allowed to see on a shared account with Handling on. The queue skips conversations with a draft or another active AI claim. The client saves a reply for a person to review; it cannot send it or finish the work.
+
+**Ready for review** lists inbox conversations with an AI draft you can see, including drafts outside the shared-account queue. The draft is labelled **AI draft by** the client's key name.
+
+- **Send** in the list sends the draft as written, with the same [Undo send window](/guides/collab/replying/#undo-send) as other mail.
+- **Edit** opens it in the conversation. Saving your changes takes over the draft, so it leaves Ready for review and the AI key cannot overwrite it.
+- **Discard** removes the draft at the provider too, after confirmation. You can give feedback about why it was not useful.
+
+The conversation stays in Needs action until a reply is sent or someone marks it done. Discarding a draft alone does not finish the conversation. See [AI drafts, feedback and privacy](/guides/collab/replying/#ai-drafts-and-privacy).
+
+## Related
+
+- [Shared and private accounts](/guides/collab/shared-and-private-accounts/)
+- [Organising mail](/guides/collab/organising/)
+- [Replying](/guides/collab/replying/)
+- [Collab keyboard shortcuts](/guides/keyboard-shortcuts/#collab)
