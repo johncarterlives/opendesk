@@ -212,6 +212,27 @@ func TestBrandDefaultAndDelete(t *testing.T) {
 	e.Exec(`INSERT INTO changelog_entries (id, workspace_id, title, slug, brand_id) VALUES ($1, $2, 'Shop update', $3, $4)`, entry, ws.ID, "u-"+entry.String(), bid)
 	tk := ids.New()
 	e.Exec(`INSERT INTO tickets (id, workspace_id, number, channel, brand_id, widget_id) VALUES ($1, $2, 1, 'chat', $3, $4)`, tk, ws.ID, bid, widget)
+	// An image the brand's article holds and an article that stays shows passes to that one,
+	// not to another article that goes; one only the brand's own show is let go.
+	kept, dropped := ids.New(), ids.New()
+	for _, f := range []struct {
+		id    uuid.UUID
+		col   string
+		owner uuid.UUID
+	}{{kept, "kb_article_id", own}, {dropped, "changelog_entry_id", entry}} {
+		e.Exec(`INSERT INTO attachments (id, workspace_id, filename, size_bytes, storage_key, `+f.col+`) VALUES ($1, $2, 'a.png', 3, 'k', $3)`, f.id, ws.ID, f.owner)
+	}
+	img := func(ids ...uuid.UUID) string {
+		out := ""
+		for _, id := range ids {
+			out += `<img src="/v1/attachments/` + id.String() + `">`
+		}
+		return out
+	}
+	e.Exec(`UPDATE kb_articles SET body_html = $2 WHERE id = $1`, own, img(kept, dropped))
+	e.Exec(`UPDATE kb_articles SET body_html = $2 WHERE id = $1`, inCol, img(kept, dropped))
+	e.Exec(`UPDATE kb_articles SET body_html = $2 WHERE id = $1`, shared, img(kept))
+	e.Exec(`UPDATE changelog_entries SET body_html = $2 WHERE id = $1`, entry, img(dropped))
 	_, seq := e.Events(ws.ID, 0)
 	e.Do("DELETE", "/v1/brands/"+b.ID, ws.Agent.As(ws), nil).Want(t, 403)
 	e.Do("DELETE", "/v1/brands/"+b.ID, admin, nil).Want(t, 204)
@@ -226,6 +247,16 @@ func TestBrandDefaultAndDelete(t *testing.T) {
 	e.Scalar(`SELECT count(*) FROM kb_articles WHERE id = $1`, &left, shared)
 	if tkBrand != ws.BrandID || left != 1 {
 		t.Fatal(tkBrand, left)
+	}
+	var holder *uuid.UUID
+	e.Scalar(`SELECT kb_article_id FROM attachments WHERE id = $1`, &holder, kept)
+	if holder == nil || *holder != shared {
+		t.Fatalf("image held by %v, want the article that stays %s", holder, shared)
+	}
+	var free bool
+	e.Scalar(`SELECT kb_article_id IS NULL AND changelog_entry_id IS NULL FROM attachments WHERE id = $1`, &free, dropped)
+	if !free {
+		t.Fatal("an image only the brand's own showed is still held")
 	}
 	types, _ := e.Events(ws.ID, seq)
 	for _, want := range []string{"brand.deleted", "widget.deleted", "kb_collection.deleted", "kb_article.deleted", "changelog_entry.deleted"} {

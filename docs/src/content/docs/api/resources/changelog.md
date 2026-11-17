@@ -36,7 +36,7 @@ type ChangelogEntry = {
 - A published entry dated in the future is **scheduled**: the help center, its feed and sitemap, and the public API show it from that date on.
 - `categories` are free names, such as `"New"`, `"Improved"` or `"Fixed"`. Whitespace is collapsed, and a second spelling of a name already on the entry (compared without case) is dropped.
 - `brand_id` is the brand whose help center shows the entry, or `null` for every brand. A brand's entries are deleted with it.
-- `body_html` is sanitized before storage. Images are [attachments](/api/resources/messages/) you uploaded or `https` URLs.
+- `body_html` is sanitized before storage. Images are [attachments](/api/resources/messages/) you uploaded or `https` URLs. An attachment is stored as its plain path, `/v1/attachments/<id>`, and becomes the entry's own when you uploaded it, so it is kept while the entry is. Deleting the entry, or dropping the image from it, passes the image to another article or entry that shows it. Reads with your credentials give it as a signed link; once the entry is published, its help center and the public API serve its images from the help center's own address, `/_help/files/<id>`, which does not expire.
 - Entry slugs are separate from article slugs.
 
 ## List entries

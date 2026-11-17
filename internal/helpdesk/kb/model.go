@@ -109,8 +109,13 @@ func scanArticle(row pgx.Row) (KbArticle, error) {
 	return a, nil
 }
 
+// loadArticle reads an article for a member, its files signed.
 func loadArticle(ctx context.Context, q db.Querier, wid, id uuid.UUID) (KbArticle, error) {
-	return scanArticle(q.QueryRow(ctx, articleSelect+` WHERE a.workspace_id = $1 AND a.id = $2`, wid, id))
+	a, err := scanArticle(q.QueryRow(ctx, articleSelect+` WHERE a.workspace_id = $1 AND a.id = $2`, wid, id))
+	if err != nil {
+		return a, err
+	}
+	return a, signFiles(ctx, q, wid, &a.BodyHTML)
 }
 
 // public strips what an anonymous reader must not see: the author's email.

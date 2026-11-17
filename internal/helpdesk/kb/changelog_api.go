@@ -120,6 +120,9 @@ func registerChangelog(d *deps.Deps, api huma.API) {
 				rows, err := d.DB.Pool.Query(ctx, entrySelect+` WHERE `+strings.Join(where, " AND ")+` AND e.search @@ `+tsq+
 					` ORDER BY ts_rank(e.search, `+tsq+`) DESC, `+entrySort+` DESC, e.id LIMIT `+arg(limit), args...)
 				out, err := collectRows(rows, err, scanEntry)
+				if err == nil {
+					err = signEntries(ctx, d.DB.Pool, p.WorkspaceID, out)
+				}
 				if err != nil {
 					return nil, httpx.Wrap(err)
 				}
@@ -134,6 +137,9 @@ func registerChangelog(d *deps.Deps, api huma.API) {
 			}
 			rows, err := d.DB.Pool.Query(ctx, entrySelect+` WHERE `+strings.Join(where, " AND ")+` ORDER BY `+entrySort+` DESC, e.id DESC LIMIT `+arg(limit+1), args...)
 			out, err := collectRows(rows, err, scanEntry)
+			if err == nil {
+				err = signEntries(ctx, d.DB.Pool, p.WorkspaceID, out)
+			}
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -208,7 +214,7 @@ func registerChangelog(d *deps.Deps, api huma.API) {
 			if status == "" {
 				status = "draft"
 			}
-			body := hd.SanitizeRich(b.BodyHTML)
+			body := hd.PlainFiles(hd.SanitizeRich(b.BodyHTML))
 			excerpt := ""
 			if b.Excerpt != nil {
 				excerpt = cleanExcerpt(*b.Excerpt)
@@ -233,6 +239,9 @@ func registerChangelog(d *deps.Deps, api huma.API) {
 					status, author_id, published_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, COALESCE($11, CASE WHEN $9 = 'published' THEN now() END))`,
 					id, p.WorkspaceID, brand, title, slug, excerpt, body, cats, status, p.ActorUserID(), b.PublishedAt); err != nil {
 					return slugConflict(err)
+				}
+				if err := holdFiles(ctx, tx, p, hd.EntryFiles, id, body); err != nil {
+					return err
 				}
 				if e, err = loadEntry(ctx, tx, p.WorkspaceID, id); err != nil {
 					return err
@@ -290,6 +299,7 @@ func registerChangelog(d *deps.Deps, api huma.API) {
 				if b.BodyHTML != nil {
 					cur.BodyHTML = hd.SanitizeRich(*b.BodyHTML)
 				}
+				cur.BodyHTML = hd.PlainFiles(cur.BodyHTML)
 				switch {
 				case b.Excerpt != nil:
 					if cur.Excerpt = cleanExcerpt(*b.Excerpt); cur.Excerpt == "" {
@@ -320,6 +330,9 @@ func registerChangelog(d *deps.Deps, api huma.API) {
 					p.WorkspaceID, id, cur.Title, cur.Slug, cur.Excerpt, cur.BodyHTML, cur.Categories, cur.Status, cur.BrandID, cur.PublishedAt); err != nil {
 					return slugConflict(err)
 				}
+				if err := holdFiles(ctx, tx, p, hd.EntryFiles, id, cur.BodyHTML); err != nil {
+					return err
+				}
 				if e, err = loadEntry(ctx, tx, p.WorkspaceID, id); err != nil {
 					return err
 				}
@@ -346,6 +359,10 @@ func registerChangelog(d *deps.Deps, api huma.API) {
 				return nil, err
 			}
 			err = d.DB.Tx(ctx, func(tx pgx.Tx) error {
+				// Its files pass to another article or entry that shows them.
+				if err := holdFiles(ctx, tx, p, hd.EntryFiles, id, ""); err != nil {
+					return err
+				}
 				tag, err := tx.Exec(ctx, `DELETE FROM changelog_entries WHERE workspace_id = $1 AND id = $2`, p.WorkspaceID, id)
 				if err != nil {
 					return err
@@ -411,6 +428,7 @@ func registerPublicChangelog(d *deps.Deps, api huma.API, limited huma.Middleware
 			for i := range out {
 				out[i] = publicEntry(out[i])
 			}
+			out = publicEntries(d, hc, out)
 			return &struct{ Body httpx.Page[ChangelogEntry] }{httpx.NewPage(out, limit, func(e ChangelogEntry) any {
 				return changelogCursor{P: *e.PublishedAt, I: e.ID}
 			})}, nil
@@ -434,6 +452,6 @@ func registerPublicChangelog(d *deps.Deps, api huma.API, limited huma.Middleware
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			return &entryOut{e}, nil
+			return &entryOut{publicEntries(d, hc, []ChangelogEntry{e})[0]}, nil
 		})
 }

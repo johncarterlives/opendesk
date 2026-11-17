@@ -2,7 +2,7 @@
 // assigned to, the actions (each mirrored at the provider), the messages oldest
 // first with the older ones folded, the team's comments, and the reply composer.
 // Writing a comment and the reply buttons are pinned under it, whatever its length; while a
-// reply is written the buttons give way to it, and its Send (first, coloured) sends.
+// reply is written the reply buttons step aside for it, and the comment entry and count stay.
 // Beside it, who it is with: the people panel (] shows and hides it).
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -496,7 +496,9 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
       onChange={(v) => {
         if (v === "comment") return setCommentThread(th.id);
         setCommentThread(null);
-        if (!composing) openComposer(replyModes[0] ?? "reply");
+        if (!composing) return openComposer(replyModes[0] ?? "reply");
+        // The switch clicked goes with the comment field: the reply being written takes the focus.
+        requestAnimationFrame(() => composerRef.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus());
       }}
       options={[
         { value: "reply", label: writeKind.label, icon: writeKind.icon },
@@ -790,10 +792,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
 
           {canAct && (editing || composer) && (
             <div ref={composerRef} className="mt-1 scroll-mb-4" hidden={commentMode}>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                {writeSwitch("reply")}
-                {commentsButton}
-              </div>
+              <div className="mb-1.5">{writeSwitch("reply")}</div>
               {editing ? (
                 <MailComposer
                   key={`draft-${editing.id}-${composerKey}`}
@@ -851,9 +850,6 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
         </div>
       </div>
 
-      {/* While a reply is written the bar goes, as Gmail's Reply and Forward do: the composer
-          carries the Reply / Comment switch, and its Send is the only way to send. */}
-      {!(canAct && composing && !commentMode) && (
       <footer className={cn("@container relative z-10 shrink-0 border-t border-line bg-surface transition-shadow duration-200 ease-out", below && "shadow-[0_-8px_16px_-12px_rgb(10_10_10/0.18)] dark:shadow-[0_-8px_16px_-12px_rgb(0_0_0/0.6)]")}>
         <div className="mx-auto w-full max-w-[860px] px-4 py-2.5 md:px-6">
           {canAct ? (
@@ -871,19 +867,24 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
               </>
             ) : (
               // Plain actions, each opening what it names: the account's usual reply first and labelled.
+              // While a reply is written they step aside; the comment entry and count stay.
               <div className="flex items-center gap-1.5">
-                {replyModes.map((mode, i) => (
-                  <Tooltip key={mode} content={replyKind[mode].label} shortcut={replyKind[mode].shortcut}>
-                    <Button size="md" variant="secondary" icon={replyKind[mode].icon} aria-label={replyKind[mode].label} onClick={() => openComposer(mode)}>
-                      <span className={i === 0 ? undefined : "hidden @[36rem]:inline"}>{replyKind[mode].label}</span>
-                    </Button>
-                  </Tooltip>
-                ))}
-                <Tooltip content={t("action.forward")} shortcut="f">
-                  <Button size="md" variant="secondary" icon={<Forward />} aria-label={t("action.forward")} onClick={() => openComposer("forward")}>
-                    <span className="hidden @[36rem]:inline">{t("action.forward")}</span>
-                  </Button>
-                </Tooltip>
+                {!composing && (
+                  <>
+                    {replyModes.map((mode, i) => (
+                      <Tooltip key={mode} content={replyKind[mode].label} shortcut={replyKind[mode].shortcut}>
+                        <Button size="md" variant="secondary" icon={replyKind[mode].icon} aria-label={replyKind[mode].label} onClick={() => openComposer(mode)}>
+                          <span className={i === 0 ? undefined : "hidden @[36rem]:inline"}>{replyKind[mode].label}</span>
+                        </Button>
+                      </Tooltip>
+                    ))}
+                    <Tooltip content={t("action.forward")} shortcut="f">
+                      <Button size="md" variant="secondary" icon={<Forward />} aria-label={t("action.forward")} onClick={() => openComposer("forward")}>
+                        <span className="hidden @[36rem]:inline">{t("action.forward")}</span>
+                      </Button>
+                    </Tooltip>
+                  </>
+                )}
                 <span className="ml-auto flex items-center gap-1">
                   <Tooltip content={t("comments.internalHint")} shortcut="shift c">
                     <Button size="md" variant="ghost" icon={<MessageSquarePlus />} aria-label={t("comments.add")} onClick={() => setCommentThread(th.id)}>
@@ -899,7 +900,6 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
           )}
         </div>
       </footer>
-      )}
       </div>
       <AnimatePresence initial={false}>
         {panelOpen &&

@@ -137,7 +137,7 @@ func TestPathModeRendersTheHelpCenter(t *testing.T) {
 	path := s.articlePath(t)
 	art := s.get(t, "app.test", "/help/"+s.slug+path)
 	if art.status != 200 || !strings.Contains(art.body, "Refund a payment") || !strings.Contains(art.body, "<strong>Billing</strong>") ||
-		strings.Contains(art.body, "alert(1)") || !strings.Contains(art.body, `src="http://api.test/v1/attachments/`) ||
+		strings.Contains(art.body, "alert(1)") || !strings.Contains(art.body, `src="`+base+`/_help/files/0b4b6c1e-8f0e-4a43-9a7a-0d5f0a2c4e11"`) ||
 		!strings.Contains(art.body, "Change your plan") || !strings.Contains(art.body, `"@type":"Article"`) ||
 		!strings.Contains(art.body, `"@type":"BreadcrumbList"`) || !strings.Contains(art.body, `data-article="`+s.article.String()+`"`) {
 		t.Fatalf("article\n%s", art.body)

@@ -745,13 +745,13 @@ func prepare(pages []wikiport.ExportPage) {
 // plainPage names a page's files by their plain path: in its body, and in a canvas's text
 // cards and file cards.
 func plainPage(pg *wikiport.ExportPage) {
-	pg.BodyHTML = plainFiles(pg.BodyHTML)
+	pg.BodyHTML = hd.PlainFiles(pg.BodyHTML)
 	if pg.Canvas == nil {
 		return
 	}
 	for i := range pg.Canvas.Nodes {
 		n := &pg.Canvas.Nodes[i]
-		n.HTML = plainFiles(n.HTML)
+		n.HTML = hd.PlainFiles(n.HTML)
 		if m := attachmentSrc.FindStringSubmatch(n.Src); m != nil {
 			n.Src = "/v1/attachments/" + m[1]
 		}

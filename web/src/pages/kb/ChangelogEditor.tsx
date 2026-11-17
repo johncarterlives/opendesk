@@ -224,7 +224,9 @@ function EditorScreen({ entry }: { entry: ChangelogEntry | null }) {
     setUploading(true);
     try {
       const a = await api.attachments.upload(file);
-      // Use the URL exactly as returned (signed); only escape it for the attribute.
+      // The signed URL shows the image while editing; saving stores it as its plain path and
+      // makes the file the entry's own, served from the help center once published.
+      // Only escape it for the attribute.
       const src = a.url.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
       const alt = file.name.replace(/\.[^.]+$/, "").replace(/[<>"]/g, "");
       editorRef.current?.insertHtml(`<img src="${src}" alt="${alt}">`);

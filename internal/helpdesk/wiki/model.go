@@ -551,7 +551,7 @@ func cleanBody(raw string) (string, error) {
 	if len(raw) > maxBodyBytes {
 		return "", httpx.E(422, "page_too_large", "A page can hold up to 512 KB of text and formatting. Split it into subpages.")
 	}
-	return plainFiles(hd.SanitizeWiki(raw)), nil
+	return hd.PlainFiles(hd.SanitizeWiki(raw)), nil
 }
 
 func inTrash() error {

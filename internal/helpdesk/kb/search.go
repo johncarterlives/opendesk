@@ -19,7 +19,11 @@ func Search(ctx context.Context, q db.Querier, wid uuid.UUID, query string, limi
 	rows, err := q.Query(ctx, articleSelect+` WHERE a.workspace_id = $1 AND a.search @@ `+tsq+`
 		AND ($5::uuid IS NULL OR `+ForBrandSQL("$5")+`)
 		ORDER BY ts_rank(a.search, `+tsq+`) DESC, a.updated_at DESC LIMIT $4`, wid, query, pq, limit, brand)
-	return collectRows(rows, err, scanArticle)
+	arts, err := collectRows(rows, err, scanArticle)
+	if err != nil {
+		return nil, err
+	}
+	return arts, signArticles(ctx, q, wid, arts)
 }
 
 // ForBrandSQL is the predicate on articles aliased a for what the brand bound as param
