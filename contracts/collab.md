@@ -388,9 +388,11 @@ a reply in its conversation, a new message or a forward in a conversation of its
   sends the draft when there is one.
 - Undo send: with the workspace's `undo_send_seconds` (contracts/api.md, the window ticket email
   replies use; 0 turns it off), Send saves the draft and the web app holds it that long before
-  `POST /v1/collab/drafts/{id}/send`, with Undo and Send now. Nothing reaches the provider
-  meanwhile, so the API never delays. Undo leaves it a draft and opens it again where it was
-  written. The hold lives outside the composer: closing the conversation keeps the countdown;
+  `POST /v1/collab/drafts/{id}/send` with no body, so the draft goes as saved; Undo and Send now
+  meanwhile. The hold is the client's alone: nothing reaches the provider meanwhile, and the API
+  never delays. The composer is read-only while that save runs. Undo leaves it a draft and opens
+  it again where it was written. An AI draft sent from the list waits the same window, and its
+  Undo opens the conversation with the draft. The hold lives outside the composer: closing the conversation keeps the countdown;
   leaving the page, switching account or workspace, or signing out sends it at once. A save that
   fails sends straight away, as without a window.
 - The composer puts the account's signature in as one block, `<div class="od-signature">` around

@@ -33,7 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { AccountDot } from "./bits";
-import { holdSend, undoSendSeconds } from "./outbox";
+import { holdSend, reopenDraft, undoSendSeconds } from "./outbox";
 import { RecipientField } from "./RecipientField";
 
 type Upload = { key: string; file: File; status: "uploading" | "done" | "error"; attachment?: Attachment; preview?: string };
@@ -343,8 +343,10 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
   const recipients = draft.to.length + draft.cc.length + draft.bcc.length;
   const busy = uploads.some((u) => u.status === "uploading");
   const { data: workspace } = useQuery(q.workspace());
-  // Saving it to hold: a second Send meanwhile does nothing.
+  // Saving it to hold: a second Send meanwhile does nothing, and the editor is read-only so
+  // nothing is written that the saved draft would leave out.
   const holding = useRef(false);
+  const [saving, setSaving] = useState(false);
 
   const send = useMutation({
     // With a draft, the draft is sent (saved with what the composer shows first).
@@ -375,7 +377,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
   });
 
   const submit = async () => {
-    if (send.isPending) return;
+    if (send.isPending || holding.current) return;
     if (busy) return toast.error(t("composer.waitUploads"));
     if (!recipients) return toast.error(t("composer.needRecipient"));
     if (recipients > 100) return toast.error(t("composer.tooMany"));
@@ -401,23 +403,14 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
     const seconds = undoSendSeconds(workspace?.settings);
     if (seconds > 0) {
       holding.current = true;
+      setSaving(true);
       lastSaved.current = null;
       await saveNow();
       const saved = lastSaved.current as MailMessage | null;
       if (saved && draftIdRef.current === saved.id) {
         gone.current = true;
-        const content = contentOf(latest.current);
-        holdSend(
-          {
-            draftId: saved.id,
-            draft: saved,
-            // The files are on the saved draft now: kept, not added again.
-            body: { ...content, attachment_ids: undefined, keep_attachments: saved.attachments.filter((a) => !a.inline).map((a) => a.id) },
-            from: fromEmail || account?.email || "",
-            inline: variant === "inline",
-          },
-          seconds,
-        );
+        const inline = variant === "inline";
+        holdSend({ draftId: saved.id, from: fromEmail || account?.email || "", reopen: () => reopenDraft(saved, inline) }, seconds);
         if (threadId) useDrafts.setState((s) => {
           const next = { ...s };
           delete next[threadId];
@@ -429,6 +422,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         return;
       }
       holding.current = false;
+      setSaving(false);
     }
     gone.current = true;
     const content = contentOf(latest.current);
@@ -605,6 +599,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         placeholder={draft.mode === "new" ? t("composer.newPlaceholder") : t("composer.placeholder")}
         ariaLabel={draft.mode === "new" ? t("composer.newPlaceholder") : t("composer.placeholder")}
         onSubmit={() => void submit()}
+        editable={!saving}
         extensions={extensions}
         className={variant === "floating" ? "min-h-[200px] flex-1" : undefined}
         contentClassName={cn("text-[13px]", variant === "floating" ? "min-h-[180px]" : "min-h-[96px] max-h-[360px]")}
@@ -618,10 +613,10 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
               size="sm"
               onClick={() => void submit()}
               disabled={busy || !recipients}
-              icon={send.isPending ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Send className="size-3.5" />}
+              icon={send.isPending || saving ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Send className="size-3.5" />}
               className="px-3"
             >
-              {send.isPending ? t("composer.sending") : t("composer.send")}
+              {send.isPending || saving ? t("composer.sending") : t("composer.send")}
             </Button>
           </Tooltip>
         }

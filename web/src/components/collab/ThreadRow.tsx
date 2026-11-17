@@ -21,6 +21,7 @@ import { rowMotion } from "@/components/tickets/motion";
 import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { AccountDot, LabelPill } from "./bits";
 import { ThreadMenu } from "./ThreadMenu";
+import { useHeldSends } from "./outbox";
 
 export type ThreadRowProps = {
   thread: MailThread;
@@ -129,6 +130,8 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function T
   ref,
 ) {
   const { t: tr } = useTranslation("collab");
+  // An AI draft on its way out (Undo send) is not offered again meanwhile.
+  const aiDraftHeld = useHeldSends((s) => !!t.ai_draft && !!s[t.ai_draft.draft_id]);
   const reduced = useReducedMotion();
   const motionProps = rowMotion(reduced);
   const who = participantsLine(t.participants, ownEmails, tr("list.me")) || tr("list.me");
@@ -368,7 +371,7 @@ const Row = forwardRef<HTMLDivElement, ThreadRowProps & TriggerProps>(function T
           {end}
         </div>
       )}
-      {t.ai_draft && onDraft && <AIDraftStrip t={t} busy={draftBusy} onDraft={onDraft} />}
+      {t.ai_draft && onDraft && !aiDraftHeld && <AIDraftStrip t={t} busy={draftBusy} onDraft={onDraft} />}
     </motion.div>
   );
 });

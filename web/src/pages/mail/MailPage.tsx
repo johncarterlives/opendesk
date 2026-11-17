@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import type { AIDraftRef, MailFolder, MailThread, MailThreadAction } from "@/lib/api/types";
+import type { AIDraftRef, MailFolder, MailThread, MailThreadAction, MailThreadDetail } from "@/lib/api/types";
 import { api } from "@/lib/api/endpoints";
 import { inverseAction, leavesList, listPlace, UNDOABLE } from "@/lib/collab/actions";
 import { rememberAccountView } from "@/lib/collab/accountView";
@@ -68,6 +68,7 @@ import { AIDraftFeedbackDialog } from "@/components/collab/AIDraftFeedback";
 import { AccountDot, boxIcon, FolderGlyph } from "@/components/collab/bits";
 import { canOfferCategories, CategoryOffer, CategoryTabs, useCategorySettingsTarget } from "@/components/collab/CategoryTabs";
 import { FolderBar } from "@/components/collab/FolderBar";
+import { holdSend, undoSendSeconds, useUndoneSends } from "@/components/collab/outbox";
 import { SearchCoverage, SpamBesideWork, StorageFullBanner } from "@/components/collab/MailNotices";
 import { AssignPicker, LabelsPicker, MovePicker, type MoveTarget } from "@/components/collab/pickers";
 import { ListShareDialog, SnoozeItems } from "@/components/collab/ThreadMenu";
@@ -136,6 +137,7 @@ export default function MailPage() {
   const openId = params.threadId;
   const { data: accounts } = useMailAccounts();
   const { data: counts } = useQuery(q.mailCounts());
+  const { data: workspace } = useQuery(q.workspace());
   const prefs = useSidebarPrefs();
   const folderMap = useAllFolders(accounts);
   const action = useThreadAction();
@@ -419,7 +421,17 @@ export default function MailPage() {
           },
         );
       };
-      if (a === "send") return run(() => api.collab.drafts.send(d.draft_id), () => toast.success(t("toast.sent", { email: accountsById.get(x.account_id)?.email ?? "" })), t("composer.sendFailed"));
+      if (a === "send") {
+        // Held for the undo window like any other send; Undo opens the conversation with the draft.
+        const reopen = () => {
+          const m = qc.getQueryData<MailThreadDetail>(qk.mailThread(x.id))?.messages.find((y) => y.draft && (y.draft_id ?? y.id) === d.draft_id);
+          if (m) useUndoneSends.setState({ [x.id]: m });
+          else setEditAI(x.id);
+          open(x);
+        };
+        void holdSend({ draftId: d.draft_id, from: accountsById.get(x.account_id)?.email ?? "", reopen }, undoSendSeconds(workspace?.settings));
+        return;
+      }
       const discarded = () => {
         if (!d.record_id) return;
         setFeedbackOpen(false);
@@ -434,7 +446,7 @@ export default function MailPage() {
         danger: true,
       });
     },
-    [open, qc, t, accountsById, confirm, busyDraft],
+    [open, qc, t, accountsById, confirm, busyDraft, workspace],
   );
   const onThreadAction = useCallback(
     (a: MailThreadAction, opts?: ActOpts) => {

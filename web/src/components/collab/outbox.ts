@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { getActiveAccount, getWorkspaceId, inWorkspace } from "@/lib/api/client";
-import { api, type CollabDraftBody } from "@/lib/api/endpoints";
+import { api } from "@/lib/api/endpoints";
 import type { MailMessage, MailThreadDetail, WorkspaceSettings } from "@/lib/api/types";
 import { compose } from "@/lib/collab/compose";
 import { qk } from "@/lib/queries";
@@ -8,32 +8,30 @@ import { queryClient as qc } from "@/lib/queryClient";
 import { beforeSignOut, useSession } from "@/lib/session";
 import { i18n } from "@/i18n";
 import { toast } from "@/components/ui/toast";
+import { UNDO_SEND_DEFAULT } from "@/components/tickets/detail/outbox";
 
 // Undo send for mail (contracts/collab.md "Undo send"): Send saves the draft at the provider
 // and holds it here, in the app, for the workspace's undo window; nothing reaches anyone until
-// it ends. Undo leaves it a draft and opens it again where it was written. It lives outside the
+// it ends, and then the draft goes out as saved. Undo leaves it a draft and opens it again where it was written. It lives outside the
 // composer, so closing the conversation keeps the countdown and it still goes out; leaving the
 // page, switching account or workspace, or signing out sends it at once, as Tickets' outbox does
 // (components/tickets/detail/outbox.ts).
 
 /** The seconds a send waits: the workspace's email undo window, the one Tickets use (5 by default). */
 export function undoSendSeconds(settings: WorkspaceSettings | undefined): number {
-  return settings?.undo_send_seconds ?? 5;
+  return settings?.undo_send_seconds ?? UNDO_SEND_DEFAULT;
 }
 
 type Origin = { account: string | null; workspace: string | null };
 const currentOrigin = (): Origin => ({ account: getActiveAccount(), workspace: getWorkspaceId() });
 
 export type HeldSend = {
-  /** The saved draft it sends (its id at /v1/collab/drafts). */
+  /** The saved draft it sends as saved (its id at /v1/collab/drafts). */
   draftId: string;
-  /** The draft as saved: what Undo opens again. */
-  draft: MailMessage;
-  body: CollabDraftBody;
   /** The address it goes out from, for the "Sent" toast. */
   from: string;
-  /** Written under a conversation (it reopens there) or as new mail (the floating composer). */
-  inline: boolean;
+  /** Undo: opens the draft again where it was written (reopenDraft, or its conversation from the list). */
+  reopen: () => void;
 };
 
 type Held = HeldSend & { origin: Origin; timer: ReturnType<typeof setTimeout>; toast: string | number };
@@ -50,15 +48,17 @@ async function deliver(h: HeldSend, origin: Origin, opts: { keepalive?: boolean 
   const here = <T>(fn: () => T) => inWorkspace(origin.workspace, fn);
   const t = i18n.getFixedT(null, "collab");
   try {
-    const m = await api.collab.drafts.send(h.draftId, h.body, { keepalive: !!opts.keepalive, as: origin.account ?? undefined, workspace: origin.workspace ?? undefined });
+    // No body: the draft is sent as saved, so a send that outlives the page stays small.
+    const m = await api.collab.drafts.send(h.draftId, undefined, { keepalive: !!opts.keepalive, as: origin.account ?? undefined, workspace: origin.workspace ?? undefined });
     here(() => {
       // The conversation shows it at once; collab.changed brings the rest.
       qc.setQueryData<MailThreadDetail>(qk.mailThread(m.thread_id), (old) => {
         if (!old) return old;
-        const messages = old.messages.filter((x) => x.id !== h.draft.id && x.id !== h.draftId);
+        const messages = old.messages.filter((x) => x.id !== h.draftId && x.draft_id !== h.draftId);
         return messages.some((x) => x.id === m.id) ? { ...old, messages } : { ...old, messages: [...messages, m], thread: { ...old.thread, message_count: messages.length + 1, last_message_at: m.sent_at } };
       });
       void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+      void qc.invalidateQueries({ queryKey: qk.mailCounts });
     });
     if (!opts.keepalive) toast.success(t("toast.sent", { email: m.from.email || h.from }));
     return true;
@@ -105,10 +105,14 @@ export function flushSends(opts: { keepalive?: boolean } = {}): Promise<boolean[
 export function undoSend(draftId: string) {
   const h = take(draftId);
   if (!h) return;
-  const draft = { ...h.draft, body_html: h.body.body_html };
-  if (h.inline && draft.thread_id) useUndoneSends.setState({ [draft.thread_id]: draft });
-  else compose.open({ fromDraft: draft });
+  h.reopen();
   toast.info(i18n.getFixedT(null, "collab")("composer.unsent"));
+}
+
+/** Opens a saved draft again: under its conversation when written there, else in the floating composer. */
+export function reopenDraft(draft: MailMessage, inline: boolean) {
+  if (inline && draft.thread_id) useUndoneSends.setState({ [draft.thread_id]: draft });
+  else compose.open({ fromDraft: draft });
 }
 
 if (typeof window !== "undefined") {
