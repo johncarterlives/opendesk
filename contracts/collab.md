@@ -281,6 +281,8 @@ Collab mail counts toward the workspace's Collab storage: each stored message's 
 term late in a long message or a long conversation is found. Mail not imported is not searched: while
 searching, the mail page says how far back the accounts in view go ("Searching mail since …", from
 `oldest_message_at`) and links to the history import of an account that has more at its provider.
+The mail page searches the box in view, except Unread, a filter: a search there asks for `box=all`, so
+read mail is found too, as a search on the inbox spans every category tab.
 
 ## Conversations
 

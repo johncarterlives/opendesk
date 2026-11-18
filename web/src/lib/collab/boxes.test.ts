@@ -42,6 +42,11 @@ describe("list query", () => {
     expect(mailListQuery("starred", { category: "updates" })).toEqual({ box: "starred" });
     expect(mailListQuery("all", { with: "dana@client.test" })).toEqual({ box: "all", with: "dana@client.test" });
   });
+  it("a search from Unread finds read mail too", () => {
+    expect(mailListQuery("unread", { account: "a1" })).toEqual({ box: "unread", account_id: "a1" });
+    expect(mailListQuery("unread", { account: "a1", q: "x" })).toEqual({ box: "all", account_id: "a1", q: "x" });
+    expect(mailListQuery("starred", { q: "x" })).toEqual({ box: "starred", q: "x" });
+  });
 });
 
 describe("actions", () => {
