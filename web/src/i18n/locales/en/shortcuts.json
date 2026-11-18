@@ -107,6 +107,7 @@
       "forward": "Forward",
       "comment": "Comment",
       "people": "Show the people",
+      "list": "Show or hide the list",
       "search": "Search mail",
       "escape": "Close or clear selection"
     },

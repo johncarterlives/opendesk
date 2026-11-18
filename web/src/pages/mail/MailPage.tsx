@@ -114,6 +114,17 @@ function BulkButton({ label, shortcut, onClick, children }: { label: string; sho
   );
 }
 
+// The list beside an open conversation (GH#576): shown unless hidden, kept per browser.
+const LIST_KEY = "od-mail-list";
+
+function readList() {
+  try {
+    return localStorage.getItem(LIST_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
 function usePhone() {
   return useSyncExternalStore(
     (cb) => {
@@ -227,6 +238,20 @@ export default function MailPage() {
   );
   const open = useCallback((x: MailThread | undefined) => x && go(x.id), [go]);
   const close = useCallback(() => go(undefined), [go]);
+  // Hiding the list gives an open conversation the full width; it comes back when the conversation closes.
+  const [listOpen, setListOpen] = useState(readList);
+  const toggleList = useCallback(
+    () =>
+      setListOpen((v) => {
+        try {
+          localStorage.setItem(LIST_KEY, v ? "0" : "1");
+        } catch {
+          /* storage unavailable */
+        }
+        return !v;
+      }),
+    [],
+  );
 
   const setQuery = (v: string) => {
     const next: MailSearch = { ...search, q: v.trim() || undefined };
@@ -797,6 +822,7 @@ export default function MailPage() {
     "global.new": () => compose.open({ accountId: account?.id ?? folderAccount?.id }),
     "mail.comment": () => openId && threadRef.current?.comment(),
     "mail.people": () => openId && threadRef.current?.people(),
+    "mail.list": () => openId && toggleList(),
     "mail.search": () => searchRef.current?.focus(),
     "mail.escape": () => {
       if (selected.size || every.running) clearSelection();
@@ -876,7 +902,10 @@ export default function MailPage() {
     <div className="relative flex h-full min-h-0">
       <section
         aria-label={title}
-        className={cn("relative flex min-h-0 flex-col", split ? "hidden w-[340px] shrink-0 border-r border-line lg:flex xl:w-[380px] 2xl:w-[420px]" : "min-w-0 flex-1")}
+        className={cn(
+          "relative flex min-h-0 flex-col",
+          !split ? "min-w-0 flex-1" : listOpen ? "hidden w-[340px] shrink-0 border-r border-line lg:flex xl:w-[380px] 2xl:w-[420px]" : "hidden",
+        )}
       >
         <div className="flex h-12 shrink-0 items-center gap-2 border-b border-line px-4">
           <span className="flex size-4 shrink-0 items-center justify-center text-fg-3 [&_svg]:size-4">{titleIcon}</span>
@@ -1209,6 +1238,8 @@ export default function MailPage() {
             ref={threadRef}
             threadId={openId}
             onClose={close}
+            listOpen={listOpen}
+            onToggleList={toggleList}
             onPrev={idx > 0 ? () => open(threads[idx - 1]) : undefined}
             onNext={idx >= 0 && idx < threads.length - 1 ? () => open(threads[idx + 1]) : undefined}
             position={idx >= 0 ? { index: idx + 1, total: threads.length } : undefined}

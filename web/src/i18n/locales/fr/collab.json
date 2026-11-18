@@ -286,6 +286,8 @@
     "notFound": "Cette conversation n’est plus disponible",
     "notFoundHint": "Elle a été supprimée, n’est plus accessible ou son compte a été déconnecté.",
     "back": "Retour à la liste",
+    "hideList": "Masquer la liste",
+    "showList": "Afficher la liste",
     "snoozedUntil": "En pause jusqu’au {{when}}",
     "sharedWith": "Partagée avec {{who}}",
     "assignedTo": "Attribuée à {{who}}",

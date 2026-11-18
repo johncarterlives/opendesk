@@ -314,6 +314,8 @@
     "notFound": "Tato konverzace již není dostupná",
     "notFoundHint": "Byla odstraněna, přesunuta mimo váš dosah nebo byl její účet odpojen.",
     "back": "Zpět na seznam",
+    "hideList": "Skrýt seznam",
+    "showList": "Zobrazit seznam",
     "snoozedUntil": "Odloženo do {{when}}",
     "sharedWith": "Sdíleno s: {{who}}",
     "assignedTo": "Přiřazeno: {{who}}",

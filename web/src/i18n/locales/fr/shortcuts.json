@@ -107,6 +107,7 @@
       "forward": "Transférer",
       "comment": "Commenter",
       "people": "Afficher les personnes",
+      "list": "Afficher ou masquer la liste",
       "search": "Rechercher dans le mail",
       "escape": "Fermer ou vider la sélection"
     },

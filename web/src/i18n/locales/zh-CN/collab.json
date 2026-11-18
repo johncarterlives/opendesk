@@ -251,6 +251,8 @@
     "notFound": "这个会话已不存在",
     "notFoundHint": "它已被删除、移出你的访问范围，或所属账户已断开连接。",
     "back": "返回列表",
+    "hideList": "隐藏列表",
+    "showList": "显示列表",
     "snoozedUntil": "已稍后处理至 {{when}}",
     "sharedWith": "已共享给 {{who}}",
     "assignedTo": "分配给 {{who}}",

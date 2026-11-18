@@ -121,6 +121,7 @@ export const SHORTCUTS = def([
   { id: "mail.forward", keys: "f", scope: "mail", needs: "mail" },
   { id: "mail.comment", keys: "shift+c", scope: "mail", needs: "mail" },
   { id: "mail.people", keys: "]", scope: "mail", needs: "mail" },
+  { id: "mail.list", keys: "[", scope: "mail", needs: "mail" },
   { id: "mail.search", keys: "/", scope: "mail", needs: "mail" },
   { id: "mail.escape", keys: "escape", scope: "mail", needs: "mail" },
   // A page of Pages or the wiki.

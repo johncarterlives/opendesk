@@ -1222,6 +1222,11 @@ button show and hide it, kept per browser), and opens over the conversation on n
 address, Write (new mail to them), All mail (the list with `with`, the conversation kept open), the
 count and the oldest synced date, their other conversations (one opens in place) and their files.
 
+On the other side, the list stays beside an open conversation on screens at least 1024 px wide, and
+`[` or the button next to Back hides it so the conversation takes the full width (kept per browser).
+The list is back once the conversation closes, and `j` / `k` still move through it while hidden.
+Narrower screens always open a conversation in place of the list.
+
 ## Endpoints
 
 Every route needs a user session (`auth.KindUser`) and membership. "see": the caller sees the

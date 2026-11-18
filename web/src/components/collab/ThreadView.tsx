@@ -3,7 +3,8 @@
 // first with the older ones folded, the team's comments, and the reply composer.
 // Writing a comment and the reply buttons are pinned under it, whatever its length; while a
 // reply is written the reply buttons step aside for it, and the comment entry and count stay.
-// Beside it, who it is with: the people panel (] shows and hides it).
+// Beside it, who it is with: the people panel (] shows and hides it). On the other side, the
+// list ([ shows and hides it, so the conversation can take the full width).
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -23,6 +24,7 @@ import {
   MessageSquare,
   MessageSquarePlus,
   MoreHorizontal,
+  PanelLeft,
   PanelRight,
   RefreshCw,
   Reply,
@@ -85,6 +87,9 @@ export type ThreadViewHandle = { reply: (mode: ComposeMode) => void; comment: ()
 export type ThreadViewProps = {
   threadId: string;
   onClose: () => void;
+  /** Whether the list shows beside the conversation, and the button that hides or shows it ([). */
+  listOpen?: boolean;
+  onToggleList?: () => void;
   onPrev?: () => void;
   onNext?: () => void;
   position?: { index: number; total: number };
@@ -172,7 +177,7 @@ function folderPills(detail: MailThreadDetail, folders: MailFolder[] | undefined
     .map((f) => ({ id: f.id, name: f.role ? box(f.role) : f.name, color: f.color }));
 }
 
-export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function ThreadView({ threadId, onClose, onPrev, onNext, position, onAction, markReadOnOpen, intent, openDraft, onOpenThread, onShowPerson }, ref) {
+export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function ThreadView({ threadId, onClose, listOpen, onToggleList, onPrev, onNext, position, onAction, markReadOnOpen, intent, openDraft, onOpenThread, onShowPerson }, ref) {
   const { t } = useTranslation("collab");
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -543,6 +548,14 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
         <HeaderButton label={t("thread.back")} shortcut="escape" onClick={onClose}>
           <ArrowLeft />
         </HeaderButton>
+        {onToggleList && (
+          // Only where the list sits beside the conversation; narrower screens already give it the full width.
+          <span className="hidden lg:flex">
+            <HeaderButton label={listOpen ? t("thread.hideList") : t("thread.showList")} shortcut="[" active={listOpen} onClick={onToggleList}>
+              <PanelLeft />
+            </HeaderButton>
+          </span>
+        )}
         <span aria-hidden className="mx-1.5 h-4 w-px bg-line" />
         {canAct && (
           <>

@@ -266,6 +266,8 @@
     "notFound": "Diese Unterhaltung gibt es nicht mehr",
     "notFoundHint": "Sie wurde entfernt, außerhalb deiner Reichweite verschoben oder ihr Konto wurde getrennt.",
     "back": "Zurück zur Liste",
+    "hideList": "Liste ausblenden",
+    "showList": "Liste einblenden",
     "sharedWith": "Geteilt mit {{who}}",
     "assignedTo": "Zugewiesen an {{who}}",
     "following": "In deinen Erwähnungen",

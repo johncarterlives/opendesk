@@ -275,6 +275,8 @@
     "notFound": "This conversation is gone",
     "notFoundHint": "It was removed, moved out of your reach, or its account was disconnected.",
     "back": "Back to the list",
+    "hideList": "Hide the list",
+    "showList": "Show the list",
     "snoozedUntil": "Snoozed until {{when}}",
     "sharedWith": "Shared with {{who}}",
     "assignedTo": "Assigned to {{who}}",

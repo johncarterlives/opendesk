@@ -296,6 +296,8 @@
     "notFound": "Esta conversación ya no está",
     "notFoundHint": "Se eliminó, quedó fuera de tu alcance o se desconectó su cuenta.",
     "back": "Volver a la lista",
+    "hideList": "Ocultar la lista",
+    "showList": "Mostrar la lista",
     "snoozedUntil": "Pospuesta hasta {{when}}",
     "sharedWith": "Compartida con {{who}}",
     "assignedTo": "Asignada a {{who}}",
