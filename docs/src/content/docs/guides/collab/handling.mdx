@@ -56,7 +56,7 @@ An email snoozed in Gmail itself shows in Collab as archived, out of Needs actio
 
 ## Review AI drafts
 
-An AI client with an explicitly granted `collab:draft` key can pick up the longest-waiting Needs action conversation it is allowed to see on a shared account with Handling on. The queue skips conversations with a draft or another active AI claim. The client saves a reply for a person to review; it cannot send it or finish the work.
+An AI client with an explicitly granted `collab:draft` key can pick up the longest-waiting Needs action conversation on a shared account with Handling on that the key's creator can see. The queue skips conversations with a draft, another active AI claim, or one this key skipped since the last new message. The client saves a reply for a person to review; it cannot send it or finish the work.
 
 **Ready for review** lists inbox conversations with an AI draft you can see, including drafts outside the shared-account queue. The draft is labelled **AI draft by** the client's key name.
 
@@ -69,6 +69,6 @@ The conversation stays in Needs action until a reply is sent or someone marks it
 ## Related
 
 - [Shared and private accounts](/guides/collab/shared-and-private-accounts/)
-- [Organising mail](/guides/collab/organising/)
+- [Organizing mail](/guides/collab/organizing/)
 - [Replying](/guides/collab/replying/)
 - [Collab keyboard shortcuts](/guides/keyboard-shortcuts/#collab)

@@ -80,12 +80,12 @@ Microsoft and IMAP signatures live in opendesk. From names or signatures using s
 
 ## AI drafts and privacy
 
-A workspace's chosen AI client, using a local or hosted model, can draft replies through an API key explicitly given `collab:draft`. The key acts as the member who created it and reads only conversations that member can see, including their messages and internal comments. It can save reply drafts but cannot send, discard, archive, mark read, assign, share or comment. Reading through the key does not mark mail read.
+An AI client you choose, using a local or hosted model, can draft replies through an API key explicitly given `collab:draft`. The key acts as the member who created it and reads only conversations that member can see, including their messages and internal comments. It can save reply drafts but cannot send, discard, archive, mark read, assign, share or comment. Reading through the key does not mark mail read.
 
 The key's name appears in **AI draft by …**. Review the facts, tone and recipients before sending. Saving your edits takes over the draft so the AI key cannot overwrite your work. [Ready for review](/guides/collab/handling/#review-ai-drafts) brings waiting drafts together.
 
 <Callout type="note" title="Choose AI access deliberately">
-The draft client's model runs outside opendesk's own AI usage: opendesk does not run or meter it. That client may send the mail it reads to its configured model provider. A private account is not excluded if the key's creator can see it. Normal API keys and the general Ollie assistant do not have unrestricted Mail access. Separately, enabled [inbox sorting](/guides/inbox-categories/) can give Ollie limited message details, and an owner's explicit account-level consent can let teammates' Ollie ask theirs for answers under that owner's sharing rules.
+The draft client's model runs outside opendesk's own AI usage: opendesk does not run or meter it. That client may send the mail it reads to its configured model provider. A private account is not excluded if the key's creator can see it. Other API keys and the Ollie assistant cannot read Mail. Separately, enabled [inbox sorting](/guides/inbox-categories/) can give Ollie limited message details, and an owner's explicit account-level consent can let teammates' Ollie ask theirs for answers under that owner's sharing rules.
 </Callout>
 
 ### Give feedback on a draft
