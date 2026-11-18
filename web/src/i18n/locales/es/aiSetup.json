@@ -1,0 +1,159 @@
+{
+  "setup": {
+    "title": "Prepara tu agente",
+    "description": "Cada paso mejora las respuestas de Ollie. Los pasos opcionales ayudan, pero no son necesarios.",
+    "progress": "{{done}} de {{total}} listos",
+    "progressLabel": "{{done}} de {{total}} pasos obligatorios listos",
+    "optional": "Opcional",
+    "stepDone": "Listo",
+    "stepTodo": "Todavía no",
+    "complete": "Tu agente está configurado",
+    "completeBody": "Ollie tiene lo que necesita. Sigue mejorándolo con la zona de pruebas y las preguntas de abajo.",
+    "showSteps": "Mostrar pasos",
+    "hideSteps": "Ocultar pasos",
+    "needsAi": "Activa la IA primero",
+    "error": "No se pudieron cargar los pasos de configuración.",
+    "retry": "Reintentar",
+    "steps": {
+      "ai_on": {
+        "title": "Activa la IA",
+        "why": "Ollie necesita la IA activada en el espacio de trabajo antes de responder a alguien.",
+        "action": "Abrir ajustes de IA"
+      },
+      "identity": {
+        "title": "Ponle nombre a tu agente y dile cómo ayudar",
+        "why": "Un nombre, una imagen e instrucciones hacen que las respuestas suenen como tu equipo.",
+        "action": "Configurar la identidad"
+      },
+      "knowledge": {
+        "title": "Dale algo que saber",
+        "why": "Ollie responde solo a partir de artículos de ayuda publicados y fuentes de conocimiento listas.",
+        "action": "Añadir conocimiento"
+      },
+      "tools": {
+        "title": "Conecta herramientas",
+        "why": "Deja que Ollie busque pedidos o cuentas en tus propios sistemas.",
+        "action": "Conectar una herramienta"
+      },
+      "playground": {
+        "title": "Pruébalo en la zona de pruebas",
+        "why": "Haz algunas preguntas reales y revisa las respuestas antes que los visitantes.",
+        "action": "Abrir la zona de pruebas"
+      },
+      "widget": {
+        "title": "Instala el widget de chat",
+        "why": "Los visitantes llegan a Ollie por el widget de tu sitio.",
+        "action": "Instalar el widget"
+      },
+      "answers_on": {
+        "title": "Deja que Ollie responda los chats",
+        "why": "Activa las respuestas para que Ollie conteste a los visitantes y derive cuando corresponda.",
+        "action": "Activar respuestas"
+      },
+      "email_answers": {
+        "title": "Responde correos también",
+        "why": "Activa Ollie en un buzón para redactar o enviar respuestas por correo.",
+        "action": "Elegir un buzón"
+      }
+    }
+  },
+  "clients": {
+    "title": "Clientes de IA",
+    "description": "Usa opendesk desde Claude, ChatGPT, Cursor, VS Code y otros clientes MCP. Trabajan tus tickets, contactos y artículos de ayuda con el acceso que les das.",
+    "server": "URL del servidor MCP",
+    "serverHint": "Los clientes que inician sesión con OAuth solo necesitan esta dirección.",
+    "setupTitle": "Conectar un cliente",
+    "setupHint": "Elige tu cliente y sigue los pasos.",
+    "oauthBadge": "Iniciar sesión",
+    "keyBadge": "Clave de API",
+    "keyPlaceholder": "od_live_...",
+    "steps": {
+      "claude": "En Claude, abre Ajustes, luego Conectores y elige Añadir conector personalizado. Pega la URL y selecciona Conectar. Inicia sesión en opendesk y aprueba.",
+      "chatgpt": "En ChatGPT, añade un conector en modo desarrollador con esta URL y autenticación OAuth. Inicia sesión en opendesk y aprueba.",
+      "claudeCode": "Ejecuta esto en tu terminal. Claude Code abre opendesk para iniciar sesión la primera vez que uses el servidor.",
+      "claudeCodeKey": "O envía una clave de API en un encabezado en lugar de iniciar sesión:",
+      "claudeDesktop": "Es mejor un conector con inicio de sesión (mira Claude). Para usar una clave de API, abre Ajustes, luego Desarrollador, luego Editar configuración, añade esto y reinicia Claude Desktop. Necesita Node.js.",
+      "cursor": "Añade esto a ~/.cursor/mcp.json para todos los proyectos, o a .cursor/mcp.json para uno. Luego revisa los ajustes de Cursor, MCP.",
+      "vscode": "Añade esto como .vscode/mcp.json en tu espacio de trabajo. VS Code pide la clave la primera vez y la guarda de forma segura.",
+      "other": "Cualquier cliente que hable Streamable HTTP funciona: con OAuth si admite la especificación de autorización de MCP, o con una clave de API en el encabezado Authorization."
+    },
+    "keyNeeded": "Este cliente envía una clave de API en un encabezado.",
+    "keyCreate": "Crear una clave",
+    "keyAskAdmin": "Pide a un administrador que cree una clave de API.",
+    "keyShownOnce": "Cópiala ahora. Se muestra una sola vez y se rellena en los fragmentos de arriba hasta que salgas de esta página.",
+    "keyDialog": {
+      "title": "Crear una clave de API para un cliente de IA",
+      "description": "El cliente solo obtiene las herramientas que permiten estos alcances.",
+      "name": "Nombre",
+      "namePlaceholder": "Cursor en mi portátil",
+      "access": "Acceso",
+      "read": "Solo lectura",
+      "readHint": "Buscar y leer tickets, contactos y artículos.",
+      "write": "Lectura y escritura",
+      "writeHint": "También responder, añadir notas, actualizar tickets y redactar artículos.",
+      "expires": "Caduca",
+      "in30": "En 30 días",
+      "in90": "En 90 días",
+      "in365": "En un año",
+      "create": "Crear clave",
+      "cancel": "Cancelar",
+      "nameRequired": "Ponle un nombre a la clave.",
+      "error": "No se pudo crear la clave."
+    },
+    "tools": "Herramientas que ofrece",
+    "toolsHint": "Un cliente ve una herramienta solo cuando su acceso incluye los alcances de esa herramienta.",
+    "readOnly": "Lectura",
+    "changes": "Modifica datos",
+    "connections": "Clientes conectados",
+    "connectionsHint": "Clientes conectados con inicio de sesión. Actúan como la persona que los conectó.",
+    "connectionsHintAdmin": "Clientes conectados con inicio de sesión, de cada miembro. Actúan como la persona que los conectó.",
+    "lastUsed": "Último uso {{when}}",
+    "connectedBy": "Conectado por {{name}}",
+    "you": "tú",
+    "onComputer": "una app en esta computadora",
+    "revoke": "Desconectar",
+    "revokeTitle": "¿Desconectar {{name}}?",
+    "revokeBody": "Deja de funcionar de inmediato y tiene que iniciar sesión de nuevo para reconectarse.",
+    "revokeError": "No se pudo desconectar el cliente.",
+    "emptyTitle": "Todavía no hay clientes conectados",
+    "emptyBody": "Añade opendesk como conector en Claude o ChatGPT con la URL de arriba. Aparece aquí cuando lo apruebes.",
+    "emptyTipSignIn": "Inicio de sesión, sin clave que copiar",
+    "emptyTipRole": "Nunca más de lo que permite tu rol",
+    "error": "No se pudieron cargar los clientes conectados.",
+    "retry": "Reintentar"
+  },
+  "scopes": {
+    "tickets:read": "Leer tickets",
+    "tickets:write": "Responder y actualizar tickets",
+    "contacts:read": "Leer contactos",
+    "contacts:write": "Actualizar contactos",
+    "kb:read": "Leer artículos de ayuda",
+    "kb:write": "Redactar artículos de ayuda",
+    "wiki:read": "Leer la wiki del equipo",
+    "wiki:write": "Escribir la wiki del equipo",
+    "settings:read": "Leer compañeros, equipos e informes"
+  },
+  "consent": {
+    "title": "Conectar {{name}} a opendesk",
+    "subtitle": "{{name}} quiere trabajar en opendesk como tú.",
+    "workspace": "Espacio de trabajo",
+    "access": "Podrá",
+    "notIncluded": "No incluido: tu rol en este espacio de trabajo no puede hacer esto",
+    "noScopes": "Tu rol en este espacio de trabajo no puede usar nada de esto. Elige otro espacio de trabajo o pide ayuda a un administrador.",
+    "redirect": "Después de decidir, vuelves a {{host}}.",
+    "redirectLocal": "Después de decidir, vuelves a una app en esta computadora ({{host}}).",
+    "trust": "Conecta solo apps de confianza. Puedes desconectarla cuando quieras en Ajustes, Clientes de IA.",
+    "approve": "Aprobar",
+    "deny": "Rechazar",
+    "approving": "Conectando",
+    "returning": "Volviendo a {{name}}",
+    "expiredTitle": "Esta solicitud terminó",
+    "expiredBody": "Caducó o ya se respondió. Empieza de nuevo desde tu cliente de IA.",
+    "invalidTitle": "Esta app no puede conectarse",
+    "invalidBody": "La solicitud de conexión no es válida. Empieza de nuevo desde tu cliente de IA, o pide ayuda a quien la desarrolla.",
+    "noWorkspaceTitle": "Todavía no estás en un espacio de trabajo",
+    "noWorkspaceBody": "Crea o únete a un espacio de trabajo y luego conecta la app de nuevo.",
+    "error": "Algo salió mal. Inténtalo de nuevo.",
+    "goHome": "Ir a opendesk"
+  }
+}

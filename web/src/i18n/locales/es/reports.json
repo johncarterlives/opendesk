@@ -1,0 +1,166 @@
+{
+  "title": "Informes",
+  "compared_one": "Comparado con el día anterior",
+  "compared_other": "Comparado con los {{count}} días anteriores",
+  "compared_many": "Comparado con los {{count}} de días anteriores",
+  "loading": "Cargando informes",
+  "error": {
+    "title": "No se pudieron cargar los informes",
+    "description": "Revisa tu conexión e inténtalo de nuevo.",
+    "retry": "Reintentar"
+  },
+  "empty": {
+    "title": "Todavía no hay nada que informar",
+    "description": "Los informes se completan cuando llegan tickets. Las cifras de esta tarjeta son datos de ejemplo.",
+    "sample": "Datos de ejemplo",
+    "sampleHint": "Una vista previa de lo que muestra esta página cuando llegan tickets. Ninguno de estos números es real."
+  },
+  "unit": {
+    "tickets_one": "{{count}} ticket",
+    "tickets_other": "{{count}} tickets",
+    "tickets_many": "{{count}} de tickets"
+  },
+  "kpi": {
+    "created": "Creados",
+    "solved": "Resueltos",
+    "openNow": "Abiertos ahora",
+    "rightNow": "Ahora mismo",
+    "firstResponse": "Primera respuesta",
+    "resolution": "Resolución",
+    "median": "Mediana",
+    "csat": "CSAT",
+    "ratings_one": "{{count}} valoración",
+    "ratings_other": "{{count}} valoraciones",
+    "ratings_many": "{{count}} de valoraciones",
+    "slaBreached": "SLA incumplido"
+  },
+  "delta": {
+    "none": "Sin cambio",
+    "title": "Comparado con el período anterior",
+    "better": "mejor que el período anterior",
+    "worse": "peor que el período anterior"
+  },
+  "volume": {
+    "title": "Volumen en el tiempo",
+    "subtitle": "Tickets creados y resueltos cada día",
+    "chart": "Gráfico",
+    "table": "Tabla",
+    "avg": "Promedio diario",
+    "perDay": "creados al día",
+    "busiest": "Día con más actividad",
+    "solveRate": "Tasa de resolución",
+    "solvedOfCreated": "resueltos de los creados"
+  },
+  "backlog": {
+    "title": "Pendientes",
+    "subtitle": "Trabajo abierto ahora mismo, por estado",
+    "open": "Trabajo abierto",
+    "tickets": "tickets",
+    "unassigned": "Sin asignar",
+    "emptyTitle": "Bandeja en cero",
+    "emptyDescription": "No hay tickets abiertos ahora mismo."
+  },
+  "channel": {
+    "title": "Por canal",
+    "subtitle": "Tickets creados en el período"
+  },
+  "open": {
+    "subtitle": "Trabajo abierto ahora mismo",
+    "sample": "Los {{count}} tickets abiertos más recientes"
+  },
+  "priority": {
+    "title": "Por prioridad"
+  },
+  "severity": {
+    "title": "Por gravedad",
+    "subtitle": "Tickets creados en el período",
+    "none": "Sin gravedad"
+  },
+  "tags": {
+    "title": "Por etiqueta",
+    "emptyTitle": "No hay etiquetas en el trabajo abierto",
+    "emptyDescription": "Etiqueta los tickets para ver qué pregunta la gente."
+  },
+  "agents": {
+    "title": "Clasificación",
+    "subtitle": "Tickets resueltos en el período",
+    "caption": "Tickets resueltos y tiempo de primera respuesta por agente",
+    "agent": "Agente",
+    "solved": "Resueltos",
+    "share": "Proporción",
+    "firstResponse": "Primera respuesta",
+    "emptyTitle": "No hay tickets resueltos",
+    "emptyDescription": "Los agentes aparecen aquí cuando resuelven tickets en este período."
+  },
+  "response": {
+    "title": "Tiempos de respuesta",
+    "subtitle": "Medianas del período",
+    "fastest": "Primera respuesta más rápida",
+    "none": "Todavía no hay respuestas en este período."
+  },
+  "filter": {
+    "teamLabel": "Equipo: {{value}}",
+    "brandLabel": "Marca: {{value}}",
+    "allTeams": "Todos los equipos",
+    "noTeam": "Sin equipo",
+    "private": "Privado",
+    "allBrands": "Todas las marcas",
+    "searchTeams": "Buscar equipos",
+    "searchBrands": "Buscar marcas"
+  },
+  "groups": {
+    "narrow": "Mostrar solo esto en el informe"
+  },
+  "byTeam": {
+    "title": "Por equipo",
+    "subtitle": "Tickets creados y resueltos en el período, abiertos ahora",
+    "caption": "Tickets creados, resueltos y abiertos, y tiempo de primera respuesta, por equipo",
+    "team": "Equipo",
+    "hidden": "Los equipos privados en los que no estás quedan fuera de aquí. Los totales de arriba cuentan sus tickets.",
+    "emptyTitle": "No hay trabajo de equipos en este período",
+    "emptyDescription": "Los equipos aparecen aquí cuando llegan sus tickets o se resuelven."
+  },
+  "byBrand": {
+    "title": "Por marca",
+    "subtitle": "Tickets creados y resueltos en el período, abiertos ahora",
+    "caption": "Tickets creados, resueltos y abiertos, y tiempo de primera respuesta, por marca",
+    "brand": "Marca",
+    "emptyTitle": "No hay trabajo de marcas en este período",
+    "emptyDescription": "Las marcas aparecen aquí cuando llegan sus tickets o se resuelven."
+  },
+  "filtered": {
+    "emptyTitle": "Nada aquí en este período",
+    "emptyDescription": "Ningún ticket coincide con este equipo y esta marca en el período. Prueba un rango más largo o borra los filtros.",
+    "clear": "Borrar filtros"
+  },
+  "work": {
+    "title": "Agentes",
+    "subtitle": "El trabajo de cada compañero en el período",
+    "subtitleSelf": "Tu trabajo en el período",
+    "caption": "Tickets asignados y resueltos, respuestas, notas, tiempos de respuesta y de gestión, y tiempo en línea por agente",
+    "agent": "Agente",
+    "assigned": "Asignados",
+    "assignedHint": "Tickets asignados a esa persona en el período, y tickets nuevos creados ya asignados a ella",
+    "solved": "Resueltos",
+    "solvedHint": "Tickets resueltos en el período que están asignados a esa persona",
+    "replies": "Respuestas",
+    "repliesHint": "Respuestas que enviaron a los clientes en el período",
+    "notes": "Notas",
+    "notesHint": "Notas internas que escribieron en el período",
+    "perSolved": "Respuestas por resolución",
+    "perSolvedHint": "Sus respuestas en los tickets que resolvieron, por ticket",
+    "firstResponse": "Primera respuesta",
+    "firstResponseHint": "Tiempo mediano hasta la primera respuesta en sus tickets creados en el período",
+    "handle": "Tiempo de gestión",
+    "handleHint": "Tiempo mediano desde la última asignación hasta que se resolvió el ticket",
+    "online": "En línea",
+    "onlineHint": "Tiempo en opendesk con su estado en En línea",
+    "onlineNote": "En línea cuenta el tiempo que cada compañero tuvo opendesk abierto con su estado en En línea, sea cual sea el filtro de equipo o marca.",
+    "onlineSelf": "Ves tu propio trabajo y tu tiempo en línea. Los administradores ven el de todos.",
+    "onlineOff": "El tiempo en línea está desactivado en este espacio de trabajo, así que no se registra ni se muestra. Los administradores pueden activarlo en Ajustes → Espacio de trabajo.",
+    "emptyTitle": "No hay agentes para mostrar",
+    "emptyDescription": "Los agentes aparecen aquí cuando trabajan tickets en este período.",
+    "emptySelf": "Tu trabajo aparece aquí cuando trabajas tickets en este período. Los administradores ven el de todos.",
+    "errorTitle": "No se pudieron cargar los agentes"
+  }
+}

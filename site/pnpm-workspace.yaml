@@ -1,2 +1,7 @@
 minimumReleaseAgeExclude:
   - satori@0.56.1
+auditConfig:
+  ignoreGhsas:
+    # picomatch ReDoS (no patched release yet): it matches the build's own globs at build
+    # time only, never input from a visitor. Drop this once a fixed picomatch is released.
+    - GHSA-fc5q-39xc-vjpf

@@ -1,0 +1,1121 @@
+{
+  "personal": {
+    "title": "Respuestas desde las direcciones de los miembros",
+    "description": "Con Collab, los miembros pueden responder los tickets de esta dirección desde una de sus propias cuentas de correo, una respuesta a la vez. Las respuestas del cliente siguen llegando al ticket.",
+    "workspaceLink": "Valores predeterminados del espacio de trabajo",
+    "allowed": "Permitido",
+    "allowedOn": "Los miembros pueden elegir una de sus direcciones en el cuadro de respuesta de los tickets de esta dirección.",
+    "allowedOff": "Las respuestas de los tickets de esta dirección siempre salen desde esta dirección.",
+    "workspaceDefault": "Predeterminado ({{value}})",
+    "on": "Activado",
+    "off": "Desactivado",
+    "replyTo": "Las respuestas van a",
+    "replyToHint": "Adónde van las respuestas del cliente, salvo que el miembro elija otro destino. De cualquier forma vuelven al ticket.",
+    "replyToAddress": "Su dirección",
+    "replyToMailbox": "Esta dirección",
+    "accounts": "Qué direcciones",
+    "accountsAny": "Cualquier dirección de una cuenta desde la que el miembro pueda enviar, privada o compartida.",
+    "accountsShared": "Solo cuentas compartidas con el equipo, nunca el correo privado de alguien.",
+    "accountsDomain": "Solo direcciones en {{domains}}.",
+    "any": "Cualquiera",
+    "shared": "Cuentas compartidas",
+    "domain": "En {{domain}}"
+  },
+  "ollie": {
+    "description": "Deja que {{name}} responda los correos de este buzón a partir de tu conocimiento.",
+    "toggle": "{{name}} responde los correos de este buzón",
+    "toggleHint": "Desactivado de forma predeterminada. El spam, las respuestas automáticas, las listas y el correo de tu equipo nunca se responden.",
+    "aiOff": "La IA está desactivada en este espacio de trabajo.",
+    "aiOffLink": "Actívala en Ajustes > IA",
+    "mode": "Modo",
+    "draft": "Borrador para revisar",
+    "send": "Enviar automáticamente",
+    "draftHint": "{{name}} escribe una respuesta sugerida en el ticket. Un compañero la envía con un clic, la edita o la descarta.",
+    "sendHint": "{{name}} responde por correo de inmediato y pasa el correo a tu equipo cuando tiene dudas.",
+    "outsideHours": "Solo fuera del horario de atención",
+    "outsideHoursHint": "En el horario de atención, tu equipo responde como siempre.",
+    "hoursOff": "El horario de atención está desactivado, así que esto no tiene efecto.",
+    "cost": "Cada respuesta cuesta cerca de {{cost}} en el modelo del agente.",
+    "handoff": "Cuando {{name}} no puede ayudar, el ticket espera a tu equipo, sin responsable.",
+    "behaviourLink": "Comportamiento del agente"
+  },
+  "kind": {
+    "google": "Google",
+    "microsoft": "Microsoft 365",
+    "imap": "IMAP y SMTP",
+    "forwarding": "Reenvío"
+  },
+  "status": {
+    "active": "Activo",
+    "error": "Necesita atención",
+    "disabled": "Desactivado"
+  },
+  "list": {
+    "title": "Buzones",
+    "description": "Direcciones de correo cuyos mensajes se convierten en tickets. Las respuestas salen desde la misma dirección.",
+    "add": "Agregar buzón",
+    "addFirst": "Agregar un buzón",
+    "count_one": "{{count}} buzón",
+    "count_other": "{{count}} buzones",
+    "count_many": "{{count}} de buzones",
+    "emptyTitle": "Todavía no hay buzones",
+    "emptyBody": "Reenvía tu dirección de soporte desde cualquier proveedor y luego elige cómo se envían las respuestas.",
+    "never": "Nunca se sincronizó",
+    "noMail": "Todavía no hay correo",
+    "quiet": "En silencio desde hace {{count}} días",
+    "instant": "Al instante",
+    "syncedAgo": "Sincronizado {{when}}",
+    "actionsFor": "Acciones para {{email}}",
+    "test": "Probar conexión",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "remove": "Quitar",
+    "connected": "Buzón conectado",
+    "connectedForward": "Conectado. Reenvía el correo del buzón a opendesk para terminar.",
+    "connectFailed": "No se pudo conectar el buzón.",
+    "noTeam": "Sin equipo",
+    "colAddress": "Dirección",
+    "colConnection": "Conexión",
+    "colTeam": "Equipo",
+    "colStatus": "Estado",
+    "colSynced": "Último correo",
+    "emptyTips": {
+      "forward": "El reenvío funciona con cualquier proveedor",
+      "team": "Cada buzón puede enrutarse a un equipo"
+    }
+  },
+  "summary": {
+    "total": "Buzones",
+    "active": "Activos",
+    "attention": "Necesitan atención",
+    "disabled": "Desactivados",
+    "allGood": "Todos reciben correo",
+    "checkThese": "Ábrelo para ver el error",
+    "paused": "Sin sincronizar"
+  },
+  "oauthErrors": {
+    "access_denied": "Se canceló la conexión.",
+    "invalid_state": "La conexión caducó. Inténtalo de nuevo.",
+    "provider_error": "El proveedor devolvió un error. Inténtalo de nuevo.",
+    "provider_unavailable": "Ese proveedor no está configurado en este servidor."
+  },
+  "actions": {
+    "removeTitle": "¿Quitar el buzón?",
+    "removeBody": "El correo enviado a {{email}} deja de llegar a opendesk. Los tickets existentes se quedan.",
+    "removeBodyTickets_one": "El correo enviado a {{email}} deja de llegar a opendesk. El ticket que responde desde él se queda ({{open}} abierto), pero sus respuestas ya no saldrán desde {{email}}.",
+    "removeBodyTickets_other": "El correo enviado a {{email}} deja de llegar a opendesk. Los {{count}} tickets que responden desde él se quedan ({{open}} abiertos), pero sus respuestas ya no saldrán desde {{email}}.",
+    "removeBodyTickets_many": "El correo enviado a {{email}} deja de llegar a opendesk. Los {{count}} de tickets que responden desde él se quedan ({{open}} abiertos), pero sus respuestas ya no saldrán desde {{email}}.",
+    "removeConfirm": "Quitar",
+    "removed": "Buzón quitado",
+    "testTitle": "Prueba de conexión",
+    "testFailed": "No se pudo ejecutar la prueba. Inténtalo de nuevo en un momento.",
+    "done": "Listo"
+  },
+  "test": {
+    "receiving": "Recepción",
+    "sending": "Envío",
+    "works": "{{what}} funciona",
+    "failed": "{{what}} falló",
+    "detail": "El servidor dijo"
+  },
+  "receiving": {
+    "pill": "No recibe",
+    "pillHint": "La recepción por IMAP está desactivada en esta instancia. Cambia el buzón a reenvío.",
+    "offTitle": "Este buzón no está recibiendo correo",
+    "offBody": "La recepción por IMAP está desactivada en esta instancia, así que opendesk ya no trae el correo de {{email}}. Cambia a reenvío para seguir recibiéndolo. Las respuestas siguen saliendo como hasta ahora.",
+    "switch": "Cambiar a reenvío",
+    "confirmTitle": "¿Cambiar a reenvío?",
+    "confirmBody": "opendesk deja de iniciar sesión en {{email}} para traer el correo y le da una dirección a la que reenviar. El correo nuevo llega cuando el reenvío queda configurado. Las respuestas siguen saliendo como hasta ahora.",
+    "switched": "Se cambió a reenvío. Configura el reenvío abajo.",
+    "title": "Recepción",
+    "imapHint": "opendesk inicia sesión en el buzón para traer el correo nuevo. El reenvío funciona sin iniciar sesión.",
+    "apiHint": "opendesk lee el correo nuevo a través de {{provider}}. El reenvío funciona sin eso."
+  },
+  "sendingOff": {
+    "pill": "No envía",
+    "pillHint": "Este buzón no tiene forma de enviar respuestas. Conecta Google o Microsoft, o agrega SMTP.",
+    "title": "Este buzón no puede enviar respuestas",
+    "body": "Las respuestas de {{email}} salen por tu propio proveedor de correo. Conecta Google o Microsoft, o agrega SMTP de tu servidor de correo o de un servicio de envío como Resend o Postmark. Hasta entonces, no se pueden enviar respuestas.",
+    "choose": "Elige SMTP, o conecta tu proveedor abajo.",
+    "none": "Sin configurar"
+  },
+  "smtpPresets": {
+    "label": "¿Usas un servicio de envío?",
+    "hint": {
+      "resend": "La contraseña es una clave de API de Resend. Verifica primero tu dominio en Resend.",
+      "postmark": "El nombre de usuario y la contraseña son el mismo token de API del servidor de Postmark. Verifica primero tu dominio en Postmark.",
+      "sendgrid": "La contraseña es una clave de API de SendGrid con acceso a Mail Send. Verifica primero tu dominio en SendGrid.",
+      "mailgun": "Usa el nombre de usuario y la contraseña SMTP de tu dominio en Mailgun. Los dominios de la región UE usan smtp.eu.mailgun.org.",
+      "brevo": "Usa el usuario SMTP y una clave SMTP de los ajustes de SMTP y API de Brevo. Verifica primero tu dominio en Brevo.",
+      "ses": "Usa las credenciales SMTP de la consola de Amazon SES y pon tu región en el nombre del servidor. Verifica primero tu dominio en SES."
+    }
+  },
+  "detail": {
+    "fallbackTitle": "Buzón",
+    "back": "Buzones",
+    "notFound": "No se encontró el buzón",
+    "notFoundBody": "Puede que se haya quitado.",
+    "backToList": "Volver a los buzones",
+    "connection": "Conexión",
+    "testConnection": "Probar conexión",
+    "lastSyncFailed": "Falló la última sincronización",
+    "foldersSkipped": "No se leyeron algunas carpetas",
+    "lastSynced": "Última sincronización",
+    "never": "Nunca",
+    "forwardingInstant": "El correo reenviado llega en cuanto se envía.",
+    "lastReceived": "Último correo recibido",
+    "lastReceivedHint": "Correo que llegó a esta dirección por cualquier vía, incluido el que no se convirtió en ticket.",
+    "noMail": "Todavía no hay correo",
+    "quietNeverTitle": "Todavía no ha llegado correo",
+    "quietTitle_one": "Sin correo desde hace {{count}} día",
+    "quietTitle_other": "Sin correo desde hace {{count}} días",
+    "quietTitle_many": "Sin correo desde hace {{count}} de días",
+    "quietForwarding": "Si los clientes escriben a {{email}}, revisa que siga reenviando a la dirección de abajo y luego envía una prueba desde otra dirección.",
+    "quietConnected": "Si los clientes escriben a {{email}}, prueba la conexión y vuelve a conectar si se revocó el acceso.",
+    "account": "Cuenta",
+    "accountHint": "Conectado con {{provider}}. Vuelve a conectar si se revocó el acceso o si cambió la contraseña.",
+    "accountHintNoImap": "Conectado con {{provider}}. Al volver a conectar queda solo para enviar, y entonces su correo llega por reenvío.",
+    "accountSendOnly": "Conectado con {{provider}} solo para enviar. opendesk no puede leer el buzón. Vuelve a conectar si se revocó el acceso.",
+    "accountDirect": "Lee la bandeja directamente a través de {{provider}}. Los correos nuevos se convierten en tickets por sí solos. Vuelve a conectar si se revocó el acceso.",
+    "directTitle": "Leer la bandeja directamente",
+    "directHint": "Los correos nuevos se convierten en tickets por sí solos. No hay reenvío que configurar. Vas a iniciar sesión con {{provider}} para permitirlo.",
+    "directButton": "Leer la bandeja directamente",
+    "syncTitle": "Leer la bandeja por IMAP",
+    "syncHint": "opendesk trae por su cuenta el correo nuevo de {{email}}, en lugar de esperar el correo reenviado. El buzón y sus tickets se quedan como están. Vas a iniciar sesión con {{provider}} para permitirle leer el buzón.",
+    "syncButton": "Conectar {{provider}}",
+    "reconnect": "Volver a conectar",
+    "incoming": "Entrada (IMAP)",
+    "outgoing": "Salida (SMTP)",
+    "send": {
+      "title": "Envío",
+      "hint": "Cómo llegan a los clientes las respuestas de este buzón.",
+      "via": "Las respuestas se envían",
+      "server": "Servidor SMTP",
+      "passwordNeeded": "Escribe la contraseña de este servidor.",
+      "testHint": "Inicia sesión en el servidor sin enviar nada.",
+      "saveToTest": "Guarda para probar los ajustes nuevos. Al guardar se inicia sesión primero.",
+      "providerBody": "Desde {{email}}, enviado con {{provider}}.",
+      "with": "Con {{provider}}",
+      "connectTitle": "Enviar con {{provider}}",
+      "connectHint": "Las respuestas salen desde {{email}}. Conectar solo permite que opendesk envíe como esta dirección. No lee el buzón.",
+      "connect": "Conectar {{provider}}"
+    },
+    "sending": "Nombre y direcciones",
+    "sendingHint": "Cómo se ve este buzón para tu equipo y para los clientes.",
+    "name": "Nombre",
+    "nameHint": "Se muestra a tu equipo.",
+    "senderName": "Nombre del remitente",
+    "senderNameHint": "Completa {mailbox} en el nombre De. Si está vacío, se usa el nombre.",
+    "team": "Equipo",
+    "teamHint": "Los tickets nuevos de este buzón van a este equipo.",
+    "noTeam": "Sin equipo",
+    "signature": "Firma",
+    "signatureHint": "Se agrega debajo de cada respuesta enviada desde esta dirección, salvo que el equipo del ticket tenga la suya. Incluye las líneas de cada remitente con {{tag}}.",
+    "signaturePlaceholder": "El equipo de soporte de la empresa",
+    "autoReply": "Respuesta automática",
+    "autoReplyHint": "Se envía una vez cuando un cliente abre un ticket nuevo por correo.",
+    "autoReplyToggle": "Enviar una respuesta automática",
+    "subject": "Asunto",
+    "subjectPlaceholder": "Recibimos tu mensaje",
+    "message": "Mensaje",
+    "messagePlaceholder": "Gracias por escribirnos. Solemos responder en unas horas.",
+    "autoReplyLabel": "Mensaje de la respuesta automática",
+    "danger": "Zona de peligro",
+    "enableTitle": "Activar buzón",
+    "disableTitle": "Desactivar buzón",
+    "enableHint": "Vuelve a recibir y a enviar correo.",
+    "disableHint": "Deja de sincronizar y de enviar, sin quitar nada.",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "removeTitle": "Quitar buzón",
+    "removeHint": "Los tickets existentes se quedan. El correo nuevo a esta dirección deja de llegar.",
+    "remove": "Quitar",
+    "saved": "Buzón guardado",
+    "testRunFailed": "No se pudo ejecutar la prueba",
+    "server": "Servidor",
+    "port": "Puerto",
+    "username": "Nombre de usuario",
+    "password": "Contraseña",
+    "passwordKeep": "Déjalo vacío para conservar la guardada.",
+    "security": "Seguridad",
+    "tlsNone": "Ninguna",
+    "preview": "Vista previa",
+    "subjectVariable": "Insertar una variable",
+    "autoReplyNoAgent": "Las variables del remitente, como el nombre del agente, quedan vacías en las respuestas automáticas."
+  },
+  "new": {
+    "title": "Agregar un buzón",
+    "description": "Elige cómo llega el correo a opendesk. Puedes cambiar los detalles después.",
+    "limitTitle": "Llegaste al límite del plan Free",
+    "upgrade": "Pasar a Pro"
+  },
+  "wizard": {
+    "methodsLabel": "Método de conexión",
+    "stepDone": "Listo",
+    "continue": "Continuar",
+    "continueGoogle": "Continuar con Google",
+    "continueMicrosoft": "Continuar con Microsoft",
+    "connectTest": "Conectar y probar",
+    "create": "Crear buzón",
+    "back": "Atrás",
+    "cancel": "Cancelar",
+    "done": "Listo",
+    "chooseMethod": "Elige cómo se conecta este buzón.",
+    "fixFields": "Corrige los campos marcados para continuar.",
+    "discardTitle": "¿Descartar este buzón?",
+    "discardBody": "Se perderán los detalles que escribiste.",
+    "discard": "Descartar",
+    "name": "Nombre",
+    "nameHint": "Se muestra a tu equipo, como Soporte o Facturación.",
+    "namePlaceholder": "Soporte",
+    "email": "Dirección de correo",
+    "senderName": "Nombre del remitente",
+    "senderNameHint": "Completa {mailbox} en el nombre De. Si está vacío, se usa el nombre.",
+    "senderPlaceholder": "Soporte de la empresa",
+    "oauthNote": "Vas a ir a {{provider}} para aprobar el acceso y luego vuelves aquí. opendesk lee y envía el correo solo de esta dirección, y puedes desconectar cuando quieras.",
+    "incoming": "Correo entrante (IMAP)",
+    "outgoing": "Correo saliente (SMTP)",
+    "sameCredentials": "Usar el mismo nombre de usuario y la misma contraseña de IMAP",
+    "syncStart": "Empezar con",
+    "syncStartRecent": "Los últimos 7 días",
+    "syncStartNew": "Solo el correo nuevo",
+    "syncStartRecentHint": "El correo de los últimos 7 días se convierte en tickets, hasta 200, y después el correo nuevo conforme llega.",
+    "syncStartNewHint": "Solo el correo que llegue de ahora en adelante se convierte en ticket. Elige esto si tu historial ya vino con una importación.",
+    "server": "Servidor",
+    "port": "Puerto",
+    "security": "Seguridad",
+    "noTls": "Las contraseñas viajan sin cifrar. Usa esto solo en una red privada.",
+    "tlsNone": "Ninguna",
+    "username": "Nombre de usuario",
+    "password": "Contraseña",
+    "passwordHint": "Una contraseña de aplicación, si tu proveedor pide una.",
+    "connected": "{{name}} está conectado",
+    "created": "{{name}} está listo",
+    "createdForward": "Reenvía su correo a la dirección de abajo para empezar a recibir.",
+    "testRunning": "La prueba de conexión sigue en curso. Revisa el estado del buzón dentro de un minuto.",
+    "fixLater": "Puedes corregir los ajustes del servidor en la página del buzón y volver a probar.",
+    "err": {
+      "name": "Ponle un nombre al buzón, como Soporte.",
+      "email": "Escribe la dirección a la que escriben los clientes.",
+      "emailInvalid": "Eso no parece una dirección de correo.",
+      "imapHost": "Escribe un nombre de servidor, como imap.example.com.",
+      "imapUser": "Casi siempre es tu dirección de correo completa.",
+      "imapPassword": "Escribe la contraseña o una contraseña de aplicación.",
+      "smtpHost": "Escribe un nombre de servidor, como smtp.example.com.",
+      "smtpUser": "Escribe el nombre de usuario de SMTP.",
+      "smtpPassword": "Escribe la contraseña de SMTP.",
+      "port": "Escribe un puerto entre 1 y 65535."
+    },
+    "stepAddress": "Dirección",
+    "stepConnect": "Conectar",
+    "emailHint": "La dirección a la que escriben los clientes.",
+    "connect": "Conectar"
+  },
+  "forwarding": {
+    "forwardTo": "Reenvía el correo de <code>{{email}}</code> a",
+    "checkIt": "Para comprobar que funciona, envía un correo a <code>{{email}}</code> desde otra cuenta. Aparece como un ticket nuevo en Sin responsable.",
+    "gmail": "Gmail",
+    "workspace": "Google Workspace",
+    "microsoft": "Microsoft 365",
+    "outlook": "Outlook.com",
+    "other": "Otro",
+    "microsoftBlocked": "Microsoft 365 bloquea de forma predeterminada el reenvío automático a direcciones externas. Un administrador lo permite una vez y después el reenvío se configura en el buzón.",
+    "open": {
+      "gmail": "Abrir los ajustes de reenvío de Gmail",
+      "googleAdmin": "Abrir el enrutamiento de Gmail en la consola de administración",
+      "defender": "Abrir las directivas antispam",
+      "exchange": "Abrir los buzones en el centro de administración de Exchange",
+      "outlookForwarding": "Abrir los ajustes de reenvío de Outlook",
+      "outlookCom": "Abrir los ajustes de reenvío de Outlook.com"
+    },
+    "help": "Guía de {{provider}}",
+    "docs": "Guía completa en la documentación de opendesk",
+    "sendTest": "Escribir un correo de prueba",
+    "testSubject": "Prueba de opendesk",
+    "steps": {
+      "gmail": {
+        "s1": "Abre los ajustes de <b>Reenvío y correo POP/IMAP</b> de Gmail, con la sesión iniciada en esta dirección.",
+        "s2": "Elige <b>Añadir una dirección de reenvío</b> y pega la dirección de arriba.",
+        "s3": "Gmail envía un correo de confirmación. Llega a opendesk como un ticket: ábrelo y haz clic en el enlace, o copia el código en Gmail.",
+        "s4": "De vuelta en Gmail, selecciona <b>Reenviar una copia del correo entrante a</b> la dirección nueva y guarda."
+      },
+      "workspace": {
+        "s1": "Para un solo buzón, sigue los pasos de Gmail con la sesión iniciada como ese usuario.",
+        "s2": "Para un grupo o muchos usuarios, un administrador abre <b>Enrutamiento</b> en la consola de administración de Google (<b>Aplicaciones</b>, <b>Google Workspace</b>, <b>Gmail</b>).",
+        "s3": "Agrega una regla de enrutamiento para el correo <b>Entrante</b> a la dirección, elige <b>Modificar mensaje</b>, luego <b>Agregar más destinatarios</b>, y agrega la dirección de arriba.",
+        "s4": "Guarda. Los cambios pueden tardar unos minutos en aplicarse."
+      },
+      "microsoft": {
+        "s1": "Un administrador abre las directivas de <b>Antispam</b> en Microsoft Defender, edita la directiva de <b>Salida</b> y pone <b>Reglas de reenvío automático</b> en <b>Activado</b>.",
+        "s2": "En el <b>Centro de administración de Exchange</b>, abre <b>Buzones</b> y selecciona el buzón.",
+        "s3": "En <b>Configuración del flujo de correo</b>, edita <b>Reenvío de correo</b>: actívalo, pega la dirección de arriba y conserva una copia en el buzón.",
+        "s4": "¿No tienes acceso al centro de administración? Después del paso 1, abre <b>Reenvío</b> en los ajustes de Outlook como el buzón, actívalo, pega la dirección de arriba y conserva una copia."
+      },
+      "outlook": {
+        "s1": "Abre los ajustes de <b>Reenvío</b> de Outlook.com, con la sesión iniciada en esta dirección.",
+        "s2": "Activa <b>Habilitar reenvío</b> y pega la dirección de arriba.",
+        "s3": "Activa <b>Conservar una copia de los mensajes reenviados</b> y guarda."
+      },
+      "other": {
+        "s1": "En los ajustes de tu proveedor de correo, busca el reenvío. Algunos lo llaman redirección o alias.",
+        "s2": "Reenvía todo el correo de esta dirección a la dirección de arriba y, si quieres, conserva una copia."
+      }
+    }
+  },
+  "addressing": {
+    "brand": "Marca",
+    "brandHint": "Los tickets a esta dirección pertenecen a esta marca, y sus respuestas llevan el nombre y el logo de la marca.",
+    "team": "Los tickets nuevos a esta dirección van a",
+    "teamHint": "El equipo al que pertenece el correo de esta dirección. Las reglas de enrutamiento todavía pueden enviar un ticket a otro lugar.",
+    "noTeam": "Sin equipo",
+    "privateTeam": "{{name}} es privado: solo sus miembros ven los tickets a esta dirección y envían desde ella.",
+    "fromName": "Nombre De",
+    "previewMailbox": "Soporte",
+    "fromNameHint": "Lo que ven los clientes como remitente. Haz clic en una variable para agregarla.",
+    "fromInvalid": "Corrige primero el nombre De.",
+    "previewReply": "Una respuesta",
+    "previewAuto": "Respuesta automática",
+    "fromErrors": {
+      "long": "Déjalo por debajo de {{max}} caracteres.",
+      "chars": "No uses < > ni comillas.",
+      "variable": "Usa solo las variables de abajo."
+    },
+    "vars": {
+      "agent": "El nombre completo del autor",
+      "agent_first": "El primer nombre del autor",
+      "team": "El equipo del ticket o, si no hay, la marca",
+      "brand": "El nombre de la marca",
+      "mailbox": "El nombre del remitente de esta dirección"
+    },
+    "aliases": "Alias",
+    "aliasesHint": "Otras direcciones que llegan a este buzón, como help@. Las respuestas salen como la dirección a la que escribió el cliente. Hasta 20. Dale su propio equipo a un alias cuando pertenece a otro proyecto.",
+    "noAliases": "Sin alias",
+    "aliasSame": "Esa es la dirección de este mismo buzón.",
+    "aliasTeams": "Los tickets nuevos de cada alias van a",
+    "aliasTeamSame": "{{name}}, como el buzón",
+    "aliasTeamNone": "Sin equipo, como el buzón",
+    "aliasTeamsPrivate": "{{name}} es privado, así que los tickets nuevos de cada alias también van a él."
+  },
+  "forms": {
+    "title": "Formularios de contacto",
+    "hint": "Agrega la dirección desde la que envía el formulario de contacto de tu sitio. Cuando el correo pasa la comprobación del remitente, quien llenó el formulario pasa a ser el contacto y las respuestas le llegan.",
+    "empty": "No hay formularios de contacto. Escribe una dirección o @dominio.",
+    "publicDomain": "{{domain}} es un proveedor de correo público. Escribe la dirección exacta del formulario.",
+    "ownAddress": "Esa es la dirección de este mismo buzón."
+  },
+  "automatic": {
+    "title": "Correo automático",
+    "hint": "Algunos sistemas de soporte marcan como automático todo el correo que envían, incluso el que escribió una persona. Ese correo se ignora, salvo que este buzón lo conserve. El correo conservado se convierte en ticket como siempre, y nada automático le responde: ni la respuesta automática, ni una respuesta de automatización, ni una respuesta de Ollie. Las respuestas de fuera de la oficina siguen ignoradas.",
+    "toggle": "Conservar el correo automático"
+  },
+  "connect": {
+    "detecting": "Buscando {{domain}}",
+    "unknownHost": "Proveedor desconocido",
+    "source": {
+      "known": "Un proveedor de correo conocido",
+      "mx": "Detectado a partir de los registros MX del dominio",
+      "autoconfig": "Del archivo autoconfig del dominio",
+      "ispdb": "De la base de proveedores de Thunderbird",
+      "srv": "De los registros de servicio DNS del dominio",
+      "none": "No pudimos identificar quién aloja {{domain}}. Escribe los ajustes del servidor, o reenvía el correo.",
+      "noneForward": "No pudimos identificar quién aloja {{domain}}. El reenvío funciona con cualquier proveedor."
+    },
+    "detectFailed": "No pudimos consultar {{domain}}. Igual puedes elegir cómo conectar.",
+    "howTitle": "¿Cómo debe llegar el correo a opendesk?",
+    "forwardingOnly": "El correo llega por reenvío",
+    "forwardingOnlyBody": "Reenvías {{email}} a una dirección privada que te da opendesk. Funciona con cualquier proveedor, y opendesk nunca lee el buzón.",
+    "anotherWay": "Elegir otra forma",
+    "suggestedWays": "Mostrar las formas sugeridas",
+    "recommended": "Recomendado",
+    "advanced": "Avanzado",
+    "method": {
+      "google": "Recibir sincronizando el buzón (IMAP)",
+      "googleBody": "Inicia sesión con Google. opendesk trae el correo nuevo por IMAP y responde desde tu dirección.",
+      "microsoft": "Recibir sincronizando el buzón (IMAP)",
+      "microsoftBody": "Inicia sesión con Microsoft. opendesk trae el correo nuevo por IMAP y responde desde tu dirección.",
+      "google_api": "Leer la bandeja directamente",
+      "google_apiBody": "Inicia sesión con Google. Los correos nuevos se convierten en tickets por sí solos. No hay reenvío que configurar.",
+      "microsoft_api": "Leer la bandeja directamente",
+      "microsoft_apiBody": "Inicia sesión con Microsoft. Los correos nuevos se convierten en tickets por sí solos. No hay reenvío que configurar.",
+      "app_password": "Contraseña de aplicación",
+      "app_passwordBody": "Crea una contraseña de aplicación en {{host}} y pégala aquí. Los servidores quedan configurados.",
+      "password": "Contraseña del correo",
+      "passwordBody": "Inicia sesión con la contraseña del buzón. Los servidores quedan configurados.",
+      "forwarding": "Reenviar el correo a opendesk",
+      "forwardingBody": "Reenvía el correo a una dirección que te da opendesk. Funciona con cualquier proveedor, y opendesk nunca lee el buzón.",
+      "imap": "Otro IMAP y SMTP",
+      "imapBody": "Escribe tú los ajustes del servidor."
+    },
+    "microsoftNoPassword": "Microsoft desactivó el inicio de sesión con contraseña por IMAP, así que, sin el inicio de sesión de Microsoft, este buzón recibe por reenvío.",
+    "protonNoImap": "Proton Mail ofrece IMAP solo a través de Proton Mail Bridge, una aplicación en tu computadora a la que opendesk no puede llegar. Reenvía el correo desde Proton (los planes de pago de Proton sí pueden reenviar).",
+    "notConfigured": {
+      "title": "El inicio de sesión con {{provider}} no está configurado en este servidor",
+      "body": "Conectar buzones con el inicio de sesión de {{provider}} necesita un cliente OAuth. Agrega esto al entorno de opendesk y reinicia:",
+      "docs": "Guía de configuración",
+      "alternatives": "Las formas de abajo no necesitan configuración."
+    },
+    "servers": {
+      "title": "Ajustes del servidor, ya configurados",
+      "edit": "Editar",
+      "imap": "IMAP",
+      "smtp": "SMTP",
+      "tls": "TLS",
+      "starttls": "STARTTLS"
+    },
+    "password": "Contraseña",
+    "passwordPlaceholder": "La contraseña del buzón",
+    "appPassword": "Contraseña de aplicación",
+    "appPasswordPlaceholder": "Pega la contraseña de aplicación",
+    "zohoTwoFactor": "¿Tienes la autenticación en dos pasos activada? Zoho pide una contraseña de aplicación en lugar de tu contraseña.",
+    "checking": "Comprobando el inicio de sesión con {{host}}",
+    "checkingGeneric": "Comprobando el inicio de sesión con el servidor",
+    "verifiedNote": "opendesk inicia sesión en los dos servidores antes de guardar algo.",
+    "addressing": "Equipo, marca y nombre De",
+    "addressingHint": "Opcional. Puedes cambiarlos después.",
+    "sending": "Cómo se envían las respuestas",
+    "send": {
+      "google": "Conectar Google",
+      "googleBody": "Las respuestas salen desde {{email}}. Esto solo permite que opendesk envíe como la dirección. No lee el buzón.",
+      "microsoft": "Conectar Microsoft",
+      "microsoftBody": "Las respuestas salen desde {{email}}. Esto solo permite que opendesk envíe como la dirección. No lee el buzón.",
+      "smtp": "Tu servidor SMTP",
+      "smtpBody": "Las respuestas salen desde {{email}} por tu servidor de correo, o por un servicio de envío como Resend o Postmark.",
+      "system": "A través de opendesk",
+      "systemBody": "Desde {{sender}} con el nombre de tu buzón. Las respuestas de los clientes vuelven a {{email}}."
+    },
+    "sendOnlyNote": "Vas a ir a {{provider}} para permitir el envío y luego vuelves a configurar el reenvío. opendesk solo pide permiso para enviar.",
+    "sendSystem": "A través de opendesk",
+    "sendSystemBody": "Desde {{sender}}, con el nombre de tu buzón, y las respuestas al cliente vuelven a {{email}}.",
+    "sendSmtp": "A través de tu servidor SMTP",
+    "sendSmtpBody": "Desde {{email}}.",
+    "sendSmtpMicrosoft": "Microsoft está retirando el inicio de sesión con contraseña de SMTP AUTH en Exchange Online, y muchos administradores ya lo tienen desactivado. Si rechazan el inicio de sesión, envía con Microsoft o por un servicio de envío.",
+    "failedTitle": "No se pudo conectar",
+    "legInbound": "IMAP",
+    "legOutbound": "SMTP",
+    "gmail": {
+      "banner": "Una contraseña de aplicación conecta Gmail o Google Workspace por IMAP y SMTP en unos dos minutos.",
+      "p1": "Verificación en dos pasos",
+      "p2": "Contraseña de aplicación",
+      "p3": "Conectar",
+      "s1Title": "Activa la verificación en dos pasos",
+      "s1Sub": "Google solo ofrece contraseñas de aplicación en las cuentas que la tienen activada.",
+      "s1a": "Abre la página de seguridad de tu cuenta de Google y busca <b>Verificación en dos pasos</b> en Cómo inicias sesión en Google.",
+      "s1b": "Actívala con un aviso en el teléfono, una aplicación de autenticación o un mensaje de texto.",
+      "s1Open": "Abrir los ajustes de seguridad de Google",
+      "s1Note": "En Google Workspace, un administrador puede exigir o bloquear la verificación en dos pasos en la organización. Las cuentas de Protección avanzada no pueden tener contraseñas de aplicación.",
+      "s1Already": "¿Ya está activada? Sigue.",
+      "s1Next": "Ya está activada, continuar",
+      "s2Title": "Crea una contraseña de aplicación",
+      "s2Sub": "Una contraseña de 16 letras que Google genera para una aplicación. opendesk la guarda cifrada.",
+      "s2a": "Abre la página de contraseñas de aplicación. Puede que Google te pida iniciar sesión otra vez.",
+      "s2b": "Escribe <b>opendesk</b> como nombre de la aplicación y elige <b>Crear</b>.",
+      "s2c": "Copia las 16 letras que muestra. Los espacios no importan.",
+      "s2Open": "Abrir contraseñas de aplicación",
+      "s2Note": "¿No está la página de contraseñas de aplicación? La verificación en dos pasos sigue desactivada, o el administrador de Google Workspace desactivó las contraseñas de aplicación en tu organización. Pídele que las permita en tu cuenta.",
+      "s2Next": "Ya la tengo, continuar",
+      "s3Title": "Conecta el buzón",
+      "s3Sub": "Pega la contraseña de aplicación. No hay que escribir nada más.",
+      "lengthHint": "Las contraseñas de aplicación de Google son de 16 letras. Esto parece otra cosa, tal vez la contraseña de la cuenta. Se revisa de todas formas al conectar.",
+      "s3Note": "Usa la dirección con la que inicias sesión en Google, no un alias. Si borras la contraseña de aplicación en tu cuenta de Google, el buzón se desconecta."
+    },
+    "guide": {
+      "title": "Crear una contraseña de aplicación",
+      "yahoo": {
+        "s1": "Inicia sesión en Yahoo y abre <b>Seguridad de la cuenta</b>.",
+        "s2": "Elige <b>Generar contraseña de aplicación</b>, ponle el nombre <b>opendesk</b> y elige <b>Generar contraseña</b>.",
+        "s3": "Copia la contraseña y pégala abajo.",
+        "open": "Abrir la seguridad de la cuenta de Yahoo"
+      },
+      "aol": {
+        "s1": "Inicia sesión en AOL y abre <b>Seguridad de la cuenta</b>.",
+        "s2": "Elige <b>Generar contraseña de aplicación</b>, ponle el nombre <b>opendesk</b> y elige <b>Generar contraseña</b>.",
+        "s3": "Copia la contraseña y pégala abajo.",
+        "open": "Abrir la seguridad de la cuenta de AOL"
+      },
+      "icloud": {
+        "s1": "Inicia sesión en account.apple.com y abre <b>Inicio de sesión y seguridad</b>. La autenticación de dos factores tiene que estar activada.",
+        "s2": "Elige <b>Contraseñas específicas de apps</b> y agrega una llamada <b>opendesk</b>.",
+        "s3": "Copia la contraseña y pégala abajo. La dirección tiene que ser tu dirección de iCloud, no un alias.",
+        "open": "Abrir tu cuenta de Apple"
+      },
+      "fastmail": {
+        "s1": "En Fastmail, abre <b>Ajustes</b>, <b>Privacidad y seguridad</b> y luego <b>Administrar contraseñas de aplicación</b>.",
+        "s2": "Crea una llamada <b>opendesk</b> con acceso a IMAP y SMTP.",
+        "s3": "Copia la contraseña y pégala abajo.",
+        "open": "Abrir las contraseñas de aplicación de Fastmail"
+      },
+      "zoho": {
+        "s1": "En Zoho Accounts, abre <b>Seguridad</b> y luego <b>Contraseñas de aplicación</b>.",
+        "s2": "Genera una llamada <b>opendesk</b>.",
+        "s3": "Cópiala y pégala abajo. Revisa también que el acceso por IMAP esté activado en los ajustes de Zoho Mail, en Cuentas de correo.",
+        "open": "Abrir las contraseñas de aplicación de Zoho"
+      },
+      "yandex": {
+        "s1": "Abre Yandex ID y luego <b>Seguridad</b> y <b>Contraseñas de aplicación</b>.",
+        "s2": "Crea una contraseña para <b>Correo</b> llamada <b>opendesk</b>.",
+        "s3": "Cópiala y pégala abajo. Permite también IMAP en los ajustes de Yandex Mail, en Clientes de correo.",
+        "open": "Abrir las contraseñas de aplicación de Yandex"
+      }
+    },
+    "method_label": {
+      "signin": "Inicio de sesión",
+      "app_password": "Contraseña de aplicación",
+      "password": "Contraseña",
+      "forwarding": "Reenvío",
+      "sendsWith": "Envía con {{provider}}",
+      "direct": "Lee la bandeja directamente a través de {{provider}}"
+    },
+    "forwardingIntro": "Recibes una dirección privada a la que reenviar el correo de este buzón. opendesk solo ve el correo que reenvías.",
+    "directNote": "opendesk lee el correo nuevo de la bandeja a través de {{provider}} y responde desde tu dirección. Los correos nuevos se convierten en tickets por sí solos. No hay reenvío que configurar."
+  },
+  "provider": {
+    "title": "En {{app}}",
+    "replies": "Las respuestas aparecen en la misma conversación de {{app}} que el correo del cliente, y en Enviados.",
+    "markRead": "Marcar los correos como leídos en {{app}} cuando se vuelven tickets",
+    "archive": "Archivar en {{app}} cuando el ticket queda resuelto",
+    "label": "Etiquetar los correos «opendesk» en {{app}}",
+    "labelOutlook": "Outlook lo muestra como una categoría."
+  },
+  "supportChannels": {
+    "title": "Canales de soporte",
+    "description": "Refleja los tickets de correo en Slack, Discord y Telegram. Los compañeros pueden responder, agregar notas y trabajar los tickets desde el hilo del ticket.",
+    "linkAccount": "Vincular mi cuenta",
+    "linkError": "No se pudo crear un código de vínculo.",
+    "link": {
+      "title": "Vincula tu cuenta de chat",
+      "description": "Envía este código al bot desde tu cuenta de chat: /opendesk link {{code}} en Slack, o /link {{code}} en Discord y Telegram. Sirve una vez y caduca en 10 minutos.",
+      "done": "Listo"
+    },
+    "connections": {
+      "title": "Conexiones",
+      "description": "Las credenciales del bot se guardan cifradas. opendesk configura Discord y Telegram por ti. Slack necesita unos pasos en sus propios ajustes.",
+      "webhook": "Dirección de eventos"
+    },
+    "delivery": {
+      "title": "Actividad de entrega",
+      "description": "Eventos recientes de tickets enviados a canales del proveedor. Los que fallan se quedan aquí hasta que se reintentan.",
+      "emptyTitle": "Todavía no hay actividad de entrega",
+      "emptyBody": "Los eventos de los tickets aparecen aquí después de enviarse a un canal de soporte.",
+      "refresh": "Actualizar entregas",
+      "loadMore": "Cargar más",
+      "ticket": "Ticket #{{number}}",
+      "event": "Evento {{seq}}",
+      "eventCreated": "Ticket creado",
+      "eventUpdated": "Ticket actualizado",
+      "eventMessage": "Mensaje agregado",
+      "waiting": "En espera del primer intento",
+      "attempts_one": "{{count}} intento",
+      "attempts_other": "{{count}} intentos",
+      "attempts_many": "{{count}} de intentos",
+      "retry": "Reintentar",
+      "retryQueued": "La entrega quedó en cola para reintentar.",
+      "retryError": "No se pudo reintentar esta entrega.",
+      "status": {
+        "queued": "En cola",
+        "retrying": "Reintentando",
+        "delivered": "Entregado",
+        "failed": "Fallido"
+      }
+    },
+    "operations": {
+      "title": "Confiabilidad",
+      "description": "Estado de las conexiones, latencia de entrega y actividad de webhooks entrantes en las últimas 24 horas.",
+      "refresh": "Actualizar métricas",
+      "unavailable": "No se pudieron cargar las métricas de operación.",
+      "alerted_one": "{{count}} conexión lleva al menos 15 minutos con problemas. Se avisó a los administradores.",
+      "alerted_other": "{{count}} conexiones llevan al menos 15 minutos con problemas. Se avisó a los administradores.",
+      "alerted_many": "{{count}} de conexiones llevan al menos 15 minutos con problemas. Se avisó a los administradores.",
+      "connectionHealth": "Estado de las conexiones",
+      "healthyCount": "{{healthy}} de {{total}} en buen estado",
+      "unhealthy_one": "{{count}} necesita atención",
+      "unhealthy_other": "{{count}} necesitan atención",
+      "unhealthy_many": "{{count}} necesitan atención",
+      "allHealthy": "Ninguna conexión con problemas",
+      "deliveryLatency": "Latencia promedio de entrega",
+      "oldestPending": "La más antigua pendiente {{age}}",
+      "maximumLatency": "Máxima {{duration}}",
+      "webhookRejections": "Webhooks rechazados",
+      "duplicatesSuppressed": "Duplicados descartados",
+      "lastHours": "Últimas 24 horas",
+      "window": "Totales de entrega de las últimas 24 horas"
+    },
+    "ollie": {
+      "title": "Ollie en los canales de soporte",
+      "description": "Ollie resume cada hilo nuevo de un ticket, sugiere respuestas, contesta preguntas y avisa de los SLA y de los clientes insatisfechos. Elige qué cambios puede hacer cuando lo decide.",
+      "error": "No se pudo guardar lo que Ollie puede hacer.",
+      "commands": "Los comandos que se escriben, como reply, note y status, son del propio agente y siempre funcionan. Los cambios que Ollie sugiere en una respuesta al cliente, un ticket nuevo o un cierre siguen pidiendo confirmación.",
+      "actions": {
+        "reply": {
+          "title": "Enviar respuestas",
+          "hint": "Ollie puede preparar una respuesta para el cliente. Solo se envía cuando el agente la confirma."
+        },
+        "note": {
+          "title": "Agregar notas internas",
+          "hint": "Ollie puede agregar una nota que el cliente no ve."
+        },
+        "assign_self": {
+          "title": "Asignar tickets",
+          "hint": "Ollie puede asignar el ticket al agente que le está hablando."
+        },
+        "status": {
+          "title": "Cambiar el estado",
+          "hint": "Ollie puede cambiar el estado del ticket. Para cerrarlo, pide confirmación."
+        },
+        "priority": {
+          "title": "Cambiar la prioridad",
+          "hint": "Ollie puede subir o bajar la prioridad del ticket."
+        },
+        "create_ticket": {
+          "title": "Crear tickets",
+          "hint": "Ollie puede crear un ticket a partir de un mensaje del canal, después de una confirmación."
+        }
+      },
+      "channel": {
+        "label": "Ajustes de Ollie para {{name}}",
+        "title": "Ollie en #{{name}}",
+        "description": "Cómo trabaja Ollie en los hilos de tickets de este canal.",
+        "summary": "Resumir los hilos nuevos",
+        "summaryHint": "Ollie publica lo que el cliente necesita, qué ya intentó, su sentimiento y la urgencia cuando se abre el hilo de un ticket. Usa créditos de IA.",
+        "warnings": "Avisos de SLA y de sentimiento",
+        "warningsHint": "Ollie avisa en el hilo cuando un objetivo de SLA está cerca o no se cumplió, y cuando el cliente se oye insatisfecho.",
+        "length": "Longitud de la respuesta",
+        "lengthHint": "Qué tan largas son las respuestas y las sugerencias de Ollie en este canal.",
+        "lengthValues": {
+          "brief": "Breve",
+          "standard": "Estándar",
+          "detailed": "Detallada"
+        },
+        "personality": "Personalidad",
+        "personalityHint": "Cómo suena Ollie aquí. Define solo el tono y nunca cambia lo que Ollie puede hacer.",
+        "personalityPlaceholder": "Cercano y animado, palabras simples, sin jerga",
+        "personalityInvalid": "La personalidad no puede contener < o >.",
+        "submit": "Guardar",
+        "cancel": "Cancelar",
+        "saved": "Ajustes de Ollie guardados.",
+        "error": "No se pudieron guardar los ajustes de Ollie."
+      }
+    },
+    "empty": {
+      "title": "Todavía no hay canales de soporte",
+      "body": "Conecta un bot y luego elige dónde aparecen los tickets de correo de cada equipo.",
+      "tipThreads": "Cada ticket tiene su propio hilo",
+      "tipOllie": "Pregúntale a Ollie por un ticket en su hilo",
+      "tipCreate": "Menciona al bot en un canal para crear un ticket"
+    },
+    "status": {
+      "connected": "Conectado",
+      "error": "Necesita atención"
+    },
+    "health": {
+      "unknown": "Sin probar",
+      "healthy": "Conectado",
+      "action_required": "Termina la configuración",
+      "error": "Falló la comprobación",
+      "test": "Probar conexión",
+      "tested": "La conexión funciona.",
+      "testError": "No se pudo probar la conexión.",
+      "testedAttention": "Comprobado. La conexión todavía necesita atención."
+    },
+    "rotate": {
+      "label": "Rotar las credenciales de {{name}}",
+      "title": "Rotar las credenciales de {{name}}",
+      "description": "Escribe las credenciales de reemplazo de la misma cuenta del proveedor. Los destinos y los hilos de tickets siguen conectados.",
+      "submit": "Rotar credenciales",
+      "cancel": "Cancelar",
+      "rotated": "Credenciales rotadas.",
+      "error": "No se pudieron rotar las credenciales."
+    },
+    "allTeams": "Todos los equipos",
+    "withNotes": "con notas",
+    "addDestination": "Agregar destino",
+    "removeDestinationLabel": "Quitar {{name}}",
+    "removeDestinationTitle": "Quitar destino",
+    "removeDestinationBody": "¿Dejar de reflejar tickets en {{name}}? Los hilos que ya se publicaron se quedan en el canal.",
+    "remove": "Quitar",
+    "destinationRemoved": "Destino quitado.",
+    "destinationRemoveError": "No se pudo quitar el destino.",
+    "disconnect": "Desconectar",
+    "disconnectLabel": "Desconectar {{name}}",
+    "disconnectTitle": "Desconectar el canal de soporte",
+    "disconnectBody": "¿Desconectar {{name}}? Se quitan sus destinos y sus hilos de tickets dejan de actualizarse.",
+    "disconnected": "Canal de soporte desconectado.",
+    "disconnectError": "No se pudo desconectar el canal de soporte.",
+    "providers": {
+      "title": "Proveedores disponibles",
+      "descriptionAdmin": "Conecta una cuenta de bot para cada producto de chat en el que trabaja tu equipo.",
+      "description": "Un administrador puede conectar las cuentas de los proveedores."
+    },
+    "provider": {
+      "slack": {
+        "description": "Refleja los tickets de correo en hilos de Slack y trabájalos hablando con Ollie.",
+        "setup": "Crea una aplicación de Slack con los alcances de bot chat:write, app_mentions:read, channels:read, groups:read, channels:history, groups:history y files:read, instálala y luego pega su token de bot y el secreto de firma. Después de conectar, opendesk muestra los pasos para terminar la configuración en Slack.",
+        "steps": [
+          "En tu aplicación de Slack, abre Suscripciones a eventos, actívala y pega la dirección de arriba como URL de solicitud.",
+          "En Suscribirse a eventos del bot, agrega app_mention, message.channels y message.groups, y luego guarda.",
+          "Abre Interactividad y atajos, actívala y usa la misma dirección como URL de solicitud.",
+          "Abre Comandos de barra, crea /opendesk y usa la misma dirección como URL de solicitud.",
+          "Invita al bot a cada canal al que diriges tickets: /invite @your-bot."
+        ],
+        "noChannels": "El bot todavía no está en ningún canal. Invítalo con /invite @your-bot en Slack y luego actualiza."
+      },
+      "discord": {
+        "description": "Refleja los tickets de correo en hilos de Discord y trabájalos hablando con Ollie.",
+        "setup": "Crea un bot de Discord, activa el intent Message Content y copia su token y su clave pública. opendesk encuentra sus servidores y registra el endpoint de interacciones y los comandos.",
+        "noChannels": "No se encontraron canales de texto. Dale al bot acceso a un canal de texto de este servidor y luego actualiza."
+      },
+      "telegram": {
+        "description": "Refleja los tickets de correo en temas de foro de Telegram y trabájalos hablando con Ollie.",
+        "setup": "Crea un bot con BotFather, desactiva su modo de privacidad (/setprivacy) y pega su token. opendesk configura el webhook. Luego haz administrador al bot de un grupo con foro.",
+        "noChannels": "Todavía no hay grupos con foro. Haz administrador al bot de un grupo con los temas activados, o envía un mensaje en un grupo en el que ya esté, y luego actualiza."
+      },
+      "google_chat": {
+        "description": "Refleja los tickets de correo en espacios de Google Chat y trabájalos hablando con Ollie.",
+        "setup": "Activa la API de Google Chat y crea una clave de cuenta de servicio con el alcance chat.bot. Configura una aplicación de Chat estándar, no un complemento de Google Workspace, para el mismo proyecto y agrégala a los espacios que quieras usar.",
+        "steps": [
+          "En Google Cloud Console, activa la API de Google Chat y configura una aplicación de Chat estándar, no un complemento de Google Workspace, para el proyecto de esta cuenta de servicio.",
+          "Pon la URL de conexión y la audiencia de autenticación en la dirección de webhook de arriba. Elige HTTP endpoint URL como audiencia de autenticación.",
+          "Agrega un comando de barra /opendesk y suscribe la aplicación a los eventos message, message update, message delete, card click, app added y app removed.",
+          "Agrega la aplicación de Chat a cada espacio al que quieras dirigir tickets y luego actualiza la lista de espacios."
+        ],
+        "noChannels": "No hay espacios disponibles. Agrega la aplicación de Chat a un espacio con nombre y luego actualiza."
+      },
+      "mattermost": {
+        "description": "Refleja los tickets de correo en hilos de Mattermost y trabájalos hablando con Ollie.",
+        "setup": "Crea una cuenta de bot en Mattermost (Integraciones, Cuentas de bot), copia su token de acceso y pégalo junto con la dirección de tu servidor. opendesk encuentra los equipos en los que está el bot. Agrega el bot a los canales a los que van los tickets.",
+        "steps": [
+          "En Mattermost, agrega el bot al equipo y a cada canal al que diriges tickets.",
+          "Háblale en el hilo de un ticket: menciónalo para Ollie, o empieza un mensaje con !reply, !note, !assign, !status o !priority.",
+          "Los botones del mensaje de un ticket llaman a opendesk desde tu servidor de Mattermost. Si opendesk está en una dirección privada, permítelo en Consola del sistema, Desarrollador, Permitir conexiones internas no confiables."
+        ],
+        "noChannels": "El bot todavía no está en ningún canal. Agrégalo a un canal en Mattermost y luego actualiza.",
+        "findAccounts": "Buscar equipos",
+        "accountPlaceholder": "Elige un equipo",
+        "refreshAccounts": "Actualizar equipos",
+        "noAccounts": "Este bot todavía no es miembro de ningún equipo. Agrégalo a un equipo en Mattermost.",
+        "discoveryError": "No se pudieron cargar los equipos de {{name}}. Revisa la dirección del servidor y el token.",
+        "help": {
+          "server_url": "Dónde está tu Mattermost, como https://chat.example.com.",
+          "bot_token": "El token de acceso de una cuenta de bot, no el de una persona."
+        }
+      }
+    },
+    "field": {
+      "bot_token": "Token del bot",
+      "signing_secret": "Secreto de firma",
+      "public_key": "Clave pública de interacciones",
+      "guild_id": "Servidor",
+      "webhook_secret": "Secreto del webhook",
+      "service_account_json": "JSON de la cuenta de servicio",
+      "server_url": "Dirección del servidor",
+      "team_id": "Equipo",
+      "webhook_token": "Token del botón"
+    },
+    "connect": {
+      "title": "Conectar {{name}}",
+      "name": "Nombre de la conexión",
+      "submit": "Conectar",
+      "findAccounts": "Buscar servidores",
+      "accountPlaceholder": "Elige un servidor",
+      "refreshAccounts": "Actualizar servidores",
+      "noAccounts": "Este bot todavía no está instalado en ningún servidor.",
+      "discoveryError": "No se pudieron cargar los servidores de {{name}}.",
+      "cancel": "Cancelar",
+      "connected": "{{name}} conectado.",
+      "error": "No se pudo conectar {{name}}."
+    },
+    "destination": {
+      "title": "Agregar destino",
+      "description": "Elige qué tickets de correo van a este canal: un equipo público, una prioridad y las condiciones que quieras. Las rutas más específicas tienen prioridad.",
+      "team": "Equipo",
+      "teamPlaceholder": "Elige un equipo",
+      "allTeams": "Todos los equipos públicos",
+      "priority": "Prioridad",
+      "allPriorities": "Todas las prioridades",
+      "priorityValues": {
+        "low": "Baja",
+        "normal": "Normal",
+        "high": "Alta",
+        "urgent": "Urgente"
+      },
+      "routeExists": "Ya hay un destino con este equipo y esta prioridad.",
+      "channel": "Canal del proveedor",
+      "channelHint": "Canales en los que el bot puede publicar.",
+      "channelPlaceholder": "Elige un canal",
+      "loading": "Cargando canales",
+      "refresh": "Actualizar canales",
+      "none": "No se encontraron canales. Dale al bot acceso a un canal y luego actualiza.",
+      "loadError": "No se pudieron cargar los canales del proveedor.",
+      "displayName": "Nombre para mostrar",
+      "displayNamePlaceholder": "soporte",
+      "notes": "Incluir notas internas",
+      "notesHint": "Desactivado de forma predeterminada. Si está activado, las notas se publican en este canal y Ollie puede usarlas en sus respuestas ahí.",
+      "messageLimit": "Longitud del mensaje",
+      "messageLimitHint": "Los mensajes más largos se acortan con un enlace Ver en opendesk. Los proveedores pueden usar un límite menor.",
+      "messageLimitValue": "{{count}} caracteres",
+      "submit": "Agregar destino",
+      "cancel": "Cancelar",
+      "added": "Destino agregado.",
+      "error": "No se pudo agregar el destino.",
+      "enterId": "Escribir el ID de un canal",
+      "pickFromList": "Elegir de la lista",
+      "channelId": "ID del canal",
+      "channelIdHint": "El ID del proveedor para el canal, como C0123ABCD en Slack o -1001234567890 en Telegram."
+    },
+    "noDestinations": "Los tickets todavía no van a ninguna parte.",
+    "addFirstDestination": "Agregar un destino",
+    "setup": {
+      "title": "Termina de configurar la aplicación",
+      "show": "Mostrar los pasos de configuración",
+      "hide": "Ocultar",
+      "generic": "Pon esta dirección en los ajustes del proveedor como la dirección a la que envía los eventos.",
+      "waiting": "Esto pasa a Conectado cuando el proveedor manda su primer evento. Menciona al bot en un canal para enviar uno."
+    },
+    "routing": {
+      "mode": "Publicación",
+      "modeValues": {
+        "route": "Enrutar aquí",
+        "copy": "Publicar aquí también"
+      },
+      "modeHint": {
+        "route": "Una conexión publica cada ticket en su ruta más específica: primero el equipo, luego la prioridad y después la ruta con más condiciones.",
+        "copy": "Publica también cada ticket que coincide, además de su ruta, como los tickets urgentes en un canal de escalamiento."
+      },
+      "conditions": "Solo cuando",
+      "conditionsHint": "Las condiciones eligen dónde empieza el hilo de un ticket. Cuando un ticket ya tiene un hilo aquí, sigue al ticket.",
+      "addCondition": "Agregar condición",
+      "incomplete": "Completa cada condición, o quítala.",
+      "mirror": "Mostrar en los hilos",
+      "mirrorHint": "La tarjeta del ticket siempre está al día.",
+      "mirrorValues": {
+        "customer_replies": "Respuestas del cliente",
+        "agent_replies": "Respuestas del agente",
+        "status_changes": "Cambios de estado",
+        "assignee_changes": "Cambios de responsable",
+        "priority_changes": "Cambios de prioridad"
+      },
+      "conditionCount_one": "{{count}} condición",
+      "conditionCount_other": "{{count}} condiciones",
+      "conditionCount_many": "{{count}} de condiciones",
+      "alsoPosts": "también publica",
+      "label": "Enrutamiento de {{name}}",
+      "title": "Enrutamiento de #{{name}}",
+      "description": "Elige qué tickets abren un hilo en este canal y qué muestran esos hilos.",
+      "submit": "Guardar",
+      "cancel": "Cancelar",
+      "saved": "Enrutamiento guardado.",
+      "error": "No se pudo guardar el enrutamiento."
+    },
+    "access": {
+      "label": "Quién puede actuar desde {{name}}",
+      "title": "Quién puede actuar desde {{name}}",
+      "description": "Las personas vinculadas pueden responder, cambiar el ticket y preguntarle a Ollie desde los hilos de este canal. Elige quién puede.",
+      "who": "Quién puede actuar",
+      "values": {
+        "agents": "Cualquier agente",
+        "admins": "Solo administradores",
+        "chosen": "Personas elegidas"
+      },
+      "hints": {
+        "agents": "Todos los agentes y administradores vinculados. Este es el valor predeterminado.",
+        "admins": "Solo administradores y propietarios. Si un agente escribe en un hilo, se le dice que no tiene acceso.",
+        "chosen": "Solo las personas que elijas. A cualquier otra persona que escriba en un hilo se le dice que no tiene acceso."
+      },
+      "people": "Personas",
+      "cancel": "Cancelar",
+      "submit": "Guardar",
+      "saved": "Acceso guardado.",
+      "error": "No se pudo guardar quién puede actuar aquí."
+    }
+  },
+  "aliases": {
+    "title": "Alias",
+    "hint": "Otras direcciones que llegan a este buzón, como help@ o el hello@ de un proyecto aparte. Cada una funciona como un buzón propio, con su nombre de remitente, firma, equipo y marca. Los alias son gratis en todos los planes y no cuentan como buzones. Hasta 20.",
+    "identities": "Cada alias",
+    "edit": "Editar {{alias}}",
+    "badgeSelf": "Envía como sí mismo",
+    "badgeVia": "Respuestas desde {{email}}",
+    "openTickets": "Abrir sus tickets",
+    "senderName": "Nombre del remitente",
+    "senderNameHint": "Lo que {mailbox} pone en el nombre De. Si está vacío, se usa el del buzón.",
+    "team": "Los tickets nuevos van a",
+    "brand": "Marca",
+    "brandHint": "Los tickets nuevos de este alias usan los correos, el centro de ayuda y la encuesta de esta marca.",
+    "signature": "Firma",
+    "signatureLabel": "Firma de {{alias}}",
+    "signaturePlaceholder": "Si está vacío, se usa la firma del equipo o la del buzón",
+    "signatureHint": "El correo a este alias la lleva, antes de la del equipo y de la del buzón.",
+    "sendAs": {
+      "label": "Respuestas",
+      "smtp": "Salen desde esta dirección.",
+      "system": "Salen desde {{sender}} y contestan a esta dirección.",
+      "gmailVerified": "Salen desde esta dirección. Gmail la muestra como una desde la que puede enviar.",
+      "gmailUnverified": "Salen desde {{email}} y contestan a esta dirección. Gmail no la muestra como una desde la que puede enviar.",
+      "gmailClaimed": "Salen desde esta dirección, porque Gmail puede enviar como ella.",
+      "replyTo": "Salen desde {{email}} y contestan a esta dirección.",
+      "gmailClaim": "Gmail puede enviar como esta dirección",
+      "gmailHow": "Agrégala primero en Gmail: Ajustes > Cuentas > Enviar correo como. Después activa esto.",
+      "microsoft": "Salen desde esta dirección si Microsoft lo permite y, si no, desde {{email}}.",
+      "microsoftRefused": "Microsoft rechazó enviar como esta dirección, así que salen desde {{email}} y contestan a ella.",
+      "tryAgain": "Intentar de nuevo"
+    },
+    "gmail": {
+      "title": "Desde Gmail",
+      "hint": "Otras direcciones desde las que {{account}} puede enviar en Gmail. Agrega una para recibir su correo y responderlo aquí.",
+      "checkedAt": "Revisado {{when}}.",
+      "check": "Volver a revisar",
+      "checked": "Direcciones de envío de Gmail revisadas",
+      "add": "Agregar",
+      "addLabel": "Agregar {{email}} como alias",
+      "pending": "Esperando la confirmación en Gmail",
+      "none": "Gmail no tiene otras direcciones.",
+      "sendOnly": "Google no comparte las otras direcciones de envío de esta cuenta con una conexión de solo envío. Agrégalas arriba a mano."
+    }
+  },
+  "phone": {
+    "title": "Teléfono",
+    "description": "Conecta tu sistema de telefonía en la nube. Cada llamada queda en el ticket de quien llama, con quién la atendió, cuánto duró y su grabación.",
+    "connections": {
+      "title": "Sistemas de telefonía",
+      "description": "Las llamadas de estas cuentas se documentan en los tickets."
+    },
+    "empty": {
+      "title": "Todavía no hay sistema de telefonía",
+      "body": "Conecta Aircall o Voys y cada llamada queda documentada en el ticket de quien llama.",
+      "tipTimeline": "Llamadas en la línea de tiempo del ticket",
+      "tipMissed": "Las llamadas perdidas nunca quedan sin respuesta",
+      "tipAutomations": "Automatizaciones al terminar una llamada"
+    },
+    "health": {
+      "healthy": "Recibiendo llamadas",
+      "action_required": "Hace falta actuar",
+      "error": "No funciona",
+      "unknown": "Sin revisar",
+      "test": "Probar",
+      "tested": "La conexión funciona.",
+      "testedAttention": "La conexión necesita atención.",
+      "testError": "No se pudo probar la conexión.",
+      "waiting": "Esperando la primera llamada"
+    },
+    "healthCode": {
+      "receiving": "Las llamadas se envían a opendesk.",
+      "webhook_missing": "El sistema de telefonía no está enviando las llamadas a opendesk. Prueba la conexión para configurarlo otra vez.",
+      "credentials_refused": "El sistema de telefonía rechazó las credenciales. Cámbialas por unas que funcionen.",
+      "provider_unreachable": "No se alcanzó el sistema de telefonía. Inténtalo de nuevo en un momento.",
+      "webhookManual": "Todavía no entra ninguna llamada. Agrega abajo la dirección del webhook en {{name}} y luego haz una llamada de prueba."
+    },
+    "lastEvent": "Último evento de llamada {{when}}",
+    "noEventYet": "Todavía no hay llamadas. Las llamadas aparecen en los tickets en cuanto suenan.",
+    "webhook": "Dirección del webhook, registrada en tu cuenta por opendesk",
+    "rotate": {
+      "label": "Reemplazar las credenciales de {{name}}",
+      "title": "Reemplazar las credenciales de {{name}}",
+      "submit": "Reemplazar",
+      "saved": "Credenciales reemplazadas."
+    },
+    "disconnectLabel": "Desconectar {{name}}",
+    "disconnectTitle": "¿Desconectar el sistema de telefonía?",
+    "disconnectBody": "opendesk quita su webhook de {{name}} y deja de documentar las llamadas nuevas. Las llamadas que ya están en los tickets se quedan.",
+    "disconnect": "Desconectar",
+    "disconnected": "Sistema de telefonía desconectado.",
+    "disconnectError": "No se pudo desconectar el sistema de telefonía.",
+    "saveError": "No se pudo guardar el cambio.",
+    "placement": {
+      "title": "Llamadas de {{name}}",
+      "description": "Adónde va una llamada y qué hace ahí.",
+      "reuse": "Usar un ticket resuelto hace poco",
+      "reuseHint": "Si quien llama no tiene un ticket abierto, la llamada va a su último ticket resuelto en ese plazo.",
+      "reuseNever": "Si quien llama no tiene un ticket abierto, la llamada abre uno nuevo.",
+      "never": "Nunca",
+      "day": "En 1 día",
+      "daysN": "En {{n}} días",
+      "assign": "Asignar las llamadas atendidas",
+      "assignHint": "Un ticket sin responsable va al compañero que atendió la llamada. Los compañeros se reconocen por su correo.",
+      "cards": "Mostrar a quien llama en Aircall",
+      "cardsHint": "Mientras suena una llamada, Aircall muestra a quien llama, el ticket en el que cae la llamada y sus tickets más recientes.",
+      "dial": "Llamar desde opendesk",
+      "dialHint": "Los números en contactos y tickets abren tu aplicación de teléfono. Define {{name}} como la aplicación predeterminada de los enlaces telefónicos para llamar con ella."
+    },
+    "automations": {
+      "title": "Automatizaciones",
+      "description": "Las automatizaciones pueden ejecutarse cuando termina una llamada, con su resultado, sentido, línea, etiquetas y si llegó fuera del horario de atención.",
+      "docs": "Guía de teléfono",
+      "docsHint": "Pasos para configurarlo y ejemplos de automatizaciones.",
+      "openDocs": "Abrir la guía"
+    },
+    "example": {
+      "name": "Llamada perdida fuera del horario de atención",
+      "hint": "Vuelve a abrir el ticket de quien llama, agrega una nota y sube la prioridad. Se crea desactivada, para que la revises.",
+      "create": "Crear esta automatización",
+      "note": "Llamada perdida fuera del horario de atención: devolver la llamada.",
+      "created": "Automatización creada, desactivada.",
+      "error": "No se pudo crear la automatización."
+    },
+    "providers": {
+      "title": "Sistemas de telefonía que puedes conectar",
+      "descriptionAdmin": "Elige uno para conectarlo con su clave de API.",
+      "description": "Un administrador puede conectar un sistema de telefonía."
+    },
+    "provider": {
+      "aircall": "Sistema de telefonía en la nube. Las llamadas, las grabaciones y los resúmenes de IA quedan en los tickets.",
+      "voys": "Sistema de telefonía en la nube de los Países Bajos. Las llamadas, las transcripciones de Voys Intelligence y los resúmenes quedan en los tickets."
+    },
+    "field": {
+      "api_id": "ID de API",
+      "api_token": "Token de API"
+    },
+    "connect": {
+      "title": "Conectar {{name}}",
+      "aircallSetup": "En Aircall, abre Integraciones y API, luego Claves de API, y crea una clave. Pega aquí su ID de API y su token: opendesk registra su propio webhook en tu cuenta y no modifica los demás.",
+      "cancel": "Cancelar",
+      "submit": "Conectar",
+      "connected": "{{name}} conectado.",
+      "error": "No se pudo conectar {{name}}.",
+      "voysSetup": "En Voys Freedom, abre tus ajustes personales y copia tu token de API. Usa el token de un administrador con acceso a las grabaciones, para que lleguen las transcripciones y los resúmenes. Después agregas la dirección del webhook de opendesk en Voys."
+    },
+    "webhookManual": "Dirección del webhook, para agregarla en {{name}} como notificación de llamada",
+    "disconnectBodyManual": "opendesk deja de documentar las llamadas nuevas de {{name}}. Quita también la notificación de llamada en {{name}}. Las llamadas que ya están en los tickets se quedan.",
+    "hook": {
+      "title": "Agregar opendesk en {{name}}",
+      "description": "{{name}} envía las llamadas a esta dirección cuando la agregas como notificación de llamada.",
+      "done": "Listo",
+      "rotate": "Crear una dirección nueva",
+      "rotateLabel": "Crear una dirección de webhook nueva para {{name}}",
+      "rotateTitle": "¿Crear una dirección de webhook nueva?",
+      "rotateBody": "La dirección actual deja de funcionar de inmediato. Pega la nueva en {{name}} para seguir recibiendo llamadas.",
+      "rotateError": "No se pudo crear una dirección de webhook nueva."
+    },
+    "voys": {
+      "step1": "En Voys Freedom, abre Integratie, luego Gespreksnotificaties, y haz clic en Toevoegen.",
+      "step2": "Escribe una descripción como opendesk y elige Custom como servicio.",
+      "step3": "Pega la dirección del webhook en Web hook URL.",
+      "step4": "Marca los eventos de resumen y de transcripción (necesitan Voys Intelligence) y luego haz clic en Opslaan.",
+      "step5": "Haz una llamada de prueba: la conexión dice Recibiendo llamadas en cuanto entra."
+    }
+  },
+  "folders": {
+    "title": "Carpetas",
+    "description": "opendesk toma el correo de estas carpetas de tu servidor IMAP. Elige las carpetas en las que las reglas del servidor archivan el correo de soporte, como el de un alias. Un mensaje que está en varias se vuelve un solo mensaje del ticket.",
+    "inbox": "Bandeja",
+    "choose": "Elegir carpetas",
+    "done": "Listo",
+    "failed": "No se pudieron listar las carpetas",
+    "retry": "Intentar de nuevo",
+    "hint": "Elige hasta {{max}} carpetas. Los cambios se aplican al guardar.",
+    "full": "{{max}} carpetas es el máximo que lee un buzón. Desmarca una para elegir otra.",
+    "saveFirst": "Primero guarda los ajustes del servidor y luego elige las carpetas.",
+    "special": {
+      "sent": "Correo enviado",
+      "drafts": "Borradores",
+      "trash": "Papelera",
+      "junk": "Spam",
+      "all": "Todo el correo"
+    }
+  },
+  "sentCopy": {
+    "title": "Conservar el correo enviado en el servidor",
+    "hint": "Guarda una copia de cada correo que envía este buzón en una carpeta de tu servidor IMAP, como hace tu aplicación de correo, para que el buzón tenga la conversación completa.",
+    "folder": "Carpeta para el correo enviado",
+    "choose": "Elegir una carpeta",
+    "loading": "Cargando carpetas…"
+  }
+}
