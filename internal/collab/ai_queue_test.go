@@ -201,6 +201,65 @@ func queueWorld(t *testing.T, n int) (*world, *fakeGmail, *accountRow, []uuid.UU
 	return w, g, a, threads
 }
 
+// A key clears its own skips, all of them or those of one reason or account, and the
+// conversations are offered again without new mail. Another key's skips stay.
+func TestAIQueueClearSkips(t *testing.T) {
+	w, _, a, threads := queueWorld(t, 3)
+	t1, t2, t3 := threads[0], threads[1], threads[2]
+	botA := w.api(w.key(w.agent, "Drafter A", auth.ScopeCollabDraft))
+	botB := w.api(w.key(w.agent, "Drafter B", auth.ScopeCollabDraft))
+	skip := func(srv string, want uuid.UUID, reason string) {
+		t.Helper()
+		var r claimResp
+		if st := doJSON(t, "POST", srv+"/v1/collab/ai-queue/claim", map[string]any{}, &r); st != 200 || r.Claim == nil ||
+			r.Claim.ConversationID != want {
+			t.Fatalf("claim: %d %+v, want %s", st, r.Claim, want)
+		}
+		if st := doJSON(t, "POST", srv+"/v1/collab/ai-queue/claims/"+want.String()+"/release",
+			map[string]any{"skip": true, "reason": reason}, nil); st != 204 {
+			t.Fatalf("skip: %d", st)
+		}
+	}
+	clearSkips := func(srv string, body map[string]any) int64 {
+		t.Helper()
+		var r struct {
+			Cleared int64 `json:"cleared"`
+		}
+		if st := doJSON(t, "POST", srv+"/v1/collab/ai-queue/skips/clear", body, &r); st != 200 {
+			t.Fatalf("clear: %d", st)
+		}
+		return r.Cleared
+	}
+	skip(botA.URL, t1, "attachment")
+	skip(botA.URL, t2, "not confident")
+	skip(botA.URL, t3, "attachment")
+	skip(botB.URL, t1, "attachment")
+
+	if n := clearSkips(botA.URL, map[string]any{"reason": "unknown"}); n != 0 {
+		t.Fatalf("an unknown reason cleared %d", n)
+	}
+	if n := clearSkips(botA.URL, map[string]any{"account_id": a.ID, "reason": "attachment"}); n != 2 {
+		t.Fatalf("cleared %d, want 2", n)
+	}
+	if n := w.count(`SELECT count(*) FROM collab_ai_skips WHERE thread_id = ANY($1)`, threads); n != 2 {
+		t.Fatalf("%d skips left, want A's other reason and B's", n)
+	}
+	var r claimResp
+	if st := doJSON(t, "POST", botA.URL+"/v1/collab/ai-queue/claim", map[string]any{}, &r); st != 200 || r.Claim == nil ||
+		r.Claim.ConversationID != t1 {
+		t.Fatalf("not offered again: %d %+v", st, r.Claim)
+	}
+	if n := clearSkips(botA.URL, map[string]any{}); n != 1 {
+		t.Fatalf("cleared %d, want 1", n)
+	}
+	if n := w.count(`SELECT count(*) FROM collab_ai_skips WHERE thread_id = $1`, t1); n != 1 {
+		t.Fatal("another key's skip was cleared")
+	}
+	if st := doJSON(t, "POST", w.api(w.agent).URL+"/v1/collab/ai-queue/skips/clear", map[string]any{}, nil); st != 403 {
+		t.Fatalf("a person cleared skips: %d", st)
+	}
+}
+
 // A claim may name categories (GH#262): it is offered only conversations in them, read as
 // the inbox tabs read them, and none still waiting to be sorted. A person's move decides.
 func TestAIQueueCategories(t *testing.T) {

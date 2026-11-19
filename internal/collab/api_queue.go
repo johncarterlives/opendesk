@@ -172,6 +172,48 @@ func (s *service) registerQueueRoutes(api huma.API) {
 			}
 			return nil, nil
 		})
+
+	collabOp(api, huma.Operation{OperationID: "clear-collab-ai-skips", Method: http.MethodPost,
+		Path: "/v1/collab/ai-queue/skips/clear", Summary: "Offer this key the conversations it skipped again"},
+		func(ctx context.Context, in *struct {
+			Body *struct {
+				AccountID *uuid.UUID `json:"account_id,omitempty" doc:"Only skips of this account's conversations"`
+				Reason    *string    `json:"reason,omitempty" maxLength:"500" doc:"Only skips kept with exactly this reason"`
+			}
+		}) (*aiSkipsClearedOut, error) {
+			p, err := s.requireQueueKey(ctx)
+			if err != nil {
+				return nil, err
+			}
+			// A key clears only its own skips: another key's and people's work are untouched.
+			args := []any{p.APIKeyID, p.WorkspaceID}
+			where := `sk.api_key_id = $1 AND sk.workspace_id = $2`
+			if in.Body != nil && in.Body.AccountID != nil {
+				if _, err := visibleAccount(ctx, s.d.DB.Pool, p, *in.Body.AccountID); err != nil {
+					return nil, notFound(err, "Account")
+				}
+				args = append(args, *in.Body.AccountID)
+				where += ` AND EXISTS (SELECT 1 FROM collab_threads t WHERE t.id = sk.thread_id AND t.account_id = $` + strconv.Itoa(len(args)) + `)`
+			}
+			if in.Body != nil && in.Body.Reason != nil {
+				args = append(args, clipRunes(strings.TrimSpace(*in.Body.Reason), maxSkipReason))
+				where += ` AND sk.reason = $` + strconv.Itoa(len(args))
+			}
+			tag, err := s.d.DB.Pool.Exec(ctx, `DELETE FROM collab_ai_skips sk WHERE `+where, args...)
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			out := &aiSkipsClearedOut{}
+			out.Body.Cleared = tag.RowsAffected()
+			return out, nil
+		})
+}
+
+type aiSkipsClearedOut struct {
+	Body struct {
+		// Cleared counts the skips removed; those conversations are offered again.
+		Cleared int64 `json:"cleared"`
+	}
 }
 
 // requireQueueKey is requireDrafter for an API key only, with an agent's role: a person

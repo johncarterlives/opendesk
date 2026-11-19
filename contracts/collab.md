@@ -713,6 +713,10 @@ with a claim that expires on its own, and reports back. Nobody has to assign it.
   `204` gives it back; `404` when the key holds no live claim on it. With `skip` the key is not
   offered it again until new mail arrives; the reason (for example "not confident") is kept with
   the skip (`collab_ai_skips`).
+- **Clearing skips**: `POST /v1/collab/ai-queue/skips/clear` `{account_id?, reason?}` → `{cleared}`
+  removes the calling key's own skips, all of them, those of one account the member sees (`404`
+  otherwise) or those kept with exactly that reason, so the key is offered those conversations
+  again without new mail, for example after its drafting improved. Another key's skips stay.
 - **Approval**: an AI draft does not clear Needs action (only a sent reply does), so the
   conversation waits in Needs action, its draft labelled "AI draft by <name>", until a person sends
   a reply or marks it done; discarding the draft leaves it in Needs action. **Ready for review** (`box=ai_review`, `boxes.ai_review`) lists the conversations
