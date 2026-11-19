@@ -388,7 +388,7 @@ export default function MailPage() {
   // Only the conversation Edit opened takes the draft into its composer, once.
   useEffect(() => setEditAI((id) => (id && id !== openId ? null : id)), [openId]);
   const [draftBusy, setDraftBusy] = useState<Set<string>>(new Set());
-  // An AI draft just discarded from its row: feedback on it, offered from the toast, as the composer's discard does.
+  // An AI draft just discarded from its row: feedback on it, asked at once, as the composer's discard does.
   const [discardedAI, setDiscardedAI] = useState<{ draft: AIDraftRef; threadId: string } | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const busyDraft = useCallback((id: string, on: boolean) => setDraftBusy((s) => {
@@ -432,13 +432,13 @@ export default function MailPage() {
         void holdSend({ draftId: d.draft_id, from: accountsById.get(x.account_id)?.email ?? "", reopen }, undoSendSeconds(workspace?.settings));
         return;
       }
+      // The feedback form opens at once, not behind a toast that expires (GH#592); closing it skips it.
+      // Discarding reads nothing: the conversation stays as unread as it was.
       const discarded = () => {
+        toast.success(t("aiFeedback.discardedToast", { name: d.drafted_by }));
         if (!d.record_id) return;
-        setFeedbackOpen(false);
         setDiscardedAI({ draft: { id: d.record_id, client: d.drafted_by, outcome: "discarded", has_feedback: false }, threadId: x.id });
-        toast.success(t("aiFeedback.discardedToast", { name: d.drafted_by }), {
-          action: { label: t("aiFeedback.why"), onClick: () => setFeedbackOpen(true) },
-        });
+        setFeedbackOpen(true);
       };
       confirm.show(t("composer.discardDraftConfirm"), () => run(() => api.collab.drafts.remove(d.draft_id), discarded, t("composer.discardFailed")), {
         title: t("composer.discardDraftTitle"),

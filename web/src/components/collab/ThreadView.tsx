@@ -187,7 +187,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   const [commentThread, setCommentThread] = useState<string | null>(null);
   // The stored draft the composer continues, and the draft it saves to (hidden from the conversation while open).
   const [editing, setEditing] = useState<MailMessage | null>(null);
-  // An AI draft just discarded: feedback on it, offered from the toast, never required.
+  // An AI draft just discarded: feedback on it, asked at once, never required.
   const [discardedAI, setDiscardedAI] = useState<AIDraftRef | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [composerDraftId, setComposerDraftId] = useState<string | null>(null);
@@ -267,7 +267,8 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   // current conversation: a copy kept from an earlier visit can predate the new mail
   // that made it unread, so a stale copy waits for its refetch.
   const current = !!detail && !isFetching && (isFetchedAfterMount || !isStale);
-  useReadOnOpen({ detail, current, enabled: markReadOnOpen, onAction });
+  // Opened on a waiting AI draft, it stays unread until a reply is sent (GH#592).
+  const replied = useReadOnOpen({ detail, current, enabled: markReadOnOpen, onAction });
 
   const all = useMemo(() => detail?.messages ?? [], [detail]);
   const messages = useMemo(() => all.filter((m) => !m.draft), [all]);
@@ -848,18 +849,19 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                   onSent={() => {
                     setEditing(null);
                     setComposerDraftId(null);
+                    replied(th.id, th.unread);
                   }}
                   onDiscard={(removed) => {
                     const ai = editing.ai_draft;
                     setEditing(null);
                     setComposerDraftId(null);
                     if (!ai) return;
+                    // The feedback form opens at once, not behind a toast that expires (GH#592); closing it skips it.
                     void removed.then((ok) => {
                       if (!ok || shownThread.current !== threadId) return;
                       setDiscardedAI(ai);
-                      toast.success(t("aiFeedback.discardedToast", { name: ai.client }), {
-                        action: { label: t("aiFeedback.why"), onClick: () => setFeedbackOpen(true) },
-                      });
+                      setFeedbackOpen(true);
+                      toast.success(t("aiFeedback.discardedToast", { name: ai.client }));
                     });
                   }}
                 />
@@ -878,6 +880,8 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                   onSent={() => {
                     setComposer(null);
                     setComposerDraftId(null);
+                    // A forward hands the mail on; it is not an answer to it.
+                    if (composer !== "forward") replied(th.id, th.unread);
                   }}
                   onDiscard={() => {
                     setComposer(null);
