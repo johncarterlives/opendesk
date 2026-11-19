@@ -324,7 +324,9 @@ A `move` to an Outlook category is `422 validation_error` (a category is a label
 `label`). Moving a Microsoft or IMAP conversation keeps its categories.
 
 Opening a conversation does not mark it read; the web app sends `read` when it is shown (and the
-user can turn that off in the sidebar settings, `mark_read_on_open`).
+user can turn that off in the sidebar settings, `mark_read_on_open`). A conversation shown with an
+AI draft waiting in it is not read then: the web app sends `read` once a reply is sent from it, and
+discarding the draft leaves it as it was.
 
 ### Snooze
 
