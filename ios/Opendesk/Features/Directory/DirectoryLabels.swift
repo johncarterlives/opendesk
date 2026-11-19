@@ -81,9 +81,9 @@ struct DirectoryLabelPicker: View {
             .navigationTitle("Labels")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    SheetButton(.confirm, "Done") {
                         if picked != selected { onDone(picked, store.tags) }
                         dismiss()
                     }
@@ -202,7 +202,7 @@ struct DirectoryFilterSheet: View {
             .navigationTitle(sort == nil ? "Filter" : "Order and filter")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() }.fontWeight(.semibold) }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() }.fontWeight(.semibold) }
             }
             .task { await store.load(api: env.session.api) }
         }

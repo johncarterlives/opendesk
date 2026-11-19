@@ -15,6 +15,10 @@ it("writes short dates in each agent language's order and names", () => {
   expect(write("cs", "dayMonth")).toBe("6. 10.");
   expect(write("cs", "weekdayDayMonth")).toBe("út 6. 10.");
   expect(write("cs-CZ", "dayMonthYear")).toBe("6. 10. 2026");
+  expect(write("es", "dayMonth")).toBe("6 oct");
+  expect(write("es", "weekdayDayMonth")).toBe("mar, 6 oct");
+  expect(write("es-MX", "dayMonthYear")).toBe("6 oct 2026");
+  expect(write("es", "monthYear")).toBe("octubre 2026");
   expect(write("en", "monthYear")).toBe("October 2026");
   expect(write("cs", "monthYear")).toBe("říjen 2026");
 });

@@ -202,6 +202,15 @@ type threadRow struct {
 const threadColumns = `id, workspace_id, account_id, remote_id, subject, snippet, participants, last_message_at, message_count,
 	unread, starred, has_attachments, needs_action, snoozed_until, folder_ids, addresses, category`
 
+// rowWith scans a row into a scanner's destinations, then into extra ones for the columns
+// selected after them.
+type rowWith struct {
+	pgx.Row
+	extra []any
+}
+
+func (r rowWith) Scan(dest ...any) error { return r.Row.Scan(append(dest, r.extra...)...) }
+
 func scanThread(row pgx.Row) (*threadRow, error) {
 	var t threadRow
 	if err := row.Scan(&t.ID, &t.WorkspaceID, &t.AccountID, &t.RemoteID, &t.Subject, &t.Snippet, &t.Participants, &t.LastMessageAt,

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"slices"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -33,6 +34,8 @@ const (
 	maxSpaceSectionTitle = 40
 	maxSpaceItemName     = 64
 	maxSpaceItemID       = 100
+	// maxSpaceArranged bounds a whole section's rows and hidden rows, each.
+	maxSpaceArranged = 300
 	// maxSpacesBody bounds what is read; the stored form is held to maxSpacesBytes.
 	maxSpacesBody = 256 << 10
 )
@@ -61,6 +64,13 @@ var spaceUUIDKinds = collab.SidebarUUIDKinds
 
 var spaceSectionIDRe = regexp.MustCompile(`^[A-Za-z0-9_-]{1,40}$`)
 
+// spaceRowKeyRe is a row key of a whole section's arrangement, spelled as SidebarPrefs.hidden
+// spells it (contracts/spaces.md "Arranging a whole section").
+var spaceRowKeyRe = regexp.MustCompile(`^(ticket_folder|team|view|box|account|folder|page|wiki_page|wiki_space|pages|row):[A-Za-z0-9_-]{1,100}$`)
+
+// spaceFavoriteKinds are the rows Favorites take in a Space: the favorites that are one row.
+var spaceFavoriteKinds = []string{"box", "folder", "account", "view", "team", "ticket_folder"}
+
 // CoreSpace is the contract shape Space.
 type CoreSpace struct {
 	ID       string             `json:"id"`
@@ -88,6 +98,10 @@ type CoreSpaceItem struct {
 	Name        string `json:"name,omitempty"`
 	Badge       string `json:"badge,omitempty" enum:"unread,total,count,awaiting,urgent,overdue,open,none"`
 	Icon        string `json:"icon,omitempty"`
+	// Rows and Hidden arrange a whole section (kind "section"): its own order of the section's
+	// rows, or in Favorites the rows the Space adds, and the rows it does not show.
+	Rows   []string `json:"rows,omitempty"`
+	Hidden []string `json:"hidden,omitempty"`
 }
 
 // coreSpaceIn is a Space as a client sends it: color, icon and marks may be left out.
@@ -109,12 +123,14 @@ type coreSpaceSectionIn struct {
 }
 
 type coreSpaceItemIn struct {
-	WorkspaceID string `json:"workspace_id,omitempty" maxLength:"36" doc:"Required in your Spaces (\"\" for an everywhere row); set to the workspace in its starter Space"`
-	Kind        string `json:"kind" maxLength:"20"`
-	ID          string `json:"id" maxLength:"100"`
-	Name        string `json:"name,omitempty" maxLength:"300"`
-	Badge       string `json:"badge,omitempty" maxLength:"20"`
-	Icon        string `json:"icon,omitempty" maxLength:"64" doc:"One emoji in place of the row's own icon, or empty"`
+	WorkspaceID string   `json:"workspace_id,omitempty" maxLength:"36" doc:"Required in your Spaces (\"\" for an everywhere row); set to the workspace in its starter Space"`
+	Kind        string   `json:"kind" maxLength:"20"`
+	ID          string   `json:"id" maxLength:"100"`
+	Name        string   `json:"name,omitempty" maxLength:"300"`
+	Badge       string   `json:"badge,omitempty" maxLength:"20"`
+	Icon        string   `json:"icon,omitempty" maxLength:"64" doc:"One emoji in place of the row's own icon, or empty"`
+	Rows        []string `json:"rows,omitempty" maxItems:"300" doc:"A whole section only: its rows top to bottom as row keys (team:<id>, box:assigned); in Favorites, rows the Space adds"`
+	Hidden      []string `json:"hidden,omitempty" maxItems:"300" doc:"A whole section only: the row keys it does not show in this Space"`
 }
 
 type coreSpacesBody struct {
@@ -267,7 +283,47 @@ func validateSpaceItem(in coreSpaceItemIn, workspace *uuid.UUID) (CoreSpaceItem,
 		return out, err
 	}
 	out.Icon = icon
+	if out.Rows, err = spaceRowKeys(in.Kind, in.ID, "rows", in.Rows); err != nil {
+		return out, err
+	}
+	if out.Hidden, err = spaceRowKeys(in.Kind, in.ID, "hidden", in.Hidden); err != nil {
+		return out, err
+	}
 	return out, nil
+}
+
+// spaceRowKeys checks a whole section's rows or hidden rows: row keys, once each, at most
+// maxSpaceArranged, on a section item only. Favorites' rows are rows it can take.
+func spaceRowKeys(kind, section, field string, keys []string) ([]string, error) {
+	if len(keys) == 0 {
+		return nil, nil
+	}
+	if kind != "section" {
+		return nil, httpx.Validation("Only a whole section's row has " + field + ".")
+	}
+	if len(keys) > maxSpaceArranged {
+		return nil, httpx.Validation("A whole section's " + field + " hold at most 300 rows.")
+	}
+	seen := make(map[string]bool, len(keys))
+	for _, k := range keys {
+		if !spaceRowKeyRe.MatchString(k) {
+			return nil, httpx.Validation("Each of a whole section's " + field + " is a row key such as team:<id> or box:assigned.")
+		}
+		if seen[k] {
+			return nil, httpx.Validation("Each row key appears once in a whole section's " + field + ".")
+		}
+		seen[k] = true
+		if section == "favorites" && field == "rows" {
+			kind, id, _ := strings.Cut(k, ":")
+			if !slices.Contains(spaceFavoriteKinds, kind) {
+				return nil, httpx.Validation("Favorites in a Space take inbox folders, teams, views, Collab boxes, accounts and folders.")
+			}
+			if fixed, ok := spaceItemIDs[kind]; ok && !slices.Contains(fixed, id) {
+				return nil, httpx.Validation("Each " + kindLabel(kind) + " row needs one of the ids the app knows.")
+			}
+		}
+	}
+	return slices.Clone(keys), nil
 }
 
 func kindLabel(kind string) string {

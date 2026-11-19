@@ -63,11 +63,10 @@ struct WikiRowSheet: View {
             .navigationTitle(row == nil ? (edit.form == nil ? "New row" : "Fill in the form") : "Edit row")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button { Task { await save() } } label: {
-                        if saving { ProgressView().controlSize(.small) } else { Text(row == nil ? (edit.form == nil ? "Add" : "Send") : "Save").fontWeight(.semibold) }
-                    }
+                    SheetButton(row == nil && edit.form != nil ? .send : .confirm, row == nil ? (edit.form == nil ? "Add" : "Send") : "Save", busy: saving) { Task { await save() } }
+                    .fontWeight(.semibold)
                     .disabled(saving || !missing.isEmpty || (row != nil && changed.isEmpty && title == row?.node.title))
                 }
             }

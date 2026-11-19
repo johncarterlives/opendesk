@@ -207,7 +207,6 @@ export function Section({
               type="button"
               aria-expanded={!folded}
               onClick={toggle}
-              onDoubleClick={edit ? () => sidebarEdit.rename(edit.key) : undefined}
               data-sidebar-row={edit?.key}
               data-renamable={edit ? "true" : undefined}
               {...dragProps}

@@ -1,0 +1,46 @@
+{
+  "everywhere": {
+    "title": "En todas partes",
+    "mine": "Mis tickets",
+    "mail": "Todo el correo",
+    "mineTitle": "Mis tickets en todas partes",
+    "mailTitle": "Todo el correo en todas partes",
+    "mineHint": "Tickets asignados a ti en cada espacio de trabajo, con la actividad más reciente primero.",
+    "mailHint": "Tus bandejas en cada espacio de trabajo con Collab, las más recientes primero.",
+    "emptyMine": "Nada asignado a ti",
+    "emptyMineHint": "Los tickets asignados a ti en cualquier espacio de trabajo aparecen aquí.",
+    "emptyMail": "Todavía no hay correo",
+    "emptyMailHint": "Las conversaciones de tus cuentas de correo en cada espacio de trabajo aparecen aquí.",
+    "noMail": "Ninguno de tus espacios de trabajo tiene Collab",
+    "noMailHint": "Todo el correo reúne las cuentas de correo de los espacios de trabajo que lo tienen.",
+    "failed": "{{name}} no cargó",
+    "retry": "Reintentar",
+    "openIn": "Se abre en {{name}}",
+    "workspaces": "Espacios de trabajo en esta lista",
+    "allWorkspaces": "Todos los espacios de trabajo",
+    "more": "Los más antiguos están en la lista de cada espacio de trabajo."
+  },
+  "customize": {
+    "arrange": "Ordenar espacios de trabajo",
+    "title": "Espacios de trabajo",
+    "description": "Cómo se ordenan los espacios de trabajo a los que perteneces en el selector. Solo tú ves estos ajustes.",
+    "order": "Orden y visibilidad",
+    "orderHint": "Arrastra para reordenar, o pulsa Alt con la flecha arriba o abajo. Un espacio de trabajo oculto se pliega en el selector y no aparece en la campana ni en las listas de En todas partes.",
+    "drag": "Reordenar {{name}}",
+    "show": "Mostrar {{name}}",
+    "failed": "No se pudo guardar. Se deshizo el cambio.",
+    "single": "Perteneces a un solo espacio de trabajo",
+    "singleHint": "Cuando te unas a otro, podrás ordenarlos aquí y reunirlos en un espacio.",
+    "moved": "{{name}} ahora es el número {{n}}",
+    "hiddenNow": "Oculto",
+    "current": "Abierto ahora"
+  },
+  "badge": {
+    "in": "En {{name}}"
+  },
+  "switcher": {
+    "hidden_one": "{{count}} espacio de trabajo oculto",
+    "hidden_other": "{{count}} espacios de trabajo ocultos",
+    "hidden_many": "{{count}} espacios de trabajo ocultos"
+  }
+}

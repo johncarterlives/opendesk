@@ -329,13 +329,13 @@ export function buildRow(item: { kind: string; id: string }, d: WorkspaceData, c
       const nums =
         box === "inbox"
           ? allInboxNumbers(shownAccounts, d.folders, d.mailCounts)
-          : box === "shared" || box === "assigned"
+          : box === "shared" || box === "assigned" || box === "mentions"
             ? listBoxNumbers(box, d.mailCounts)
             : isTabBox(box)
               ? boxTabNumbers(box, accounts, d.folders, d.mailCounts, true)
               : {};
-      // Inbox, Unread, Shared and Assigned showed their count before anyone chose; the other boxes nothing.
-      const fallback = box === "inbox" || box === "shared" || box === "assigned" || box === "unread" ? undefined : "none";
+      // Inbox, Unread, Shared, Assigned and Mentions show their count before anyone chooses; the other boxes nothing.
+      const fallback = box === "inbox" || box === "shared" || box === "assigned" || box === "mentions" || box === "unread" ? undefined : "none";
       return {
         key,
         label: box === "inbox" ? ctx.labels.allInboxes : ctx.labels.box(box),
@@ -383,6 +383,11 @@ export function buildRow(item: { kind: string; id: string }, d: WorkspaceData, c
     default:
       return null;
   }
+}
+
+/** The number beside a row: mail and team rows show one above zero; inbox folders and views their count, zero too. */
+export function rowCount(model: RowModel, n: number | undefined): number | undefined {
+  return n !== undefined && (model.badge?.kind === "ticket" || n > 0) ? n : undefined;
 }
 
 /** The number a row shows: its own choice in the Space (`own`), else the workspace's choice for it or its sections, else its default. */
@@ -581,8 +586,7 @@ export function NavItemRow({
   const name = label || prefs.names[model.key] || model.label;
   const glyph = emoji ?? prefs.icons[model.key];
   const { n, choice } = rowNumber(model, prefs, own);
-  // Mail and team rows show a number above zero; inbox folders and views show their count, zero too.
-  const count = n !== undefined && (model.badge?.kind === "ticket" || n > 0) ? n : undefined;
+  const count = rowCount(model, n);
   const dot = rail && (model.railDot === "unread" ? choice !== "none" && !!model.badge?.nums.unread : model.railDot === "count" ? (n ?? 0) > 0 : false);
   const link = (
     <RowAnchor

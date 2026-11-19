@@ -1,0 +1,104 @@
+---
+title: Replying
+description: Compose mail, choose Reply or Comment, use aliases and signatures, take back a send and give feedback on AI drafts.
+---
+
+import Screenshot from '../../../../components/Screenshot.astro';
+import Steps from '../../../../components/Steps.astro';
+import Step from '../../../../components/Step.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Agents and above can answer conversations they can see. Replies go through the connected account's provider and appear in **Sent**. A teammate with access to just one shared or assigned conversation can reply or forward it; writing new mail needs access to the account.
+
+## Start a message
+
+Click **Compose** in the mail list header, beside search, or use the app header's **Compose** menu, which also starts tickets. On Mail pages, <kbd>c</kbd> starts a new email.
+
+For an existing conversation, use **Reply**, **Reply all** or **Forward** in its footer. Reply all is offered when it adds recipients. **Comment** opens an internal message to the team instead of an email.
+
+<Screenshot src="/guides/collab/conversation" alt="An open Sales conversation with Reply ringed as 1, Forward as 2 and Comment as 3 in its footer" />
+
+## Write and send
+
+<Steps>
+<Step title="Check the mode and recipients">
+
+The **Reply / Comment** switch is inside the composer area. Its email side is labelled **Reply**, **Reply all** or **Forward**, depending on what you are writing. Switching to Comment keeps your email draft while you discuss it with the team. Comments are never sent to the sender.
+
+Check **From**, **To**, **Cc** and **Bcc**. A reply normally uses the account address or alias the original message was written to. New mail uses the account's default address. Change **From** if another of the account's addresses should send it.
+
+</Step>
+<Step title="Write the message">
+
+Type your reply and attach files if needed. Drafts save about two seconds after typing stops and when the composer closes. A draft is also saved at the provider, so it can appear in Gmail, Outlook or another mail app.
+
+</Step>
+<Step title="Send">
+
+**Send** is the first button in the composer's action row. You can also use <kbd>mod</kbd> <kbd>enter</kbd>, where <kbd>mod</kbd> is Command on Mac or Ctrl elsewhere. If uploads are still running, wait for them to finish. **Discard** removes the draft from the mail account too, after confirmation.
+
+</Step>
+</Steps>
+
+<Screenshot src="/guides/collab/composer" alt="A reply composer with the Reply and Comment switch ringed as 1, From and the recipients as 2, and Send first in the action row as 3" />
+
+## Undo send
+
+Mail uses the workspace's **Undo send for email** window, shared with ticket email replies. The default is **5 seconds**. **Admins** change it in **Settings**, **General**, under **Conversations**. **Off** (0 seconds) sends immediately.
+
+With a window on, Send saves the draft at the provider and holds delivery in the web app. The **Sending…** notice offers **Undo** and **Send now**. Undo leaves it unsent, saved as a draft, and opens it again where you wrote it. Send now releases it immediately.
+
+<Screenshot src="/guides/collab/undo-send" alt="The Sending notice with Undo ringed as 1 and Send now as 2" />
+
+<Callout type="note">
+Closing the conversation does not cancel the send: the countdown continues. Leaving or reloading the page, switching the signed-in account or workspace, or signing out sends held mail immediately. The browser asks before leaving with mail on hold; leaving anyway attempts delivery at once. If the draft cannot be saved for the hold, the app sends straight away instead. Use **Undo** while the notice is visible, not closing the page, to take a message back.
+</Callout>
+
+An AI draft's **Send** button in the list uses the same window. Its **Undo** opens the conversation with the draft. If delivery fails, the message stays a draft to open and try again. Undo send is a delay before delivery, not a recall after delivery.
+
+## Addresses and aliases
+
+The account's manager opens **Settings**, **Mail accounts**, the account, then **Addresses**.
+
+- **Google-connected accounts** read Gmail's **Send mail as** addresses. Add or remove them in Gmail's settings. They appear within 15 minutes, or with **Check Gmail**. An address **Waiting for confirmation** cannot send until its owner confirms it.
+- **Microsoft accounts** use **Add address** here. The Microsoft organization must allow sending from aliases or Outlook refuses the message.
+- **IMAP accounts** also use **Add address**. Their SMTP server decides which sending addresses it accepts.
+
+Choose **Use for new mail** to set the default. Each address can have its own From name and signature. Hand-added addresses can also set a **Reply-to**.
+
+### Reply all by default
+
+Under **Replying** in the account's settings, turn on **Reply all by default** and **Save** to put Reply all first for everyone answering from the account, when there are other recipients. The shortcuts keep their meaning: <kbd>r</kbd> replies to the sender, <kbd>a</kbd> replies to everyone.
+
+## Signatures
+
+Set **Signature** in the account's settings, or edit an address under **Addresses** for its own signature. The composer adds the chosen address's signature as a block to new mail and replies, and swaps it when From changes. You can remove the whole block from a message.
+
+For a Google-connected account's main address, signatures sync both ways with Gmail when the account granted settings access. Without that access, Gmail's signature is read but changes here stay in opendesk until you reconnect. Other Gmail sending addresses follow changes made in Gmail, while edits here stay in opendesk. **Get from Gmail** brings Gmail's version back now.
+
+Microsoft and IMAP signatures live in opendesk. From names or signatures using sender variables also stay in opendesk, so a shared account can name whoever sends while Gmail keeps its own version. The settings page explains which behavior applies.
+
+## AI drafts and privacy
+
+An AI client you choose, using a local or hosted model, can draft replies through an API key explicitly given `collab:draft`. The key acts as the member who created it and reads only conversations that member can see, including their messages and internal comments. It can save reply drafts but cannot send, discard, archive, mark read, assign, share or comment. Reading through the key does not mark mail read.
+
+The key's name appears in **AI draft by …**. Review the facts, tone and recipients before sending. Saving your edits takes over the draft so the AI key cannot overwrite your work. [Ready for review](/guides/collab/handling/#review-ai-drafts) brings waiting drafts together.
+
+<Callout type="note" title="Choose AI access deliberately">
+The draft client's model runs outside opendesk's own AI usage: opendesk does not run or meter it. That client may send the mail it reads to its configured model provider. A private account is not excluded if the key's creator can see it. Other API keys and the Ollie assistant cannot read Mail. Separately, enabled [inbox sorting](/guides/inbox-categories/) can give Ollie limited message details, and an owner's explicit account-level consent can let teammates' Ollie ask theirs for answers under that owner's sharing rules.
+</Callout>
+
+### Give feedback on a draft
+
+Use **Give feedback** on a message sent from an AI draft, or on a draft that was not used. Discarding an AI draft also offers **Say why**. Choose **Wrong facts**, **Wrong tone**, **Missing information**, **Should not have answered** or **Other**.
+
+Add an optional **Note**, up to **2,000 characters**, and an optional **Better answer** with the reply you would have written. The note counter shows the limit; pasting more cuts it off, so put the full reply in Better answer. Click **Save feedback**. Saving again replaces your previous feedback.
+
+The AI client that wrote the draft can read its outcomes and this feedback for conversations its member can still see. Feedback does not change or send mail, and opendesk does not train or change a model from it. The client decides how to use it.
+
+## Related
+
+- [Handling and AI review](/guides/collab/handling/)
+- [Shared and private accounts](/guides/collab/shared-and-private-accounts/)
+- [Collab keyboard shortcuts](/guides/keyboard-shortcuts/#collab)
+- [Change a key's scopes](/api/resources/api-keys-webhooks/#change-a-keys-scopes)

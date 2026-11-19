@@ -7,6 +7,7 @@ struct MainTabView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var tabBar = TabBarState()
     @State private var width: CGFloat = 0
+    @State private var insets = EdgeInsets()
     @State private var showPushPrimer = false
     @State private var showAccounts = false
 
@@ -26,9 +27,16 @@ struct MainTabView: View {
 
     private var ollieAvailable: Bool { env.directory.ai.assistantOn }
 
-    private var bar: some View {
+    /// The column the system keeps down one side (the folded iPhone Duo), where the bar
+    /// stands up at the foot the way its dock does.
+    private var column: SideColumn? {
+        env.router.columns ? nil : SideColumn.of(insets: insets)
+    }
+
+    private func bar(_ axis: Axis = .horizontal) -> some View {
         @Bindable var router = env.router
         return ODTabBar(
+            axis: axis,
             items: items,
             selection: $router.tab,
             ollie: ollieAvailable ? { router.showOllie = true } : nil,
@@ -39,7 +47,7 @@ struct MainTabView: View {
             },
             onLongPress: [.account: { showAccounts = true }]
         )
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(.move(edge: axis == .vertical ? (column?.edge == .leading ? .leading : .trailing) : .bottom).combined(with: .opacity))
     }
 
     var body: some View {
@@ -56,14 +64,19 @@ struct MainTabView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !tabBar.isHidden, !router.columns { bar }
+            if !tabBar.isHidden, !router.columns, column == nil { bar() }
         }
         // In columns the bar floats under the list alone (which keeps room for it,
         // `AdaptiveStack`), so the screen beside it runs to the bottom edge.
         .overlay(alignment: .bottomLeading) {
-            if !tabBar.isHidden, router.columns { bar.frame(width: router.listWidth) }
+            if !tabBar.isHidden, router.columns { bar().frame(width: router.listWidth) }
         }
+        .sideColumnFoot {
+            if !tabBar.isHidden { bar(.vertical) }
+        }
+        .environment(\.sideColumn, column)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onGeometryChange(for: EdgeInsets.self) { $0.safeAreaInsets } action: { insets = $0 }
         .onChange(of: AppColumns.on(width: width, sizeClass: sizeClass), initial: true) { _, on in router.wide = on }
         .onChange(of: width, initial: true) { _, width in router.listWidth = AppColumns.listWidth(for: width) }
         .motion(Motion.snappy, value: tabBar.isHidden)

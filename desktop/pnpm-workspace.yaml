@@ -1,3 +1,9 @@
 allowBuilds:
   electron-winstaller: false
   esbuild: true
+auditConfig:
+  ignoreGhsas:
+    # picomatch ReDoS (no patched release yet): only vitest and electron-builder's node-gyp
+    # use it, at build and test time, on the repo's own globs; nothing ships in the app.
+    # Drop this once a fixed picomatch is released.
+    - GHSA-fc5q-39xc-vjpf

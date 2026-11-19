@@ -96,7 +96,7 @@
       "sparkles": "Étincelles"
     },
     "structure": "Sections et lignes",
-    "structureHint": "Faites glisser lignes et sections par leur poignée, ou placez le focus sur la poignée et appuyez sur Alt avec une flèche.",
+    "structureHint": "Faites glisser lignes et sections par leur poignée, ou placez le focus sur la poignée et appuyez sur une flèche. Ouvrez une section entière pour ranger ses lignes ; elle reste à jour.",
     "rows_one": "{{count}} ligne",
     "rows_many": "{{count}} lignes",
     "rows_other": "{{count}} lignes",
@@ -128,6 +128,20 @@
       "teamspaces": "Espaces d’équipe"
     },
     "wholeHint": "Toujours à jour",
+    "arrangedHint": "Rangée, toujours à jour",
+    "groupRows": "Lignes de {{name}}",
+    "groupEmpty": "Rien ici pour l’instant",
+    "move": "Déplacer {{name}}",
+    "hideRow": "Masquer {{name}} dans ce Space",
+    "showRow": "Afficher {{name}} dans ce Space",
+    "removeFavorite": "Retirer {{name}} des Favoris",
+    "toFavorites": "Ajouter aux Favoris",
+    "addTo": "Ajouter à la section",
+    "backInto": "Remettre dans {{name}}",
+    "resetArrangement": "Revenir à ses lignes habituelles",
+    "favoritesEmpty": "Faites glisser des lignes ici pour les mettre dans les Favoris.",
+    "favoritesTheirs": "Les favoris de chacun suivent.",
+    "favoritesYours": "Vos propres favoris suivent.",
     "noCollab": "Collab est désactivé dans {{workspace}} : son courrier ne peut pas être ajouté.",
     "loading": "Chargement de ce que propose {{workspace}}",
     "noMatches": "Aucun résultat.",
@@ -160,7 +174,8 @@
       "too_many_spaces": "Vous pouvez garder au plus 20 Spaces.",
       "too_large": "Ce Space est trop grand pour être enregistré. Retirez quelques lignes.",
       "duplicate_id": "Deux Spaces ont le même identifiant. Rechargez la page et réessayez.",
-      "space": "Ce Space ne peut pas être enregistré tel quel."
+      "space": "Ce Space ne peut pas être enregistré tel quel.",
+      "too_many_arranged": "Une section entière garde au plus 300 lignes rangées ou masquées."
     },
     "everyWorkspace": "Tous les espaces de travail"
   },

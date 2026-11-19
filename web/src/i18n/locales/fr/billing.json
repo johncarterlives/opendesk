@@ -237,7 +237,8 @@
     "assistant": "Assistant",
     "procedure": "Procédures exécutées par les automatisations",
     "wiki_write": "Écriture dans le wiki",
-    "other": "Autre"
+    "other": "Autre",
+    "app_help": "Questions sur opendesk"
   },
   "dialog": {
     "limitTitle": "Vous avez atteint une limite de l’offre Free",

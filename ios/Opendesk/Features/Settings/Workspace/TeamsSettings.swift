@@ -829,9 +829,9 @@ struct WSAddTeamMembers: View {
             .navigationTitle("Add people")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(picked.isEmpty ? "Add" : "Add \(picked.count)") {
+                    SheetButton(.confirm, picked.isEmpty ? "Add" : "Add \(picked.count)") {
                         add(Array(picked))
                         dismiss()
                     }
@@ -897,7 +897,7 @@ struct WSDayHoursSheet: View {
             .navigationTitle(day.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
     }

@@ -77,7 +77,7 @@ struct SpaceSwitcherSheet: View {
             .navigationTitle("Switch")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
             .refreshable {
                 await store.load()

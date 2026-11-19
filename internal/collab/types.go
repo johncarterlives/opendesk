@@ -372,6 +372,8 @@ type MailThreadDetail struct {
 	// UnusedAIDrafts are the conversation's AI drafts that were discarded, replaced or
 	// abandoned and are gone, so feedback on them stays reachable ("AI draft outcomes").
 	UnusedAIDrafts []UnusedAIDraft `json:"unused_ai_drafts"`
+	// Following: the caller follows it, so it is in their Mentions box ("Mentions").
+	Following bool `json:"following"`
 }
 
 // AISkip is an AI key skipping a conversation: "<client> skipped: <reason>".

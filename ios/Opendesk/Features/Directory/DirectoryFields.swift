@@ -193,9 +193,9 @@ struct DirectoryFieldEditor: View {
             .navigationTitle(field.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }.fontWeight(.semibold)
+                    SheetButton(.confirm, "Save") { save() }.fontWeight(.semibold)
                 }
                 if value != nil {
                     ToolbarItem(placement: .bottomBar) {

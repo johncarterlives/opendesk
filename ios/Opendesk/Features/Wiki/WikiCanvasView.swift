@@ -297,7 +297,7 @@ struct WikiCanvasScreen: View {
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
                 }
         }
     }

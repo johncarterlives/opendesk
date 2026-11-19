@@ -109,7 +109,7 @@ Mailboxes that sync through Microsoft read mail over IMAP, so IMAP must be enabl
 
 ## Mail accounts
 
-[Mail](/guides/mail/) (Collab) lets members connect their own Google and Microsoft accounts, private or shared with the team. **Connect a mail account** offers **Google** and **Microsoft** only once the instance has a client for them; until then it offers **Other (IMAP)** alone (while `COLLAB_IMAP` is on).
+[Collab](/guides/collab/connect-an-account/) lets members connect their own Google and Microsoft accounts, private or shared with the team. **Connect a mail account** offers **Google** and **Microsoft** only once the instance has a client for them; until then it offers **Other (IMAP)** alone (while `COLLAB_IMAP` is on).
 
 Mail accounts use the mailbox clients (`GOOGLE_MAILBOX_CLIENT_ID`, `MICROSOFT_MAILBOX_CLIENT_ID`, which default to the sign-in clients) unless you give them their own, for example a Google project of its own while its restricted scope is reviewed:
 
@@ -140,6 +140,6 @@ See [Collab](/self-hosting/configuration/#collab-your-own-mail-accounts) for `CO
 These are for sign-in only.
 
 - **GitHub:** create an OAuth app under **Settings → Developer settings → OAuth Apps** with the callback `API_URL/v1/auth/oauth/github/callback`, then set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. It requests `read:user` and `user:email`.
-- **OIDC:** register a web client with your identity provider with the redirect URI `API_URL/v1/auth/oauth/oidc/callback` and scopes `openid email profile`, then set `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and optionally `OIDC_NAME` for the button label.
+- **OIDC:** register a web client with your identity provider with the redirect URI `API_URL/v1/auth/oauth/oidc/callback` and scopes `openid email profile`, then set `OIDC_ISSUER` (the issuer your provider advertises; a trailing slash may be left on or off), `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` and optionally `OIDC_NAME` for the button label.
 
 Federated identities are bound by issuer and subject. If someone signs in with a provider using the email of an existing password account, the accounts are linked only after the password is entered.

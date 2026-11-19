@@ -155,6 +155,9 @@ func (s *service) registerAccountRoutes(api huma.API) {
 			if visibility == VisibilityPrivate && a.OwnerID == nil {
 				return nil, httpx.Validation("An account whose owner left stays shared. Disconnect it instead.")
 			}
+			if visibility == VisibilityPrivate && a.Visibility != VisibilityPrivate && *a.OwnerID != p.UserID {
+				return nil, httpx.Validation("Only the member who connected an account can make it private.")
+			}
 			if visibility != a.Visibility || b.SharedWith != nil {
 				sharing = true
 				if visibility == VisibilityShared {

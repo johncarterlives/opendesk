@@ -98,6 +98,11 @@ describe("Space rows", () => {
     expect(buildRow({ kind: "team", id: "t1" }, d, { labels })).toMatchObject({ label: "Team t1", badge: { kind: "team", nums: { count: 2, open: 5 } } });
     expect(buildRow({ kind: "view", id: "v1" }, d, { labels })).toMatchObject({ label: "Hot", badge: { nums: { count: 7, awaiting: 3, urgent: 1 } } });
     expect(buildRow({ kind: "box", id: "shared" }, d, { labels })).toMatchObject({ label: "box shared", badge: { kind: "mail", nums: { unread: 1 } } });
+    // Mentions counts every conversation it lists, shown before anyone chooses.
+    const mentions = buildRow({ kind: "box", id: "mentions" }, data({ mailCounts: { ...d.mailCounts!, boxes: { ...d.mailCounts!.boxes, mentions: 3 } } }), { labels });
+    expect(mentions).toMatchObject({ key: "box:mentions", label: "box mentions", link: { kind: "mail", box: "mentions" } });
+    expect(rowNumber(mentions!, d.prefs).n).toBe(3);
+    expect(rowHref({ kind: "mail", box: "mentions" }, "w1")).toBe("/mail/mentions?ws=w1");
     expect(buildRow({ kind: "account", id: "a1" }, d, { labels })).toMatchObject({ label: "Work", badge: { nums: { unread: 5 } } });
     expect(buildRow({ kind: "page", id: "reports" }, d, { labels })).toMatchObject({ label: "page reports", link: { kind: "page", page: "reports" } });
   });

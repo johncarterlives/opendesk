@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { installMock } from "../index";
 import { dispatch } from "../router";
 import { db } from "../db";
+import { answeredBy } from "./collab";
 
 async function call(method: string, path: string, body?: unknown) {
   const ws = db.workspaces[0]?.workspace.id;
@@ -220,6 +221,39 @@ describe("mock Collab", () => {
     const n = await call("POST", "/v1/collab/drafts", { account_id: detail.account.id, mode: "new", to: [], subject: "Later", body_html: "<p>x</p>" });
     expect((await call("DELETE", `/v1/collab/drafts/${n.body.id}`)).status).toBe(204);
     expect((await call("GET", `/v1/collab/threads/${n.body.thread_id}`)).status).toBe(404);
+  });
+
+  it("lists the conversations you follow in Mentions, until you remove yourself", async () => {
+    const ids = async () => ((await call("GET", "/v1/collab/threads?box=mentions")).body.data as { id: string }[]).map((t) => t.id);
+    const count = async () => (await call("GET", "/v1/collab/counts")).body.boxes.mentions as number;
+    // A teammate's mention put one in your Mentions.
+    const [tid] = await ids();
+    expect(tid).toBeTruthy();
+    expect(await count()).toBe(1);
+    expect((await call("GET", `/v1/collab/threads/${tid}`)).body.following).toBe(true);
+    // Removing yourself takes it out of the box only.
+    expect((await call("DELETE", `/v1/collab/threads/${tid}/follow`)).status).toBe(204);
+    expect(await ids()).toEqual([]);
+    expect(await count()).toBe(0);
+    const detail = (await call("GET", `/v1/collab/threads/${tid}`)).body;
+    expect(detail.following).toBe(false);
+    expect(detail.comments.length).toBeGreaterThan(0);
+    // Following by hand brings it back.
+    expect((await call("PUT", `/v1/collab/threads/${tid}/follow`)).status).toBe(204);
+    expect(await ids()).toEqual([tid]);
+    expect(await count()).toBe(1);
+  });
+
+  it("answers the commenter since whose latest comment only the author has written", () => {
+    const c = (by: string | null) => ({ author: by ? { id: by } : null }) as never;
+    expect(answeredBy([], "me")).toEqual([]);
+    expect(answeredBy([c("bea")], "me")).toEqual(["bea"]);
+    // Writing on is still answering them.
+    expect(answeredBy([c("bea"), c("me"), c("me")], "me")).toEqual(["bea"]);
+    // Someone else wrote since: only they are answered.
+    expect(answeredBy([c("bea"), c("cal")], "me")).toEqual(["cal"]);
+    // A comment of someone who left answers no one.
+    expect(answeredBy([c("bea"), c(null)], "me")).toEqual([]);
   });
 
   it("sends a reply into its conversation", async () => {

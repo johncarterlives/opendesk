@@ -4,8 +4,8 @@ import { i18n, loadAgentCatalogs } from "@/i18n";
 import { Calendar, DateField } from "./date-picker";
 import { SearchInput } from "./input";
 
-// The agent app loads its French catalogs before rendering (the root route's loader).
-beforeAll(() => Promise.all([loadAgentCatalogs("fr"), loadAgentCatalogs("cs"), loadAgentCatalogs("zh-CN")]));
+// The agent app loads its catalogs before rendering (the root route's loader).
+beforeAll(() => Promise.all([loadAgentCatalogs("es"), loadAgentCatalogs("fr"), loadAgentCatalogs("cs"), loadAgentCatalogs("zh-CN")]));
 
 afterEach(async () => { await i18n.changeLanguage("en"); });
 
@@ -17,6 +17,15 @@ it("uses French calendar names and accessible controls without changing ISO date
   const field = renderToStaticMarkup(<DateField value="2026-03-04" onChange={() => {}} />);
   expect(field).toContain("4 mars 2026");
   expect(renderToStaticMarkup(<SearchInput value="query" onChange={() => {}} />)).toContain('aria-label="Effacer la recherche"');
+});
+
+it("writes Spanish dates with the day first and Spanish month names", async () => {
+  await i18n.changeLanguage("es");
+  const calendar = renderToStaticMarkup(<Calendar value={new Date(2026, 2, 4)} onChange={() => {}} />);
+  expect(calendar).toContain("marzo 2026");
+  expect(calendar).toContain('aria-label="Mes siguiente"');
+  expect(renderToStaticMarkup(<DateField value="2026-03-04" onChange={() => {}} />)).toContain("4 mar 2026");
+  expect(renderToStaticMarkup(<SearchInput value="query" onChange={() => {}} />)).toContain('aria-label="Borrar la búsqueda"');
 });
 
 it("writes German dates with German month names and day order", async () => {

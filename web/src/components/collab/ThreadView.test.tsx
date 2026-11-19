@@ -68,6 +68,17 @@ function replyButtons() {
   return [...doc.querySelectorAll("footer button[aria-label]")].map((b) => b.getAttribute("aria-label")).filter((name) => name === "Reply" || name === "Reply all");
 }
 
+it("says the conversation is in your Mentions, with a way out, only while you follow it", () => {
+  const doc = (following: boolean) => {
+    detail = { ...detail, following };
+    return new DOMParser().parseFromString(renderMarkup(), "text/html");
+  };
+  const control = (d: Document) => d.querySelector("button[aria-label='Remove from Mentions']");
+  expect(control(doc(true))?.textContent).toBe("In your Mentions");
+  expect(control(doc(false))).toBeNull();
+  expect(doc(false).body.textContent).not.toContain("In your Mentions");
+});
+
 it("offers plain Reply, Forward and Comment buttons, with no mode toggle and no composer", () => {
   const doc = new DOMParser().parseFromString(renderMarkup(), "text/html");
   const names = [...doc.querySelectorAll("footer button[aria-label]")].map((b) => b.getAttribute("aria-label"));

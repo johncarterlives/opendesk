@@ -42,6 +42,8 @@ export const TYPICAL_TOKENS: Record<AIFeature, [number, number]> = {
   procedure: [6000, 400],
   // Ollie writing in the wiki from a page: the page in, a few paragraphs out.
   wiki_write: [6000, 600],
+  // A question about using the app: excerpts in, a few sentences out.
+  app_help: [2000, 200],
 };
 
 /** What a call costs when no price gives it (contracts/billing.md "Typical costs"), in US dollars. */
@@ -62,6 +64,7 @@ export const FALLBACK_USD: Record<AIFeature, number> = {
   assistant_peer: 0.01,
   procedure: 0.02,
   wiki_write: 0.03,
+  app_help: 0.005,
 };
 
 export const DEFAULT_MODEL = "anthropic/claude-sonnet-5.5";
@@ -145,6 +148,7 @@ export function modelFor(ws: WsData, feature: AIFeature): string {
     case "rewrite":
     case "translate":
     case "assistant_peer":
+    case "app_help":
       return m.fast;
     case "answer":
     case "answer_email":

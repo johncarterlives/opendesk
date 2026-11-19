@@ -129,6 +129,8 @@ func newOAuthProviders(cfg *config.Config) *oauthProviders {
 
 // ensure discovers an OIDC provider once. Microsoft's multi-tenant metadata names a
 // templated issuer, so its id tokens are checked against the tenant claim instead.
+// OIDC_ISSUER matches the advertised issuer with or without a trailing slash (authentik
+// advertises one), and id tokens are then checked against the advertised issuer exactly.
 func (ps *oauthProviders) ensure(ctx context.Context, p *oauthProvider) (oauth2.Config, error) {
 	if p.kind != "oidc" {
 		return p.cfg, nil
@@ -139,10 +141,14 @@ func (ps *oauthProviders) ensure(ctx context.Context, p *oauthProvider) (oauth2.
 		dctx := oidc.ClientContext(ctx, ps.http)
 		var prov *oidc.Provider
 		var err error
-		if p.id == "microsoft" {
+		if p.id == "microsoft" || p.id == "oidc" {
 			var iss string
 			if iss, err = ps.discoveredIssuer(ctx, p.issuer); err == nil {
-				prov, err = oidc.NewProvider(oidc.InsecureIssuerURLContext(dctx, iss), p.issuer)
+				if p.id == "oidc" && strings.TrimRight(iss, "/") != p.issuer {
+					err = fmt.Errorf("issuer %q does not match OIDC_ISSUER %q", iss, p.issuer)
+				} else {
+					prov, err = oidc.NewProvider(oidc.InsecureIssuerURLContext(dctx, iss), p.issuer)
+				}
 			}
 		} else {
 			prov, err = oidc.NewProvider(dctx, p.issuer)

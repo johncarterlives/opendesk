@@ -39,7 +39,7 @@ struct WikiCommentsSheet: View {
                 .navigationTitle("Comments")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                    ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
                 }
                 .safeAreaInset(edge: .bottom, spacing: 0) {
                     if canWrite, comments != nil { composer }

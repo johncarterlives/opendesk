@@ -66,13 +66,13 @@ struct ContactEditSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { if dirty { confirmDiscard = true } else { dismiss() } }
+                    SheetButton(.cancel, "Cancel") { if dirty { confirmDiscard = true } else { dismiss() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if saving {
                         ProgressView()
                     } else {
-                        Button(isNew ? "Create" : "Save") { Task { await save() } }
+                        SheetButton(.confirm, isNew ? "Create" : "Save") { Task { await save() } }
                             .fontWeight(.semibold)
                             .disabled(!dirty && !isNew)
                     }
@@ -284,13 +284,13 @@ struct CompanyEditSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { if dirty { confirmDiscard = true } else { dismiss() } }
+                    SheetButton(.cancel, "Cancel") { if dirty { confirmDiscard = true } else { dismiss() } }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if saving {
                         ProgressView()
                     } else {
-                        Button(isNew ? "Create" : "Save") { Task { await save() } }
+                        SheetButton(.confirm, isNew ? "Create" : "Save") { Task { await save() } }
                             .fontWeight(.semibold)
                             .disabled(!dirty && !isNew)
                     }
@@ -425,7 +425,7 @@ struct CompanyPickerSheet: View {
             .navigationTitle("Company")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
             }
         }
         .onAppear { store.start(api: env.session.api, realtime: env.realtime) }

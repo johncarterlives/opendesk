@@ -503,11 +503,10 @@ private struct McpServerEditor: View {
             .background(Theme.chrome)
             .accountTitle(edit.server == nil ? "Connect an MCP server" : "Edit connection")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button { Task { await save() } } label: {
-                        if busy { ProgressView() } else { Text(edit.server == nil ? (kind == "oauth" ? "Add and sign in" : "Connect") : "Save").fontWeight(.semibold) }
-                    }
+                    SheetButton(.confirm, edit.server == nil ? (kind == "oauth" ? "Add and sign in" : "Connect") : "Save", busy: busy) { Task { await save() } }
+                        .fontWeight(.semibold)
                     .disabled(busy)
                 }
             }
@@ -734,7 +733,7 @@ private struct McpToolTest: View {
             .scrollDismissesKeyboard(.interactively)
             .background(Theme.chrome)
             .accountTitle("Run this tool once")
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Close") { dismiss() } } }
         }
         .onAppear {
             guard !started else { return }

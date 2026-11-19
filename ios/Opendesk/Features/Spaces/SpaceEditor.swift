@@ -89,18 +89,15 @@ struct SpaceEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    SheetButton(.cancel, "Cancel") {
                         if space == original || isNew && space.items.isEmpty { dismiss() } else {
                             confirmDiscard = AccountConfirm(title: "Discard your changes?", message: "What you changed in this Space is not saved.", confirmTitle: "Discard") { dismiss() }
                         }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        Task { await save() }
-                    } label: {
-                        if saving { ProgressView() } else { Text(isNew && starterOf == nil ? "Create" : "Save").bold() }
-                    }
+                    SheetButton(.confirm, isNew && starterOf == nil ? "Create" : "Save", busy: saving) { Task { await save() } }
+                        .bold()
                     .disabled(saving)
                 }
             }
@@ -467,9 +464,9 @@ struct SpaceAddRowsSheet: View {
             .navigationTitle("Add rows")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(chosen.isEmpty ? "Add" : "Add \(chosen.count)") {
+                    SheetButton(.confirm, chosen.isEmpty ? "Add" : "Add \(chosen.count)") {
                         onAdd(chosen)
                         dismiss()
                     }

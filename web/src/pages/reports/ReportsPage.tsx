@@ -27,7 +27,7 @@ import type { ReportsOverview, ReportsQuery, ReportsRange, Ticket } from "@/lib/
 import { cn } from "@/lib/cn";
 import { minutes } from "@/lib/format";
 import { q } from "@/lib/queries";
-import { atLeast, useRole } from "@/lib/session";
+import { atLeast, useRole, useSession } from "@/lib/session";
 import { isTone, priorityTone, SERIES, statusTone, tone, toneFor, toneVar, type Tone } from "@/lib/tones";
 import { reportsQuery } from "@/router";
 import { useDisplay } from "@/components/tickets/fields";
@@ -71,6 +71,10 @@ export default function ReportsPage() {
   const teamTable = d && scope.hasTeams && !range.team_id ? teamRows(d, scope, t("filter.noTeam")) : null;
   const brandTable = d && scope.multiBrand && !range.brand_id ? brandRows(d, scope) : null;
   const days = differenceInCalendarDays(parseISO(range.to), parseISO(range.from)) + 1;
+  // A member who is not an admin gets their own row alone in by_agent: no leaderboard, and their
+  // own first response instead of a ranking of one.
+  const own = !atLeast(useRole(), "admin");
+  const me = useSession((s) => s.user?.id);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -131,14 +135,16 @@ export default function ReportsPage() {
               </div>
             )}
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-              <Card title={t("agents.title")} subtitle={t("agents.subtitle")} flush className="xl:col-span-2">
-                {d.by_agent.length ? (
-                  <AgentTable rows={d.by_agent} />
-                ) : (
-                  <EmptyState compact lit={0} title={t("agents.emptyTitle")} description={t("agents.emptyDescription")} />
-                )}
-              </Card>
-              <ResponseCard d={d} />
+              {!own && (
+                <Card title={t("agents.title")} subtitle={t("agents.subtitle")} flush className="xl:col-span-2">
+                  {d.by_agent.length ? (
+                    <AgentTable rows={d.by_agent} />
+                  ) : (
+                    <EmptyState compact lit={0} title={t("agents.emptyTitle")} description={t("agents.emptyDescription")} />
+                  )}
+                </Card>
+              )}
+              <ResponseCard d={d} own={own} me={me} />
             </div>
             <AgentWorkCard filter={range} />
           </div>
@@ -524,11 +530,26 @@ function TableSkeleton() {
   );
 }
 
-/** Medians for the period, then agents ranked by how fast they first reply. */
-function ResponseCard({ d }: { d: ReportsOverview }) {
+/**
+ * Medians for the period, then agents ranked by how fast they first reply. With `own` (a member
+ * who sees their own row alone), their first response beside the medians instead, across the row.
+ */
+export function ResponseCard({ d, own = false, me }: { d: ReportsOverview; own?: boolean; me?: string }) {
   const { t } = useTranslation("reports");
   const ranked = d.by_agent.filter((a) => a.first_response_p50_minutes !== null).sort((a, b) => a.first_response_p50_minutes! - b.first_response_p50_minutes!);
   const max = Math.max(1, ...ranked.map((a) => a.first_response_p50_minutes!));
+  if (own) {
+    const mine = d.by_agent.find((a) => a.user.id === me);
+    return (
+      <Card title={t("response.title")} subtitle={t("response.subtitle")} className="xl:col-span-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Figure label={t("kpi.firstResponse")} value={minutes(d.first_response_p50_minutes)} sub={t("kpi.median")} />
+          <Figure label={t("kpi.resolution")} value={minutes(d.resolution_p50_minutes)} sub={t("kpi.median")} />
+          <Figure label={t("response.yours")} value={minutes(mine?.first_response_p50_minutes)} sub={t("kpi.median")} />
+        </div>
+      </Card>
+    );
+  }
   return (
     <Card title={t("response.title")} subtitle={t("response.subtitle")}>
       <div className="grid grid-cols-2 gap-4 border-b border-line-soft pb-4">

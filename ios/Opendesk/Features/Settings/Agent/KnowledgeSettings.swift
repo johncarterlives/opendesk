@@ -535,11 +535,10 @@ struct KnowledgeEditor: View {
             .background(Theme.chrome)
             .accountTitle(title)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button { Task { await save() } } label: {
-                        if busy { ProgressView() } else { Text(edit.source == nil ? (website ? "Add" : "Add") : "Save").fontWeight(.semibold) }
-                    }
+                    SheetButton(.confirm, edit.source == nil ? (website ? "Add" : "Add") : "Save", busy: busy) { Task { await save() } }
+                        .fontWeight(.semibold)
                     .disabled(busy)
                 }
             }

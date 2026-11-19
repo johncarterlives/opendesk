@@ -62,7 +62,7 @@ struct WikiPageInfoSheet: View {
             .navigationTitle("About this page")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() }.fontWeight(.semibold) }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() }.fontWeight(.semibold) }
             }
             .sheet(isPresented: $showReaders) {
                 if let readers { WikiReadersSheet(readers: readers) }
@@ -316,7 +316,7 @@ struct WikiReadersSheet: View {
             .navigationTitle("Readers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
         .presentationDetents([.medium, .large])

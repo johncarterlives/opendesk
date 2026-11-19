@@ -12,7 +12,8 @@ every device. They are on every plan. Rows of Collab mail show only for workspac
 Each workspace keeps its member preferences as before (`SidebarPrefs`, `contracts/collab.md`):
 what is hidden inside its built-in sections, its favorites, its numbers, the mail page's tabs. A
 Space decides which sections and rows show and in what order; a whole built-in section in a Space
-still follows that workspace's preferences.
+still follows that workspace's preferences, arranged by the Space where it arranges it ("Arranging a
+whole section").
 
 ## Shapes
 
@@ -43,6 +44,8 @@ interface SpaceItem {
   name?: string              // the person's own label for the row, 1..64 characters, a name people choose
   badge?: SidebarBadge       // the number beside the row (contracts/collab.md "badges"); left out: the row's default
   icon?: string              // one emoji in place of the row's own icon; left out: the row's own
+  rows?: string[]            // kind "section" only: its rows top to bottom; in Favorites, rows the Space adds ("Arranging a whole section")
+  hidden?: string[]          // kind "section" only: the rows it does not show in this Space
 }
 
 type SpaceItemKind =
@@ -50,7 +53,7 @@ type SpaceItemKind =
   | "ticket_folder"  // an inbox folder: id "unassigned" | "mine" | "open" | "pending" | "solved" | "spam" (web/src/lib/folders.ts)
   | "team"           // id: team uuid
   | "view"           // id: view uuid
-  | "box"            // a Collab box across accounts: id "inbox" (All inboxes) | "shared" | "assigned"
+  | "box"            // a Collab box across accounts: id "inbox" (All inboxes) | "shared" | "assigned" | "mentions"
   | "account"        // a Collab account's inbox: id: account uuid
   | "folder"         // a Collab folder or label: id: folder uuid
   | "page"           // a workspace page: id "contacts" | "knowledge" | "wiki" | "reports"
@@ -72,6 +75,34 @@ An item names a thing by id; one that is gone or no longer visible to the person
 private team they left, an account they no longer see) is kept and skipped by the app, like unknown
 ids in `SidebarPrefs`.
 
+### Arranging a whole section
+
+A `section` item shows a built-in section kept up to date: whatever rows the section has for the
+person in that workspace, by their own `SidebarPrefs`. The Space can arrange it as finely as the
+workspace's sidebar arranges itself, with the same keys (contracts/collab.md "Row order",
+`hidden`): a row key is `<kind>:<id>` (`ticket_folder:mine`, `box:assigned`, `account:<id>`,
+`team:<id>` or `team:mine`, `view:<id>`, `page:contacts`, `wiki_page:<id>`, `wiki_space:<id>`), or
+`row:waiting_chats` and `pages:<part>` for the rows that are not things of their own.
+
+- `rows`: the section's rows top to bottom. Rows it does not name follow in the section's usual
+  order, so new ones (a team made later) still show. As in the workspace's sidebar, Tickets, Mail's
+  accounts, Teams and Workspace take an order; Mail's boxes, Views and Pages keep theirs. The
+  person's own `row_order` follows the Space's.
+- `hidden`: rows the section does not show in this Space, added to the person's own `hidden`.
+- In Favorites, `rows` are rows the Space adds (box, folder, account, view, team or ticket_folder
+  keys), shown first, then the person's own favorites without the ones it names; `hidden` leaves
+  out favorites of theirs.
+
+Keys naming something gone or out of the person's sight are kept and skipped. Without `rows` and
+`hidden` (every Space saved before them) a whole section shows as it always did. A row's menu inside
+an arranged section still changes the person's own preferences, never the Space.
+
+In the editor, as in the workspace's sidebar (contracts/collab.md "Edit mode"), a row of a whole
+section added to Favorites (one of its `rows`) or to a section of the Space (a row of its own, a
+`SpaceItem`) stays in its own section: adding never touches `hidden`, and a row already there is
+not added twice. Only its eye hides it. Taking it out of Favorites leaves it where it always was. A
+row of its own dragged back into its home section stops being one and shows there again.
+
 A workspace's own sidebar takes sections of these rows too, of that workspace alone: the member's own
 sections (`SidebarPrefs.sections`, contracts/collab.md "Your own sections"). Customize sidebar copies a
 Space's sections into them, with that workspace's rows.
@@ -88,7 +119,7 @@ to the starter do not change it.
 | method | path | who | |
 | --- | --- | --- | --- |
 | GET | `/v1/me/spaces` | user (no `OD-Workspace` needed) | `{spaces: Space[], saved: boolean}`: the saved Spaces, or none (`saved: false`). Items of workspaces the user is no longer a member of are left out (a section left empty stays) |
-| PUT | `/v1/me/spaces` | user | `{spaces: Space[]}` (at most 20, at most 64 KB) → the same as GET. Replaces the whole list. Every `workspace_id` must be a workspace the user is a member of and each limit above holds, else `422 validation_failed` (`422 invalid_name` for a refused name); space ids once each. |
+| PUT | `/v1/me/spaces` | user | `{spaces: Space[]}` (at most 20, at most 64 KB) → the same as GET. Replaces the whole list. Every `workspace_id` must be a workspace the user is a member of and each limit above holds, else `422 validation_failed` (`422 invalid_name` for a refused name); space ids once each. `rows` and `hidden`: on a `section` item only, at most 300 keys each, each once, of the kinds above with an id of 1..100 of `[A-Za-z0-9_-]`; Favorites' `rows` only of the kinds it takes; empty lists are left out. |
 | GET | `/v1/sidebar/starter` | member (signed in; not API keys) | `{space: Space \| null}`: the workspace's starter Space |
 | PUT | `/v1/sidebar/starter` | admin | `Space` → `{space: Space}`. Every item's `workspace_id` is set to the workspace (never read from the body); the limits above hold. Audit-logged `sidebar.starter_updated` |
 | DELETE | `/v1/sidebar/starter` | admin | → 204, also when there is none. Audit-logged `sidebar.starter_removed` when one is removed |
@@ -126,9 +157,15 @@ to the starter do not change it.
   from the Space. Rows inside a whole built-in section keep that section's own menu.
 - **Edit in place.** With a Space picked, the sidebar's edit mode (contracts/collab.md "Edit mode") edits
   that Space where it is: its sections and rows drag, rename, take an emoji (`icon`), are removed with Undo,
-  and get rows from any workspace through a popup. Name, icon, colour and marks stay in the editor below.
+  and get rows from any workspace through a popup. A whole section is one row there, and its rows keep the
+  Space's arrangement; they are arranged in the editor. Name, icon, colour and marks stay in the editor below.
 - **The editor** (New Space, Edit) has the name, icon and colour; the Space's sections and rows, dragged
-  into order, each row with its name and number; Add section; and "Add from" with a tab per workspace
+  into order, each row with its name and number; each whole section open into its rows, which reorder,
+  hide with their eye, and are added to Favorites or to any section of the Space while staying in
+  their own ("Arranging a whole section"), by dragging their grip (pointer events, the sidebar's own
+  drag, so touch drags too) or from their menu; an arrow key on the focused grip moves a row one
+  place, within its whole section or, for the Space's own rows and sections, across sections, and
+  never adds it anywhere; Add section; and "Add from" with a tab per workspace
   listing what that workspace offers: its whole sections, inbox folders, teams, views, Collab boxes,
   accounts and folders, its pages (Contacts, Knowledge base, Wiki, Reports), its teamspaces and its pages,
   databases and canvases (searchable), plus an "Every workspace" tab with the Everywhere lists (not offered

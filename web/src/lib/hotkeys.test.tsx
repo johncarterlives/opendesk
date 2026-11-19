@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Dialog, Drawer } from "@/components/ui/dialog";
 import { isPressTarget, useHotkeys, type HotkeyMap } from "./hotkeys";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -102,5 +103,54 @@ describe("useHotkeys", () => {
     expect(map.j).toHaveBeenCalledTimes(1);
     expect(map["mod+enter"]).toHaveBeenCalledTimes(1);
     expect(map.enter).not.toHaveBeenCalled();
+  });
+});
+
+describe("useHotkeys behind a dialog", () => {
+  let host: HTMLDivElement;
+  let root: Root;
+  const archive = vi.fn();
+
+  function Page({ open, drawer }: { open: boolean; drawer?: boolean }) {
+    useHotkeys({ e: archive });
+    return drawer ? (
+      <Drawer open={open} onOpenChange={() => {}} title="Contact">
+        <p>Details</p>
+      </Drawer>
+    ) : (
+      <Dialog open={open} onOpenChange={() => {}} title="Add to favorites">
+        <p>Rows</p>
+      </Dialog>
+    );
+  }
+
+  beforeEach(() => {
+    archive.mockClear();
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+  });
+
+  const press = (target: Element, key: string) => target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+
+  it("leaves a page's keys alone while a dialog or drawer is open, with nothing typed into", async () => {
+    for (const drawer of [false, true]) {
+      await act(async () => root.render(<Page open drawer={drawer} />));
+      const dialog = document.querySelector('[role="dialog"]')!;
+      press(dialog, "e");
+      press(document.body, "e");
+      expect(archive, drawer ? "drawer" : "dialog").not.toHaveBeenCalled();
+    }
+  });
+
+  it("hears them again once it closes", async () => {
+    await act(async () => root.render(<Page open={false} />));
+    press(document.body, "e");
+    expect(archive).toHaveBeenCalledTimes(1);
   });
 });

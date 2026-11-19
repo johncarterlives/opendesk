@@ -15,6 +15,7 @@
     "kb_draft": "Draft a help article",
     "assistant": "Assistant messages",
     "assistant_peer": "Ollie asking a teammate's Ollie",
+    "app_help": "Answer a question about opendesk",
     "procedure": "Run a procedure from an automation",
     "wiki_write": "Write in the wiki"
   },
@@ -247,6 +248,11 @@
     "send": "Search by meaning",
     "example_1": "Customers who were charged twice",
     "example_2": "Sign-in problems after a password reset",
-    "example_3": "Requests to export data"
+    "example_3": "Requests to export data",
+    "inApp": "In the app",
+    "docs": "From the docs",
+    "answer_item": "Answer with {{name}}",
+    "answering": "{{name}} is reading the docs",
+    "answer_error": "Couldn't answer right now. The places and docs below may help."
   }
 }

@@ -68,7 +68,7 @@ struct WikiMoveSheet: View {
             .navigationTitle("Move \u{201C}\(node.displayTitle)\u{201D}")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
             }
         }
     }
@@ -161,7 +161,7 @@ struct WikiHistorySheet: View {
             .navigationTitle("Page history")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
         .task { await load() }
@@ -339,7 +339,7 @@ struct WikiIconSheet: View {
             .navigationTitle("Emoji")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 if !current.isEmpty {
                     ToolbarItem(placement: .destructiveAction) {
                         Button("Remove") { pick("") }

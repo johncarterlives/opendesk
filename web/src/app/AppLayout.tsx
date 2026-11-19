@@ -347,6 +347,7 @@ export function AppLayout() {
           <D.Portal>
             <D.Overlay className="fixed inset-0 z-40 bg-scrim data-[state=open]:animate-fade-in md:hidden" />
             <D.Content
+              aria-modal="true"
               aria-describedby={undefined}
               className="fixed inset-y-0 left-0 z-40 flex w-[272px] flex-col bg-chrome pt-2 shadow-float outline-none data-[state=open]:animate-fade-in md:hidden"
               onClick={(e) => (e.target as HTMLElement).closest("a") && shell.sidebar(false)}

@@ -108,7 +108,7 @@ struct WikiTagsSheet: View {
                 onOpen(id)
             }
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
     }

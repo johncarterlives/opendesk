@@ -34,6 +34,7 @@ export function isPressTarget(t: EventTarget | null): boolean {
   return !!el?.closest?.(PRESSABLE);
 }
 
+/** A modal is open: our dialogs say so with aria-modal (Radix gives them only role="dialog"), confirms are alert dialogs, menus and popovers sit in a popper. */
 function modalOpen() {
   return !!document.querySelector('[role="dialog"][aria-modal="true"], [role="alertdialog"], [data-radix-popper-content-wrapper]');
 }

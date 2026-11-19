@@ -1,0 +1,73 @@
+---
+title: Shared and private accounts
+description: Choose who can see an account, share one conversation, assign teammates and leave internal comments.
+---
+
+import Screenshot from '../../../../components/Screenshot.astro';
+import Steps from '../../../../components/Steps.astro';
+import Step from '../../../../components/Step.astro';
+import Callout from '../../../../components/Callout.astro';
+
+**Private** means only the member who connected the account sees it, including its conversations. Workspace admins cannot see it either. **Shared** means that member and the audience chosen for the account can see it.
+
+| Audience | Who sees the account |
+| --- | --- |
+| **Everyone** | Every workspace member, including people who join later |
+| **Choose teams and people** | Members of those teams and the people picked |
+| No teams or people added yet | Only the member who connected it, until someone is added |
+
+Viewers can read. Agents and above who can see a conversation can answer, act on it, share it, assign it and comment.
+
+## Change account sharing
+
+The member who connected the account manages it. **Workspace admins can also manage shared accounts**, including one whose owner has left. Making an account private is the owner's choice.
+
+<Steps>
+<Step title="Open the account">
+
+Open **Settings**, **Mail accounts**, then the account.
+
+</Step>
+<Step title="Choose Sharing">
+
+Under **Sharing**, choose **Private** or **Shared**. For a shared account, choose **Everyone** or **Choose teams and people**, then click **Save**. An admin can also invite a person by email from the audience picker; they get access when they join, not before.
+
+</Step>
+</Steps>
+
+<Screenshot src="/guides/collab/sharing" alt="Sales account settings with the Sharing section and its Private, Shared and audience choices ringed as 1" />
+
+Changing a shared account to private turns off its Handling. Conversations shared or assigned on their own have their own access too, so review those separately.
+
+## Share one conversation
+
+Open a conversation and click **Share**. Choose **Everyone in the workspace**, teams or people, then **Save**. Those teammates can help with this conversation without seeing the rest of a private account.
+
+**Stop sharing** removes that conversation's separate share. It does not remove access someone has through the account or an assignment.
+
+## Assign a teammate
+
+Use **Assign** on a conversation and pick the teammates who should handle it. Assignees can see and answer the conversation, even without access to the whole account, and find it under **Assigned to me**. Assignment does not change mail at the provider.
+
+**Shared with me** brings together conversations shared with you. Your own sidebar can be arranged to keep the accounts and views you use close by: see [Your sidebar](/guides/sidebar/).
+
+## Comment for the team
+
+Click **Comment** below the conversation. Comments stay in opendesk and are visible to teammates who can see that conversation. They are never emailed to the sender. Type **@** to mention a teammate. Use the comment count to open the discussion.
+
+Mentioning a teammate who cannot see the conversation shares that conversation with them.
+
+When a teammate mentions you, or answers your comment, the conversation goes to **Mentions** in your sidebar, apart from the rest of your mail. It stays there until you remove it: click **In your Mentions** above the conversation, or **Remove from Mentions** in its **⋯** menu. Being mentioned or answered again puts it back. Removing it changes nothing for anyone else, and you can still open the conversation.
+
+When replying, use the **Reply / Comment** switch to choose between email and an internal comment. Check the selected mode before posting. See [Replying](/guides/collab/replying/).
+
+<Callout type="note">
+When a member leaves the workspace, their private accounts and mail are removed from opendesk. Shared accounts stay for admins to manage or disconnect. Mail at the provider is kept.
+</Callout>
+
+## Related
+
+- [Connect an account](/guides/collab/connect-an-account/)
+- [Handling a shared inbox](/guides/collab/handling/)
+- [AI drafts and privacy](/guides/collab/replying/#ai-drafts-and-privacy)
+- [Teams and roles](/guides/teams-and-roles/)

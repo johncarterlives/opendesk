@@ -34,6 +34,8 @@ RUN set -eu; \
     fi
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     cd web && pnpm config set store-dir /pnpm/store && pnpm install --frozen-lockfile
+# The docs' pages: the app's search indexes them at build time (web/indexer).
+COPY docs/src/content/docs/ docs/src/content/docs/
 COPY web/ web/
 RUN cd web && pnpm build && test -f dist/index.html
 

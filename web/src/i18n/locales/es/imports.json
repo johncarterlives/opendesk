@@ -1,0 +1,361 @@
+{
+  "title": "Importar",
+  "description": "Trae el historial de tu equipo desde otra mesa de ayuda o un archivo CSV: cada ticket con toda su conversación, las personas que escribieron y tu centro de ayuda.",
+  "pick": {
+    "title": "¿Dónde está tu historial ahora?",
+    "again": "Importar desde otro lugar",
+    "hint": "Conecta la cuenta que usas hoy. Allí no cambia nada y puedes seguir trabajando en ella hasta que cambies.",
+    "oneAtATime": "Corre una importación a la vez. Empieza otra cuando esta termine.",
+    "adminsOnly": "Los administradores pueden importar el historial.",
+    "guide": "Cómo funciona la importación"
+  },
+  "promise": {
+    "quiet": {
+      "title": "En silencio.",
+      "body": "Ningún cliente recibe un correo, y las automatizaciones, los temporizadores de SLA, los webhooks y las notificaciones quedan quietos en los tickets importados."
+    },
+    "people": {
+      "title": "Tu gente, ya correspondida.",
+      "body": "Los agentes se vuelven miembros y los grupos se vuelven equipos, correspondidos por correo y nombre. Revisas cada correspondencia antes de que empiece."
+    },
+    "undo": {
+      "title": "Deshazlo cuando quieras.",
+      "body": "Un clic quita lo que trajo una importación y deja intacto lo que tu equipo escribió después."
+    }
+  },
+  "sources": {
+    "zendesk": {
+      "with": "Token de API",
+      "blurb": "Tickets con respuestas y notas, usuarios, organizaciones y artículos de Guide."
+    },
+    "helpscout": {
+      "with": "ID de la app y secreto",
+      "blurb": "Conversaciones de cada buzón, clientes y tus artículos de Docs."
+    },
+    "freshdesk": {
+      "with": "Clave de API",
+      "blurb": "Tickets con respuestas y notas, contactos, empresas y artículos de soluciones."
+    },
+    "intercom": {
+      "with": "Token de acceso",
+      "blurb": "Conversaciones con notas y archivos, contactos, empresas y artículos."
+    },
+    "front": {
+      "with": "Token de API",
+      "blurb": "Conversaciones de cada bandeja compartida, con comentarios, archivos y contactos."
+    },
+    "csv": {
+      "with": "Cualquier mesa de ayuda",
+      "blurb": "Una exportación de cualquier otra mesa de ayuda, una fila por ticket o por mensaje."
+    },
+    "freescout": {
+      "with": "URL de la instancia y clave de API",
+      "blurb": "Conversaciones de cada buzón, con respuestas, notas internas, adjuntos y clientes."
+    }
+  },
+  "steps": {
+    "connect": "Conectar",
+    "upload": "Subir",
+    "columns": "Columnas",
+    "review": "Revisar",
+    "options": "Elegir e iniciar"
+  },
+  "wizard": {
+    "title": "Importar desde {{name}}",
+    "description": "Conecta tu cuenta de {{name}}. Leemos de ella y nunca cambiamos nada allí.",
+    "csvDescription": "Sube una exportación de tu mesa de ayuda actual y dinos qué hay en cada columna.",
+    "whatComes": "Qué se trae",
+    "facts": {
+      "conversations": "Cada ticket con todas sus respuestas, notas y adjuntos, en sus fechas originales.",
+      "people": "Clientes y empresas, agentes como miembros y grupos como equipos.",
+      "articles": "Colecciones y artículos del centro de ayuda.",
+      "quiet": "No se envía correo a nadie y no corre ninguna automatización."
+    },
+    "guide": "Leer la guía de importación",
+    "connect": "Conectar",
+    "checking": "Revisando {{name}}",
+    "preview": "Vista previa",
+    "continue": "Continuar",
+    "start": "Iniciar importación",
+    "back": "Atrás",
+    "cancel": "Cancelar",
+    "startedToast": "Importación iniciada. Puedes salir de esta página y te avisaremos cuando termine.",
+    "leaveTitle": "¿Salir de esta importación?",
+    "leaveBody": "Todavía no se importó nada. Se perderán las opciones de aquí.",
+    "leave": "Salir"
+  },
+  "connect": {
+    "whereToFind": "Dónde encontrarlo",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "safety": "Solo lectura. Tus credenciales se cifran y se usan solo para leer {{name}}. Se quitan 30 días después de la última ejecución, o cuando tú quieras.",
+    "same": "Igual que antes"
+  },
+  "review": {
+    "connected": "Conectado",
+    "tickets_one": "{{n}} ticket",
+    "tickets_other": "{{n}} tickets",
+    "tickets_many": "{{n}} de tickets",
+    "ticketsUnknown": "Los tickets se cuentan a medida que llegan",
+    "articles_one": "{{n}} artículo",
+    "articles_other": "{{n}} artículos",
+    "articles_many": "{{n}} de artículos",
+    "agents_one": "{{count}} agente",
+    "agents_other": "{{count}} agentes",
+    "agents_many": "{{count}} de agentes",
+    "sampleTitle": "Cómo se verán tus tickets",
+    "noSamples": "Todavía no hay tickets para previsualizar. La importación igual traerá lo que encuentre.",
+    "noSubject": "(sin asunto)",
+    "previous": "Ticket anterior",
+    "next": "Ticket siguiente",
+    "messages_one": "{{count}} mensaje",
+    "messages_other": "{{count}} mensajes",
+    "messages_many": "{{count}} de mensajes",
+    "more_one": "y {{count}} mensaje más",
+    "more_other": "y {{count}} mensajes más",
+    "more_many": "y {{count}} mensajes más",
+    "note": "Nota interna",
+    "unknown": "Desconocido",
+    "empty": "Sin texto",
+    "agentsTitle": "Agentes",
+    "agentsHint": "Sus respuestas, notas y tickets van al miembro que elijas. Quien quede fuera conserva su nombre en lo que escribió.",
+    "matched": "{{n}} de {{total}} con correspondencia",
+    "sameEmail": "Mismo correo",
+    "keepName": "Conservar como nombre",
+    "agentFor": "Miembro para {{name}}",
+    "groupsTitle": "Grupos",
+    "groupsHint": "Los tickets de cada grupo van al equipo que elijas.",
+    "noTeam": "Sin equipo",
+    "teamFor": "Equipo para {{name}}",
+    "ready": "Listo"
+  },
+  "csv": {
+    "drop": "Suelta tu archivo CSV aquí o haz clic para elegir uno",
+    "dropNow": "Suéltalo para subir",
+    "dropHint": "Una fila por ticket, o una fila por mensaje con un id de ticket para poder agruparlos. Una fila de encabezado nombra las columnas.",
+    "reading": "Leyendo {{name}}",
+    "formats": "UTF-8 o UTF-16, separado por comas, punto y coma o tabulaciones. Hasta 50 MB y 500 000 filas.",
+    "template": "Descargar una plantilla",
+    "tooLarge": "Ese archivo supera los 50 MB. Divídelo en archivos más pequeños e impórtalos uno tras otro.",
+    "wrongType": "Elige un archivo .csv. Las hojas de cálculo pueden guardar uno con Archivo y luego Descargar o Exportar, como CSV.",
+    "summary": "{{rows}} filas, {{columns}} columnas",
+    "replace": "Elegir otro archivo",
+    "notInFile": "No está en el archivo",
+    "emptyColumn": "Esta columna está vacía en las primeras filas",
+    "needBody": "Elige la columna del mensaje o, al menos, la del asunto.",
+    "grouping": "Las filas con el mismo id de ticket se vuelven un ticket, y cada fila es un mensaje en orden de tiempo. Sin una columna de id de ticket, cada fila es su propio ticket.",
+    "fields": {
+      "ticket_id": {
+        "label": "Id del ticket",
+        "hint": "Agrupa filas en tickets"
+      },
+      "subject": {
+        "label": "Asunto",
+        "hint": "El título del ticket"
+      },
+      "body": {
+        "label": "Mensaje",
+        "hint": "El texto, sin formato o HTML"
+      },
+      "created_at": {
+        "label": "Fecha",
+        "hint": "Cuándo se escribió"
+      },
+      "from_email": {
+        "label": "Correo del remitente",
+        "hint": "Quién lo escribió"
+      },
+      "from_name": {
+        "label": "Nombre del remitente",
+        "hint": "Su nombre"
+      },
+      "author": {
+        "label": "Tipo de autor",
+        "hint": "customer, agent o note"
+      },
+      "status": {
+        "label": "Estado",
+        "hint": "open, pending, solved, closed"
+      },
+      "priority": {
+        "label": "Prioridad",
+        "hint": "low, normal, high, urgent"
+      },
+      "tags": {
+        "label": "Etiquetas",
+        "hint": "Separadas por comas"
+      },
+      "assignee_email": {
+        "label": "Correo del responsable",
+        "hint": "Se corresponde con un miembro"
+      },
+      "team": {
+        "label": "Equipo",
+        "hint": "Se corresponde con un equipo por nombre"
+      },
+      "company": {
+        "label": "Empresa",
+        "hint": "La empresa del cliente"
+      },
+      "message_id": {
+        "label": "Message-ID",
+        "hint": "El id propio del correo, para que las respuestas queden en el mismo hilo"
+      },
+      "in_reply_to": {
+        "label": "In-Reply-To",
+        "hint": "El Message-ID al que responde"
+      },
+      "references": {
+        "label": "References",
+        "hint": "Message-ID anteriores del hilo"
+      }
+    }
+  },
+  "options": {
+    "what": "Qué traer",
+    "tickets": "Tickets",
+    "ticketsHint_one": "{{n}} ticket con su conversación.",
+    "ticketsHint_other": "{{n}} tickets con sus conversaciones.",
+    "ticketsHint_many": "{{n}} de tickets con sus conversaciones.",
+    "ticketsHintUnknown": "Cada ticket con su conversación.",
+    "articles": "Artículos del centro de ayuda",
+    "articlesHint_one": "{{n}} artículo con su colección. Las imágenes también vienen.",
+    "articlesHint_other": "{{n}} artículos con sus colecciones. Las imágenes también vienen.",
+    "articlesHint_many": "{{n}} de artículos con sus colecciones. Las imágenes también vienen.",
+    "articlesHintUnknown": "Cada artículo con su colección.",
+    "articlesNone": "Esta cuenta no tiene un centro de ayuda para traer.",
+    "articlesNoDocs": "Añade una clave de API de Docs en el primer paso para traer tus artículos de Docs.",
+    "drafts": "Traer los artículos como borradores",
+    "draftsHint": "Revísalos antes de publicarlos en tu centro de ayuda.",
+    "attachments": "Adjuntos",
+    "attachmentsHint": "Archivos de hasta 25 MB cada uno. Déjalo desactivado para una importación más rápida.",
+    "how": "Cómo",
+    "since": "Desde cuándo",
+    "sinceHint": "Los tickets más antiguos se quedan. Los artículos siempre vienen completos.",
+    "allHistory": "Todo el historial",
+    "fromDate": "Desde una fecha",
+    "statuses": "Estados",
+    "keep": "Conservarlos",
+    "closeAll": "Cerrarlos todos",
+    "keepHint": "Los tickets abiertos llegan abiertos y entran en tus colas.",
+    "closedHint": "Todo llega cerrado, así que tus colas quedan como están.",
+    "label": "Etiqueta",
+    "labelHint": "Se añade a cada ticket importado, para que puedas encontrarlos.",
+    "noLabel": "Sin etiqueta",
+    "mailbox": "Responder desde",
+    "mailboxHint": "Las respuestas a los tickets de correo importados salen de este buzón.",
+    "noMailbox": "Elegir al responder",
+    "articlesUnsupported": "La API de FreeScout no expone artículos de la base de conocimiento."
+  },
+  "summary": {
+    "lead": "Esto trae {{what}}.",
+    "and": " y ",
+    "tickets_one": "{{n}} ticket",
+    "tickets_other": "{{n}} tickets",
+    "tickets_many": "{{n}} de tickets",
+    "ticketsUnknown": "cada ticket",
+    "articles_one": "{{n}} artículo",
+    "articles_other": "{{n}} artículos",
+    "articles_many": "{{n}} de artículos",
+    "articlesUnknown": "cada artículo",
+    "quiet": "No se envía correo a nadie, y las automatizaciones, los temporizadores de SLA y los webhooks quedan quietos.",
+    "after": "Las cuentas grandes tardan un rato. Corre de nuestro lado, así que puedes cerrar esta página. Te avisaremos cuando termine y puedes traer lo que cambió desde entonces cuando quieras."
+  },
+  "current": {
+    "running": "En curso",
+    "runningHint": "Se actualiza en vivo. Puedes salir de esta página y volver.",
+    "latest": "Última importación"
+  },
+  "state": {
+    "running": "Importando",
+    "paused": "En pausa",
+    "completed": "Listo",
+    "failed": "Detenido",
+    "canceled": "Cancelado",
+    "undoing": "Deshaciendo",
+    "undone": "Deshecho",
+    "waiting": "En espera",
+    "needsCredentials": "Necesita credenciales"
+  },
+  "status": {
+    "open": "Abierto",
+    "pending": "Pendiente",
+    "on_hold": "En espera",
+    "solved": "Resuelto",
+    "closed": "Cerrado"
+  },
+  "progress": {
+    "run": "Actualización {{n}}",
+    "startedBy": "Iniciada por {{name}} {{when}}",
+    "started": "Iniciada {{when}}",
+    "finished": "terminó {{when}}",
+    "articles": "Trayendo artículos del centro de ayuda",
+    "tickets": "Trayendo tickets",
+    "changes": "Trayendo lo que cambió",
+    "threading": "Enlazando respuestas con sus correos: {{done}} de {{total}}",
+    "undoing": "Quitando lo que trajo la importación",
+    "paused": "En pausa. Sigue desde aquí cuando la reanudes.",
+    "waiting": "{{name}} nos pidió ir más lento. Seguimos en {{seconds}} s.",
+    "left": "quedan unos {{time}}",
+    "lessThanMinute": "un minuto",
+    "minutes_one": "{{count}} minuto",
+    "minutes_other": "{{count}} minutos",
+    "minutes_many": "{{count}} de minutos",
+    "hours_one": "{{count}} hora",
+    "hours_other": "{{count}} horas",
+    "hours_many": "{{count}} de horas",
+    "pause": "Pausar",
+    "resume": "Reanudar",
+    "retry": "Intentar de nuevo",
+    "sync": "Traer los cambios",
+    "actions": "Acciones de la importación",
+    "openSource": "Abrir {{name}}",
+    "cancel": "Cancelar importación",
+    "cancelTitle": "¿Cancelar esta importación?",
+    "cancelBody": "Lo que ya llegó se queda. Se quitan las credenciales y puedes deshacerlo después.",
+    "canceledToast": "Importación cancelada",
+    "undo": "Deshacer importación",
+    "undoPauseFirst": "Pausar para deshacer",
+    "undoTitle": "¿Deshacer la importación de {{name}}?",
+    "undoBody_one": "Esto quita el {{tickets}} ticket y los {{articles}} artículos que trajo, junto con los contactos, las empresas y las etiquetas que no se usan en ningún otro lado. Los tickets en los que tu equipo escribió después se quedan.",
+    "undoBody_other": "Esto quita los {{tickets}} tickets y los {{articles}} artículos que trajo, junto con los contactos, las empresas y las etiquetas que no se usan en ningún otro lado. Los tickets en los que tu equipo escribió después se quedan.",
+    "undoBody_many": "Esto quita los {{tickets}} de tickets y los {{articles}} de artículos que trajo, junto con los contactos, las empresas y las etiquetas que no se usan en ningún otro lado. Los tickets en los que tu equipo escribió después se quedan.",
+    "undoneHint": "Deshecho. Se quitó lo que trajo esta importación.",
+    "forget": "Quitar credenciales",
+    "forgetTitle": "¿Quitar las credenciales?",
+    "forgetBody": "La importación ya no puede traer cambios desde {{name}}. Lo que llegó se queda.",
+    "credentialsRemoved": "Credenciales quitadas",
+    "needsCredentials": "{{name}} dejó de aceptar las credenciales.",
+    "resumeWith": "Reanudar con estas",
+    "failedHint": "Lo que llegó se queda. Inténtalo de nuevo para seguir desde donde se detuvo.",
+    "done": "Todo lo de {{name}} ya está aquí.",
+    "syncDone_one": "{{count}} ticket puesto al día.",
+    "syncDone_other": "{{count}} tickets puestos al día.",
+    "syncDone_many": "{{count}} de tickets puestos al día.",
+    "seeTickets": "Ver tickets importados",
+    "problems_one": "{{count}} elemento no se pudo traer",
+    "problems_other": "{{count}} elementos no se pudieron traer",
+    "problems_many": "{{count}} de elementos no se pudieron traer",
+    "moreProblems_one": "y {{count}} más",
+    "moreProblems_other": "y {{count}} más",
+    "moreProblems_many": "y {{count}} más",
+    "kept": "Las credenciales se conservan para que puedas traer cambios hasta que cambies. Se quitan 30 días después de la última ejecución."
+  },
+  "figures": {
+    "tickets": "Tickets",
+    "messages": "Mensajes",
+    "contacts": "Contactos",
+    "articles": "Artículos",
+    "attachments": "Archivos",
+    "updated": "Actualizados"
+  },
+  "history": {
+    "title": "Importaciones anteriores",
+    "hint": "Abre una para traer cambios, deshacerla o ver lo que no pudo traer.",
+    "brought_one": "{{tickets}} ticket, {{articles}} artículos",
+    "brought_other": "{{tickets}} tickets, {{articles}} artículos",
+    "brought_many": "{{tickets}} de tickets, {{articles}} de artículos",
+    "undone": "Quitado",
+    "none": "Todavía no hay importaciones."
+  }
+}

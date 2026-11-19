@@ -51,7 +51,7 @@ export const isEverywhereList = (v: unknown): v is EverywhereList => typeof v ==
 export const isEverywhere = (i: Pick<SpaceItem, "kind">) => i.kind === "everywhere";
 
 /** The Collab boxes a Space row can open (across a workspace's accounts). */
-export const SPACE_BOXES = ["inbox", "shared", "assigned"] as const;
+export const SPACE_BOXES = ["inbox", "shared", "assigned", "mentions"] as const;
 export type SpaceBox = (typeof SPACE_BOXES)[number];
 
 export const LIMITS = {
@@ -63,6 +63,8 @@ export const LIMITS = {
   title: 40,
   rowName: 64,
   itemId: 100,
+  /** Keys in a whole section's `rows`, and in its `hidden`. */
+  arranged: 300,
   bytes: 64 * 1024,
 } as const;
 
@@ -70,6 +72,8 @@ export const LIMITS = {
 export const MAIN_SECTION_ID = "main";
 
 const SECTION_ID = /^[A-Za-z0-9_-]{1,40}$/;
+/** A row key of a whole section's arrangement: a known prefix and an id (contracts/spaces.md). */
+const ROW_KEY = /^(ticket_folder|team|view|box|account|folder|page|wiki_page|wiki_space|pages|row):[A-Za-z0-9_-]{1,100}$/;
 const BADGES: readonly SidebarBadge[] = ["unread", "total", "count", "awaiting", "urgent", "overdue", "open", "none"];
 
 export const isSpaceIcon = (v: unknown): v is SpaceIcon => typeof v === "string" && (SPACE_ICONS as readonly string[]).includes(v);
@@ -127,6 +131,14 @@ function readItem(v: unknown): SpaceItem | null {
   if (typeof x.name === "string" && x.name.trim()) out.name = x.name;
   if (isBadge(x.badge)) out.badge = x.badge;
   if (typeof x.icon === "string" && x.icon) out.icon = x.icon;
+  // A whole section's arrangement (lib/spaces/arrange.ts); a Space saved before it has none.
+  if (out.kind === "section") {
+    const keys = (v: unknown) => (Array.isArray(v) ? [...new Set(v.filter((k): k is string => typeof k === "string" && !!k))] : []);
+    const rows = keys(x.rows);
+    const hidden = keys(x.hidden);
+    if (rows.length) out.rows = rows;
+    if (hidden.length) out.hidden = hidden;
+  }
   return out;
 }
 
@@ -215,7 +227,8 @@ export type SpaceProblem =
   | { code: "row_name_too_long"; section: string; item: string }
   | { code: "not_member"; section: string; item: string }
   | { code: "bad_section_id"; section: string }
-  | { code: "bad_item"; section: string; item: string };
+  | { code: "bad_item"; section: string; item: string }
+  | { code: "too_many_arranged"; section: string; item: string };
 
 /** What the API would refuse in one Space (contracts/spaces.md limits). `members`: the workspaces the user is in. */
 export function spaceProblems(s: Space, members?: ReadonlySet<string>): SpaceProblem[] {
@@ -238,6 +251,9 @@ export function spaceProblems(s: Space, members?: ReadonlySet<string>): SpacePro
       if (!it.id || it.id.length > LIMITS.itemId || !isKind(it.kind) || wrongWorkspace || (it.badge !== undefined && !isBadge(it.badge))) out.push({ code: "bad_item", section: sec.id, item: key });
       if (it.name !== undefined && [...cleanName(it.name)].length > LIMITS.rowName) out.push({ code: "row_name_too_long", section: sec.id, item: key });
       if (members && !isEverywhere(it) && !members.has(it.workspace_id)) out.push({ code: "not_member", section: sec.id, item: key });
+      if ((it.rows?.length || it.hidden?.length) && (it.kind !== "section" || [...(it.rows ?? []), ...(it.hidden ?? [])].some((k) => !ROW_KEY.test(k))))
+        out.push({ code: "bad_item", section: sec.id, item: key });
+      if ((it.rows?.length ?? 0) > LIMITS.arranged || (it.hidden?.length ?? 0) > LIMITS.arranged) out.push({ code: "too_many_arranged", section: sec.id, item: key });
     }
   }
   if (total > LIMITS.items) out.push({ code: "too_many_items" });
@@ -278,6 +294,8 @@ export function forWire(s: Space): Space {
         if (name) out.name = name;
         if (it.badge) out.badge = it.badge;
         if (it.icon) out.icon = it.icon;
+        if (it.kind === "section" && it.rows?.length) out.rows = it.rows;
+        if (it.kind === "section" && it.hidden?.length) out.hidden = it.hidden;
         return out;
       }),
     })),

@@ -876,6 +876,8 @@ export const api = {
     translate: (b: { html?: string; text?: string; target: string }) => http.post<T.TranslateResult>("/v1/ai/translate", b),
     kbDraft: (b: { ticket_ids?: string[]; topic?: string }) => http.post<T.KBArticleDraft>("/v1/kb/articles/ai/draft", b),
     search: (q: string) => http.get<T.SearchResults>("/v1/ai/search", { query: { q } }),
+    /** A few sentences on doing something in opendesk, from the app places and docs the app's own search found. */
+    appHelp: (b: T.AppHelpInput) => http.post<{ answer: string }>("/v1/ai/app-help", b),
     /** The models a workspace may choose from, with the instance defaults. */
     models: () => http.get<T.AIModels>("/v1/ai/models"),
     /** The workspace's provider: the instance's (charged to the AI balance) or its own key. */
@@ -1012,6 +1014,9 @@ export const api = {
       share: (id: string, shares: T.MailAudience) => http.put<T.MailThreadDetail>(`/v1/collab/threads/${id}/shares`, { shares }),
       assign: (id: string, user_ids: string[]) => http.put<T.MailThreadDetail>(`/v1/collab/threads/${id}/assignees`, { user_ids }),
       comment: (id: string, b: { body_html: string; mentions?: string[] }) => http.create<T.MailComment>(`/v1/collab/threads/${id}/comments`, b),
+      /** In or out of your Mentions box (contracts/collab.md "Mentions"). */
+      follow: (id: string) => http.put<void>(`/v1/collab/threads/${id}/follow`),
+      unfollow: (id: string) => http.del(`/v1/collab/threads/${id}/follow`),
     },
     comments: {
       update: (id: string, body_html: string) => http.patch<T.MailComment>(`/v1/collab/comments/${id}`, { body_html }),

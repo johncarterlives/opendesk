@@ -42,6 +42,7 @@ struct TicketScreen: View {
     @Bindable var c: TicketController
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.sideColumn) private var column
     @FocusState private var composerFocused: Bool
     @State private var markedRead = false
     @State private var settled = false
@@ -57,7 +58,12 @@ struct TicketScreen: View {
         content
             .background(Theme.chrome.ignoresSafeArea())
             .safeAreaBar(edge: .top, spacing: 0) {
-                topBar.background(alignment: .top) { EdgeFade(edge: .top) }
+                if column == nil { topBar.background(alignment: .top) { EdgeFade(edge: .top) } }
+            }
+            // The system's blur under a bar spreads over the buttons it stands in the side
+            // column, down the thread; the fade under the bar is enough there.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if column != nil { topBar.background(alignment: .top) { EdgeFade(edge: .top) } }
             }
             .safeAreaBar(edge: .bottom, spacing: 0) {
                 bottom.background(alignment: .bottom) { EdgeFade(edge: .bottom) }

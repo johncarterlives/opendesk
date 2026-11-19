@@ -60,6 +60,7 @@ export function useSidebarItems() {
           { key: "box:inbox", label: t("nav.allInboxes"), icon: <Layers />, hideId: hid.box("inbox"), pin: { kind: "box", id: "inbox" }, badge: mailBadge("box:inbox") },
           { key: "box:shared", label: t("box.shared"), icon: boxIcon.shared, hideId: hid.box("shared"), pin: { kind: "box", id: "shared" }, badge: mailBadge("box:shared") },
           { key: "box:assigned", label: t("box.assigned"), icon: boxIcon.assigned, hideId: hid.box("assigned"), pin: { kind: "box", id: "assigned" }, badge: mailBadge("box:assigned") },
+          { key: "box:mentions", label: t("box.mentions"), icon: boxIcon.mentions, hideId: hid.box("mentions"), pin: { kind: "box", id: "mentions" }, badge: mailBadge("box:mentions") },
           ...ACCOUNT_BOXES.map((b) => ({ key: `every:${b}`, label: t(`box.${b}`), icon: boxIcon[b], hideId: hid.folder(b), note: t("customize.everyAccount") })),
         ];
         for (const a of accounts ?? []) {

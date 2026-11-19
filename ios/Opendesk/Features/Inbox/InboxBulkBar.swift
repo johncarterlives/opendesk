@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// The header while tickets are being chosen: close, how many, select all.
+/// The header while tickets are being chosen: close, how many, select all. Beside a side column
+/// the close button stands in it.
 struct InboxSelectHeader: View {
     let count: Int
     let allSelected: Bool
@@ -9,10 +10,12 @@ struct InboxSelectHeader: View {
     let onClose: () -> Void
     let onAll: () -> Void
 
+    @Environment(\.sideColumn) private var column
+
     var body: some View {
         GlassEffectContainer(spacing: 10) {
             HStack(spacing: 10) {
-                GlassCircleButton(symbol: "xmark", label: "Done selecting", action: onClose)
+                if column == nil { close }
                 Text(allMatching ? "All matching" : count == 0 ? "Select tickets" : "\(count) selected")
                     .font(ODFont.sans(19, weight: .semibold))
                     .tracking(-0.4)
@@ -39,15 +42,22 @@ struct InboxSelectHeader: View {
         .padding(.horizontal, 16)
         .padding(.top, 6)
         .padding(.bottom, 8)
+        .sideColumnActions { close }
+    }
+
+    private var close: some View {
+        GlassCircleButton(symbol: "xmark", label: "Done selecting", action: onClose)
     }
 }
 
 /// The floating glass bar of bulk actions (the web's `BulkBar`): assign, status,
 /// priority, labels, and more (team, severity, spam, delete). Every change shows at
 /// once and is put back if the server refuses. With every matching ticket chosen, the
-/// change goes to the server by the list's filters and the list loads again.
+/// change goes to the server by the list's filters and the list loads again. Standing up
+/// (`.vertical`) it runs down a side column.
 struct InboxBulkBar: View {
     @Environment(AppEnvironment.self) private var env
+    var axis: Axis = .horizontal
     let ids: [String]
     /// Every ticket of the list, loaded or not (`POST /v1/tickets/bulk` with `query`).
     var allMatching = false
@@ -70,7 +80,8 @@ struct InboxBulkBar: View {
     private var n: Int { ids.count }
 
     var body: some View {
-        HStack(spacing: 0) {
+        let stack = axis == .vertical ? AnyLayout(VStackLayout(spacing: 4)) : AnyLayout(HStackLayout(spacing: 0))
+        stack {
             action("Assign", symbol: "person.crop.circle") { sheet = .assign }
             Menu {
                 let display = env.statusDisplay
@@ -124,11 +135,11 @@ struct InboxBulkBar: View {
         }
         .disabled(ids.isEmpty && !allMatching)
         .opacity(ids.isEmpty && !allMatching ? 0.45 : 1)
-        .padding(.horizontal, 6)
-        .frame(height: 60)
+        .padding(axis == .vertical ? .vertical : .horizontal, axis == .vertical ? 10 : 6)
+        .frame(width: axis == .vertical ? 64 : nil, height: axis == .vertical ? nil : 60)
         .background(Theme.surface.opacity(0.55), in: Capsule())
         .glassEffect(.regular, in: Capsule())
-        .padding(.horizontal, 16)
+        .padding(.horizontal, axis == .vertical ? 0 : 16)
         .shadow(color: .black.opacity(0.08), radius: 14, y: 6)
         .sheet(item: $sheet) { sheet in
             Group {

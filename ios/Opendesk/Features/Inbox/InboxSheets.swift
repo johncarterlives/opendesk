@@ -44,7 +44,7 @@ struct ScopeSheet: View {
             .navigationTitle(SpacesStore.shared.picked?.name ?? (env.products.tickets ? "Inbox" : "Workspace"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
         .followsOverview()
@@ -190,7 +190,7 @@ struct FilterSheet: View {
                     }
                     .disabled(inbox.filters.isEmpty && inbox.sort.isDefault)
                 }
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
             .task { await inbox.loadMailboxes() }
         }
@@ -645,7 +645,7 @@ struct SnoozeSheet: View {
             .navigationTitle("Snooze until")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
             }
         }
     }

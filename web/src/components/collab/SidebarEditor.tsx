@@ -1,21 +1,20 @@
-// The sidebar's edit mode (lib/collab/sidebarEdit.ts): the sidebar arranged where it is.
-// Every section and row has a handle to drag it (sections among sections; a row inside its
-// section, into Favorites, or into a section of the member's own) and an eye to hide it, so
-// hidden things stay listed, dimmed, and come back in one click. The member's own sections
-// and rows are renamed by clicking their name and take an emoji. A slim bar on top has Done,
-// Reset and the starting points (layouts, a Space's sections) and the dialog's other options.
+// The sidebar's edit mode (lib/collab/sidebarEdit.ts): the sidebar arranged where it is, and
+// looking as it does. Every section and row drags (sections among sections; a row inside its
+// section, into Favorites, or into a section of the member's own) by itself or by its grip, and
+// has an eye to hide it, so hidden things stay listed, dimmed, and come back in one click.
+// Sections and rows are renamed with a double-click (or F2 on the grip, or their ⋯) and take an
+// emoji. The top row has Done and one ⋯ menu: layouts, a Space's sections, more options, Reset.
 // With a Space picked, the same mode edits that Space's sections and rows.
 
 import { motion, useReducedMotion } from "motion/react";
-import { Copy, CornerUpLeft, Ellipsis, Eye, EyeOff, FolderInput, GripVertical, Hash, LayoutTemplate, ListTree, Pencil, Pin, PinOff, Plus, RotateCcw, Settings2, SlidersHorizontal, SmilePlus, Trash2, X } from "lucide-react";
-import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { Check, Copy, CornerUpLeft, Ellipsis, Eye, EyeOff, FolderInput, GripVertical, Hash, LayoutTemplate, ListTree, Pencil, Pin, PinOff, Plus, RotateCcw, Settings2, SlidersHorizontal, SmilePlus, Trash2, X } from "lucide-react";
+import { useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useShortcuts } from "@/lib/shortcuts";
-import { buildEverywhereRow, buildRow, RowEmoji, useRowLabels } from "@/components/spaces/rows";
+import { Count, InlineRename, rowBase, rowIdle, rowShape } from "@/app/sidebarParts";
+import { buildEverywhereRow, buildRow, rowCount, RowEmoji, rowNumber, useRowLabels, type RowModel } from "@/components/spaces/rows";
 import { SpaceGlyph } from "@/components/spaces/icons";
 import { useSpaceActions } from "@/components/spaces/actions";
-import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { Menu, MenuChoice, MenuContent, MenuItem, MenuSeparator, MenuSub, MenuTrigger } from "@/components/ui/menu";
 import { toast } from "@/components/ui/toast";
@@ -23,8 +22,9 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { IconPicker } from "@/components/wiki/IconPicker";
 import { PageIcon } from "@/components/wiki/PageTree";
 import { useFavorites } from "@/components/wiki/hooks";
-import type { SidebarPin, SidebarPrefs, SidebarSectionId, Space, SpaceItem } from "@/lib/api/types";
+import type { SidebarBadge, SidebarPin, SidebarPrefs, SidebarSectionId, Space, SpaceItem } from "@/lib/api/types";
 import { cn } from "@/lib/cn";
+import { springs } from "@/lib/motion";
 import { useCollab } from "@/lib/collab/hooks";
 import { copySpaceSections } from "@/lib/collab/copySpace";
 import { useBackIntoLabel } from "@/components/tickets/inboxes/backInto";
@@ -45,126 +45,108 @@ import { useSpaces, useWorkspacesData } from "@/lib/spaces/hooks";
 import { addSection, isEverywhere, isSectionId, itemKey, pickedSpace, removeItem, removeSection, replaceSpace, updateItem, updateSection } from "@/lib/spaces/model";
 import { spaceUi, usePickedSpaceId } from "@/lib/spaces/store";
 import { useOwnSidebar } from "./AddToSidebar";
+import { AddSectionButton } from "./OwnSections";
+import { DropLine } from "./SidebarDrag";
 import { layoutsUi } from "./LayoutsDialog";
 import { ownRowOf, useSidebarItems, type Item, type ItemBadge } from "./sidebarItems";
+import { DragGhost } from "./DragGhost";
 import { useEditDrag } from "./useEditDrag";
 
 // ─── Parts ──────────────────────────────────────────────────────────────────
+//
+// Edit mode draws the sidebar as it is: rows and section titles wear the normal sidebar's
+// classes (app/sidebarParts.tsx) and numbers, on the same chrome. What edits them shows on
+// hover or focus (always on a touch screen, which has no hover): a grip in the gutter, and the
+// eye and ⋯ at the end. A row or a title also drags by itself and renames on a double-click.
 
+/** A small icon button at the end of a row or title. */
 const tool =
-  "flex size-6 shrink-0 items-center justify-center rounded-md text-fg-4 outline-none transition-colors hover:bg-chrome-hover hover:text-fg-2 focus-visible:shadow-[0_0_0_2px_var(--focus)] [&_svg]:size-3.5";
+  "flex size-5 shrink-0 items-center justify-center rounded text-fg-4 outline-none transition-colors hover:bg-chrome-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] data-[state=open]:bg-chrome-hover data-[state=open]:text-fg [&_svg]:size-3.5";
 
-/** The grip a section or row is dragged by; arrow keys move it one place without a pointer. */
-function Handle({ label, props, onStep }: { label: string; props: ReturnType<ReturnType<typeof useEditDrag<EditSource>>["handle"]>; onStep?: (dir: -1 | 1) => void }) {
+/** A title's buttons: there while it is hovered or holds the focus, or one of its menus is open. */
+const onHead = "opacity-0 transition-opacity group-hover/head:opacity-100 group-focus-within/head:opacity-100 data-[state=open]:opacity-100 [@media(hover:none)]:opacity-100";
+
+/** The grip a section or row is dragged by, in the gutter left of it; arrow keys move it one place, F2 renames it. */
+function Handle({
+  label,
+  props,
+  onStep,
+  onRename,
+  group,
+}: {
+  label: string;
+  props: ReturnType<ReturnType<typeof useEditDrag<EditSource>>["handle"]>;
+  onStep?: (dir: -1 | 1) => void;
+  onRename?: () => void;
+  group: "row" | "head";
+}) {
   return (
     <button
       type="button"
       aria-label={label}
       {...props}
       onKeyDown={(e: KeyboardEvent) => {
+        if (e.key === "F2" && onRename) {
+          e.preventDefault();
+          onRename();
+          return;
+        }
         if (!onStep || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) return;
         e.preventDefault();
         onStep(e.key === "ArrowUp" ? -1 : 1);
       }}
-      className="flex h-6 w-4 shrink-0 cursor-grab touch-none items-center justify-center rounded text-fg-4 outline-none transition-colors hover:text-fg-2 focus-visible:shadow-[0_0_0_2px_var(--focus)] active:cursor-grabbing [&_svg]:size-3.5"
+      className={cn(
+        "absolute left-0 top-1/2 z-10 flex h-6 w-3 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-sm text-fg-4 opacity-0 outline-none transition-opacity hover:text-fg-2 focus-visible:opacity-100 focus-visible:shadow-[0_0_0_2px_var(--focus)] active:cursor-grabbing [@media(hover:none)]:opacity-100 [&_svg]:size-3",
+        group === "row" ? "group-hover/row:opacity-100" : "group-hover/head:opacity-100",
+      )}
     >
       <GripVertical />
     </button>
   );
 }
 
-function EyeToggle({ hidden, name, onToggle }: { hidden: boolean; name: string; onToggle: () => void }) {
+function EyeToggle({ hidden, name, onToggle, className }: { hidden: boolean; name: string; onToggle: () => void; className?: string }) {
   const { t } = useTranslation("collab");
   const label = hidden ? t("customize.show", { name }) : t("customize.hide", { name });
   return (
     <Tooltip content={label}>
-      <button type="button" aria-label={label} aria-pressed={!hidden} onClick={onToggle} className={cn(tool, !hidden && "text-fg-3")}>
+      <button type="button" aria-label={label} aria-pressed={!hidden} onClick={onToggle} className={cn(tool, className)}>
         {hidden ? <EyeOff /> : <Eye />}
       </button>
     </Tooltip>
   );
 }
 
-function RemoveButton({ label, onClick, icon }: { label: string; onClick: () => void; icon?: ReactNode }) {
+function IconButton({ label, onClick, icon, className }: { label: string; onClick: () => void; icon: ReactNode; className?: string }) {
   return (
     <Tooltip content={label}>
-      <button type="button" aria-label={label} onClick={onClick} className={tool}>
-        {icon ?? <X />}
+      <button type="button" aria-label={label} onClick={onClick} className={cn(tool, className)}>
+        {icon}
       </button>
     </Tooltip>
   );
 }
 
-/** A name that turns into a field on click: Enter or leaving it saves, Escape keeps the old one. */
-function InlineName({ value, placeholder, label, editing, onEditing, onSave, className }: { value: string; placeholder: string; label: string; editing: boolean; onEditing: (on: boolean) => void; onSave: (v: string) => void; className?: string }) {
-  const [draft, setDraft] = useState(value);
-  if (!editing)
-    return (
-      <button
-        type="button"
-        aria-label={label}
-        onClick={() => {
-          setDraft(value);
-          onEditing(true);
-        }}
-        className={cn("min-w-0 flex-1 cursor-text truncate rounded px-1 py-0.5 text-left outline-none transition-colors hover:bg-chrome-hover hover:shadow-[inset_0_0_0_1px_var(--line)] focus-visible:shadow-[0_0_0_2px_var(--focus)]", className)}
-      >
-        {value || placeholder}
-      </button>
-    );
-  const done = (save: boolean) => {
-    onEditing(false);
-    if (save && draft.trim() !== value) onSave(draft.trim());
-  };
-  return (
-    <input
-      autoFocus
-      aria-label={label}
-      value={draft}
-      maxLength={OWN_LIMITS.title + 24}
-      placeholder={placeholder}
-      onFocus={(e) => e.currentTarget.select()}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => done(true)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          done(true);
-        } else if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          done(false);
-        }
-      }}
-      className={cn("h-6 min-w-0 flex-1 rounded border border-line bg-surface px-1 text-fg outline-none focus:shadow-[0_0_0_2px_var(--focus)]", className)}
-    />
-  );
-}
-
-/** The emoji slot of an own section or row: its emoji, or its own icon (a quiet smiley for a section), and the picker on click. */
-function EmojiSlot({ value, fallback, label, onChange, open: openProp, onOpenChange }: { value?: string; fallback?: ReactNode; label: string; onChange: (v: string) => void; open?: boolean; onOpenChange?: (o: boolean) => void }) {
-  const [openHere, setOpenHere] = useState(false);
-  const open = openProp ?? openHere;
-  const setOpen = onOpenChange ?? setOpenHere;
+/** A row's icon that opens the emoji picker: its emoji, or its own icon, in the icon's place and size. */
+function EmojiSlot({ value, fallback, label, onChange, open, onOpenChange }: { value?: string; fallback: ReactNode; label: string; onChange: (v: string) => void; open: boolean; onOpenChange: (o: boolean) => void }) {
   return (
     <IconPicker
       value={value ?? ""}
       onChange={onChange}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={onOpenChange}
       trigger={
-        <button type="button" aria-label={label} className={cn(tool, "size-5 text-fg-3", !value && !fallback && "text-fg-4")}>
-          {value ? <RowEmoji emoji={value} /> : (fallback ?? <SmilePlus />)}
+        <button
+          type="button"
+          aria-label={label}
+          className="-m-0.5 flex size-[19px] shrink-0 items-center justify-center rounded text-fg-3 outline-none transition-colors hover:bg-chrome-active hover:text-fg-2 focus-visible:shadow-[0_0_0_2px_var(--focus)] [&_svg]:size-[15px]"
+        >
+          {value ? <RowEmoji emoji={value} /> : fallback}
         </button>
       }
     />
   );
 }
-
-/** The line where a drag would land. */
-const Line = () => <div aria-hidden className="pointer-events-none mx-4 h-0.5 rounded-full bg-tone-blue-solid" />;
-
-const rowCls = "mx-2.5 flex h-7 items-center gap-1 rounded-md pl-0.5 pr-1 text-[12.5px] transition-[opacity,background-color] duration-150 motion-reduce:transition-none";
 
 type RowView = {
   key: string;
@@ -172,10 +154,11 @@ type RowView = {
   icon: ReactNode;
   depth?: number;
   hidden?: boolean;
+  /** The number the sidebar shows beside it. */
+  count?: number;
   /** Dimmed and not draggable: a section header row of Views. */
   header?: boolean;
   source?: EditSource;
-  /** Its own name and emoji, in a section of the member's own or a Space. */
   /** Its name and emoji of the member's own: every row has them, a built-in one in `names` and `icons`. */
   own?: { name?: string; emoji?: string; fallbackIcon: ReactNode; onRename: (v: string) => void; onEmoji: (v: string) => void };
   /** The row's ⋯ menu in edit mode. */
@@ -192,10 +175,13 @@ type BlockView = {
   /** Its name and emoji: the member's own section's, or the member's own for a built-in one. */
   own?: { emoji?: string; placeholder?: string; onRename: (v: string) => void; onEmoji: (v: string) => void; onDelete?: () => void; onAdd?: () => void };
   onHide?: () => void;
+  /** What its empty drop slot says; left out, an empty section shows nothing. */
   empty?: string;
   /** A ticket inbox or team shown apart: back into Tickets or Teams. */
   back?: { label: string; run: () => void };
 };
+
+type EditDrag = ReturnType<typeof useEditDrag<EditSource>>;
 
 function EditList({
   blocks,
@@ -203,193 +189,246 @@ function EditList({
   drag,
   target,
   handle,
+  pressable,
   step,
   renaming,
   setRenaming,
   picking,
   setPicking,
 }: {
-  picking: string | null;
-  setPicking: (k: string | null) => void;
   blocks: BlockView[];
   rootRef: React.RefObject<HTMLDivElement | null>;
-  drag: ReturnType<typeof useEditDrag<EditSource>>["drag"];
+  drag: EditDrag["drag"];
   target: EditTarget | null;
-  handle: ReturnType<typeof useEditDrag<EditSource>>["handle"];
+  handle: EditDrag["handle"];
+  pressable: EditDrag["pressable"];
   step: (source: EditSource, dir: -1 | 1) => void;
   renaming: string | null;
   setRenaming: (k: string | null) => void;
+  picking: string | null;
+  setPicking: (k: string | null) => void;
 }) {
   const { t } = useTranslation("collab");
   const reduce = useReducedMotion();
   const dragging = drag?.source;
-  const lineBeforeSection = (key: string | null) => target?.kind === "section" && target.before === key;
-  const lineBeforeRow = (section: string, key: string | null) => target?.kind === "row" && target.section === section && target.before === key;
+  const move = reduce ? false : ("position" as const);
+  // A double-click on a row or title renames it, as outside edit mode; not on its own buttons.
+  const renameOn = (key: string, can: boolean) => (e: MouseEvent) => {
+    if (!can || (e.target as Element).closest("button, input")) return;
+    e.preventDefault();
+    setRenaming(key);
+  };
   return (
-    <div ref={rootRef} className="flex flex-col pb-1">
+    <div ref={rootRef} className="relative flex flex-col pb-1">
       {blocks.map((b, bi) => {
         const isDragged = dragging?.kind === "section" && dragging.key === b.key;
         const sectionSource: EditSource = { kind: "section", key: b.key };
         const over = target?.kind === "row" && target.section === b.key;
+        const emptySlot = !b.rows.length && !!b.empty;
         return (
-          <div key={b.key}>
-            {lineBeforeSection(b.key) && <Line />}
-            <motion.div
-              layout={reduce ? false : "position"}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              data-edit-section={b.key}
-              className={cn("rounded-lg transition-[opacity,background-color] duration-150", bi > 0 && "mt-3", isDragged && "opacity-40", over && "bg-chrome-hover/60")}
-            >
-              <div data-edit-head="" className={cn("group/head mx-2.5 flex h-7 items-center gap-1 pl-0.5 pr-1", b.hidden && "opacity-50")}>
-                <Handle label={t("edit.move", { name: b.label })} props={handle(sectionSource, b.label)} onStep={(dir) => step(sectionSource, dir)} />
-                {b.own && <EmojiSlot value={b.own.emoji} label={t("edit.icon", { name: b.label })} onChange={b.own.onEmoji} open={picking === b.key} onOpenChange={(o) => setPicking(o ? b.key : null)} />}
-                {b.own ? (
-                  <InlineName
-                    value={b.label}
+          <motion.div
+            key={b.key}
+            layout={move}
+            transition={springs.row}
+            data-edit-section={b.key}
+            className={cn("transition-opacity duration-150 motion-reduce:transition-none", bi > 0 && "mt-5", isDragged && "opacity-40")}
+          >
+            <div data-edit-head="" onDoubleClick={renameOn(b.key, !!b.own)} {...pressable(sectionSource, b.label)} className="group/head relative">
+              <Handle group="head" label={t("edit.move", { name: b.label })} props={handle(sectionSource, b.label)} onStep={(dir) => step(sectionSource, dir)} onRename={b.own ? () => setRenaming(b.key) : undefined} />
+              <div className={cn("mx-2.5 mb-0.5 flex h-6 cursor-grab items-center gap-0.5 pl-2 pr-0.5", b.hidden && "opacity-50")}>
+                {renaming === b.key && b.own ? (
+                  <InlineRename
+                    initial={b.label}
                     placeholder={b.own.placeholder ?? t("ownSections.untitled")}
                     label={t("edit.rename", { name: b.label })}
-                    editing={renaming === b.key}
-                    onEditing={(on) => setRenaming(on ? b.key : null)}
-                    onSave={b.own.onRename}
-                    className="label-caps"
+                    caps
+                    onDone={(v) => {
+                      setRenaming(null);
+                      if (v !== null && v !== b.label) b.own!.onRename(v);
+                    }}
                   />
                 ) : (
-                  <span className="label-caps min-w-0 flex-1 truncate px-1">{b.label}</span>
+                  <span className="label-caps relative flex min-w-0 flex-1 items-center gap-1">
+                    {b.own?.emoji && <span aria-hidden className="text-[11px] normal-case leading-none tracking-normal">{b.own.emoji}</span>}
+                    <span className="truncate">{b.label}</span>
+                    {b.own && (
+                      <IconPicker
+                        value={b.own.emoji ?? ""}
+                        onChange={b.own.onEmoji}
+                        open={picking === b.key}
+                        onOpenChange={(o) => setPicking(o ? b.key : null)}
+                        trigger={<span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-4" />}
+                      />
+                    )}
+                  </span>
                 )}
-                {b.onHide && <EyeToggle hidden={!!b.hidden} name={b.label} onToggle={b.onHide} />}
-                {b.back && <RemoveButton label={b.back.label} icon={<CornerUpLeft />} onClick={b.back.run} />}
-                {b.own?.onDelete && <RemoveButton label={t("ownSections.delete")} icon={<Trash2 />} onClick={b.own.onDelete} />}
+                {renaming !== b.key && (
+                  <span className="flex shrink-0 items-center gap-0.5">
+                    {b.own?.onAdd && <IconButton label={t("ownSections.addRows")} icon={<Plus />} onClick={b.own.onAdd} className={onHead} />}
+                    {b.onHide && <EyeToggle hidden={!!b.hidden} name={b.label} onToggle={b.onHide} className={b.hidden ? undefined : onHead} />}
+                    {(b.own || b.back) && (
+                      <Menu>
+                        <Tooltip content={t("edit.rowMenu", { name: b.label })}>
+                          <MenuTrigger asChild>
+                            <button type="button" aria-label={t("edit.rowMenu", { name: b.label })} className={cn(tool, onHead)}>
+                              <Ellipsis />
+                            </button>
+                          </MenuTrigger>
+                        </Tooltip>
+                        <MenuContent align="end" className="w-[210px]">
+                          {b.own && (
+                            <>
+                              <MenuItem icon={<Pencil />} onSelect={() => setRenaming(b.key)}>
+                                {t("edit.renameRow")}
+                              </MenuItem>
+                              <MenuItem icon={<SmilePlus />} onSelect={() => setTimeout(() => setPicking(b.key), 0)}>
+                                {t("edit.pickIcon")}
+                              </MenuItem>
+                            </>
+                          )}
+                          {(b.back || b.own?.onDelete) && b.own && <MenuSeparator />}
+                          {b.back && (
+                            <MenuItem icon={<CornerUpLeft />} onSelect={b.back.run}>
+                              {b.back.label}
+                            </MenuItem>
+                          )}
+                          {b.own?.onDelete && (
+                            <MenuItem icon={<Trash2 />} onSelect={b.own.onDelete}>
+                              {t("ownSections.delete")}
+                            </MenuItem>
+                          )}
+                        </MenuContent>
+                      </Menu>
+                    )}
+                  </span>
+                )}
               </div>
-              {!b.hidden && (
-                <div className="flex flex-col gap-px">
-                  {b.rows.map((r) => {
-                    const rowDragged = dragging?.kind === "row" && dragging.from === b.key && dragging.key === r.key;
-                    return (
-                      <div key={r.key}>
-                        {lineBeforeRow(b.key, r.key) && <Line />}
-                        <div
-                          data-edit-row={r.key}
-                          className={cn(rowCls, r.hidden && "opacity-50", rowDragged && "opacity-40")}
-                          style={r.depth ? { paddingLeft: 2 + r.depth * 14 } : undefined}
-                        >
-                          {r.source ? <Handle label={t("edit.move", { name: r.label })} props={handle(r.source, r.label)} onStep={(dir) => step(r.source!, dir)} /> : <span aria-hidden className="w-4 shrink-0" />}
-                          {r.own ? (
-                            <EmojiSlot
-                              value={r.own.emoji}
-                              fallback={r.own.fallbackIcon}
-                              label={t("edit.icon", { name: r.label })}
-                              onChange={r.own.onEmoji}
-                              open={picking === `${b.key}|${r.key}`}
-                              onOpenChange={(o) => setPicking(o ? `${b.key}|${r.key}` : null)}
-                            />
-                          ) : (
-                            <span className={cn("flex size-5 shrink-0 items-center justify-center text-fg-3 [&_svg]:size-[15px]", r.header && "text-fg-4")}>{r.icon}</span>
-                          )}
-                          {r.own ? (
-                            <InlineName
-                              value={r.own.name || r.label}
-                              placeholder={r.label}
-                              label={t("edit.rename", { name: r.own.name || r.label })}
-                              editing={renaming === `${b.key}|${r.key}`}
-                              onEditing={(on) => setRenaming(on ? `${b.key}|${r.key}` : null)}
-                              onSave={r.own.onRename}
-                              className="text-fg-2"
-                            />
-                          ) : (
-                            <span className={cn("min-w-0 flex-1 truncate px-1", r.header ? "text-[11.5px] text-fg-4" : "text-fg-2")}>{r.label}</span>
-                          )}
-                          {r.menu && (
-                            <Menu>
-                              <Tooltip content={t("edit.rowMenu", { name: r.own?.name || r.label })}>
-                                <MenuTrigger asChild>
-                                  <button type="button" aria-label={t("edit.rowMenu", { name: r.own?.name || r.label })} className={cn(tool, "data-[state=open]:bg-chrome-hover data-[state=open]:text-fg")}>
-                                    <Ellipsis />
-                                  </button>
-                                </MenuTrigger>
-                              </Tooltip>
-                              <MenuContent align="end" className="w-[210px]">
-                                {r.menu({ rename: () => setRenaming(`${b.key}|${r.key}`), icon: () => setTimeout(() => setPicking(`${b.key}|${r.key}`), 0) })}
-                              </MenuContent>
-                            </Menu>
-                          )}
-                          {r.onHide && <EyeToggle hidden={!!r.hidden} name={r.label} onToggle={r.onHide} />}
-                          {r.onRemove && <RemoveButton label={r.onRemove.label} icon={r.onRemove.icon} onClick={r.onRemove.run} />}
-                        </div>
+            </div>
+            {!b.hidden && (
+              <div className="flex flex-col gap-px">
+                {b.rows.map((r) => {
+                  const rowDragged = dragging?.kind === "row" && dragging.from === b.key && dragging.key === r.key;
+                  const id = `${b.key}|${r.key}`;
+                  const name = r.own?.name || r.label;
+                  return (
+                    <motion.div
+                      key={r.key}
+                      layout={move}
+                      transition={springs.row}
+                      data-edit-row={r.key}
+                      onDoubleClick={renameOn(id, !!r.own)}
+                      {...(r.source ? pressable(r.source, name) : undefined)}
+                      className={cn("group/row relative transition-opacity duration-150 motion-reduce:transition-none", rowDragged && "opacity-40")}
+                    >
+                      {r.source && <Handle group="row" label={t("edit.move", { name })} props={handle(r.source, name)} onStep={(dir) => step(r.source!, dir)} onRename={r.own ? () => setRenaming(id) : undefined} />}
+                      <div
+                        className={cn(rowBase, rowShape(false), rowIdle, r.source && "cursor-grab", r.hidden && "opacity-50")}
+                        style={r.depth ? { paddingLeft: 8 + r.depth * 14 } : undefined}
+                      >
+                        {r.own ? (
+                          <EmojiSlot value={r.own.emoji} fallback={r.own.fallbackIcon} label={t("edit.icon", { name })} onChange={r.own.onEmoji} open={picking === id} onOpenChange={(o) => setPicking(o ? id : null)} />
+                        ) : (
+                          <span className={cn("flex size-[15px] shrink-0 items-center justify-center text-fg-3 [&_svg]:size-[15px]", r.header && "text-fg-4")}>{r.icon}</span>
+                        )}
+                        {renaming === id && r.own ? (
+                          <InlineRename
+                            initial={name}
+                            placeholder={r.label}
+                            label={t("edit.rename", { name })}
+                            onDone={(v) => {
+                              setRenaming(null);
+                              if (v !== null && v !== name) r.own!.onRename(v);
+                            }}
+                          />
+                        ) : (
+                          <>
+                            <span className={cn("min-w-0 flex-1 truncate", r.header && "text-[11.5px] text-fg-4")}>{name}</span>
+                            {r.count !== undefined && (
+                              <span className={cn("flex shrink-0 group-hover/row:hidden group-focus-within/row:hidden group-has-[[data-state=open]]/row:hidden [@media(hover:none)]:hidden", r.hidden && "hidden")}>
+                                <Count n={r.count} rail={false} />
+                              </span>
+                            )}
+                            {(r.menu || r.onHide || r.onRemove) && (
+                              <span className={cn("-mr-1 hidden shrink-0 items-center gap-0.5 group-hover/row:flex group-focus-within/row:flex has-[[data-state=open]]:flex [@media(hover:none)]:flex", r.hidden && "flex")}>
+                                {r.menu && (
+                                  <Menu>
+                                    <Tooltip content={t("edit.rowMenu", { name })}>
+                                      <MenuTrigger asChild>
+                                        <button type="button" aria-label={t("edit.rowMenu", { name })} className={cn(tool, r.hidden && "hidden group-hover/row:flex group-focus-within/row:flex data-[state=open]:flex [@media(hover:none)]:flex")}>
+                                          <Ellipsis />
+                                        </button>
+                                      </MenuTrigger>
+                                    </Tooltip>
+                                    <MenuContent align="end" className="w-[210px]">
+                                      {r.menu({ rename: () => setRenaming(id), icon: () => setTimeout(() => setPicking(id), 0) })}
+                                    </MenuContent>
+                                  </Menu>
+                                )}
+                                {r.onHide && <EyeToggle hidden={!!r.hidden} name={r.label} onToggle={r.onHide} />}
+                                {r.onRemove && !r.menu && <IconButton label={r.onRemove.label} icon={r.onRemove.icon ?? <X />} onClick={r.onRemove.run} />}
+                              </span>
+                            )}
+                          </>
+                        )}
                       </div>
-                    );
-                  })}
-                  {lineBeforeRow(b.key, null) && <Line />}
-                  {!b.rows.length && b.empty && <p className="mx-2.5 flex h-7 items-center px-6 text-[12px] text-fg-4">{b.empty}</p>}
-                  {b.own?.onAdd && (
-                    <button type="button" onClick={b.own.onAdd} className={cn(rowCls, "w-[calc(100%-1.25rem)] gap-2 pl-6 text-fg-4 outline-none hover:bg-chrome-hover hover:text-fg-2 focus-visible:shadow-[0_0_0_2px_var(--focus)] [&>svg]:size-3.5")}>
-                      <Plus />
-                      <span>{t("edit.add")}</span>
-                    </button>
-                  )}
-                </div>
-              )}
-            </motion.div>
-          </div>
+                    </motion.div>
+                  );
+                })}
+                {emptySlot && (
+                  <div
+                    data-edit-empty=""
+                    className={cn(
+                      "mx-2.5 flex h-7 items-center truncate rounded-md border border-dashed px-2 text-[12px] transition-colors duration-150 motion-reduce:transition-none",
+                      over ? "border-tone-blue-line bg-tone-blue-soft text-tone-blue" : "border-line-strong text-fg-3",
+                    )}
+                  >
+                    {b.empty}
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
         );
       })}
-      {lineBeforeSection(null) && <Line />}
-      {drag &&
-        createPortal(
-          <div
-            aria-hidden
-            className="pointer-events-none fixed z-[90] flex h-7 max-w-[220px] items-center gap-2 rounded-md bg-surface px-2.5 text-[12.5px] text-fg shadow-lg ring-1 ring-line"
-            style={{ left: drag.x + 10, top: drag.y - 14 }}
-          >
-            <GripVertical className="size-3.5 shrink-0 text-fg-4" />
-            <span className="truncate">{drag.label}</span>
-          </div>,
-          document.body,
-        )}
+      <DropLine rootRef={rootRef} target={target} />
+      <DragGhost drag={drag} />
     </div>
   );
 }
 
-/** A word-labelled action of the bar. */
-const barBtn =
-  "flex h-6 items-center gap-1 rounded-md px-1.5 text-[12px] text-fg-3 outline-none transition-colors hover:bg-chrome-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] data-[state=open]:bg-chrome-hover data-[state=open]:text-fg [&_svg]:size-3.5";
-
-/** The bar on top while editing: what this is and Done, then its actions in words. */
-function EditBar({ title, menu, onReset, onLayouts }: { title: ReactNode; menu: ReactNode; onReset?: () => void; onLayouts?: () => void }) {
+/**
+ * The sidebar's top row while editing: what is being edited, one ⋯ menu with the starting
+ * points and Reset, and Done. Quiet, like the sidebar's own controls; Escape is Done too.
+ */
+function EditTop({ title, menu }: { title: ReactNode; menu: ReactNode }) {
   const { t } = useTranslation("collab");
   return (
-    <div className="sticky -top-1 z-10 -mt-1 mb-2 border-b border-chrome-line bg-chrome px-3 pb-1.5 pt-1">
-      <div className="flex h-9 items-center gap-1">
-        <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-fg">{title}</span>
-        <Button size="xs" variant="primary" onClick={() => sidebarEdit.stop()}>
-          {t("edit.done")}
-        </Button>
-      </div>
-      <div className="-ml-1.5 flex items-center gap-0.5">
-        {onLayouts && (
-          <button type="button" onClick={onLayouts} className={barBtn}>
-            <LayoutTemplate />
-            {t("edit.layoutsShort")}
-          </button>
-        )}
-        {onReset && (
-          <button type="button" onClick={onReset} className={barBtn}>
-            <RotateCcw />
-            {t("edit.reset")}
-          </button>
-        )}
+    <div className="sticky top-0 z-20 -mt-1 mb-2 bg-chrome pb-1 pt-1">
+      <div className="mx-2.5 flex h-7 items-center gap-1 pl-2">
+        <span className="min-w-0 flex-1 truncate text-[12.5px] text-fg-3">{title}</span>
         <Menu>
-          <MenuTrigger asChild>
-            <button type="button" className={barBtn}>
-              <Ellipsis />
-              {t("edit.more")}
-            </button>
-          </MenuTrigger>
-          <MenuContent align="start" className="w-[220px]">
+          <Tooltip content={t("edit.more")}>
+            <MenuTrigger asChild>
+              <button type="button" aria-label={t("edit.more")} className={cn(tool, "size-6")}>
+                <Ellipsis />
+              </button>
+            </MenuTrigger>
+          </Tooltip>
+          <MenuContent align="end" className="w-[220px]">
             {menu}
           </MenuContent>
         </Menu>
+        <Tooltip content={t("edit.doneHint")}>
+          <button
+            type="button"
+            onClick={() => sidebarEdit.stop()}
+            className="flex h-6 shrink-0 items-center gap-1 rounded-md bg-chrome-active pl-1.5 pr-2 text-[12px] font-medium text-fg-2 outline-none transition-colors hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] [&_svg]:size-3.5"
+          >
+            <Check />
+            {t("edit.done")}
+          </button>
+        </Tooltip>
       </div>
-      <p className="mt-1 text-[11.5px] leading-4 text-fg-4">{t("edit.barHint")}</p>
     </div>
   );
 }
@@ -432,6 +471,9 @@ function WorkspaceEditor() {
     if (p.kind === "view_section") return <ListTree />;
     return (d && buildRow({ kind: p.kind, id: p.id }, d, { labels })?.icon) ?? null;
   };
+  // The number the sidebar shows beside a row, as it shows it there.
+  const countOf = (model: RowModel | null | undefined, own?: SidebarBadge) => (model ? rowCount(model, rowNumber(model, prefs, own).n) : undefined);
+  const pinCount = (p: SidebarPin) => (p.kind === "view_section" || !d ? undefined : countOf(buildRow({ kind: p.kind, id: p.id }, d, { labels })));
 
   // Every row's name and emoji of the member's own (contracts/collab.md "Names and icons"): an empty name resets it.
   const ownLabel = (key: string, fallbackIcon: ReactNode) => ({
@@ -513,6 +555,7 @@ function WorkspaceEditor() {
           key: pinKey(p),
           label,
           icon: pinIcon(p),
+          count: pinCount(p),
           own: ownLabel(pinKey(p), pinIcon(p)),
           menu: rowMenu({ key: pinKey(p), label, row, remove }),
           source: { kind: "row", from: FAVORITES, key: pinKey(p), pin: p, row: row ?? undefined },
@@ -561,6 +604,7 @@ function WorkspaceEditor() {
         key,
         label: x.label,
         icon: model?.icon ?? x.icon,
+        count: countOf(model),
         own: header ? undefined : ownLabel(key, model?.icon ?? x.icon),
         menu: header ? undefined : rowMenu({ key, label: nameOf(prefs, key, x.label), hideId: x.hideId, pin: x.pin, row, badge: x.badge }),
         depth: x.depth,
@@ -587,6 +631,7 @@ function WorkspaceEditor() {
           key,
           label: model.label,
           icon: model.icon,
+          count: countOf(model, item.badge),
           source: { kind: "row", from: entryKey(e), key, row: { kind: item.kind, id: item.id } },
           own: {
             name: item.name,
@@ -683,7 +728,7 @@ function WorkspaceEditor() {
       if (node) fav.place(node, r.before);
     }
   };
-  const { drag, target, handle } = useEditDrag<EditSource>({ root: rootRef, accepts: (s, tg) => canDrop(prefs, wid, s, tg), onDrop: apply });
+  const { drag, target, handle, pressable } = useEditDrag<EditSource>({ root: rootRef, accepts: (s, tg) => canDrop(prefs, wid, s, tg), onDrop: apply });
 
   // Arrow keys on a handle: one place up or down in its own list.
   const step = (source: EditSource, dir: -1 | 1) => {
@@ -730,6 +775,9 @@ function WorkspaceEditor() {
 
   const menu = (
     <>
+      <MenuItem icon={<LayoutTemplate />} onSelect={() => layoutsUi.open()}>
+        {t("edit.layouts")}
+      </MenuItem>
       {copyable.length > 0 && (
         <MenuSub icon={<Copy />} label={t("edit.copySpace")}>
           {copyable.map((sp) => (
@@ -742,17 +790,18 @@ function WorkspaceEditor() {
       <MenuItem icon={<SlidersHorizontal />} onSelect={() => collabUi.customize(true)}>
         {t("edit.options")}
       </MenuItem>
+      <MenuSeparator />
+      <MenuItem icon={<RotateCcw />} onSelect={reset}>
+        {t("edit.reset")}
+      </MenuItem>
     </>
   );
 
   return (
     <>
-      <EditBar title={t("edit.title")} menu={menu} onReset={reset} onLayouts={() => layoutsUi.open()} />
-      <EditList blocks={blocks} rootRef={rootRef} drag={drag} target={target} handle={handle} step={step} renaming={renaming} setRenaming={setRenaming} picking={picking} setPicking={setPicking} />
-      <button type="button" onClick={newSection} className={cn(rowCls, "mt-3 w-[calc(100%-1.25rem)] gap-2 pl-1.5 text-fg-3 outline-none hover:bg-chrome-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] [&>svg]:size-3.5")}>
-        <Plus />
-        <span>{t("edit.newSection")}</span>
-      </button>
+      <EditTop title={t("edit.title")} menu={menu} />
+      <EditList blocks={blocks} rootRef={rootRef} drag={drag} target={target} handle={handle} pressable={pressable} step={step} renaming={renaming} setRenaming={setRenaming} picking={picking} setPicking={setPicking} />
+      <AddSectionButton label={t("edit.newSection")} onClick={newSection} />
     </>
   );
 }
@@ -788,6 +837,7 @@ function SpaceEditor({ spaces, space }: { spaces: Space[]; space: Space }) {
       const d = isEverywhere(item) ? undefined : data.get(item.workspace_id);
       let label: string;
       let icon: ReactNode;
+      let count: number | undefined;
       if (item.kind === "section") {
         if (!d || !isSectionId(item.id)) return [];
         label = labels.section(item.id, d.collab);
@@ -797,6 +847,7 @@ function SpaceEditor({ spaces, space }: { spaces: Space[]; space: Space }) {
         if (!model) return [];
         label = model.label;
         icon = model.icon;
+        if (d) count = rowCount(model, rowNumber(model, d.prefs, item.badge).n);
       }
       const shown = item.name || label;
       return [
@@ -804,6 +855,7 @@ function SpaceEditor({ spaces, space }: { spaces: Space[]; space: Space }) {
           key,
           label,
           icon,
+          count,
           source: { kind: "row", from: sec.id, key },
           own: {
             name: item.name,
@@ -836,7 +888,7 @@ function SpaceEditor({ spaces, space }: { spaces: Space[]; space: Space }) {
     if (next) save(next);
   };
   const accepts = (s: EditSource, tg: EditTarget) => (s.kind === "section" ? tg.kind === "section" : tg.kind === "row");
-  const { drag, target, handle } = useEditDrag<EditSource>({ root: rootRef, accepts, onDrop: apply });
+  const { drag, target, handle, pressable } = useEditDrag<EditSource>({ root: rootRef, accepts, onDrop: apply });
   const step = (source: EditSource, dir: -1 | 1) => {
     const keys = source.kind === "section" ? blocks.map((b) => b.key) : (blocks.find((b) => b.key === source.from)?.rows.map((r) => r.key) ?? []);
     const i = keys.indexOf(source.key);
@@ -860,7 +912,7 @@ function SpaceEditor({ spaces, space }: { spaces: Space[]; space: Space }) {
 
   return (
     <>
-      <EditBar
+      <EditTop
         title={
           <span className="flex min-w-0 items-center gap-2">
             <SpaceGlyph icon={space.icon} name={space.name} color={space.color} />
@@ -869,11 +921,8 @@ function SpaceEditor({ spaces, space }: { spaces: Space[]; space: Space }) {
         }
         menu={menu}
       />
-      <EditList blocks={blocks} rootRef={rootRef} drag={drag} target={target} handle={handle} step={step} renaming={renaming} setRenaming={setRenaming} picking={picking} setPicking={setPicking} />
-      <button type="button" onClick={newSection} className={cn(rowCls, "mt-3 w-[calc(100%-1.25rem)] gap-2 pl-1.5 text-fg-3 outline-none hover:bg-chrome-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] [&>svg]:size-3.5")}>
-        <Plus />
-        <span>{t("edit.newSection")}</span>
-      </button>
+      <EditList blocks={blocks} rootRef={rootRef} drag={drag} target={target} handle={handle} pressable={pressable} step={step} renaming={renaming} setRenaming={setRenaming} picking={picking} setPicking={setPicking} />
+      <AddSectionButton label={t("edit.newSection")} onClick={newSection} />
     </>
   );
 }

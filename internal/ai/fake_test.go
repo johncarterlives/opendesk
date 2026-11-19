@@ -106,6 +106,8 @@ func feature(system string) string {
 		return "procedure"
 	case strings.Contains(system, "You prepare the facts for a reply"):
 		return "draft_lookup"
+	case strings.Contains(system, "You show people around opendesk"):
+		return "app_help"
 	}
 	return "unknown"
 }

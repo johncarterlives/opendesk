@@ -89,7 +89,7 @@ struct SentEmailSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Close") { dismiss() }
+                    SheetButton(.cancel, "Close") { dismiss() }
                 }
             }
         }

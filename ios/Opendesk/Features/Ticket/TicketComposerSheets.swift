@@ -186,9 +186,9 @@ struct GuidedDraftSheet: View {
             .navigationTitle("Draft with Ollie")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Draft") {
+                    SheetButton(.confirm, "Draft", symbol: "sparkles") {
                         onDraft(instructions.trimmingCharacters(in: .whitespacesAndNewlines))
                         dismiss()
                     }
@@ -226,18 +226,14 @@ struct EditNoteSheet: View {
             .navigationTitle("Edit note")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        saving = true
+                    SheetButton(.confirm, "Save", busy: saving) { saving = true
                         Task {
                             let ok = await onSave(text.trimmingCharacters(in: .whitespacesAndNewlines))
                             saving = false
                             if ok { dismiss() }
-                        }
-                    } label: {
-                        if saving { ProgressView() } else { Text("Save").fontWeight(.semibold) }
-                    }
+                        } }.fontWeight(.semibold)
                     .disabled(saving || text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }

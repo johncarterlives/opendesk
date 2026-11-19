@@ -285,7 +285,7 @@ struct TicketAskSheet: View {
             .navigationTitle("Ask Ollie")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Done") { dismiss() } }
             }
             .onAppear { focused = answer == nil }
         }

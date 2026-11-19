@@ -4,13 +4,12 @@
 // same editor publishes a workspace's starter Space from Settings › General (admins), where
 // every row is of that workspace. Nothing is saved until Save.
 
-import { Building2, Check, ChevronsDownUp, Ellipsis, FileText, FolderInput, Inbox, Layers, Mail, Plus, Star, Trash2, Users, X } from "lucide-react";
+import { Check, Inbox, Layers, Plus, Users } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { WorkspaceBadge } from "@/components/workspaces/WorkspaceBadge";
 import { useWorkspacePrefs, orderWorkspaces } from "@/lib/workspaces";
 import { AccountDot, boxIcon, FolderGlyph } from "@/components/collab/bits";
-import { SortableList } from "@/components/settings2/Sortable";
 import { TeamDot } from "@/components/tickets/teams";
 import { ViewIcon, viewName } from "@/components/tickets/ViewIcon";
 import { Button } from "@/components/ui/button";
@@ -18,13 +17,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useConfirm } from "@/components/ui/confirm";
 import { Dialog } from "@/components/ui/dialog";
 import { SearchInput, TextInput } from "@/components/ui/input";
-import { Menu, MenuChoice, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuSub, MenuTrigger } from "@/components/ui/menu";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
-import type { SidebarBadge, SidebarSectionId, Space, SpaceItem, SpaceSection } from "@/lib/api/types";
+import type { Space, SpaceItem } from "@/lib/api/types";
 import { ACCOUNT_BOXES, accountName, buildFolderTree, flattenTree, folderWithRole } from "@/lib/collab/boxes";
-import { badgeChoices, badgeWord, SECTION_IDS } from "@/lib/collab/sidebarPrefs";
+import { SECTION_IDS } from "@/lib/collab/sidebarPrefs";
 import { cn } from "@/lib/cn";
 import { folders as ticketFolders } from "@/lib/folders";
 import { useCollab, useSidebarPrefs } from "@/lib/collab/hooks";
@@ -39,58 +37,26 @@ import {
   MAIN_SECTION_ID,
   nextColor,
   hasItem,
-  isCollabItem,
-  isEverywhere,
-  isEverywhereList,
   EVERYWHERE_LISTS,
-  isSectionId,
   itemKey,
   LIMITS,
-  moveItemTo,
   removeItem,
-  removeSection,
-  reorderItems,
-  reorderSections,
   replaceSpace,
   SPACE_COLORS,
   SPACE_ICONS,
   SPACE_PAGES,
   spaceProblems,
   spacesProblems,
-  updateItem,
-  updateSection,
-  type SpaceProblem,
   needsWiki,
 } from "@/lib/spaces/model";
 import { spaceUi, useSpaceUi, type EditorTarget } from "@/lib/spaces/store";
 import { tone } from "@/lib/tones";
-import { buildRow, everywhereIcons, InWorkspace, useRowLabels, type RowLabels } from "./rows";
+import { buildRow, everywhereIcons, useRowLabels, type RowLabels } from "./rows";
+import { Problem, sectionIcons, SpaceArrange } from "./SpaceArrange";
 import { PageIcon } from "@/components/wiki/PageTree";
 import { buildTree, childrenOf } from "@/lib/wiki/tree";
 import { SpaceGlyph, spaceIcons, spaceTone } from "./icons";
 import { sameJSON } from "@/lib/sameJSON";
-
-const sectionIcons: Record<SidebarSectionId, ReactNode> = { favorites: <Star />, inbox: <Inbox />, mail: <Mail />, teams: <Users />, views: <Layers />, pages: <FileText />, workspace: <Building2 /> };
-
-type Look = { label: string; icon: ReactNode; whole?: boolean; badgeKind?: "mail" | "ticket" | "team"; nums?: Record<string, number | null | undefined> };
-
-/** What a row in the editor reads as: its name and icon, "loading" while its workspace's data comes, or null when it is gone. */
-function lookOf(item: SpaceItem, d: WorkspaceData | undefined, labels: RowLabels): Look | "loading" | null {
-  if (isEverywhere(item))
-    return isEverywhereList(item.id) ? { label: labels.everywhere(item.id), icon: everywhereIcons[item.id], badgeKind: item.id === "mine" ? "ticket" : "mail" } : null;
-  if (!d) return "loading";
-  if (item.kind === "section") return isSectionId(item.id) ? { label: labels.section(item.id, d.collab), icon: sectionIcons[item.id], whole: true } : null;
-  const loading =
-    (item.kind === "team" && !d.teams) ||
-    (item.kind === "view" && !d.views) ||
-    (item.kind === "mailbox" && !d.mailboxes) ||
-    ((item.kind === "wiki_space" || item.kind === "wiki_page") && (!d.wiki || !d.teams)) ||
-    (isCollabItem(item) && (d.collab === undefined || (d.collab && !d.accounts))) ||
-    (item.kind === "folder" && !!d.accounts?.some((a) => !d.folders[a.id]));
-  const m = buildRow(item, d, { labels });
-  if (!m) return loading ? "loading" : null;
-  return { label: m.label, icon: m.icon, badgeKind: m.badge?.kind, nums: m.badge?.nums };
-}
 
 type Offer = { item: SpaceItem; label: string; icon: ReactNode; hint?: string; depth?: number };
 
@@ -121,6 +87,7 @@ function offersOf(d: WorkspaceData, labels: RowLabels, wholeHint: string): { id:
     mail.push({ item: it("box", "inbox"), label: labels.allInboxes, icon: <Layers /> });
     mail.push({ item: it("box", "shared"), label: labels.box("shared"), icon: boxIcon.shared });
     mail.push({ item: it("box", "assigned"), label: labels.box("assigned"), icon: boxIcon.assigned });
+    mail.push({ item: it("box", "mentions"), label: labels.box("mentions"), icon: boxIcon.mentions });
     for (const a of d.accounts ?? []) {
       mail.push({ item: it("account", a.id), label: accountName(a), icon: <AccountDot color={a.color} className="size-2.5" />, hint: a.email });
       const fs = d.folders[a.id];
@@ -157,214 +124,6 @@ function offersOf(d: WorkspaceData, labels: RowLabels, wholeHint: string): { id:
     { id: "teamspaces" as const, offers: teamspaces },
     { id: "wiki" as const, offers: wiki },
   ].filter((g) => g.offers.length);
-}
-
-function Problem({ children }: { children: ReactNode }) {
-  return (
-    <p role="alert" className="mt-1 animate-rise-in text-[11.5px] text-danger-fg motion-reduce:animate-none">
-      {children}
-    </p>
-  );
-}
-
-const iconBtn =
-  "flex size-6 shrink-0 items-center justify-center rounded-md text-fg-4 outline-none transition-colors hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)] data-[state=open]:bg-hover data-[state=open]:text-fg [&_svg]:size-3.5";
-
-/** A row's number in the Space: Default, or one of the numbers its kind has. */
-function NumberMenu({ item, kind, nums, onPick }: { item: SpaceItem; kind: "mail" | "ticket" | "team"; nums?: Record<string, number | null | undefined>; onPick: (v: SidebarBadge | null) => void }) {
-  const { t } = useTranslation("spaces");
-  const { t: tc } = useTranslation("collab");
-  const word = (v: SidebarBadge) => (v === "none" ? tc("rowMenu.hideNumber") : tc(`customize.badge.${badgeWord(v, kind)}`));
-  return (
-    <Menu>
-      <Tooltip content={t("row.number")}>
-        <MenuTrigger asChild>
-          <button
-            type="button"
-            aria-label={`${t("row.number")}: ${item.badge ? word(item.badge) : t("row.default")}`}
-            className={cn(iconBtn, item.badge ? "w-auto px-1.5 text-[11px] font-medium text-fg-2" : "")}
-          >
-            {item.badge ? word(item.badge) : <span className="mono text-[11px]">#</span>}
-          </button>
-        </MenuTrigger>
-      </Tooltip>
-      <MenuContent align="end" className="w-[200px]">
-        <MenuLabel>{t("row.number")}</MenuLabel>
-        <MenuChoice checked={!item.badge} onSelect={() => onPick(null)}>
-          {t("row.default")}
-        </MenuChoice>
-        {badgeChoices(kind).map((v) => (
-          <MenuChoice key={v} checked={item.badge === v} onSelect={() => onPick(v)} hint={v === "none" ? undefined : (nums?.[v] ?? undefined)}>
-            {word(v)}
-          </MenuChoice>
-        ))}
-      </MenuContent>
-    </Menu>
-  );
-}
-
-function EditorSection({
-  section,
-  index,
-  space,
-  data,
-  labels,
-  marks,
-  target,
-  onTarget,
-  onChange,
-  handle,
-  problems,
-}: {
-  section: SpaceSection;
-  index: number;
-  space: Space;
-  data: Map<string, WorkspaceData>;
-  labels: RowLabels;
-  marks: boolean;
-  target: boolean;
-  onTarget: () => void;
-  onChange: (s: Space) => void;
-  handle: ReactNode;
-  problems: SpaceProblem[];
-}) {
-  const { t } = useTranslation("spaces");
-  const rows = useMemo(() => section.items.map((item) => ({ id: itemKey(item), item })), [section.items]);
-  const sectionName = (sec: SpaceSection, i: number) => sec.title.trim() || t("view.untitledN", { n: i + 1 });
-  const mine = [...new Set(problems.filter((p) => "section" in p && p.section === section.id).map((p) => p.code))];
-  const title = section.title;
-  return (
-    <div className={cn("group relative rounded-lg border bg-surface transition-[border-color,box-shadow] duration-150", target ? "border-line-strong shadow-[0_1px_3px_rgb(0_0_0/0.06)]" : "border-line")} onFocusCapture={onTarget}>
-      <div className="flex h-10 items-center gap-1.5 pl-5 pr-1.5">
-        {handle}
-        <input
-          value={title}
-          onChange={(e) => onChange(updateSection(space, section.id, { title: e.target.value }))}
-          placeholder={t("editor.noHeader")}
-          aria-label={t("editor.sectionTitle")}
-          maxLength={60}
-          className="h-7 min-w-0 flex-1 rounded-md bg-transparent px-1.5 text-[13px] font-semibold text-fg outline-none transition-colors placeholder:font-normal placeholder:text-fg-4 hover:bg-hover/60 focus:bg-hover/60"
-        />
-        <span className="mono shrink-0 text-[10.5px] text-fg-4">{t("editor.rows", { count: section.items.length })}</span>
-        {space.sections.length > 1 && (
-          <Tooltip content={target ? t("editor.addingHere") : t("editor.addHere")}>
-            <button type="button" aria-pressed={target} aria-label={target ? t("editor.addingHere") : t("editor.addHere")} onClick={onTarget} className={cn(iconBtn, target && "bg-hover text-fg")}>
-              <Plus />
-            </button>
-          </Tooltip>
-        )}
-        {title.trim() && (
-          <Tooltip content={t("editor.foldInSidebar")}>
-            <button
-              type="button"
-              aria-pressed={section.collapsed}
-              aria-label={t("editor.foldInSidebar")}
-              onClick={() => onChange(updateSection(space, section.id, { collapsed: !section.collapsed }))}
-              className={cn(iconBtn, section.collapsed && "bg-hover text-fg")}
-            >
-              <ChevronsDownUp />
-            </button>
-          </Tooltip>
-        )}
-        <Menu>
-          <MenuTrigger asChild>
-            <button type="button" aria-label={t("editor.sectionMenu", { name: sectionName(section, index) })} className={iconBtn}>
-              <Ellipsis />
-            </button>
-          </MenuTrigger>
-          <MenuContent align="end" className="w-[200px]">
-            <MenuItem danger icon={<Trash2 />} onSelect={() => onChange(removeSection(space, section.id))}>
-              {t("editor.removeSection")}
-            </MenuItem>
-          </MenuContent>
-        </Menu>
-      </div>
-      {mine.map((code) => (
-        <div key={code} className="px-3 pb-1">
-          <Problem>{t(`editor.problems.${code}`)}</Problem>
-        </div>
-      ))}
-      <div className="border-t border-line-soft">
-        {rows.length ? (
-          <SortableList
-            items={rows}
-            handleLabel={(r) => {
-              const l = lookOf(r.item, data.get(r.item.workspace_id), labels);
-              return l && l !== "loading" ? l.label : r.id;
-            }}
-            onReorder={(ids) => onChange(reorderItems(space, section.id, ids))}
-            className="flex flex-col"
-            renderRow={({ item }, rowHandle) => {
-              const look = lookOf(item, data.get(item.workspace_id), labels);
-              const key = itemKey(item);
-              const gone = look === null;
-              const label = look && look !== "loading" ? look.label : "";
-              return (
-                <div className="group flex h-9 items-center gap-2 pl-5 pr-1.5">
-                  {rowHandle}
-                  <span className={cn("flex size-4 shrink-0 items-center justify-center text-fg-3 [&_svg]:size-3.5", gone && "opacity-40")}>{look && look !== "loading" ? look.icon : null}</span>
-                  {gone ? (
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-fg-4">{t("editor.unavailable")}</span>
-                  ) : look === "loading" ? (
-                    <span className="skeleton h-2.5 w-28" />
-                  ) : look.whole ? (
-                    <span className="flex min-w-0 flex-1 items-center gap-2 px-1.5">
-                      <span className="truncate text-[12.5px] text-fg">{label}</span>
-                      <span className="shrink-0 text-[11px] text-fg-4">{t("editor.wholeHint")}</span>
-                    </span>
-                  ) : (
-                    <input
-                      value={item.name ?? ""}
-                      onChange={(e) => onChange(updateItem(space, key, { name: e.target.value }))}
-                      placeholder={label}
-                      aria-label={t("row.renameLabel", { name: label })}
-                      maxLength={80}
-                      className="h-7 min-w-0 flex-1 rounded-md bg-transparent px-1.5 text-[12.5px] text-fg outline-none transition-colors placeholder:text-fg placeholder:opacity-100 hover:bg-hover/60 focus:bg-hover/60 focus:placeholder:text-fg-4"
-                    />
-                  )}
-                  {marks && !isEverywhere(item) && data.get(item.workspace_id) && (
-                    <InWorkspace name={data.get(item.workspace_id)!.name} logo={data.get(item.workspace_id)!.logo} />
-                  )}
-                  {look && look !== "loading" && look.badgeKind && (
-                    <NumberMenu item={item} kind={look.badgeKind} nums={look.nums} onPick={(v) => onChange(updateItem(space, key, { badge: v }))} />
-                  )}
-                  <Menu>
-                    <MenuTrigger asChild>
-                      <button type="button" aria-label={t("row.more", { name: label || t("editor.unavailable") })} className={iconBtn}>
-                        <Ellipsis />
-                      </button>
-                    </MenuTrigger>
-                    <MenuContent align="end" className="w-[210px]">
-                      {space.sections.length > 1 && (
-                        <MenuSub label={t("editor.moveTo")} icon={<FolderInput />}>
-                          {space.sections.map((sec, i) => (
-                            <MenuChoice key={sec.id} checked={sec.id === section.id} onSelect={() => onChange(moveItemTo(space, key, sec.id))}>
-                              {sectionName(sec, i)}
-                            </MenuChoice>
-                          ))}
-                        </MenuSub>
-                      )}
-                      {item.name && (
-                        <MenuItem icon={<X />} onSelect={() => onChange(updateItem(space, key, { name: null }))}>
-                          {t("row.resetName", { name: label })}
-                        </MenuItem>
-                      )}
-                      {(space.sections.length > 1 || item.name) && <MenuSeparator />}
-                      <MenuItem danger icon={<Trash2 />} onSelect={() => onChange(removeItem(space, key))}>
-                        {t("editor.remove")}
-                      </MenuItem>
-                    </MenuContent>
-                  </Menu>
-                </div>
-              );
-            }}
-          />
-        ) : (
-          <p className="px-4 py-3 text-[12px] text-fg-4">{t("editor.emptySection")}</p>
-        )}
-      </div>
-    </div>
-  );
 }
 
 /** "Add from": a tab per workspace, each listing what it offers with a checkbox. */
@@ -471,7 +230,6 @@ function SpaceEditor({ target, make }: { target: EditorTarget; make: () => Space
   }, [draft.sections, tab, members]);
   const names = (w: string, kind: string) => draft.sections.some((sec) => sec.items.some((i) => i.workspace_id === w && i.kind === kind));
   const data = useWorkspacesData(wids, { folders: (w) => w === tab || names(w, "folder"), wiki: (w) => w === tab || needsWiki(draft, w) });
-  const sections = useMemo(() => draft.sections.map((s) => ({ ...s })), [draft.sections]);
 
   const problems = spaceProblems(draft, members);
   const listProblems = starter ? [] : spacesProblems(replaceSpace(spaces ?? [], draft), members).filter((p) => p.code !== "space");
@@ -645,27 +403,17 @@ function SpaceEditor({ target, make }: { target: EditorTarget; make: () => Space
                 <p className="mt-0.5 text-[11.5px] text-fg-4">{t("editor.structureHint")}</p>
               </div>
             </div>
-            {sections.length ? (
-              <SortableList
-                items={sections}
-                handleLabel={(s) => s.title || t("view.untitledN", { n: sections.indexOf(s) + 1 })}
-                onReorder={(ids) => setDraft(reorderSections(draft, ids))}
-                className="flex flex-col gap-2 [&>*]:rounded-lg [&>*]:!border-0 [&>*]:bg-transparent"
-                renderRow={(s, handle, i) => (
-                  <EditorSection
-                    section={draft.sections.find((x) => x.id === s.id) ?? s}
-                    index={i}
-                    space={draft}
-                    data={data}
-                    labels={labels}
-                    marks={distinct.size > 1 || (distinct.size === 1 && !distinct.has(wid ?? ""))}
-                    target={sections.length > 1 && targetSection === s.id}
-                    onTarget={() => setTargetSection(s.id)}
-                    onChange={setDraft}
-                    handle={handle}
-                    problems={tried ? problems : problems.filter((p) => p.code === "section_too_many_items" || p.code === "title_too_long" || p.code === "row_name_too_long")}
-                  />
-                )}
+            {draft.sections.length ? (
+              <SpaceArrange
+                space={draft}
+                onChange={setDraft}
+                data={data}
+                labels={labels}
+                marks={distinct.size > 1 || (distinct.size === 1 && !distinct.has(wid ?? ""))}
+                target={draft.sections.length > 1 ? targetSection : null}
+                onTarget={setTargetSection}
+                problems={tried ? problems : problems.filter((p) => p.code === "section_too_many_items" || p.code === "title_too_long" || p.code === "row_name_too_long" || p.code === "too_many_arranged")}
+                starter={starter}
               />
             ) : (
               <p className="rounded-lg border border-dashed border-line px-4 py-6 text-center text-[12px] text-fg-4">{t("editor.noSections")}</p>

@@ -88,7 +88,7 @@ struct MailShareSheet: View {
             .navigationTitle("Share conversation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
             }
         }
         .onAppear {
@@ -210,7 +210,7 @@ struct MailAssignSheet: View {
             .navigationTitle("Assign")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
             }
         }
         .onAppear {
@@ -311,7 +311,7 @@ struct MailFolderSheet: View {
             .navigationTitle(mode == .move ? "Move to" : "Labels")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
         .onAppear { on = Set(store.thread?.folderIDs ?? []) }
@@ -507,7 +507,7 @@ struct MailDetailsSheet: View {
             .navigationTitle("Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
         .task {
@@ -662,7 +662,7 @@ struct MailPersonSheet: View {
             .background(Theme.chrome.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
         .task { await load() }

@@ -192,7 +192,12 @@
     "aiPlayground": "AI agent playground",
     "importHistory": "Import history from Zendesk, Help Scout, FreeScout, Freshdesk, Intercom, Front or CSV",
     "pages": "Pages",
-    "newPage": "New page"
+    "newPage": "New page",
+    "sidebarPlace": "Sidebar",
+    "docs": "Docs",
+    "searchSettings": "Search settings",
+    "settingsNoResults": "No settings match",
+    "settingsNoResultsHelp": "Try other words, or search the docs from the command menu."
   },
   "shortcuts": {
     "general": "General",

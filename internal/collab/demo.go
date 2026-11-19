@@ -264,6 +264,9 @@ func (s *service) insertDemoThread(ctx context.Context, tx pgx.Tx, p *pass, t De
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $7)`, ids.New(), a.WorkspaceID, threadID, c.AuthorID, body, mentions, at); err != nil {
 			return false, err
 		}
+		if err := follow(ctx, tx, a.WorkspaceID, threadID, mentions); err != nil {
+			return false, err
+		}
 	}
 	return true, nil
 }

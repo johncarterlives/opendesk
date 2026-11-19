@@ -117,20 +117,13 @@ struct NewTicketSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    SheetButton(.cancel, "Cancel") {
                         if store.isDirty { confirmDiscard = true } else { dismiss() }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        Task { await create() }
-                    } label: {
-                        if store.creating {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Text(store.kind == .reply ? "Create and send" : "Create ticket").fontWeight(.semibold)
-                        }
-                    }
+                    SheetButton(.confirm, store.kind == .reply ? "Create and send" : "Create ticket", busy: store.creating) { Task { await create() } }
+                        .fontWeight(.semibold)
                     .disabled(store.creating)
                 }
             }

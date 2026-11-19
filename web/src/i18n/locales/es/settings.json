@@ -1,0 +1,884 @@
+{
+  "sortable": {
+    "handle": "Arrastra para reordenar. Mantén Alt y usa las flechas para moverlo.",
+    "hint": "Arrastra para reordenar"
+  },
+  "cancel": "Cancelar",
+  "labels": {
+    "title": "Etiquetas",
+    "description": "Las etiquetas de color organizan tickets, contactos y empresas para que sea fácil encontrarlos, filtrarlos y reportarlos. Eliminar una etiqueta la quita de todo lo que la tiene.",
+    "newLabel": "Nueva etiqueta",
+    "newGroup": "Nuevo grupo",
+    "filter": "Filtrar etiquetas",
+    "count_one": "{{count}} etiqueta",
+    "count_other": "{{count}} etiquetas",
+    "count_many": "{{count}} de etiquetas",
+    "ungrouped": "Otras etiquetas",
+    "emptyGroup": "Todavía no hay etiquetas en este grupo",
+    "editAria": "Editar {{name}}",
+    "actionsAria": "Acciones para {{name}}",
+    "reorderAria": "Reordenar {{name}}. Mantén Alt y usa las flechas para moverla.",
+    "usageHint": "{{tickets}} tickets, {{contacts}} contactos, {{companies}} empresas",
+    "createdToast": "Se creó la etiqueta «{{name}}»",
+    "savedToast": "Etiqueta guardada",
+    "archivedToast": "«{{name}}» archivada",
+    "restoredToast": "«{{name}}» restaurada",
+    "archivedSection_one": "{{count}} etiqueta archivada",
+    "archivedSection_other": "{{count}} etiquetas archivadas",
+    "archivedSection_many": "{{count}} de etiquetas archivadas",
+    "summary": {
+      "labels": "Etiquetas",
+      "groups": "Grupos",
+      "onTickets": "En tickets",
+      "archived": "Archivadas"
+    },
+    "columns": {
+      "label": "Etiqueta",
+      "appliesTo": "Se aplica a",
+      "uses": "Usos"
+    },
+    "scope": {
+      "tickets": "Tickets",
+      "contacts": "Contactos",
+      "companies": "Empresas",
+      "not": "No para {{what}}"
+    },
+    "empty": {
+      "title": "Todavía no hay etiquetas",
+      "description": "Las etiquetas que agregas a los tickets aparecen aquí. Crea algunas para empezar, como facturación o error.",
+      "tips": {
+        "groups": "Los grupos pueden permitir una sola etiqueta a la vez",
+        "who": "Los administradores eligen quién puede crear etiquetas"
+      }
+    },
+    "noMatch": {
+      "title": "Ninguna etiqueta coincide",
+      "description": "Prueba con otro nombre."
+    },
+    "menu": {
+      "edit": "Editar",
+      "colour": "Color",
+      "moveTo": "Mover al grupo",
+      "merge": "Fusionar con otra etiqueta",
+      "archive": "Archivar",
+      "restore": "Restaurar",
+      "delete": "Eliminar"
+    },
+    "delete": {
+      "title": "¿Eliminar esta etiqueta?",
+      "body": {
+        "before": "",
+        "after": "se quitará de cada ticket, contacto y empresa que la tenga. Esto no se puede deshacer."
+      },
+      "confirm": "Eliminar etiqueta"
+    },
+    "dialog": {
+      "newTitle": "Nueva etiqueta",
+      "editTitle": "Editar etiqueta",
+      "newDescription": "Los agentes pueden agregarla a los tickets de inmediato.",
+      "name": "Nombre",
+      "newName": "Nombre de la etiqueta nueva",
+      "namePlaceholder": "facturación",
+      "preview": "Vista previa",
+      "colour": "Color",
+      "description": "Descripción",
+      "descriptionHint": "Se muestra en los selectores para que todo el mundo use la etiqueta de la misma forma.",
+      "descriptionPlaceholder": "Preguntas sobre facturas, reembolsos y métodos de pago",
+      "group": "Grupo",
+      "noGroup": "Sin grupo",
+      "exclusiveHint": "Un registro lleva una sola etiqueta de este grupo a la vez.",
+      "appliesTo": "Se aplica a",
+      "create": "Crear etiqueta",
+      "save": "Guardar etiqueta",
+      "duplicate": "Ya existe una etiqueta con este nombre.",
+      "badChars": "Usa letras, números, espacios y - _ . / : & + #.",
+      "nameRequired": "Ponle un nombre a la etiqueta.",
+      "scopeRequired": "Elige dónde se puede usar la etiqueta."
+    },
+    "group": {
+      "newTitle": "Nuevo grupo",
+      "editTitle": "Editar grupo",
+      "description": "Los grupos reúnen etiquetas relacionadas, como Tipo o Plan.",
+      "name": "Nombre",
+      "namePlaceholder": "Tipo",
+      "nameRequired": "Ponle un nombre al grupo.",
+      "exclusive": "Una etiqueta a la vez",
+      "exclusiveHint": "Un registro lleva una sola etiqueta de este grupo a la vez.",
+      "exclusiveBadge": "Una a la vez",
+      "create": "Crear grupo",
+      "save": "Guardar grupo",
+      "actionsAria": "Acciones del grupo {{name}}",
+      "addLabel": "Agregar una etiqueta",
+      "edit": "Editar grupo",
+      "delete": "Eliminar grupo",
+      "deleteTitle": "¿Eliminar este grupo?",
+      "deleteBody": "Las etiquetas de {{name}} se quedan y pasan a Otras etiquetas.",
+      "deleteConfirm": "Eliminar grupo"
+    },
+    "merge": {
+      "title": "Fusionar etiqueta",
+      "description": "Todo lo etiquetado como {{name}} pasa a la etiqueta que elijas, y {{name}} se elimina.",
+      "search": "Buscar etiquetas",
+      "choose": "Elige una etiqueta",
+      "confirm": "Fusionar"
+    },
+    "creation": {
+      "title": "Creación de etiquetas",
+      "label": "Quién puede crear etiquetas",
+      "anyone": "Cualquiera",
+      "admins": "Solo administradores",
+      "anyoneHint": "Escribir un nombre nuevo en un selector de etiquetas crea la etiqueta.",
+      "adminsHint": "Los agentes eligen entre las etiquetas que ya existen. Solo los administradores crean nuevas.",
+      "saved": "Ajuste de etiquetas guardado"
+    }
+  },
+  "members": {
+    "title": "Miembros",
+    "description": "Todas las personas que pueden iniciar sesión en este espacio de trabajo, y lo que pueden hacer.",
+    "count_one": "{{count}} miembro",
+    "count_other": "{{count}} miembros",
+    "count_many": "{{count}} de miembros",
+    "search": "Filtrar miembros",
+    "leave": "Salir del espacio de trabajo",
+    "invite": "Invitar personas",
+    "you": "Tú",
+    "noMatch": "Ningún miembro coincide",
+    "noMatchHint": "Prueba con otro nombre o correo.",
+    "filter": {
+      "label": "Filtrar miembros",
+      "allRoles": "Todos los roles",
+      "roleLabel": "Rol: {{value}}",
+      "searchRoles": "Buscar roles",
+      "allTeams": "Todos los equipos",
+      "noTeam": "Sin equipo",
+      "unknownTeam": "Equipo desconocido",
+      "teamLabel": "Equipo: {{value}}",
+      "searchTeams": "Buscar equipos",
+      "anyStatus": "Cualquier estado",
+      "statusLabel": "Estado: {{value}}",
+      "searchStatuses": "Buscar estados",
+      "shown": "{{shown}} de {{total}}",
+      "clear": "Quitar filtros",
+      "noMatchHint": "Prueba con otros filtros, o quítalos para ver a todo el mundo."
+    },
+    "emptyTitle": "Por ahora solo estás tú",
+    "emptyHint": "Invita a compañeros para compartir la bandeja.",
+    "columns": {
+      "person": "Persona",
+      "joined": "Ingreso",
+      "role": "Rol"
+    },
+    "remove": "Quitar del espacio de trabajo",
+    "removeTitle": "¿Quitar al miembro?",
+    "removeConfirm": "Quitar",
+    "removeBody": "{{name}} pierde el acceso de inmediato. Sus tickets se quedan, sin responsable.",
+    "summary": {
+      "members": "Miembros",
+      "admins": "Administradores",
+      "agents": "Agentes",
+      "viewers": "Lectores",
+      "invited": "Invitados"
+    },
+    "invites": {
+      "title": "Invitaciones pendientes",
+      "description": "Las invitaciones vencen a los 7 días. Si un correo no llega, copia el enlace y envíalo tú.",
+      "by": "Invitación de {{name}} {{when}}",
+      "at": "Invitación {{when}}",
+      "expired": "Vencida",
+      "expires": "Vence el {{date}}",
+      "revoke": "Revocar",
+      "revokeTitle": "¿Revocar la invitación?",
+      "revokeBody": "El enlace de invitación de {{email}} deja de funcionar.",
+      "copyLink": "Copiar enlace",
+      "linkCopied": "Enlace de invitación copiado",
+      "linkCopiedHint": "Envíaselo a {{email}} como prefieras. Entra al registrarse con esa dirección.",
+      "resend": "Reenviar el correo",
+      "resent": "Invitación enviada otra vez a {{email}}",
+      "actions": "Acciones de la invitación a {{email}}"
+    },
+    "inviteDialog": {
+      "description": "Les llega un correo con un enlace para unirse. También puedes copiar el enlace desde las invitaciones pendientes. Los enlaces vencen a los 7 días.",
+      "send": "Enviar invitaciones",
+      "emails": "Direcciones de correo",
+      "emailsHint": "Separa las direcciones con comas o espacios."
+    },
+    "emptyTips": {
+      "roles": "Los roles definen lo que cada persona puede hacer",
+      "expire": "Las invitaciones vencen a los 7 días"
+    },
+    "editProfile": "Editar perfil",
+    "profileTitle": "Perfil para los clientes",
+    "profileHint": "Lo que los clientes ven de {{name}} en las firmas: cargo, teléfono, pronombres y una firma personal.",
+    "discardTitle": "¿Descartar los cambios?",
+    "discardBody": "Tus cambios de este perfil no están guardados.",
+    "discardConfirm": "Descartar",
+    "save": "Guardar perfil",
+    "deleteRule": "Puede eliminar mensajes",
+    "deleteDefault": "Predeterminado del espacio de trabajo ({{rule}})",
+    "deletes": {
+      "off": "No elimina mensajes",
+      "own": "Elimina sus propias notas",
+      "all": "Elimina las notas y respuestas de cualquier agente"
+    }
+  },
+  "teams": {
+    "title": "Equipos",
+    "description": "Agrupa a los agentes para que los tickets y los buzones lleguen a las personas correctas.",
+    "new": "Nuevo equipo",
+    "count_one": "{{count}} equipo",
+    "count_other": "{{count}} equipos",
+    "count_many": "{{count}} de equipos",
+    "members_one": "{{count}} miembro",
+    "members_other": "{{count}} miembros",
+    "members_many": "{{count}} de miembros",
+    "emptyTitle": "Todavía no hay equipos",
+    "emptyHint": "Crea Soporte, Facturación o Ingeniería y asigna los tickets a todo un equipo.",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar el equipo?",
+    "deleteBody": "Los tickets y buzones que van a {{name}} conservan su responsable, pero pierden el equipo.",
+    "saved": "Equipo guardado",
+    "created": "Equipo creado",
+    "discardTitle": "¿Descartar los cambios?",
+    "discardBody": "Tus cambios de este equipo se van a perder.",
+    "discard": "Descartar",
+    "editTitle": "Editar equipo",
+    "nameRequired": "Ponle un nombre al equipo.",
+    "name": "Nombre",
+    "namePlaceholder": "Soporte",
+    "membersLabel": "Miembros",
+    "searchMembers": "Buscar miembros",
+    "addMembers": "Agregar miembros",
+    "remove": "Quitar",
+    "noMembers": "Todavía no hay miembros",
+    "save": "Guardar equipo",
+    "create": "Crear equipo",
+    "andMore_one": " y {{count}} más",
+    "andMore_other": " y {{count}} más",
+    "andMore_many": " y {{count}} más",
+    "mailboxes_one": "{{count}} buzón",
+    "mailboxes_other": "{{count}} buzones",
+    "mailboxes_many": "{{count}} de buzones",
+    "emptyTips": {
+      "mailbox": "Los buzones pueden enviar los tickets nuevos a un equipo",
+      "delete": "Al eliminar un equipo, los responsables de los tickets se quedan"
+    }
+  },
+  "profile": {
+    "title": "Perfil",
+    "description": "Cómo apareces ante los compañeros en los tickets, las notas y las menciones.",
+    "saved": "Perfil guardado",
+    "verifySent": "Correo de verificación enviado",
+    "verifySentHint": "Revisa tu bandeja para ver el enlace.",
+    "name": "Nombre",
+    "photo": "Foto",
+    "photoHint": "Se muestra en tus respuestas, tus menciones y en toda la app. Si no hay foto, se ven tus iniciales.",
+    "email": "Correo",
+    "emailHint": "Se usa para iniciar sesión y para las notificaciones.",
+    "emailUnverified": "Verifica tu correo para recibir notificaciones.",
+    "verified": "Verificado",
+    "resend": "Reenviar verificación",
+    "appearance": "Apariencia",
+    "appearanceHint": "Se aplica a este navegador.",
+    "conversation": {
+      "label": "Diseño de la conversación",
+      "hint": "Los mensajes del cliente a la izquierda, y las respuestas y notas de tu equipo a la derecha, como un chat. A ancho completo en una pantalla estrecha."
+    },
+    "conversationWidth": {
+      "label": "Ancho de la conversación",
+      "hint": "Limitado mantiene los mensajes y el cuadro de respuesta en un ancho fácil de leer en una pantalla ancha. Ancho completo les deja usar todo el ancho del ticket.",
+      "limited": "Limitado",
+      "full": "Ancho completo"
+    },
+    "properties": {
+      "label": "Propiedades del ticket",
+      "hint": "Estado, prioridad, responsable, equipo y etiquetas en la columna de detalles, o en una barra sobre la conversación, editados ahí mismo. En la barra, la columna de detalles empieza por el cliente y por lo que tus apps saben de esa persona.",
+      "column": "En la columna de detalles",
+      "bar": "En una barra sobre la conversación"
+    },
+    "nextTicket": {
+      "label": "Abrir el siguiente ticket después de «{{action}}»",
+      "hint": "También después de enviar con un estado que saca el ticket de la lista. Se abre el siguiente ticket de la lista o vista de la que venías, con sus filtros y su orden. Después del último, vuelves a la lista. Si deshaces el envío, regresas al ticket."
+    },
+    "alwaysShowImages": {
+      "label": "Mostrar siempre las imágenes",
+      "hint": "Las imágenes remotas de los correos que recibes se cargan con ellos, sin «Cargar imágenes». Vienen de los servidores de quien envía, que así puede saber cuándo se abrió un correo."
+    },
+    "sounds": {
+      "title": "Sonidos",
+      "hint": "Se aplica a este navegador. El chat en vivo tiene un aviso más claro. Lo demás es suave.",
+      "preview": "Reproducir este sonido",
+      "chat": "Chat en vivo en espera",
+      "chatHint": "Un visitante espera y no hay nadie en el chat, con un recordatorio más suave cada minuto hasta que alguien lo tome.",
+      "ticket": "Conversaciones nuevas",
+      "ticketHint": "Llega un ticket nuevo de un cliente, un compañero o una integración, sin responsable o para ti.",
+      "reply": "Respuestas del cliente",
+      "replyHint": "Un cliente responde en uno de tus tickets, salvo que lo estés viendo.",
+      "assigned": "Asignaciones y menciones",
+      "assignedHint": "Se te asigna algo, alguien te menciona o se incumple un SLA en tu ticket."
+    },
+    "assignee": {
+      "label": "Responsable en la lista de tickets",
+      "hint": "Los compañeros que están ahora en un ticket se muestran siempre en verde, con lo que están haciendo.",
+      "photo": "Foto",
+      "name": "Nombre",
+      "none": "Nada"
+    },
+    "lastNote": {
+      "label": "Mostrar la última nota interna",
+      "hint": "Cada ticket de la lista muestra su nota interna más reciente, para que puedas leerla sin abrir el ticket."
+    },
+    "theme": {
+      "label": "Tema",
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Sistema"
+    },
+    "clock": {
+      "title": "Hora",
+      "hint": "Se aplica a tu cuenta, en todos los navegadores.",
+      "label": "Formato de hora",
+      "labelHint": "Para las horas de la app y de tus correos de notificación. Automático sigue el idioma y la región de tu navegador en la app, y usa 24 horas en los correos.",
+      "auto": "Automático",
+      "h12": "12 horas (2:05 p. m.)",
+      "h24": "24 horas (14:05)",
+      "saved": "Formato de hora guardado"
+    }
+  },
+  "pages": {
+    "title": "Páginas",
+    "description": "Las páginas, bases de datos y lienzos de tu equipo. Están junto al wiki, en la barra lateral y en Páginas.",
+    "product": "Producto",
+    "productHint": "Desactiva Páginas para ocultarlo a todo el mundo. No se elimina nada, y todo vuelve cuando lo activas.",
+    "use": "Usar Páginas",
+    "useOn": "Páginas está activado: los miembros lo ven en la barra lateral y pueden agregar páginas.",
+    "useOff": "Páginas está desactivado: queda oculto y sus páginas se conservan.",
+    "lastProduct": "Páginas es el único producto activo",
+    "lastProductHint": "Activa primero Tickets o Correo en General: un producto siempre queda activo.",
+    "saved": "Guardado",
+    "saveFailed": "No se pudo guardar el cambio",
+    "teamspaces": "Espacios de equipo",
+    "teamspacesHint": "Cada equipo tiene un espacio para sus páginas. Las páginas de un equipo privado solo las ven sus miembros.",
+    "manageTeams": "Administrar equipos",
+    "privateTeam": "Equipo privado",
+    "privateTeamHint": "Solo sus miembros ven sus páginas",
+    "pageCount_one": "{{count}} página",
+    "pageCount_other": "{{count}} páginas",
+    "pageCount_many": "{{count}} de páginas",
+    "noTeams": "Todavía no hay equipos",
+    "noTeamsHint": "Agrega un equipo para darle un espacio.",
+    "port": "Importar y exportar",
+    "portHint": "Trae páginas de Notion, Obsidian y otras herramientas, o llévatelas contigo.",
+    "import": "Importar páginas",
+    "importHint": "Una exportación de Notion u Obsidian, o archivos Markdown, HTML, CSV y de texto.",
+    "importAction": "Importar",
+    "export": "Exportar Páginas",
+    "exportHint": "Cada página que puedes ver, como una bóveda de Markdown o HTML, en un zip.",
+    "exportAction": "Exportar",
+    "trash": "Papelera",
+    "trashHint": "Las páginas se quedan en la papelera 30 días y después se eliminan del todo.",
+    "inTrash_one": "{{count}} página en la papelera",
+    "inTrash_other": "{{count}} páginas en la papelera",
+    "inTrash_many": "{{count}} de páginas en la papelera",
+    "openTrash": "Abrir la papelera"
+  },
+  "saveBar": {
+    "region": "Cambios sin guardar",
+    "message": "Tienes cambios sin guardar",
+    "discard": "Descartar",
+    "save": "Guardar cambios"
+  },
+  "workspace": {
+    "title": "General",
+    "description": "Ajustes que se aplican a todas las personas de este espacio de trabajo.",
+    "saved": "Espacio de trabajo guardado",
+    "name": "Nombre del espacio de trabajo",
+    "url": "URL del espacio de trabajo",
+    "urlHint": "La usan el centro de ayuda y el widget de chat.",
+    "timezone": "Zona horaria",
+    "timezoneHint": "Lo usan los reportes, los días hábiles del SLA y las horas de los correos.",
+    "searchTimezones": "Buscar zonas horarias",
+    "language": "Idioma del cliente",
+    "languageHint": "El centro de ayuda, la encuesta de satisfacción y el widget de chat siguen el idioma del navegador de cada visitante. Este se usa cuando el suyo no está disponible.",
+    "languageFixed": "Usar para todo el mundo",
+    "languageFixedHint": "Muestra el centro de ayuda, la encuesta de satisfacción y el widget de chat en {{language}} para cada visitante, sea cual sea el idioma de su navegador. Una marca con su propio idioma usa ese.",
+    "searchLanguages": "Buscar idiomas",
+    "products": "Productos",
+    "productsHint": "Elige lo que usa este espacio de trabajo. Al menos uno queda activo.",
+    "productTickets": "Tickets",
+    "productTicketsHint": "Bandejas compartidas, chat en vivo, el centro de ayuda y los reportes. Desactívalo para ocultarlos y pausar el trabajo nuevo con tickets.",
+    "productMail": "Correo",
+    "productMailHint": "Las cuentas de correo de los miembros, sincronizadas con sus bandejas.",
+    "productPages": "Páginas",
+    "productPagesHint": "Las páginas, bases de datos y lienzos de tu equipo, aparte del wiki.",
+    "mailUnavailable": {
+      "instance_disabled": "Correo está desactivado en esta instancia.",
+      "plan": "Correo no forma parte del plan de este espacio de trabajo."
+    },
+    "productKept": "No se elimina nada",
+    "productKeptHint": "Los tickets, el correo, las páginas y las conexiones se conservan mientras un producto está desactivado. El correo que llega, las llamadas y los mensajes de chat esperan, y siguen cuando Tickets vuelve a estar activo.",
+    "helpCenter": "Centro de ayuda",
+    "helpCenterHint": "Un sitio público con los artículos publicados de tu base de conocimiento.",
+    "publish": "Publicar el centro de ayuda",
+    "publishOn": "Cualquier persona con el enlace puede leer los artículos publicados.",
+    "publishOff": "Solo tu equipo puede ver los artículos.",
+    "hcTitle": "Título",
+    "publicAddress": "Dirección pública",
+    "copyLink": "Copiar enlace",
+    "conversations": "Conversaciones",
+    "csat": "Encuesta de satisfacción",
+    "csatHint": "Pide a los clientes que valoren la conversación después de resolver un ticket.",
+    "autoAssign": "Asignación",
+    "brand": "Color de la marca",
+    "brandHint": "Lo usan el widget de chat y los botones del correo que sale.",
+    "brandHex": "Color de la marca en hexadecimal",
+    "autoAssignLink": "Abrir asignación",
+    "assignModes": {
+      "none": "Desactivado. Los tickets nuevos esperan en Sin asignar hasta que alguien los tome.",
+      "round_robin": "Por turnos. Los compañeros en línea se van turnando.",
+      "load_balanced": "Por carga. Los tickets nuevos van a quien tiene menos abiertos."
+    },
+    "logo": "Logotipo",
+    "logoHint": "Se muestra en el selector de espacios de trabajo, en los correos y en el centro de ayuda.",
+    "hcLogo": "Logotipo del centro de ayuda",
+    "hcLogoHint": "Un logotipo ancho para el encabezado del centro de ayuda. Si no hay, se usan el logotipo y el nombre del espacio de trabajo.",
+    "hcFavicon": "Icono de pestaña",
+    "hcFaviconHint": "El icono pequeño de la pestaña del navegador.",
+    "pictures": "Fotos de contactos y empresas",
+    "picturesHint": "Las fotos hacen más fácil recorrer la bandeja. Las que se suben siempre tienen prioridad.",
+    "gravatar": "Fotos de Gravatar",
+    "gravatarHint": "Envía un hash de las direcciones de correo de los contactos a Gravatar para buscar sus fotos.",
+    "domainLogos": "Logotipos de empresas",
+    "domainLogosHint": "Toma el logotipo de cada empresa de su sitio web.",
+    "subjectNumber": "Número de ticket en los asuntos",
+    "subjectNumberOn": "Los correos a los clientes terminan el asunto con el número de ticket, como [#1042]. Las respuestas se asocian a su ticket por esta etiqueta y también por el hilo.",
+    "subjectNumberOff": "Los asuntos se envían sin el número de ticket, y las respuestas se asocian a su ticket por el hilo. Un correo que inicia la conversación, como el primero de un ticket que abrió un agente, conserva el número cuando el buzón envía de una forma que cambia el ID del correo (Microsoft, algunas conexiones de Google, Amazon SES), para que la respuesta del cliente siempre encuentre su ticket.",
+    "reports": "Reportes",
+    "onlineTime": "Tiempo en línea de los agentes",
+    "onlineTimeOn": "Registra el tiempo que cada miembro tiene opendesk abierto con el estado En línea, para Reportes → Agentes. Desactívalo donde registrarlo necesite el consentimiento de tu equipo o el acuerdo de un comité de empresa.",
+    "onlineTimeOff": "No se registra ni se muestra el tiempo en línea en Reportes. Si guardas con esto desactivado, se elimina el tiempo en línea registrado hasta ahora.",
+    "undoSend": "Deshacer el envío del correo",
+    "undoSendHint": "Las respuestas por correo en los tickets y el correo enviado desde cuentas de correo esperan este tiempo antes de salir, para que se puedan recuperar (una respuesta de ticket también puede pasar a ser una nota).",
+    "undoSendChat": "Deshacer el envío del chat",
+    "undoSendChatHint": "Las respuestas de chat esperan este tiempo antes de que el cliente las vea. Desactivado de forma predeterminada, para que el chat siga en vivo.",
+    "undoOff": "Desactivado",
+    "undoSeconds": "{{n}}s",
+    "snoozePresets": "Opciones para posponer",
+    "snoozePresetsHint": "Las horas que ofrece el menú de posponer de un ticket, en este orden, según el reloj de cada agente. Los agentes pueden igual elegir cualquier otro día y hora.",
+    "snoozeKind": "Tipo de tiempo",
+    "snoozeKindHours": "En … horas",
+    "snoozeKindDays": "En … días",
+    "snoozeKindWeek": "La próxima semana (lunes)",
+    "snoozeHours": "Horas",
+    "snoozeDays": "Días",
+    "snoozeAt": "a las",
+    "snoozeTime": "Hora del día",
+    "snoozeRemove": "Quitar esta hora",
+    "snoozeAdd": "Agregar una hora",
+    "snoozeReset": "Restaurar los predeterminados",
+    "messageDelete": "Los agentes pueden eliminar mensajes",
+    "messageDeleteHint": "Notas propias: los agentes eliminan sus propias notas internas. De cualquier agente: también las notas y respuestas de cualquier agente. Un mensaje eliminado queda como una marca. Los administradores pueden eliminar cualquier mensaje, leer los eliminados y restaurarlos, y darle otra regla a un agente en Miembros.",
+    "messageDeleteOff": "Desactivado",
+    "messageDeleteOwn": "Notas propias",
+    "messageDeleteAll": "De cualquier agente",
+    "collabReplies": "Responder desde tu propio correo",
+    "collabRepliesHint": "Los miembros pueden responder un ticket de correo desde una de sus cuentas conectadas, en lugar de la dirección del ticket, una respuesta a la vez. Las respuestas del cliente igual vuelven al ticket. Cada buzón puede definir sus propias reglas.",
+    "collabReplyTo": "A dónde van las respuestas",
+    "collabReplyToHint": "El Reply-To de esa respuesta, salvo que el miembro elija otro. Su dirección: las respuestas van a la dirección desde la que se envió y de ahí vuelven al ticket. La dirección del ticket: las respuestas van a la dirección del equipo, como cualquier correo.",
+    "collabReplyToAddress": "Su dirección",
+    "collabReplyToMailbox": "La dirección del ticket"
+  },
+  "display": {
+    "title": "Estados y prioridades",
+    "description": "Cámbiales el nombre o el color para tu equipo, y oculta de los menús de los agentes los estados que no usas. Un ticket que ya está en un estado oculto lo conserva. Los filtros, las automatizaciones y la API siguen funcionando como antes.",
+    "statuses": "Estados",
+    "priorities": "Prioridades",
+    "labelFor": "Nombre que se muestra para {{name}}",
+    "colourFor": "Color de {{name}}",
+    "reset": "Restablecer",
+    "resetFor": "Restablecer {{name}}",
+    "hideFor": "Ocultar {{name}} de los menús",
+    "showFor": "Mostrar {{name}} en los menús",
+    "finishButton": "Botón {{action}}",
+    "finishButtonHint": "Muestra un botón junto a Enviar, en el cuadro de respuesta, que envía y resuelve el ticket en un clic, no solo en el menú de al lado. Usa el nombre de cierre del espacio de trabajo y siempre deja el estado en resuelto.",
+    "severity": "Severidad",
+    "severityOn": "Los tickets tienen una severidad, de Sev 1 a Sev 4, junto a su prioridad. Desactívala si a tu equipo le basta la prioridad.",
+    "severityOff": "La severidad queda fuera de los tickets, las listas, los filtros, las vistas, los cambios en lote, las automatizaciones, el triaje y los reportes, y Ollie ya no la define ni la sugiere. Los tickets conservan la severidad que tienen. La API sigue leyéndola y escribiéndola."
+  },
+  "danger": {
+    "title": "Zona de peligro",
+    "transferred": "Propiedad transferida",
+    "transfer": "Transferir la propiedad",
+    "transferHint": "Convierte a otro miembro en el propietario. Tú pasas a ser administrador.",
+    "chooseMember": "Elige un miembro",
+    "transferButton": "Transferir",
+    "delete": "Eliminar el espacio de trabajo",
+    "deleteHint": "Elimina todos los tickets, contactos, artículos y ajustes. Esto no se puede deshacer.",
+    "deleteBody": "Todos los datos de {{name}} se eliminan para todo el mundo. Los miembros pierden el acceso de inmediato.",
+    "deleteTitle": "¿Eliminar el espacio de trabajo?",
+    "transferTitle": "¿Hacer propietario a {{name}}?",
+    "transferBody": "Pasa a tener el control total, incluida la eliminación del espacio de trabajo. Tú sigues como administrador."
+  },
+  "fields": {
+    "reorderAria": "Reordenar {{name}}. Mantén Alt y usa las flechas para moverlo.",
+    "title": "Campos personalizados",
+    "description": "Datos extra que tu equipo registra en tickets, contactos y empresas, como el plan, el número de pedido o la fecha de renovación.",
+    "new": "Nuevo campo",
+    "listTitle": "Campos de {{entity}}",
+    "ticketHint": "Los campos marcados como obligatorios hay que completarlos antes de poder resolver un ticket.",
+    "requiredBadge": "Obligatorio para resolver",
+    "archivedBadge": "Archivado",
+    "actionsAria": "Acciones para {{name}}",
+    "archivedTitle_one": "{{count}} campo archivado",
+    "archivedTitle_other": "{{count}} campos archivados",
+    "archivedTitle_many": "{{count}} de campos archivados",
+    "created": "Campo creado",
+    "saved": "Campo guardado",
+    "deleteTitle": "¿Eliminar este campo?",
+    "deleteBody": "{{name}} y cada valor guardado en él se eliminan. Esto no se puede deshacer.",
+    "deleteConfirm": "Eliminar campo",
+    "menu": {
+      "edit": "Editar",
+      "archive": "Archivar",
+      "restore": "Restaurar",
+      "delete": "Eliminar"
+    },
+    "entity": {
+      "ticket": "Ticket",
+      "contact": "Contacto",
+      "company": "Empresa"
+    },
+    "entityPlural": {
+      "ticket": "Tickets",
+      "contact": "Contactos",
+      "company": "Empresas"
+    },
+    "empty": {
+      "title": "Todavía no hay campos de {{entity}}",
+      "ticket": "Agrega campos como número de pedido o área de producto para anotar datos en cada ticket.",
+      "contact": "Agrega campos como plan o gerente de cuenta para tener los datos del cliente en un solo lugar.",
+      "company": "Agrega campos como fecha de renovación o puestos para seguir las cuentas.",
+      "tips": {
+        "required": "Los campos de ticket pueden ser obligatorios para resolver",
+        "sidebar": "Los agentes los completan desde la barra lateral del registro"
+      }
+    },
+    "type": {
+      "text": "Texto",
+      "long_text": "Texto largo",
+      "number": "Número",
+      "select": "Selección",
+      "multi_select": "Selección múltiple",
+      "date": "Fecha",
+      "checkbox": "Casilla",
+      "url": "Enlace",
+      "email": "Correo",
+      "user": "Persona"
+    },
+    "dialog": {
+      "newTitle": "Nuevo campo de {{entity}}",
+      "editTitle": "Editar campo",
+      "newDescription": "Los agentes lo completan desde la barra lateral del registro.",
+      "editDescription": "La clave y el tipo quedan fijos para que los valores guardados sigan funcionando.",
+      "name": "Nombre",
+      "namePlaceholder": "Nivel del plan",
+      "key": "Clave",
+      "keyHint": "La usan la API, los filtros y las automatizaciones.",
+      "keyFixed": "Las claves no se pueden cambiar.",
+      "keyRule": "Empieza con una letra. Usa letras minúsculas, números y _.",
+      "keyTaken": "Otro campo ya usa esta clave.",
+      "type": "Tipo",
+      "typeFixed": "El tipo no se puede cambiar después de crear el campo.",
+      "options": "Opciones",
+      "optionLabel": "Opción {{n}}",
+      "optionPlaceholder": "Nombre de la opción",
+      "optionColour": "Color de {{name}}",
+      "addOption": "Agregar opción",
+      "moveUp": "Subir",
+      "moveDown": "Bajar",
+      "removeOption": "Quitar opción",
+      "removeHint": "Quitar una opción la borra de los registros que la tienen.",
+      "description": "Descripción",
+      "descriptionHint": "Se muestra a los agentes junto al campo.",
+      "required": "Obligatorio para resolver",
+      "requiredHint": "Un ticket no se puede resolver ni cerrar mientras este campo esté vacío.",
+      "create": "Crear campo",
+      "save": "Guardar campo",
+      "nameRequired": "Ponle un nombre al campo.",
+      "optionsRequired": "Agrega al menos una opción."
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "description": "Elige qué te llega fuera de la app y con qué frecuencia. Todo se muestra siempre bajo la campana.",
+    "saveFailed": "No se pudieron guardar tus ajustes de notificaciones",
+    "email": {
+      "title": "Horario del correo",
+      "description": "Cómo se envían los correos de notificación. Se aplica a cada espacio de trabajo en el que estás.",
+      "digestAt": "Enviar el resumen a las",
+      "digestAtHint": "En tu zona horaria. Cada espacio de trabajo envía su propio resumen.",
+      "timezone": "Zona horaria",
+      "limits": "Nunca más de {{perHour}} correos por hora ni {{perDay}} al día. No se envía correo mientras usas opendesk en este espacio de trabajo, y lo que lees en la app nunca se envía por correo. Varias notificaciones llegan juntas en un solo correo.",
+      "sentTo": "Enviado a",
+      "confirmed": "Confirmado",
+      "notConfirmed": "Sin confirmar",
+      "unverifiedHint": "Los correos de notificación solo van a una dirección confirmada.",
+      "confirmLink": "Confírmalo en Perfil",
+      "unverified": "Confirma primero tu dirección de correo. Los correos de notificación solo van a una dirección confirmada.",
+      "test": "Enviarme un correo de prueba",
+      "testSent": "Correo de prueba enviado",
+      "testSentHint": "Revisa {{email}} en uno o dos minutos."
+    },
+    "cadence": {
+      "instant": "De inmediato",
+      "instantPaced_one": "El primer correo, cerca de {{count}} minuto después de que ocurra algo. Si siguen llegando, como máximo uno cada {{gap}}, y los urgentes antes.",
+      "instantPaced_other": "El primer correo, cerca de {{count}} minutos después de que ocurra algo. Si siguen llegando, como máximo uno cada {{gap}}, y los urgentes antes.",
+      "instantPaced_many": "El primer correo, cerca de {{count}} de minutos después de que ocurra algo. Si siguen llegando, como máximo uno cada {{gap}}, y los urgentes antes.",
+      "instantHint_one": "Cerca de {{count}} minuto después de que ocurra, salvo que ya lo hayas leído en la app.",
+      "instantHint_other": "Cerca de {{count}} minutos después de que ocurra, salvo que ya lo hayas leído en la app.",
+      "instantHint_many": "Cerca de {{count}} de minutos después de que ocurra, salvo que ya lo hayas leído en la app.",
+      "hourly": "Resumen por hora",
+      "hourlyHint": "Un correo por hora con lo que todavía no has leído.",
+      "daily": "Resumen diario",
+      "dailyHint": "Un correo al día, a la hora que elijas, con lo que todavía no has leído.",
+      "off": "Desactivado",
+      "offHint": "Sin correos de notificación. Igual ves todo en la app."
+    },
+    "pause": {
+      "title": "Pausar notificaciones",
+      "description": "Detiene por un tiempo las notificaciones de correo, teléfono y escritorio. Todo sigue apareciendo bajo la campana, y no se envía nada después.",
+      "off": "Sin pausa",
+      "offHint": "Pausa por una hora, hasta mañana por la mañana o por una semana.",
+      "until": "En pausa hasta {{when}}",
+      "onHint": "Nada llega a tu correo, teléfono o escritorio hasta entonces.",
+      "pause": "Pausar",
+      "change": "Cambiar",
+      "resume": "Reanudar",
+      "hour": "Por 1 hora",
+      "tomorrow": "Hasta mañana por la mañana",
+      "week": "Por 1 semana"
+    },
+    "channels": {
+      "app": "En la app",
+      "email": "Correo",
+      "push": "Teléfono",
+      "desktop": "Escritorio"
+    },
+    "groups": {
+      "tickets": "Tickets",
+      "team": "Equipo",
+      "mail": "Correo",
+      "wiki": "Wiki",
+      "ai_billing": "IA y facturación",
+      "workspace": "Espacio de trabajo"
+    },
+    "types": {
+      "title": "Qué te llega y dónde",
+      "description": "Solo para {{workspace}}. Cada espacio de trabajo guarda sus propias opciones.",
+      "thisWorkspace": "este espacio de trabajo",
+      "type": "Notificación",
+      "alwaysOn": "Siempre activo en la app",
+      "emailOffShort": "desactivado",
+      "emailOff": "Los correos de notificación están desactivados. Elige un horario arriba para volver a enviarlos. Tus opciones de aquí se conservan.",
+      "phoneHint": "Teléfono: la app de opendesk para iPhone. Cada teléfono también puede silenciar tipos por su cuenta, en los ajustes de la app.",
+      "desktopHint": "Escritorio: en la app de escritorio de opendesk, o en este navegador cuando permitas las notificaciones, mientras opendesk está en segundo plano o cerrado.",
+      "urgent": "Urgente",
+      "urgentHint": "Se puede enviar por correo antes, como máximo cada {{gap}}"
+    },
+    "teams": {
+      "title": "Tus equipos",
+      "description": "Tickets nuevos de un equipo y respuestas que nadie ha tomado. Los tickets que te asignan y las menciones siempre te llegan.",
+      "switch": "Notificaciones de {{team}}"
+    },
+    "kinds": {
+      "assigned": {
+        "label": "Asignado a ti",
+        "hint": "Se te asigna un ticket"
+      },
+      "new_ticket": {
+        "label": "Tickets nuevos",
+        "hint": "Tickets nuevos que no tienen responsable. Quién los recibe se define en Asignación"
+      },
+      "mentioned": {
+        "label": "Menciones",
+        "hint": "Alguien te menciona en una nota"
+      },
+      "customer_replied": {
+        "label": "Respuestas del cliente",
+        "hint": "En los tickets asignados a ti y en los que todavía nadie tiene"
+      },
+      "thread_replied": {
+        "label": "Respuestas de conversaciones aparte",
+        "hint": "Alguien de fuera de tu equipo responde una conversación aparte en un ticket asignado a ti"
+      },
+      "sla_breached": {
+        "label": "Incumplimientos de SLA",
+        "hint": "Un ticket asignado a ti no cumple un objetivo"
+      },
+      "scheduled_reply_failed": {
+        "label": "Respuestas programadas sin enviar",
+        "hint": "Una respuesta que programaste no pudo salir y volvió a tus borradores"
+      },
+      "ai_handoff": {
+        "label": "Traspasos a una persona",
+        "hint": "Ollie pasa una conversación al equipo"
+      },
+      "collab_assigned": {
+        "label": "Correo asignado a ti",
+        "hint": "Un compañero te asigna una conversación de una cuenta de correo"
+      },
+      "collab_mention": {
+        "label": "Menciones en comentarios del correo",
+        "hint": "Alguien te menciona en un comentario de una conversación de correo"
+      },
+      "wiki_mention": {
+        "label": "Menciones del wiki",
+        "hint": "Alguien te menciona en una página del wiki o en un comentario"
+      },
+      "wiki_comment": {
+        "label": "Comentarios del wiki",
+        "hint": "Comentarios nuevos en páginas que sigues y en hilos en los que escribiste"
+      },
+      "wiki_reminder": {
+        "label": "Recordatorios del wiki",
+        "hint": "Llegó un recordatorio que pusiste en una página del wiki"
+      },
+      "team_joined": {
+        "label": "Cambios de equipo",
+        "hint": "Un administrador se une a un equipo que lideras"
+      },
+      "ai_cap_reached": {
+        "label": "Tope del agente de IA alcanzado",
+        "hint": "Ollie llegó al tope de gasto de este mes"
+      },
+      "ai_key_failed": {
+        "label": "Problemas con la clave de IA",
+        "hint": "La clave de IA del espacio de trabajo dejó de funcionar"
+      },
+      "ai_balance_low": {
+        "label": "Saldo de IA bajo",
+        "hint": "El saldo de IA se está agotando"
+      },
+      "ai_balance_out": {
+        "label": "Saldo de IA agotado",
+        "hint": "Ollie se pausa hasta que se agregue uso de IA"
+      },
+      "auto_recharge_failed": {
+        "label": "Falló la recarga automática",
+        "hint": "Falló un pago de recarga automática"
+      },
+      "import_finished": {
+        "label": "Importaciones",
+        "hint": "Una importación que empezaste terminó, se detuvo o necesita credenciales nuevas"
+      },
+      "support_channel_unhealthy": {
+        "label": "Problemas del canal de soporte",
+        "hint": "Una conexión con un proveedor sigue con problemas al menos 15 minutos"
+      }
+    },
+    "gap": {
+      "hour": "hora",
+      "hours_one": "{{count}} hora",
+      "hours_other": "{{count}} horas",
+      "hours_many": "{{count}} de horas",
+      "minutes_one": "{{count}} minuto",
+      "minutes_other": "{{count}} minutos",
+      "minutes_many": "{{count}} de minutos"
+    },
+    "holds": {
+      "unsubscribed": "Los correos de notificación de {{workspace}} están desactivados",
+      "unsubscribedHint": "Usaste el enlace para darte de baja de uno de nuestros correos. Volver a activar el correo restaura las opciones que tenías.",
+      "turnEmailOn": "Volver a activar el correo",
+      "resubscribed": "Los correos de notificación volvieron a activarse",
+      "paused": "Las notificaciones están en pausa hasta {{when}}",
+      "pausedHint": "Nada llega a tu correo, teléfono o escritorio hasta entonces. Todo sigue apareciendo bajo la campana.",
+      "resume": "Reanudar ahora",
+      "emailOff": "Los correos de notificación están desactivados",
+      "emailOffHint": "Igual ves todo en la app. Volver a activar el correo lo envía de inmediato, con un ritmo para que no llene tu bandeja."
+    },
+    "desktop": {
+      "blocked": "Las notificaciones de opendesk están bloqueadas en esta computadora. Permítelas en los ajustes del sistema: en una Mac, Ajustes del Sistema, Notificaciones, opendesk; en Windows, Configuración, Sistema, Notificaciones.",
+      "blockedBrowser": "Las notificaciones de opendesk están bloqueadas en este navegador. Permítelas en los ajustes del sitio, junto a la barra de direcciones.",
+      "ask": "opendesk todavía no le ha pedido permiso a esta computadora para mostrar notificaciones.",
+      "askBrowser": "opendesk todavía no le ha pedido permiso a este navegador para mostrar notificaciones.",
+      "allow": "Permitir notificaciones"
+    }
+  },
+  "memberProfile": {
+    "title": "Perfil para los clientes",
+    "description": "Lo que los clientes ven de ti en {{workspace}}. Completa las variables del remitente en las firmas y las respuestas.",
+    "jobTitle": "Cargo",
+    "jobTitlePlaceholder": "Especialista de soporte",
+    "phone": "Teléfono",
+    "phonePlaceholder": "+1 555 010 0199",
+    "pronouns": "Pronombres",
+    "pronounsPlaceholder": "ella",
+    "fills": "Completa {{tag}}",
+    "signature": "Firma personal",
+    "signatureHint": "Se agrega a tus respuestas por correo. Cuando el equipo o la dirección tiene su propia firma, la tuya solo se muestra donde incluye {{tag}}.",
+    "signaturePlaceholder": "Jane Cooper, Soporte",
+    "preview": "Vista previa",
+    "previewOther": "La vista previa completa el nombre y los datos del remitente con los tuyos.",
+    "saved": "Perfil guardado"
+  },
+  "signatureEditor": {
+    "block": "Firma",
+    "edit": "Editar firma",
+    "remove": "Quitar firma",
+    "preview": "Vista previa",
+    "none": "Sin firma"
+  },
+  "peer": {
+    "title": "De agente a agente",
+    "description": "Deja que el {{name}} de los compañeros consulte al tuyo sobre tu correo cuando necesiten algo que solo tú puedes ver.",
+    "enabled": "Dejar que el {{name}} de los compañeros consulte al mío",
+    "enabledHint": "Tu {{name}} responde desde tus propias cuentas de correo, siguiendo tus reglas. Reciben una respuesta, nunca tu correo.",
+    "offTitle": "Tu espacio de trabajo no tiene esto activado",
+    "offHint": "Un administrador puede permitirlo en Ajustes, IA.",
+    "offAdmin": "Permítelo en Ajustes, IA, con «Dejar que el {{name}} de los compañeros se consulten». Cada miembro elige después para su propio correo.",
+    "openAi": "Abrir los ajustes de IA",
+    "unavailable": "De agente a agente no está disponible",
+    "people": "Personas",
+    "peopleHint": "Quién puede consultar a tu {{name}}. Los cambios se aplican a la siguiente pregunta.",
+    "shareWith": "Compartir con",
+    "everyone": "Todo el mundo",
+    "everyoneHint": "Cada miembro de este espacio de trabajo.",
+    "chosen": "Personas y equipos elegidos",
+    "chosenHint": "Solo las personas y los equipos que elijas.",
+    "accounts": "Cuentas",
+    "accountsHint": "De cuáles de tus propias cuentas de correo puede tomar información tu {{name}}. El correo que otras personas comparten contigo nunca se usa.",
+    "useFrom": "Usar información de",
+    "modesHint": "Textual puede citar tu correo. Solo resúmenes responde con sus propias palabras. Nada deja la cuenta fuera.",
+    "allAccounts": "Todas las cuentas",
+    "chosenAccounts": "Cuentas elegidas",
+    "modeFor": "Qué puede compartir {{account}}",
+    "newAccounts": "Cuentas nuevas",
+    "newAccountsHint": "Las cuentas que conectes después empiezan así.",
+    "noAccounts": "No tienes cuentas de correo propias",
+    "noAccountsHint": "Conecta una en Cuentas de correo y luego elige aquí qué puede compartir.",
+    "connect": "Conectar una cuenta",
+    "mode": {
+      "verbatim": "Textual",
+      "summary": "Solo resúmenes",
+      "none": "Nada"
+    },
+    "rules": "Reglas para compartir",
+    "rulesHint": "Tu {{name}} las sigue cuando responde. También usa el sentido común y deja en privado lo que es privado.",
+    "rulesSuggestion": "Comparte fechas, decisiones y pasos siguientes. Nunca compartas precios, contratos, asuntos personales ni nada marcado como confidencial.",
+    "useSuggestion": "Usar una sugerencia",
+    "asks": "Consultas recientes",
+    "asksHint": "Preguntas que los compañeros le hicieron a tu {{name}}, y lo que respondió. Se conservan 90 días.",
+    "noAsks": "Nadie ha preguntado todavía",
+    "noAsksHint": "Cuando el {{name}} de un compañero consulta al tuyo, la pregunta y la respuesta aparecen aquí.",
+    "showMore": "Mostrar más",
+    "result": {
+      "answered_one": "Respondida a partir de 1 conversación",
+      "answered_other": "Respondida a partir de {{count}} conversaciones",
+      "answered_many": "Respondida a partir de {{count}} de conversaciones",
+      "declined": "Rechazada",
+      "not_shared": "No compartida",
+      "failed": "No pudo responder"
+    },
+    "saveFailed": "No se pudieron guardar tus ajustes de agente a agente."
+  }
+}

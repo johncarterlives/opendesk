@@ -7,12 +7,12 @@
 // Rows and sections mark themselves as edit mode's do (`data-edit-section`, `data-edit-head`,
 // `data-edit-row`), so the drop targets are read from what the sidebar shows.
 
-import { GripVertical } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useLayoutEffect, useMemo, useState, type ReactNode, type RefObject } from "react";
-import { createPortal } from "react-dom";
 import { SidebarDragCtx } from "@/app/sidebarParts";
 import { useTranslation } from "react-i18next";
 import { toast } from "@/components/ui/toast";
+import { dur, springs } from "@/lib/motion";
 import type { SidebarPrefs } from "@/lib/api/types";
 import { toggleInSection } from "@/lib/collab/ownSections";
 import type { RowAction } from "@/lib/collab/sidebarEdit";
@@ -24,6 +24,7 @@ import { usePickedSpaceId } from "@/lib/spaces/store";
 import { useSpaceActions } from "@/components/spaces/actions";
 import { useFavorites, useWikiTree } from "@/components/wiki/hooks";
 import { useOwnSidebar } from "./AddToSidebar";
+import { DragGhost } from "./DragGhost";
 import { useEditDrag } from "./useEditDrag";
 
 /** The sections the sidebar shows, top level only, in order. */
@@ -155,24 +156,17 @@ export function SidebarDragProvider({ rootRef, children }: { rootRef: RefObject<
         {children}
         <DropLine rootRef={rootRef} target={target} />
       </div>
-      {drag &&
-        createPortal(
-          <div
-            aria-hidden
-            className="pointer-events-none fixed z-[90] flex h-7 max-w-[220px] items-center gap-2 rounded-md bg-surface px-2.5 text-[12.5px] text-fg shadow-lg ring-1 ring-line"
-            style={{ left: drag.x + 10, top: drag.y - 14 }}
-          >
-            <GripVertical className="size-3.5 shrink-0 text-fg-4" />
-            <span className="truncate">{drag.label}</span>
-          </div>,
-          document.body,
-        )}
+      <DragGhost drag={drag} />
     </SidebarDragCtx.Provider>
   );
 }
 
-/** The line where a drag would land, laid over the sidebar. */
-function DropLine({ rootRef, target }: { rootRef: RefObject<HTMLDivElement | null>; target: EditTarget | null }) {
+/**
+ * The line where a drag would land, laid over the sidebar (in edit mode too); it glides from
+ * place to place. An empty section that shows a drop slot (`data-edit-empty`) lights the slot instead.
+ */
+export function DropLine({ rootRef, target }: { rootRef: RefObject<HTMLDivElement | null>; target: EditTarget | null }) {
+  const reduce = useReducedMotion();
   const [top, setTop] = useState<number | null>(null);
   const key = useMemo(() => (target ? JSON.stringify(target) : ""), [target]);
   useLayoutEffect(() => {
@@ -194,11 +188,20 @@ function DropLine({ rootRef, target }: { rootRef: RefObject<HTMLDivElement | nul
     if (el) return at(el.getBoundingClientRect().top - 1);
     const last = rows[rows.length - 1];
     if (last) return at(last.getBoundingClientRect().bottom);
+    if (sec.querySelector("[data-edit-empty]")) return setTop(null);
     const head = sec.querySelector<HTMLElement>("[data-edit-head]") ?? sec;
     at(head.getBoundingClientRect().bottom + 2);
     // `key` stands for the target's value: a new object for the same place draws nothing new.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, rootRef]);
   if (top === null) return null;
-  return <div aria-hidden className="pointer-events-none absolute inset-x-4 z-20 h-0.5 rounded-full bg-tone-blue-solid" style={{ top: top - 1 }} />;
+  return (
+    <motion.div
+      aria-hidden
+      initial={{ top: top - 1, opacity: 0 }}
+      animate={{ top: top - 1, opacity: 1 }}
+      transition={reduce ? { duration: 0 } : { top: springs.glide, opacity: { duration: dur.fast } }}
+      className="pointer-events-none absolute inset-x-4 z-20 h-0.5 rounded-full bg-tone-blue-solid"
+    />
+  );
 }

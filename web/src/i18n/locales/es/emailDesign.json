@@ -1,0 +1,85 @@
+{
+  "title": "Diseño del correo",
+  "description": "Cómo se ve cada correo a los clientes: respuestas, respuestas automáticas y la encuesta de satisfacción. Cada marca tiene su propio diseño.",
+  "brand": "Marca",
+  "docs": "Guía de plantillas",
+  "tabs": {
+    "layout": "Estructura",
+    "csat": "Correo de satisfacción",
+    "variables": "Variables"
+  },
+  "readOnly": "Solo los administradores pueden cambiar el diseño del correo.",
+  "default": "Predeterminado",
+  "customized": "Personalizado",
+  "reset": "Restablecer",
+  "resetLayoutConfirm": "La estructura vuelve a ser sencilla, sin logotipo ni pie, y cita el mensaje anterior.",
+  "resetCsatConfirm": "El correo de satisfacción vuelve al texto incluido.",
+  "resetTitle": "¿Restablecer al predeterminado?",
+  "resetDone": "Volvió al predeterminado",
+  "saved": "Diseño del correo guardado",
+  "layout": {
+    "mode": "Estructura",
+    "modeHint": "Simple cubre a la mayoría de los equipos. El HTML personalizado te da todo el cuerpo del correo.",
+    "simple": "Simple",
+    "custom": "HTML personalizado",
+    "style": "Estilo",
+    "plain": "Sencillo",
+    "plainHint": "Se lee como un correo de una persona. Lo mejor para las respuestas.",
+    "branded": "Con marca",
+    "brandedHint": "Una tarjeta con tu logotipo y una línea de acento.",
+    "logo": "Mostrar el logotipo",
+    "logoHint": "El logotipo de la marca al inicio de cada correo.",
+    "noLogo": "Esta marca todavía no tiene logotipo.",
+    "addLogo": "Añadir uno",
+    "accent": "Color de acento",
+    "accentHint": "Enlaces, la línea de acento de la marca y los botones de la encuesta.",
+    "useBrand": "Color de la marca",
+    "accentInvalid": "Usa un color como #2563EB.",
+    "font": "Fuente",
+    "fonts": {
+      "system": "Sistema",
+      "sans": "Helvetica",
+      "serif": "Georgia"
+    },
+    "footer": "Pie",
+    "footerHint": "Texto pequeño bajo cada correo, como tu dirección o un enlace al centro de ayuda. Acepta variables.",
+    "footerPlaceholder": "Acme Inc, Av. Principal 1, Ciudad de México",
+    "customHtml": "HTML de la estructura",
+    "customHint": "Todo el cuerpo del correo. opendesk pone el mensaje donde escribas {{content}}, la firma en {{signature}} y los mensajes anteriores en {{history}}.",
+    "history": "Mensajes anteriores",
+    "historyHint": "Citados bajo cada respuesta para que los clientes conserven el contexto. Las notas nunca se incluyen.",
+    "historyNone": "No citar",
+    "historyLast": "El mensaje anterior",
+    "historyAll": "Toda la conversación",
+    "historyHeader": "Línea de cita",
+    "historyHeaderHint": "Sobre cada mensaje citado. Usa {{author}}, {{email}} (la dirección del remitente) y {{date}}."
+  },
+  "csat": {
+    "off": "Las encuestas de satisfacción están desactivadas, así que este correo todavía no se envía.",
+    "turnOn": "Activarlas",
+    "subject": "Asunto",
+    "subjectHint": "Se añade el número de ticket cuando falta, para que las respuestas queden en el mismo hilo.",
+    "body": "Correo",
+    "bodyHint": "Debe incluir {{survey}}, donde van los cinco botones de valoración."
+  },
+  "variables": {
+    "title": "Variables",
+    "description": "Haz clic en una para copiar su código. Cada plantilla acepta todas las variables. Un valor que no aplica queda vacío.",
+    "logic": "Lógica",
+    "logicHint": "Muestra partes solo cuando aplican, elige según el valor y repite por cada elemento de una lista. Haz clic en un ejemplo para copiarlo.",
+    "helpers": "Ayudantes",
+    "helpersHint": "Los filtros cambian un valor: añádelos después de un |, uno tras otro.",
+    "copy": "Copiar",
+    "groups": {
+      "text": "Texto",
+      "lists": "Listas",
+      "numbers": "Números",
+      "dates": "Fechas"
+    }
+  },
+  "loadError": {
+    "title": "El diseño del correo no cargó",
+    "description": "Algo salió mal al cargar los correos de esta marca. Inténtalo de nuevo en un momento.",
+    "retry": "Reintentar"
+  }
+}

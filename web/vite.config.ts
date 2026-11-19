@@ -2,12 +2,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import { appIndex } from "./indexer/plugin.ts";
 
 // The app is served from "/" both by Cloudflare Pages and by the self-hosted Go
 // binary, so every asset path is absolute from the root.
 export default defineConfig({
   base: "/",
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), appIndex()],
   resolve: { alias: { "@": path.resolve(import.meta.dirname, "./src") } },
   build: {
     outDir: "dist",

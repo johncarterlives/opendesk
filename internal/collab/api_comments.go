@@ -117,6 +117,9 @@ func (s *service) registerCommentRoutes(api huma.API) {
 				if err := s.mentionPeople(ctx, tx, p, t, c.ID, body, added); err != nil {
 					return err
 				}
+				if err := follow(ctx, tx, p.WorkspaceID, t.ID, added); err != nil {
+					return err
+				}
 				return s.publishThread(ctx, tx, p.WorkspaceID, t, before)
 			})
 			if err != nil {
@@ -199,6 +202,13 @@ func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRo
 		}
 		if err := s.mentionPeople(ctx, tx, p, t, cid, body, mentions); err != nil {
 			return err
+		}
+		// A person's comment answers the teammates who commented before (Mentions); an AI
+		// note is the key's, not its creator's answer, so it brings no one into Mentions.
+		if ai == nil {
+			if err := commentFollowers(ctx, tx, p.WorkspaceID, t.ID, cid, p.UserID, mentions); err != nil {
+				return err
+			}
 		}
 		return s.publishThread(ctx, tx, p.WorkspaceID, t, before)
 	})

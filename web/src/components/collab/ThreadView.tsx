@@ -37,6 +37,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
@@ -424,6 +425,28 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
     },
   });
 
+  // In or out of the member's own Mentions box, and nobody else's (contracts/collab.md "Mentions").
+  const follow = useMutation({
+    mutationFn: (on: boolean) => (on ? api.collab.threads.follow(threadId) : api.collab.threads.unfollow(threadId)),
+    onMutate: (on) => {
+      const prev = qc.getQueryData<MailThreadDetail>(qk.mailThread(threadId));
+      if (prev) qc.setQueryData<MailThreadDetail>(qk.mailThread(threadId), { ...prev, following: on });
+      return { prev };
+    },
+    onError: (e, _on, ctx) => {
+      if (ctx?.prev) qc.setQueryData(qk.mailThread(threadId), ctx.prev);
+      toast.error(e);
+    },
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: qk.mailCounts });
+      void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+    },
+  });
+  const setFollowing = (on: boolean) =>
+    follow.mutate(on, {
+      onSuccess: () => (on ? toast.success(t("toast.followed")) : toast.undo(t("toast.unfollowed"), () => follow.mutate(true), t("toast.undo"))),
+    });
+
   const move = (m: MoveTarget) => onAction(m.action, { folderId: m.folderId, category: m.category, label: m.label });
   // Shared with the list's sync button, which spins while it runs (GH#522).
   const syncNow = useSyncNow(accounts?.find((a) => a.id === detail?.account.id));
@@ -660,6 +683,9 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                   <MenuSeparator />
                 </>
               )}
+              <MenuItem icon={<AtSign />} onSelect={() => setFollowing(!detail.following)}>
+                {detail.following ? t("action.unfollow") : t("action.follow")}
+              </MenuItem>
               <MenuItem
                 icon={<Link2 />}
                 onSelect={() => {
@@ -746,6 +772,20 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                   <UserPlus className="size-3 text-fg-4" />
                   {t("thread.assignedTo", { who: th.assignees.map((a) => a.name).join(", ") })}
                 </span>
+              )}
+              {detail.following && (
+                <Tooltip content={t("action.unfollow")}>
+                  <button
+                    type="button"
+                    onClick={() => setFollowing(false)}
+                    aria-label={t("action.unfollow")}
+                    className="group inline-flex h-[18px] items-center gap-1 rounded-sm pl-1 pr-1 text-fg-3 outline-none hover:bg-hover hover:text-fg focus-visible:shadow-[0_0_0_2px_var(--focus)]"
+                  >
+                    <AtSign className="size-3 text-fg-4" />
+                    {t("thread.following")}
+                    <X className="size-3 text-fg-4 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none" />
+                  </button>
+                </Tooltip>
               )}
             </div>
           </div>

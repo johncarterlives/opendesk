@@ -133,7 +133,10 @@ describe("agent language", () => {
     resetLocale();
   });
 
-  it("selects French, German, Czech and Chinese variants and falls back to English for other languages", () => {
+  it("selects Spanish, French, German, Czech and Chinese variants and falls back to English for other languages", () => {
+    expect(pickAgentLocale(["es-MX", "en-US"])).toBe("es");
+    expect(pickAgentLocale(["es-419"])).toBe("es");
+    expect(pickAgentLocale(["es"])).toBe("es");
     expect(pickAgentLocale(["fr-FR", "en-US"])).toBe("fr");
     expect(pickAgentLocale(["fr-CA"])).toBe("fr");
     expect(pickAgentLocale(["de-DE"])).toBe("de");
@@ -182,6 +185,8 @@ describe("inSentence", () => {
   afterEach(() => resetLocale());
 
   it("lowercases a label inside a sentence, except in German, whose nouns keep their capital, and Chinese, which has no case", async () => {
+    await i18n.changeLanguage("es");
+    expect(inSentence("Tickets")).toBe("tickets");
     await i18n.changeLanguage("fr");
     expect(inSentence("Contacts")).toBe("contacts");
     await i18n.changeLanguage("cs");

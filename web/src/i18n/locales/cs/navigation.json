@@ -192,7 +192,12 @@
     "aiPlayground": "Zkušební prostředí AI agenta",
     "importHistory": "Importovat historii ze Zendesk, Help Scout, FreeScout, Freshdesk, Intercom, Front nebo CSV",
     "pages": "Stránky",
-    "newPage": "Nová stránka"
+    "newPage": "Nová stránka",
+    "sidebarPlace": "Postranní panel",
+    "docs": "Dokumentace",
+    "searchSettings": "Hledat v nastavení",
+    "settingsNoResults": "Žádné nastavení neodpovídá",
+    "settingsNoResultsHelp": "Zkuste jiná slova, nebo hledejte v dokumentaci z nabídky příkazů."
   },
   "shortcuts": {
     "general": "Obecné",

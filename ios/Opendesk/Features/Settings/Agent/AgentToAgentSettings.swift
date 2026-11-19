@@ -428,9 +428,9 @@ private struct PeerAudiencePicker: View {
             .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search people and teams")
             .accountTitle("Who may ask")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
+                    SheetButton(.confirm, "Done") {
                         let known = Dictionary(uniqueKeysWithValues: settings.users.map { ($0.id, $0) })
                         let pickedUsers = users.sorted().map { id -> PeerPerson in
                             if let member = env.directory.member(id) {

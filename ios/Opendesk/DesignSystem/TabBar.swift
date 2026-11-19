@@ -58,11 +58,13 @@ struct TabItem: Identifiable {
 
 /// The app's own tab bar on Liquid Glass: a compact capsule floating off the
 /// bottom edge, icon-only and monochrome, the active tab on a soft tile that
-/// slides between items, and Ollie's round button beside it.
+/// slides between items, and Ollie's round button beside it. Standing up
+/// (`.vertical`) it runs down a side column instead, Ollie's button under it.
 struct ODTabBar: View {
     /// The room the bar takes above the bottom safe area, for a column it floats over.
     static let height: CGFloat = 60
 
+    var axis: Axis = .horizontal
     let items: [TabItem]
     @Binding var selection: AppTab
     var ollie: (() -> Void)?
@@ -77,9 +79,10 @@ struct ODTabBar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        let outer = stack(spacing: 10), tabs = stack(spacing: 2)
         GlassEffectContainer(spacing: 14) {
-            HStack(spacing: 10) {
-                HStack(spacing: 2) {
+            outer {
+                tabs {
                     ForEach(items) { item in button(item) }
                 }
                 .padding(5)
@@ -99,9 +102,15 @@ struct ODTabBar: View {
                 }
             }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, vertical ? 0 : 18)
         .padding(.bottom, 4)
         .sensoryFeedback(.selection, trigger: selection)
+    }
+
+    private var vertical: Bool { axis == .vertical }
+
+    private func stack(spacing: CGFloat) -> AnyLayout {
+        vertical ? AnyLayout(VStackLayout(spacing: spacing)) : AnyLayout(HStackLayout(spacing: spacing))
     }
 
     private func button(_ item: TabItem) -> some View {
@@ -122,8 +131,8 @@ struct ODTabBar: View {
                 .font(.system(size: 18, weight: selected ? .medium : .regular))
                 .foregroundStyle(selected ? Theme.fg : Theme.fg3)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(maxWidth: .infinity)
-                .frame(height: 46)
+                .frame(maxWidth: vertical ? 46 : .infinity)
+                .frame(height: vertical ? 54 : 46)
                 .background {
                     if selected {
                         Capsule().fill(Theme.fg.opacity(0.08)).matchedGeometryEffect(id: "active", in: activeNS)
@@ -141,7 +150,7 @@ struct ODTabBar: View {
             },
             including: longPress == nil ? .subviews : .all
         )
-        .frame(width: 74)
+        .frame(width: vertical ? 46 : 74)
         .accessibilityLabel(item.title)
         .accessibilityValue(item.badge > 0 ? "\(item.badge) unread" : "")
         .accessibilityAddTraits(selected ? .isSelected : [])

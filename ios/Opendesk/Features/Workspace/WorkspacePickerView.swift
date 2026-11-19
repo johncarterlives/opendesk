@@ -53,7 +53,7 @@ struct WorkspacePickerView: View {
                         .navigationTitle("New workspace")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
-                            ToolbarItem(placement: .cancellationAction) { Button("Cancel") { creating = false } }
+                            ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { creating = false } }
                         }
                 }
                 .presentationDetents([.medium])

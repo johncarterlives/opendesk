@@ -36,12 +36,11 @@ struct WikiPublishSheet: View {
             .navigationTitle("Publish to help center")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button(published == nil ? "Cancel" : "Close") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, published == nil ? "Cancel" : "Close") { dismiss() } }
                 if published == nil {
                     ToolbarItem(placement: .confirmationAction) {
-                        Button { Task { await publish() } } label: {
-                            if busy { ProgressView().controlSize(.small) } else { Text("Make a draft").fontWeight(.semibold) }
-                        }
+                        SheetButton(.confirm, "Make a draft", busy: busy) { Task { await publish() } }
+                        .fontWeight(.semibold)
                         .disabled(busy || title.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                 }
@@ -176,7 +175,7 @@ struct WikiWriteSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    SheetButton(.cancel, "Cancel") {
                         running?.cancel()
                         dismiss()
                     }

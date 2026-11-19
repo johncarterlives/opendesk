@@ -1,0 +1,244 @@
+{
+  "title": "Base de conocimiento",
+  "newArticle": "Nuevo artículo",
+  "writeArticle": "Escribir un artículo",
+  "viewHelpCenter": "Ver el centro de ayuda",
+  "helpCenterSettings": "Ajustes del centro de ayuda",
+  "collections": "Colecciones",
+  "newCollection": "Nueva colección",
+  "allArticles": "Todos los artículos",
+  "allArticlesHint": "Cada artículo de la base de conocimiento, publicado o no.",
+  "noDescription": "Todavía no hay descripción.",
+  "noCollection": "Sin colección",
+  "untitled": "Sin título",
+  "noExcerpt": "Sin extracto",
+  "searchArticles": "Buscar artículos",
+  "clearSearch": "Borrar la búsqueda",
+  "cancel": "Cancelar",
+  "retry": "Reintentar",
+  "articleCount_one": "{{count}} artículo",
+  "articleCount_other": "{{count}} artículos",
+  "articleCount_many": "{{count}} de artículos",
+  "draftCount_one": "{{count}} borrador",
+  "draftCount_other": "{{count}} borradores",
+  "draftCount_many": "{{count}} de borradores",
+  "viewCount_one": "{{n}} vista",
+  "viewCount_other": "{{n}} vistas",
+  "viewCount_many": "{{n}} de vistas",
+  "stat": {
+    "articles": "Artículos",
+    "inCollections_one": "en {{count}} colección",
+    "inCollections_other": "en {{count}} colecciones",
+    "inCollections_many": "en {{count}} de colecciones",
+    "published": "Publicados",
+    "live": "en vivo en el centro de ayuda",
+    "drafts": "Borradores",
+    "notLive": "no visibles para los clientes",
+    "views": "Vistas",
+    "top": "más leído: {{title}}",
+    "noViews": "todavía sin vistas"
+  },
+  "filter": {
+    "all": "Todos",
+    "published": "Publicados",
+    "drafts": "Borradores"
+  },
+  "status": {
+    "published": "Publicado",
+    "draft": "Borrador"
+  },
+  "col": {
+    "title": "Artículo",
+    "collection": "Colección",
+    "status": "Estado",
+    "views": "Vistas",
+    "author": "Autor",
+    "updated": "Actualizado"
+  },
+  "empty": {
+    "title": "Todavía no hay artículos",
+    "description": "Escribe respuestas una vez y compártelas en las respuestas, el widget de chat y tu centro de ayuda.",
+    "noDrafts": "No hay borradores",
+    "noMatch": "Ningún artículo coincide",
+    "noMatchHint": "Prueba con otras palabras, o borra los filtros.",
+    "noMatchFor": "Nada coincide con «{{q}}».",
+    "noDraftsHint": "Cada artículo de aquí está publicado. Los borradores aparecen mientras los escribes.",
+    "collectionTitle": "Esta colección está vacía"
+  },
+  "error": {
+    "title": "No se pudieron cargar los artículos"
+  },
+  "collection": {
+    "options": "Opciones de {{name}}",
+    "rename": "Renombrar",
+    "edit": "Editar colección",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar {{name}}?",
+    "deleteBody_one": "Su {{count}} artículo se queda en la base de conocimiento sin colección.",
+    "deleteBody_other": "Sus {{count}} artículos se quedan en la base de conocimiento sin colección.",
+    "deleteBody_many": "Sus {{count}} de artículos se quedan en la base de conocimiento sin colección.",
+    "deleteEmpty": "Esta colección está vacía.",
+    "deleteConfirm": "Eliminar colección",
+    "created": "Colección creada",
+    "renamed": "Colección renombrada",
+    "create": "Crear",
+    "save": "Guardar",
+    "name": "Nombre",
+    "namePlaceholder": "Primeros pasos",
+    "nameRequired": "Añade un nombre.",
+    "description": "Descripción",
+    "descriptionHint": "Se muestra bajo el título de la colección en tu centro de ayuda.",
+    "saved": "Colección guardada"
+  },
+  "toast": {
+    "published": "Artículo publicado",
+    "unpublished": "Artículo despublicado",
+    "saved": "Guardado",
+    "deleted": "Artículo eliminado"
+  },
+  "details": {
+    "title": "Detalles",
+    "status": "Estado",
+    "collection": "Colección",
+    "author": "Autor",
+    "views": "Vistas",
+    "published": "Publicado",
+    "updated": "Actualizado",
+    "url": "URL",
+    "urlHint": "La dirección de este artículo en tu centro de ayuda. Si la cambias, los enlaces antiguos llegan aquí."
+  },
+  "editor": {
+    "notFound": "No se encontró el artículo",
+    "uploadFailed": "No se pudo subir la imagen",
+    "moveTo": "Mover a la colección",
+    "unsaved": "Cambios sin guardar",
+    "savedAgo": "Guardado {{when}}",
+    "openInHelp": "Abrir en el centro de ayuda",
+    "view": "Ver",
+    "saveLiveHint": "Guardar cambios en el artículo en vivo",
+    "saveDraftHint": "Guardar sin publicar",
+    "save": "Guardar",
+    "saveDraft": "Guardar borrador",
+    "publish": "Publicar",
+    "more": "Más acciones",
+    "unpublish": "Despublicar",
+    "deletePublished": "Desaparece de tu centro de ayuda de inmediato.",
+    "deleteDraft": "Este borrador se eliminará para siempre.",
+    "deleteTitle": "¿Eliminar {{title}}?",
+    "deleteArticle": "Eliminar artículo",
+    "saveFirst": "Guarda primero para eliminar",
+    "titlePlaceholder": "Título del artículo",
+    "excerptPlaceholder": "Un resumen de una línea para los resultados de búsqueda y el centro de ayuda",
+    "uploading": "Subiendo imagen",
+    "bodyPlaceholder": "Empieza a escribir. Usa títulos para que se pueda leer por encima.",
+    "advanced": "Avanzado",
+    "leaveTitle": "¿Salir sin guardar?",
+    "leaveBody": "Tus cambios en este artículo no se han guardado.",
+    "keepEditing": "Seguir editando",
+    "discard": "Descartar cambios",
+    "saving": "Guardando"
+  },
+  "clearFilters": "Borrar filtros",
+  "tips": {
+    "spelling": "Revisa la ortografía",
+    "fewerWords": "Prueba con menos palabras o más generales",
+    "collections": "Agrupa los artículos en colecciones",
+    "publish": "Publica para mostrarlo en tu centro de ayuda"
+  },
+  "brand": {
+    "label": "Marca",
+    "all": "Todas las marcas",
+    "allHint": "Compartido",
+    "search": "Buscar marcas",
+    "filter": "Marca: {{value}}",
+    "filterHint": "Sus propios artículos y los compartidos",
+    "collectionHint": "Qué centros de ayuda muestran esta colección. «Todas las marcas» la comparte con cada marca.",
+    "articleHint": "Qué centros de ayuda muestran este artículo.",
+    "fromCollection": "Sigue a su colección, {{name}}.",
+    "only": "Solo en el centro de ayuda de {{name}}"
+  },
+  "switch": {
+    "articles": "Artículos",
+    "changelog": "Registro de cambios"
+  },
+  "changelog": {
+    "new": "Nueva actualización",
+    "view": "Ver el registro de cambios",
+    "all": "Todas las actualizaciones",
+    "search": "Buscar actualizaciones",
+    "loadMore": "Cargar más",
+    "undated": "Sin fecha",
+    "error": "No se pudieron cargar las actualizaciones",
+    "status": {
+      "scheduled": "Programada"
+    },
+    "filter": {
+      "allCategories": "Todas las categorías",
+      "scheduled": "Programadas"
+    },
+    "col": {
+      "update": "Actualización",
+      "categories": "Categorías",
+      "date": "Fecha"
+    },
+    "empty": {
+      "title": "Todavía no hay actualizaciones",
+      "description": "Cuéntales a los clientes qué hay de nuevo, qué mejoró y qué se corrigió. Las actualizaciones se muestran en el registro de cambios del centro de ayuda y en su feed.",
+      "noMatch": "Ninguna actualización coincide",
+      "noneHere": "Nada aquí",
+      "noneHereHint": "Ninguna actualización coincide con estos filtros."
+    },
+    "tips": {
+      "categories": "Etiqueta las actualizaciones como Nuevo, Mejorado o Corregido",
+      "schedule": "Elige una fecha posterior para programar una",
+      "api": "Publícalas desde tus herramientas de lanzamiento con la API"
+    },
+    "toast": {
+      "published": "Actualización publicada",
+      "scheduled": "Actualización programada para el {{date}}",
+      "unpublished": "Actualización despublicada",
+      "deleted": "Actualización eliminada"
+    },
+    "editor": {
+      "notFound": "No se encontró la actualización",
+      "openInHelp": "Abrir en el centro de ayuda",
+      "saveLiveHint": "Guardar cambios en la actualización publicada",
+      "schedule": "Programar",
+      "deletePublished": "Desaparece de tu registro de cambios y de su feed de inmediato.",
+      "delete": "Eliminar actualización",
+      "titlePlaceholder": "¿Qué cambió?",
+      "excerptPlaceholder": "Un resumen de una línea para el registro de cambios y su feed",
+      "bodyPlaceholder": "Describe la actualización. Las capturas y las listas cortas ayudan a ver qué hay de nuevo.",
+      "body": "Cuerpo de la actualización",
+      "leaveBody": "Tus cambios en esta actualización no se han guardado."
+    },
+    "details": {
+      "date": "Fecha",
+      "time": "Hora",
+      "whenPublished": "Al publicar",
+      "dateEmptyHint": "Se pone en el momento en que publicas.",
+      "dateHint": "Los lectores ven esta fecha en la actualización.",
+      "scheduledFor": "Programada para el {{date}}. Se queda oculta hasta entonces.",
+      "willSchedule": "Al publicar se programa para el {{date}}.",
+      "categories": "Categorías",
+      "brandHint": "Qué centros de ayuda muestran esta actualización.",
+      "urlHint": "La dirección de esta actualización en tu centro de ayuda. Cambiarla rompe los enlaces antiguos."
+    },
+    "categories": {
+      "remove": "Quitar {{name}}",
+      "create": "Añadir",
+      "search": "Buscar categorías",
+      "none": "Todavía no hay categorías",
+      "add": "Añadir",
+      "addFirst": "Añadir una categoría",
+      "empty": "Sin categorías",
+      "hint": "Hasta {{max}}, como Nuevo, Mejorado o Corregido.",
+      "problem": {
+        "empty": "Escribe un nombre.",
+        "tooLong": "Que tenga como máximo {{length}} caracteres.",
+        "duplicate": "Esa categoría ya está aquí.",
+        "full": "Hasta {{max}} categorías."
+      }
+    }
+  }
+}

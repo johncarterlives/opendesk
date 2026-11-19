@@ -137,11 +137,10 @@ struct AgentTestEditor: View {
             .background(Theme.chrome)
             .accountTitle(draft.test == nil ? "New test" : "Edit test")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button { Task { await save() } } label: {
-                        if busy { ProgressView() } else { Text(draft.test == nil ? "Create" : "Save").fontWeight(.semibold) }
-                    }
+                    SheetButton(.confirm, draft.test == nil ? "Create" : "Save", busy: busy) { Task { await save() } }
+                        .fontWeight(.semibold)
                     .disabled(busy)
                 }
             }
@@ -460,11 +459,10 @@ struct AgentImproveSheet: View {
             .background(Theme.chrome)
             .accountTitle("Improve this answer")
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button { Task { await save() } } label: {
-                        if busy { ProgressView() } else { Text("Save").fontWeight(.semibold) }
-                    }
+                    SheetButton(.confirm, "Save", busy: busy) { Task { await save() } }
+                        .fontWeight(.semibold)
                     .disabled(busy)
                 }
             }

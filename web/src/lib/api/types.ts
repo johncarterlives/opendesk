@@ -2358,8 +2358,17 @@ export type AutoRecharge = {
   failure: { code: AutoRechargeFailure; at: string } | null;
 };
 export type AutoRechargePatch = Partial<Pick<AutoRecharge, "enabled" | "threshold_usd" | "amount_usd" | "monthly_limit_usd">>;
+/** POST /v1/ai/app-help (contracts/ai.md "Asking about the app"). */
+export type AppHelpInput = {
+  question: string;
+  /** The reader's language, a BCP 47 tag. */
+  language?: string;
+  /** 1 to 8 excerpts: places in the app and docs sections, `title` the path to them. */
+  sources: { title: string; url?: string; text?: string }[];
+};
+
 export type AIFeature =
-  | "summarize" | "rewrite" | "translate" | "triage" | "decide" | "answer_check" | "copilot" | "draft_reply" | "answer" | "answer_email" | "playground" | "kb_draft" | "assistant" | "assistant_peer" | "procedure" | "wiki_write";
+  | "summarize" | "rewrite" | "translate" | "triage" | "decide" | "answer_check" | "copilot" | "draft_reply" | "answer" | "answer_email" | "playground" | "kb_draft" | "assistant" | "assistant_peer" | "procedure" | "wiki_write" | "app_help";
 /**
  * GET /v1/billing/usage (contracts/billing.md). `from`/`to` are RFC 3339; `to` is exclusive.
  * Every usd value is US dollars, a number with up to 6 decimals.
@@ -3499,6 +3508,8 @@ export type MailThreadDetail = {
   ai_skips?: MailAISkip[];
   /** AI drafts discarded, replaced or abandoned and gone, oldest first (contracts/collab.md "AI draft outcomes"). */
   unused_ai_drafts?: (AIDraftRef & { outcome_at: string })[];
+  /** You follow it: it is in your Mentions box (contracts/collab.md "Mentions"). */
+  following?: boolean;
 };
 
 /** One address across the conversations you see (contracts/collab.md "People"). */
@@ -3572,7 +3583,7 @@ export type SidebarPrefs = {
 };
 
 /** A row of a member's own section: a Space row of this workspace. */
-export type SidebarItem = Omit<SpaceItem, "workspace_id" | "kind"> & { kind: Exclude<SpaceItemKind, "section" | "everywhere"> };
+export type SidebarItem = Omit<SpaceItem, "workspace_id" | "kind" | "rows" | "hidden"> & { kind: Exclude<SpaceItemKind, "section" | "everywhere"> };
 
 /** One of a member's own sidebar sections: at most 20, 60 rows each, 300 in all. */
 export type SidebarSection = { id: string; title: string; collapsed: boolean; icon?: string; items: SidebarItem[] };
@@ -3580,8 +3591,11 @@ export type SidebarSection = { id: string; title: string; collapsed: boolean; ic
 /** unread / total / none for mail rows; count / awaiting / urgent / overdue / none for ticket rows, and open for team rows. */
 export type SidebarBadge = "unread" | "total" | "count" | "awaiting" | "urgent" | "overdue" | "open" | "none";
 
-/** ai_review: Ready for review, conversations in an inbox with an AI draft waiting for a person. */
-export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned" | "needs_action" | "snoozed" | "ai_review";
+/**
+ * ai_review: Ready for review, conversations in an inbox with an AI draft waiting for a person.
+ * mentions: the conversations you follow, mentioned in a comment or answered (contracts/collab.md "Mentions").
+ */
+export type MailBox = "inbox" | "unread" | "starred" | "sent" | "drafts" | "archive" | "trash" | "spam" | "all" | "shared" | "assigned" | "mentions" | "needs_action" | "snoozed" | "ai_review";
 
 export type MailThreadAction =
   | "read"
@@ -3602,8 +3616,8 @@ export type MailThreadAction =
   | "snooze";
 
 export type MailCounts = {
-  /** Unread conversations; assigned, shared, needs_action, snoozed and ai_review: open ones; spam: unread ones in spam. */
-  boxes: { inbox: number; unread: number; shared: number; assigned: number; drafts: number; needs_action: number; snoozed?: number; ai_review?: number; spam?: number };
+  /** Unread conversations; assigned, shared, needs_action, snoozed and ai_review: open ones; spam: unread ones in spam; mentions: every one you follow and see. */
+  boxes: { inbox: number; unread: number; shared: number; assigned: number; mentions?: number; drafts: number; needs_action: number; snoozed?: number; ai_review?: number; spam?: number };
   accounts: Record<string, number>;
   folders: Record<string, number>;
   /** By account with aliases, then address (its own included): unread conversations in its inbox with it on a message; missing = 0. */
@@ -3657,7 +3671,7 @@ export type SpaceItem = {
   /** A workspace the user is a member of; "" for an everywhere row (it spans them all). */
   workspace_id: string;
   kind: SpaceItemKind;
-  /** section: favorites | inbox | mail | teams | views | workspace; ticket_folder: a folder id; box: inbox | shared | assigned; page: contacts | knowledge | reports; everywhere: mine | mail; else a uuid. */
+  /** section: favorites | inbox | mail | teams | views | workspace; ticket_folder: a folder id; box: inbox | shared | assigned | mentions; page: contacts | knowledge | reports; everywhere: mine | mail; else a uuid. */
   id: string;
   /** The person's own label for the row, 1..64 characters. */
   name?: string;
@@ -3665,6 +3679,14 @@ export type SpaceItem = {
   badge?: SidebarBadge;
   /** One emoji in place of the row's own icon. */
   icon?: string;
+  /**
+   * A whole section only (kind "section"), contracts/spaces.md "Arranging a whole section": its rows
+   * top to bottom as row keys (`team:<id>`, `box:assigned`), the rest following in their usual
+   * order; in Favorites, rows the Space adds before the person's own favorites. At most 300.
+   */
+  rows?: string[];
+  /** A whole section only: the row keys it does not show in this Space. At most 300. */
+  hidden?: string[];
 };
 
 export type SpaceSection = {

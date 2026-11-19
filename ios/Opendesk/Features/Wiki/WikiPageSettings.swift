@@ -37,7 +37,7 @@ struct WikiPageSettingsSheet: View {
             .navigationTitle("Page settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() }.fontWeight(.semibold) }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() }.fontWeight(.semibold) }
             }
         }
     }

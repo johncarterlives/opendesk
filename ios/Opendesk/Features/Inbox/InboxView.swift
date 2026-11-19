@@ -58,6 +58,7 @@ struct InboxRootView: View {
 struct InboxListView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(InboxChatAlerts.self) private var alerts: InboxChatAlerts?
+    @Environment(\.sideColumn) private var column
     @State private var query = ""
     @FocusState private var searchFocused: Bool
     @State private var showScopes = false
@@ -127,6 +128,10 @@ struct InboxListView: View {
 
     private var urgentOnly: Bool { inbox.filters.priorities == [.urgent] }
 
+    private func bulkBar(_ axis: Axis) -> some View {
+        InboxBulkBar(axis: axis, ids: inbox.tickets.map(\.id).filter(selected.contains), allMatching: allMatching) { endSelecting() }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             if selecting {
@@ -169,10 +174,15 @@ struct InboxListView: View {
         }
         .background(Theme.chrome.ignoresSafeArea())
         .overlay(alignment: .bottom) {
-            if selecting {
-                InboxBulkBar(ids: inbox.tickets.map(\.id).filter(selected.contains), allMatching: allMatching) { endSelecting() }
+            if selecting, column == nil {
+                bulkBar(.horizontal)
                     .padding(.bottom, 8)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .sideColumnFoot {
+            if selecting {
+                bulkBar(.vertical).transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .motion(Motion.smooth, value: selecting)

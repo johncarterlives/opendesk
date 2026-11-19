@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The floating bar over the thread: back, who and which ticket, who else is here,
-/// the More menu and Solve (or Reopen).
+/// the More menu and Solve (or Reopen). Beside a side column (`SideColumn`) the
+/// buttons stand in it and who and which ticket has the row.
 struct TicketTopBar<More: View>: View {
     let ticket: Ticket?
     let viewers: [PresenceViewer]
@@ -13,11 +14,12 @@ struct TicketTopBar<More: View>: View {
     let onReopen: () -> Void
     @ViewBuilder var more: () -> More
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.sideColumn) private var column
 
     var body: some View {
         GlassEffectContainer(spacing: 10) {
             HStack(spacing: 8) {
-                GlassCircleButton(symbol: "chevron.left", label: "Back", action: onBack)
+                if column == nil { back }
 
                 Button(action: onDetails) {
                     HStack(spacing: 9) {
@@ -54,39 +56,51 @@ struct TicketTopBar<More: View>: View {
                 .glassEffect(.regular.interactive(), in: Capsule())
                 .accessibilityLabel(ticket.map { "\($0.contactName), ticket \($0.number). Details" } ?? "Details")
 
-                Menu {
-                    more()
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(Theme.fg)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Circle())
-                }
-                .glassEffect(.regular.interactive(), in: Circle())
-                .accessibilityLabel("More")
-
-                if canWrite, let ticket {
-                    if ticket.status.isDone {
-                        Button(action: onReopen) {
-                            Image(systemName: "arrow.uturn.backward")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(Theme.fg)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Circle())
-                        }
-                        .buttonStyle(.plain)
-                        .glassEffect(.regular.interactive(), in: Circle())
-                        .accessibilityLabel("Reopen")
-                    } else {
-                        // Named after what finishing sets here: Solve, or Close where solved reads Closed.
-                        HeaderPrimaryButton(symbol: "checkmark", label: env.statusDisplay.finishTitle, action: onSolve)
-                    }
-                }
+                if column == nil { actions }
             }
         }
         .padding(.horizontal, 12)
         .padding(.bottom, 6)
+        .sideColumnActions {
+            back
+            actions
+        }
+    }
+
+    private var back: some View {
+        GlassCircleButton(symbol: "chevron.left", label: "Back", action: onBack)
+    }
+
+    @ViewBuilder private var actions: some View {
+        Menu {
+            more()
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(Theme.fg)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
+        }
+        .glassEffect(.regular.interactive(), in: Circle())
+        .accessibilityLabel("More")
+
+        if canWrite, let ticket {
+            if ticket.status.isDone {
+                Button(action: onReopen) {
+                    Image(systemName: "arrow.uturn.backward")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(Theme.fg)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular.interactive(), in: Circle())
+                .accessibilityLabel("Reopen")
+            } else {
+                // Named after what finishing sets here: Solve, or Close where solved reads Closed.
+                HeaderPrimaryButton(symbol: "checkmark", label: env.statusDisplay.finishTitle, action: onSolve)
+            }
+        }
     }
 
     private func channelLine(_ ticket: Ticket) -> String {

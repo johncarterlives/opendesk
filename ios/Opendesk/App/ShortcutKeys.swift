@@ -74,7 +74,7 @@ private struct ShortcutKeys: ViewModifier {
                     .navigationTitle("Keyboard shortcuts")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        ToolbarItem(placement: .confirmationAction) { Button("Done") { showHelp = false } }
+                        ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { showHelp = false } }
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Change") {
                                 showHelp = false

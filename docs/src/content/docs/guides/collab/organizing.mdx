@@ -1,0 +1,65 @@
+---
+title: Organizing
+description: Find mail through folders, labels, categories, Inbox and Unread, search and actions on many conversations.
+---
+
+import Screenshot from '../../../../components/Screenshot.astro';
+import Steps from '../../../../components/Steps.astro';
+import Step from '../../../../components/Step.astro';
+
+Choose an account under **Mail**, or **All inboxes** to see accounts together. Each account reopens on **Inbox** or **Unread**, whichever you last used for that account in this browser. Arrange accounts and your own views with [Your sidebar](/guides/sidebar/).
+
+## Folders and labels
+
+The folder bar above the list opens **Inbox**, **Starred**, **Sent**, **Drafts** and **Archive**. **More** holds the rest, including **Unread**, **Spam**, **Trash** and the account's folders and labels. **Customize tabs** chooses what stays on this bar. The arrow beside an account in the sidebar also shows its folders.
+
+Use **Move to** to file a conversation, **Labels** to add or remove labels, or **Archive** to take it out of the inbox. Gmail labels and Outlook categories are labels in Collab; Microsoft and IMAP mail also have folders. IMAP supports folder moves rather than labels. Moving to a Gmail label adds the label and removes the conversation from the inbox.
+
+These actions sync to the provider. **Move to trash** uses the provider's trash, not permanent deletion. The provider's own rules decide when trash is emptied.
+
+## Inbox categories
+
+Categories split the inbox into tabs such as **Primary**, **Updates**, **Newsletters** and **Promotions**. They are separate from folders and labels. Local categories organize mail inside opendesk; a Google-connected account can choose **Sync with Gmail** to read and change Gmail's category labels instead.
+
+Workspace admins set defaults, teams can have their own, and an account manager can choose for that account unless the workspace locks it. See [Inbox categories](/guides/inbox-categories/) for setup, sorting and sender rules.
+
+## Inbox and Unread
+
+**Inbox** includes read and unread conversations. **Unread** filters to unread mail. By default, opening a conversation marks it read here and at the provider. You can turn off **Mark as read when opened** in **Customize sidebar**.
+
+**Mark as unread** is useful when you want to revisit something, but it is not a work status. On shared accounts, use [Needs action and Done](/guides/collab/handling/) to track who still needs help.
+
+## Search mail
+
+Use **Search mail** above the list, or press <kbd>/</kbd>. Search checks subjects, senders, participants and message text in the mail already imported into opendesk. The current box and account still limit the results. Choose **All mail** to search across boxes, and clear the account selection to search the accounts you can see together.
+
+**Searching mail since …** shows the coverage. If you need an older message, use **Import older mail** or the account's **Mail history** settings. Mail still only at the provider is not searched.
+
+## Select many conversations
+
+<Steps>
+<Step title="Select conversations">
+
+Use the checkbox on each row, or the select-all checkbox above the list to select the conversations loaded so far. The selection message offers **Select every conversation** in the current box or folder, or every match for a search, up to 1,000 conversations.
+
+</Step>
+<Step title="Choose an action above the list">
+
+Selection actions appear at the top, not at the bottom. Archive, move, label, mark read or unread, or move to trash. Handling actions appear when they apply to the selected accounts. With one account in view, **Sync now** stays beside the select-all checkbox.
+
+</Step>
+<Step title="Clear the selection">
+
+Use **Clear selection** or press <kbd>esc</kbd>. Leaving the list clears it too. Selecting alone never changes mail; choosing an action does.
+
+</Step>
+</Steps>
+
+<Screenshot src="/guides/collab/selection" alt="Selected Sales conversations with the select-all checkbox ringed as 1, Sync now beside it as 2, and the action toolbar above the list as 3" />
+
+## Related
+
+- [Sync and older mail](/guides/collab/connect-an-account/#what-syncs-and-when)
+- [Inbox categories](/guides/inbox-categories/)
+- [Your sidebar](/guides/sidebar/)
+- [Collab keyboard shortcuts](/guides/keyboard-shortcuts/#collab)

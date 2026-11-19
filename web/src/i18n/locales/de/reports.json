@@ -93,7 +93,8 @@
     "title": "Antwortzeiten",
     "subtitle": "Mediane für den Zeitraum",
     "fastest": "Schnellste erste Antwort",
-    "none": "In diesem Zeitraum noch keine Antworten."
+    "none": "In diesem Zeitraum noch keine Antworten.",
+    "yours": "Deine erste Antwort"
   },
   "filter": {
     "teamLabel": "Team: {{value}}",

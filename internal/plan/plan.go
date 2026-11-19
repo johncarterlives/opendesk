@@ -116,6 +116,7 @@ var Typical = map[string]Micro{
 	"assistant":       20_000, // one model turn of the assistant (Ollie)
 	"assistant_peer":  10_000, // one answer of a teammate's Ollie, paid by the asker's workspace
 	"procedure":       20_000, // one model turn of a procedure an automation runs (Ollie)
+	"app_help":        5_000,  // a question about using the app, answered from the app's settings and docs (fast model)
 }
 
 var (

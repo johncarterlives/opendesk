@@ -95,7 +95,7 @@
       "sparkles": "Funkeln"
     },
     "structure": "Bereiche und Einträge",
-    "structureHint": "Zieh Einträge und Bereiche an ihrem Griff, oder fokussiere den Griff und drück Alt mit einer Pfeiltaste.",
+    "structureHint": "Zieh Einträge und Bereiche an ihrem Griff, oder fokussiere den Griff und drück eine Pfeiltaste. Öffne einen ganzen Bereich, um seine Einträge anzuordnen; er bleibt aktuell.",
     "rows_one": "{{count}} Eintrag",
     "rows_other": "{{count}} Einträge",
     "addSection": "Bereich hinzufügen",
@@ -126,6 +126,20 @@
       "teamspaces": "Teamspaces"
     },
     "wholeHint": "Bleibt aktuell",
+    "arrangedHint": "Angeordnet, bleibt aktuell",
+    "groupRows": "Einträge von {{name}}",
+    "groupEmpty": "Hier ist noch nichts",
+    "move": "{{name}} verschieben",
+    "hideRow": "{{name}} in diesem Space ausblenden",
+    "showRow": "{{name}} in diesem Space einblenden",
+    "removeFavorite": "{{name}} aus den Favoriten nehmen",
+    "toFavorites": "Zu den Favoriten hinzufügen",
+    "addTo": "Zu Bereich hinzufügen",
+    "backInto": "Zurück nach {{name}}",
+    "resetArrangement": "Zurück zu den üblichen Einträgen",
+    "favoritesEmpty": "Zieh Einträge hierher, um sie in die Favoriten zu legen.",
+    "favoritesTheirs": "Danach folgen die eigenen Favoriten jeder Person.",
+    "favoritesYours": "Danach folgen deine eigenen Favoriten.",
     "noCollab": "Collab ist in {{workspace}} aus, daher können seine E-Mails nicht hinzugefügt werden.",
     "loading": "Lade, was {{workspace}} hat",
     "noMatches": "Keine Treffer.",
@@ -158,7 +172,8 @@
       "too_many_spaces": "Du kannst höchstens 20 Spaces behalten.",
       "too_large": "Dieser Space ist zu groß zum Speichern. Entferne einige Einträge.",
       "duplicate_id": "Zwei Spaces haben dieselbe ID. Lade die Seite neu und versuch es noch einmal.",
-      "space": "Dieser Space kann so nicht gespeichert werden."
+      "space": "Dieser Space kann so nicht gespeichert werden.",
+      "too_many_arranged": "Ein ganzer Bereich hält höchstens 300 Einträge in Reihenfolge oder ausgeblendet."
     },
     "everyWorkspace": "Jeder Workspace"
   },

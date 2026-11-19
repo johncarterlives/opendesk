@@ -99,7 +99,8 @@
     "title": "Doby odpovědí",
     "subtitle": "Mediány za dané období",
     "fastest": "Nejrychlejší první odpověď",
-    "none": "V tomto období zatím nejsou žádné odpovědi."
+    "none": "V tomto období zatím nejsou žádné odpovědi.",
+    "yours": "Vaše první odpověď"
   },
   "filter": {
     "teamLabel": "Tým: {{value}}",

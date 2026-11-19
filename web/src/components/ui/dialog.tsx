@@ -37,6 +37,7 @@ export function Dialog({
       <D.Portal>
         <D.Overlay className="fixed inset-0 z-50 bg-scrim backdrop-blur-[1.5px] data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
         <D.Content
+          aria-modal="true"
           onEscapeKeyDown={onEscapeKeyDown}
           onInteractOutside={onInteractOutside}
           className={cn(
@@ -98,6 +99,7 @@ export function Drawer({
       <D.Portal>
         <D.Overlay className="fixed inset-0 z-40 bg-scrim/50 data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out" />
         <D.Content
+          aria-modal="true"
           style={{ width: `min(${width}px, calc(100vw - 16px))` }}
           onEscapeKeyDown={onEscapeKeyDown}
           onInteractOutside={onInteractOutside}

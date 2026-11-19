@@ -24,7 +24,7 @@ func BadgeValue(v string) bool { return badgeValues[v] }
 // and in Spaces alike; the other row kinds (SidebarUUIDKinds) name a uuid.
 var SidebarItemIDs = map[string][]string{
 	"ticket_folder": {"unassigned", "mine", "open", "pending", "solved", "spam"},
-	"box":           {"inbox", "shared", "assigned"},
+	"box":           {"inbox", "shared", "assigned", "mentions"},
 	"page":          {"contacts", "knowledge", "wiki", "reports"},
 }
 

@@ -20,10 +20,15 @@ on:
 permissions:
   contents: read
 
+# App Store Connect takes only apps built with the current iOS SDK: Xcode 27 and iOS 27 here,
+# pinned to one Xcode so the simulator check and the upload build alike.
+env:
+  DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+
 jobs:
   check:
     name: Simulator build (${{ matrix.configuration }})
-    runs-on: macos-latest
+    runs-on: xcode-27
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +52,7 @@ jobs:
     needs: check
     # CI calls this workflow on pushes to main too: only a version tag's own push uploads.
     if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || inputs.version != ''
-    runs-on: macos-latest
+    runs-on: xcode-27
     env:
       VERSION: ${{ inputs.version || github.ref_name }}
       UPLOAD: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) || inputs.upload }}

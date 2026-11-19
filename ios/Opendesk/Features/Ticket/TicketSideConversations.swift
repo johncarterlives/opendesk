@@ -70,7 +70,7 @@ struct SideConversationsSheet: View {
             .navigationTitle("Side conversations")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Close") { dismiss() } }
                 if c.canWrite {
                     ToolbarItem(placement: .primaryAction) {
                         Button("New", systemImage: "square.and.pencil") { c.replace(with: .newSide) }
@@ -140,12 +140,11 @@ struct NewSideConversationSheet: View {
             .navigationTitle("New side conversation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(action: send) {
-                        if sending { ProgressView() } else { Text("Send").fontWeight(.semibold) }
-                    }
-                    .disabled(!canSend)
+                    SheetButton(.send, "Send", busy: sending, action: send)
+                        .fontWeight(.semibold)
+                        .disabled(!canSend)
                 }
             }
             .onAppear { focus = .to }
@@ -233,7 +232,7 @@ struct SideThreadSheet: View {
             .navigationTitle("Side conversation")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Close") { dismiss() } }
                 if c.canWrite, let thread {
                     ToolbarItem(placement: .primaryAction) {
                         Menu {

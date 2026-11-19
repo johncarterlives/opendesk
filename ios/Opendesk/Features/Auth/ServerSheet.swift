@@ -79,7 +79,7 @@ struct ServerSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    SheetButton(.cancel, "Cancel") { dismiss() }
                 }
             }
         }

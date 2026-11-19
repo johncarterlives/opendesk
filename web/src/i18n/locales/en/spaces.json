@@ -95,7 +95,7 @@
       "sparkles": "Sparkles"
     },
     "structure": "Sections and rows",
-    "structureHint": "Drag rows and sections by their grip, or focus the grip and press Alt with an arrow key.",
+    "structureHint": "Drag rows and sections by their grip, or focus the grip and press an arrow key. Open a whole section to arrange its rows; it stays up to date.",
     "rows_one": "{{count}} row",
     "rows_other": "{{count}} rows",
     "addSection": "Add section",
@@ -126,6 +126,20 @@
       "teamspaces": "Teamspaces"
     },
     "wholeHint": "Kept up to date",
+    "arrangedHint": "Arranged, kept up to date",
+    "groupRows": "Rows of {{name}}",
+    "groupEmpty": "Nothing here yet",
+    "move": "Move {{name}}",
+    "hideRow": "Hide {{name}} in this Space",
+    "showRow": "Show {{name}} in this Space",
+    "removeFavorite": "Take {{name}} out of Favorites",
+    "toFavorites": "Add to Favorites",
+    "addTo": "Add to section",
+    "backInto": "Back into {{name}}",
+    "resetArrangement": "Back to its usual rows",
+    "favoritesEmpty": "Drag rows here to put them in Favorites.",
+    "favoritesTheirs": "Each person's own favorites follow.",
+    "favoritesYours": "Your own favorites follow.",
     "noCollab": "Collab is off in {{workspace}}, so its mail can't be added.",
     "loading": "Loading what {{workspace}} has",
     "noMatches": "Nothing matches.",
@@ -158,7 +172,8 @@
       "too_many_spaces": "You can keep at most 20 Spaces.",
       "too_large": "This Space is too large to save. Remove some rows.",
       "duplicate_id": "Two Spaces have the same id. Reload the page and try again.",
-      "space": "This Space can't be saved as it is."
+      "space": "This Space can't be saved as it is.",
+      "too_many_arranged": "A whole section keeps at most 300 rows in order or hidden."
     },
     "everyWorkspace": "Every workspace"
   },

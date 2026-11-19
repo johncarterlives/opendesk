@@ -44,7 +44,7 @@ struct KBDraftSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    SheetButton(.cancel, "Cancel") {
                         run?.cancel()
                         dismiss()
                     }

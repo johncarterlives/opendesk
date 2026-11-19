@@ -1,0 +1,92 @@
+{
+  "status": {
+    "open": "Abierto",
+    "pending": "Pendiente",
+    "on_hold": "En espera",
+    "solved": "Resuelto",
+    "closed": "Cerrado"
+  },
+  "priority": {
+    "urgent": "Urgente",
+    "high": "Alta",
+    "normal": "Normal",
+    "low": "Baja"
+  },
+  "severity": {
+    "sev1": "Sev 1",
+    "sev2": "Sev 2",
+    "sev3": "Sev 3",
+    "sev4": "Sev 4"
+  },
+  "severityHint": {
+    "sev1": "Interrupción crítica",
+    "sev2": "Impacto alto",
+    "sev3": "Impacto menor",
+    "sev4": "Impacto bajo"
+  },
+  "channel": {
+    "email": "Correo",
+    "chat": "Chat",
+    "api": "API",
+    "portal": "Portal",
+    "phone": "Teléfono"
+  },
+  "sentiment": {
+    "positive": "Positivo",
+    "neutral": "Neutral",
+    "negative": "Negativo",
+    "frustrated": "Frustrado"
+  },
+  "spam": "Spam",
+  "noPriority": "Sin prioridad",
+  "sla": {
+    "over": "{{duration}} de más",
+    "firstResponse": {
+      "on_track": "Primera respuesta en plazo",
+      "due_soon": "Primera respuesta por vencer",
+      "breached": "Primera respuesta vencida"
+    },
+    "resolution": {
+      "on_track": "Resolución en plazo",
+      "due_soon": "Resolución por vencer",
+      "breached": "Resolución vencida"
+    }
+  },
+  "reports": {
+    "created": "Creados",
+    "solved": "Resueltos",
+    "day": "Día",
+    "tableCaption": "Tickets creados y resueltos por día",
+    "chartLabel_one": "Tickets creados y resueltos por día, {{count}} día. Usa las teclas de flecha para leer cada día.",
+    "chartLabel_other": "Tickets creados y resueltos por día, {{count}} días. Usa las teclas de flecha para leer cada día.",
+    "chartLabel_many": "Tickets creados y resueltos por día, {{count}} de días. Usa las teclas de flecha para leer cada día.",
+    "range": {
+      "last7": "Últimos 7 días",
+      "last30": "Últimos 30 días",
+      "last90": "Últimos 90 días",
+      "thisMonth": "Este mes",
+      "lastMonth": "Mes pasado",
+      "label": "Rango de fechas",
+      "custom": "Rango personalizado",
+      "from": "Desde",
+      "to": "Hasta",
+      "apply": "Aplicar rango"
+    }
+  },
+  "tickets": {
+    "bulkActions": "Acciones en lote",
+    "addLabels": "Añadir etiquetas",
+    "closeTicket": "Cerrar ticket",
+    "previousTicket": "Ticket anterior",
+    "nextTicket": "Ticket siguiente",
+    "moreActions": "Más acciones",
+    "toggleDetails": "Mostrar u ocultar detalles",
+    "ticketDetails": "Detalles del ticket",
+    "conversation": "Conversación",
+    "mentionTeammate": "Mencionar a un compañero",
+    "mergeSearch": "Buscar por asunto, cliente o #número",
+    "remove": "Quitar {{name}}",
+    "addAddress": "Añadir {{address}}",
+    "openFile": "Abrir {{name}}"
+  }
+}

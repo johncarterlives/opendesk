@@ -234,7 +234,7 @@ struct ChangelogCategorySheet: View {
             .navigationTitle("Add a category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
             }
         }
         .onAppear { focused = true }

@@ -69,7 +69,8 @@ function useHide(prefs: SidebarPrefs) {
   return (id: string) => save.mutate(setHidden(prefs, id, true), { onError: (e) => toast.error(e, t("customize.saveFailed")) });
 }
 
-export function PagesSection(props: { prefs: SidebarPrefs; rail: boolean; first: boolean }) {
+/** `shown`: the prefs it shows by, when a Space arranges it (components/spaces/arranged.ts); hiding changes `prefs`. */
+export function PagesSection(props: { prefs: SidebarPrefs; shown?: SidebarPrefs; rail: boolean; first: boolean }) {
   if (!useProducts().pages) return null;
   return (
     <AreaProvider area="pages">
@@ -78,7 +79,7 @@ export function PagesSection(props: { prefs: SidebarPrefs; rail: boolean; first:
   );
 }
 
-function PagesTree({ prefs, rail, first }: { prefs: SidebarPrefs; rail: boolean; first: boolean }) {
+function PagesTree({ prefs, shown: view = prefs, rail, first }: { prefs: SidebarPrefs; shown?: SidebarPrefs; rail: boolean; first: boolean }) {
   const { t } = useTranslation("shell");
   const { t: tw } = useTranslation("wiki");
   const navigate = useNavigate();
@@ -93,9 +94,9 @@ function PagesTree({ prefs, rail, first }: { prefs: SidebarPrefs; rail: boolean;
   const full = useMemo(() => buildTree(data), [data]);
   const workspace = useSpaceView("workspace");
   const priv = useSpaceView("private");
-  const hidden = useMemo(() => new Set(prefs.hidden), [prefs.hidden]);
+  const hidden = useMemo(() => new Set(view.hidden), [view.hidden]);
   const shown = (part: PagesPart) => !hidden.has(hid.pages(part));
-  const hiddenPages = useMemo(() => new Set(prefs.hidden.filter((x) => x.startsWith("wiki_page:")).map((x) => x.slice(10))), [prefs.hidden]);
+  const hiddenPages = useMemo(() => new Set(view.hidden.filter((x) => x.startsWith("wiki_page:")).map((x) => x.slice(10))), [view.hidden]);
   // A teamspace shows when it has pages the member sees, by name, as in the wiki.
   const spaces = useMemo(
     () => teams.teams.filter((x) => teams.canSeeTeam(x) && !hidden.has(hid.wikiSpace(x.id)) && data.some((n) => n.team_id === x.id)).sort((a, b) => a.name.localeCompare(b.name)),

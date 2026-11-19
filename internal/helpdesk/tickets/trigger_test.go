@@ -769,6 +769,11 @@ func TestReportsAndSearch(t *testing.T) {
 	if total != 2 {
 		t.Fatalf("by_day created %d", total)
 	}
+	// by_agent is personal: the viewer holds no ticket and gets no row, an admin the agent's.
+	if len(o.ByAgent) != 0 {
+		t.Fatalf("viewer by_agent %+v", o.ByAgent)
+	}
+	e.Do("GET", "/v1/reports/overview", ws.Admin.As(ws), nil).Want(t, 200).JSON(t, &o)
 	if len(o.ByAgent) != 1 || o.ByAgent[0].User.ID != ws.Agent.ID || o.ByAgent[0].Solved != 1 {
 		t.Fatalf("by_agent %+v", o.ByAgent)
 	}

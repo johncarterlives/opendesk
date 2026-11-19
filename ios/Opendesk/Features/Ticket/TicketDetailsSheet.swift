@@ -37,7 +37,7 @@ struct TicketDetailsSheet: View {
             .navigationTitle("Details")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() }.fontWeight(.semibold) }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() }.fontWeight(.semibold) }
             }
             .sheet(item: $c.detailSheet) { sheet in
                 TicketSheetContent(c: c, sheet: sheet)

@@ -94,7 +94,7 @@
       "sparkles": "闪光"
     },
     "structure": "分区与条目",
-    "structureHint": "拖动条目和分区的手柄，或聚焦手柄后按 Alt 加方向键。",
+    "structureHint": "拖动条目和分区的手柄，或聚焦手柄后按方向键。展开整个分区即可排列其中的条目；它会自动保持最新。",
     "rows_other": "{{count}} 个条目",
     "addSection": "添加分区",
     "sectionTitle": "分区标题",
@@ -124,6 +124,20 @@
       "teamspaces": "团队空间"
     },
     "wholeHint": "自动保持最新",
+    "arrangedHint": "已排列，自动保持最新",
+    "groupRows": "{{name}} 的条目",
+    "groupEmpty": "这里还没有内容",
+    "move": "移动 {{name}}",
+    "hideRow": "在此空间中隐藏 {{name}}",
+    "showRow": "在此空间中显示 {{name}}",
+    "removeFavorite": "将 {{name}} 移出收藏",
+    "toFavorites": "添加到收藏",
+    "addTo": "添加到分区",
+    "backInto": "放回 {{name}}",
+    "resetArrangement": "恢复默认条目",
+    "favoritesEmpty": "把条目拖到这里即可放入收藏。",
+    "favoritesTheirs": "之后是每个人自己的收藏。",
+    "favoritesYours": "之后是你自己的收藏。",
     "noCollab": "{{workspace}} 中未开启 Collab，因此无法添加它的邮件。",
     "loading": "正在加载 {{workspace}} 的内容",
     "noMatches": "没有匹配结果。",
@@ -156,7 +170,8 @@
       "too_many_spaces": "你最多可以保留 20 个空间。",
       "too_large": "这个空间太大，无法保存。请移除一些条目。",
       "duplicate_id": "有两个空间的 ID 相同。请刷新页面后重试。",
-      "space": "这个空间无法按当前内容保存。"
+      "space": "这个空间无法按当前内容保存。",
+      "too_many_arranged": "一个完整分区最多保留 300 个已排序或已隐藏的条目。"
     },
     "everyWorkspace": "所有工作区"
   },

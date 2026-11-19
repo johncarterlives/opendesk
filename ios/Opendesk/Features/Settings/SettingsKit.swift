@@ -65,8 +65,10 @@ extension Router {
 
 /// Unsaved changes on a settings page, in the tab bar's place and shape (`settingsSaveBar`): a wide
 /// Save and a round glass Discard beside it, where Ollie's button sits. What stops it saving
-/// floats above them.
+/// floats above them. Standing up (`.vertical`) in a side column, Save is a round button over
+/// Discard and the problem is the page's to show (`SettingsSaveProblem`).
 struct SettingsSaveBar: View {
+    var axis: Axis = .horizontal
     var saveTitle = "Save changes"
     /// Why it can't save yet.
     var problem: String?
@@ -76,16 +78,38 @@ struct SettingsSaveBar: View {
     let discard: () -> Void
 
     var body: some View {
-        VStack(spacing: 10) {
-            if let problem {
-                Label(problem, systemImage: "exclamationmark.circle.fill")
-                    .font(ODFont.sans(13, weight: .medium))
-                    .foregroundStyle(Tone.red.text)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .glassEffect(.regular.tint(Theme.glassTint), in: Capsule())
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+        if axis == .vertical { column } else { row }
+    }
+
+    private var column: some View {
+        GlassEffectContainer(spacing: 14) {
+            VStack(spacing: 12) {
+                Button(action: save) {
+                    Group {
+                        if saving {
+                            ProgressView().tint(Theme.inverseFg)
+                        } else {
+                            Image(systemName: "checkmark").font(.system(size: 19, weight: .semibold))
+                        }
+                    }
+                    .foregroundStyle(Theme.inverseFg)
+                    .frame(width: 56, height: 56)
+                    .background(Theme.inverse.opacity(canSave ? 1 : 0.35), in: Circle())
+                    .contentShape(Circle())
+                }
+                .buttonStyle(TapScaleStyle(scale: 0.9))
+                .disabled(!canSave || saving)
+                .accessibilityLabel(saveTitle)
+
+                discardButton
             }
+        }
+        .padding(.bottom, 4)
+    }
+
+    private var row: some View {
+        VStack(spacing: 10) {
+            if let problem { SettingsSaveProblem(text: problem) }
             GlassEffectContainer(spacing: 14) {
                 HStack(spacing: 10) {
                     Button(action: save) {
@@ -100,21 +124,40 @@ struct SettingsSaveBar: View {
                     .buttonStyle(TapScaleStyle(scale: 0.97))
                     .disabled(!canSave || saving)
 
-                    Button(action: discard) {
-                        Image(systemName: "arrow.uturn.backward")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundStyle(Theme.fg)
-                            .frame(width: 56, height: 56)
-                            .contentShape(Circle())
-                    }
-                    .buttonStyle(TapScaleStyle(scale: 0.9))
-                    .glassEffect(.regular.tint(Theme.glassTint).interactive(), in: Circle())
-                    .disabled(saving)
-                    .accessibilityLabel("Discard changes")
+                    discardButton
                 }
             }
         }
         .motion(Motion.snappy, value: problem)
+    }
+
+    private var discardButton: some View {
+        Button(action: discard) {
+            Image(systemName: "arrow.uturn.backward")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Theme.fg)
+                .frame(width: 56, height: 56)
+                .contentShape(Circle())
+        }
+        .buttonStyle(TapScaleStyle(scale: 0.9))
+        .glassEffect(.regular.tint(Theme.glassTint).interactive(), in: Circle())
+        .disabled(saving)
+        .accessibilityLabel("Discard changes")
+    }
+}
+
+/// What stops a settings page saving, as a red glass pill over the save bar.
+struct SettingsSaveProblem: View {
+    let text: String
+
+    var body: some View {
+        Label(text, systemImage: "exclamationmark.circle.fill")
+            .font(ODFont.sans(13, weight: .medium))
+            .foregroundStyle(Tone.red.text)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .glassEffect(.regular.tint(Theme.glassTint), in: Capsule())
+            .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 }
 
@@ -140,19 +183,30 @@ private struct SettingsSaveBarModifier: ViewModifier {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.sideColumn) private var column
     @State private var confirm: AccountConfirm?
     @State private var leaving = false
 
     func body(content: Content) -> some View {
         content
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if dirty {
+                if dirty, column == nil {
                     bar
                         .padding(.horizontal, 18)
                         .padding(.top, 30)
                         .padding(.bottom, 4)
                         .background { SettingsSaveBarFade() }
                         .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else if dirty, let problem = bar.problem {
+                    SettingsSaveProblem(text: problem)
+                        .padding(.vertical, 10)
+                }
+            }
+            // Beside a side column Save and Discard stand at its foot, in the tab bar's place.
+            .sideColumnFoot {
+                if dirty {
+                    SettingsSaveBar(axis: .vertical, saveTitle: bar.saveTitle, saving: bar.saving, canSave: bar.canSave, save: bar.save, discard: bar.discard)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
             .motion(Motion.snappy, value: dirty)

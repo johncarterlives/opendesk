@@ -850,14 +850,17 @@ function reports(ctx: Ctx): ReportsOverview {
       none: created - Math.round(created * 0.02) - Math.round(created * 0.07) - Math.round(created * 0.16) - Math.round(created * 0.21),
     },
     by_agent: solved
-      ? agentShares.map((share, i) => {
-          const u = db.users[i];
-          return {
-            user: { id: u.id, name: u.name, email: u.email, avatar_url: u.avatar_url },
-            solved: Math.round(solved * share),
-            first_response_p50_minutes: frp(u.id),
-          };
-        })
+      ? agentShares
+          .map((share, i) => {
+            const u = db.users[i];
+            return {
+              user: { id: u.id, name: u.name, email: u.email, avatar_url: u.avatar_url },
+              solved: Math.round(solved * share),
+              first_response_p50_minutes: frp(u.id),
+            };
+          })
+          // Personal, as the agents report: a member who is not an admin gets their own row alone.
+          .filter((a) => isAdmin(ws, db.meId) || a.user.id === db.meId)
       : [],
     by_team: teamRows,
     by_brand: brandRows,

@@ -33,9 +33,9 @@ struct PickerSheet<Content: View>: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 if let trailing {
-                    ToolbarItem(placement: .confirmationAction) { Button(trailing.title, action: trailing.action).fontWeight(.semibold) }
+                    ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, trailing.title, action: trailing.action).fontWeight(.semibold) }
                 }
             }
         }
@@ -265,7 +265,7 @@ struct ChoiceSheet<Content: View>: View {
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
             }
         }
     }

@@ -93,7 +93,8 @@
     "title": "Response times",
     "subtitle": "Medians for the period",
     "fastest": "Fastest first reply",
-    "none": "No replies in this period yet."
+    "none": "No replies in this period yet.",
+    "yours": "Your first response"
   },
   "filter": {
     "teamLabel": "Team: {{value}}",

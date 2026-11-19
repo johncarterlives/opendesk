@@ -76,9 +76,14 @@ struct SpaceItem: Codable, Hashable, Sendable, Identifiable {
     var badge: String?
     /// One emoji in place of the row's own icon.
     var icon: String?
+    /// A whole section only: its rows top to bottom as row keys (`team:<id>`, `box:assigned`); in
+    /// Favorites, rows the Space adds (contracts/spaces.md "Arranging a whole section").
+    var rows: [String]?
+    /// A whole section only: the row keys it does not show in this Space.
+    var hidden: [String]?
 
     enum CodingKeys: String, CodingKey {
-        case kind, name, badge, icon
+        case kind, name, badge, icon, rows, hidden
         case workspaceID = "workspace_id"
         case itemID = "id"
     }
@@ -100,6 +105,10 @@ struct SpaceItem: Codable, Hashable, Sendable, Identifiable {
         name = c.lenient(String.self, forKey: .name).flatMap { $0.trimmingCharacters(in: .whitespaces).isEmpty ? nil : $0 }
         badge = c.lenient(String.self, forKey: .badge)
         icon = c.lenient(String.self, forKey: .icon).flatMap { $0.isEmpty ? nil : $0 }
+        if kind == .section {
+            rows = c.lenient([String].self, forKey: .rows).flatMap { $0.isEmpty ? nil : $0 }
+            hidden = c.lenient([String].self, forKey: .hidden).flatMap { $0.isEmpty ? nil : $0 }
+        }
     }
 
     func encode(to encoder: Encoder) throws {
@@ -111,6 +120,39 @@ struct SpaceItem: Codable, Hashable, Sendable, Identifiable {
         if !cleaned.isEmpty { try c.encode(cleaned, forKey: .name) }
         if let badge { try c.encode(badge, forKey: .badge) }
         if let icon, !icon.isEmpty { try c.encode(icon, forKey: .icon) }
+        // Kept as the web editor arranged it, so a save from here never loses it.
+        if kind == .section, let rows, !rows.isEmpty { try c.encode(rows, forKey: .rows) }
+        if kind == .section, let hidden, !hidden.isEmpty { try c.encode(hidden, forKey: .hidden) }
+    }
+
+    /// A whole section's rows as this Space arranges them (contracts/spaces.md "Arranging a whole
+    /// section"): its hidden rows left out, in Favorites its own rows first, and in the sections that
+    /// keep an order (Tickets, Mail's accounts, Teams, Workspace) its order first, the rest after.
+    func arranged(_ entries: [(SpaceItemKind, String)]) -> [(SpaceItemKind, String)] {
+        let hidden = Set(self.hidden ?? [])
+        let rows = self.rows ?? []
+        func key(_ e: (SpaceItemKind, String)) -> String { "\(e.0.rawValue):\(e.1)" }
+        if itemID == "favorites" {
+            let favoriteKinds: Set<String> = ["box", "folder", "account", "view", "team", "ticket_folder"]
+            let added: [(SpaceItemKind, String)] = rows.compactMap { k in
+                guard let at = k.firstIndex(of: ":") else { return nil }
+                let kind = String(k[..<at])
+                let id = String(k[k.index(after: at)...])
+                return favoriteKinds.contains(kind) && !id.isEmpty ? (SpaceItemKind(rawValue: kind), id) : nil
+            }
+            let named = Set(added.map(key))
+            return added + entries.filter { !named.contains(key($0)) && !hidden.contains(key($0)) }
+        }
+        let shown = entries.filter { !hidden.contains(key($0)) }
+        guard ["inbox", "mail", "teams", "workspace"].contains(itemID), !rows.isEmpty else { return shown }
+        var place: [String: Int] = [:]
+        for (i, k) in rows.enumerated() where place[k] == nil { place[k] = i }
+        // Mail's boxes keep their place; only its accounts take one.
+        let takesPlace = { (e: (SpaceItemKind, String)) -> Bool in itemID != "mail" || e.0 == .account }
+        let moving = shown.filter(takesPlace)
+        let inOrder = moving.filter { place[key($0)] != nil }.sorted { place[key($0)]! < place[key($1)]! } + moving.filter { place[key($0)] == nil }
+        var next = inOrder.makeIterator()
+        return shown.map { takesPlace($0) ? (next.next() ?? $0) : $0 }
     }
 
     /// The one key an item has in a Space: its workspace, kind and id.

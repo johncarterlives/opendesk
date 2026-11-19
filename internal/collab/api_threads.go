@@ -23,17 +23,20 @@ import (
 
 // Boxes of the thread list (contracts/collab.md "GET /v1/collab/threads").
 const (
-	BoxInbox       = "inbox"
-	BoxUnread      = "unread"
-	BoxStarred     = "starred"
-	BoxSent        = "sent"
-	BoxDrafts      = "drafts"
-	BoxArchive     = "archive"
-	BoxTrash       = "trash"
-	BoxSpam        = "spam"
-	BoxAll         = "all"
-	BoxShared      = "shared"
-	BoxAssigned    = "assigned"
+	BoxInbox    = "inbox"
+	BoxUnread   = "unread"
+	BoxStarred  = "starred"
+	BoxSent     = "sent"
+	BoxDrafts   = "drafts"
+	BoxArchive  = "archive"
+	BoxTrash    = "trash"
+	BoxSpam     = "spam"
+	BoxAll      = "all"
+	BoxShared   = "shared"
+	BoxAssigned = "assigned"
+	// BoxMentions lists the conversations the caller follows: mentioned in a comment, answered
+	// after commenting, or followed by hand (contracts/collab.md "Mentions").
+	BoxMentions    = "mentions"
 	BoxNeedsAction = "needs_action"
 	BoxSnoozed     = "snoozed"
 	// BoxAIReview is "Ready for review": conversations in an inbox whose draft an AI client
@@ -85,6 +88,8 @@ func boxSQL(box, u string) string {
 		return `EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND ` + notJunk
 	case BoxAssigned:
 		return `EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = ` + u + `) AND ` + notJunk
+	case BoxMentions:
+		return followedSQL(u) + ` AND ` + notJunk
 	case BoxNeedsAction:
 		return `t.needs_action AND ` + handlingSQL + ` AND t.folder_ids && ` + inboxSQL
 	case BoxSnoozed:
@@ -110,7 +115,7 @@ func visibleAccountsSQL(u string) string {
 }
 
 type listThreadsInput struct {
-	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned,needs_action,snoozed,ai_review" default:"inbox"`
+	Box       string `query:"box" enum:"inbox,unread,starred,sent,drafts,archive,trash,spam,all,shared,assigned,mentions,needs_action,snoozed,ai_review" default:"inbox"`
 	AccountID string `query:"account_id" doc:"Only this account's conversations"`
 	FolderID  string `query:"folder_id" doc:"Only this folder's conversations; replaces box"`
 	Q         string `query:"q" maxLength:"200" doc:"Matches each message's subject, sender and text, and the conversation's subject and participants"`
@@ -151,6 +156,7 @@ type CollabBoxCounts struct {
 	Unread      int `json:"unread"`
 	Shared      int `json:"shared"`
 	Assigned    int `json:"assigned"`
+	Mentions    int `json:"mentions" doc:"Conversations the caller follows and sees, the Mentions box, trash and spam left out"`
 	Drafts      int `json:"drafts"`
 	NeedsAction int `json:"needs_action"`
 	Snoozed     int `json:"snoozed"`
@@ -229,14 +235,14 @@ func (s *service) registerThreadRoutes(api huma.API) {
 				switch {
 				case accountID != nil:
 					where = append(where, `t.account_id = `+arg(*accountID))
-				case box == BoxShared || box == BoxAssigned || in.With != "":
+				case box == BoxShared || box == BoxAssigned || box == BoxMentions || in.With != "":
 					// A person's conversations include those shared with the caller on their own.
 					where = append(where, threadVisibleSQL("t", user()))
 				default:
 					where = append(where, `t.account_id IN `+visibleAccountsSQL(user()))
 				}
-				u := "" // only the assigned box names the caller
-				if box == BoxAssigned {
+				u := "" // only the assigned and mentions boxes name the caller
+				if box == BoxAssigned || box == BoxMentions {
 					u = user()
 				}
 				where = append(where, boxSQL(box, u))
@@ -264,15 +270,28 @@ func (s *service) registerThreadRoutes(api huma.API) {
 				// @> rather than = ANY, so the addresses index serves it.
 				where = append(where, `t.addresses @> ARRAY[`+arg(with)+`::text]`)
 			}
-			if in.Cursor != "" {
-				where = append(where, `(t.last_message_at, t.id) < (`+arg(cur.T)+`, `+arg(cur.I)+`)`)
+			// Newest first; Mentions by what last concerned the caller too (a comment, being followed).
+			order := `t.last_message_at`
+			if box == BoxMentions && in.FolderID == "" {
+				order = mentionsOrderSQL(user())
 			}
-			rows, err := s.d.DB.Pool.Query(ctx, `SELECT `+threadColumns+` FROM collab_threads t WHERE `+strings.Join(where, " AND ")+`
-				ORDER BY t.last_message_at DESC, t.id DESC LIMIT `+arg(limit+1), args...)
+			if in.Cursor != "" {
+				where = append(where, `(`+order+`, t.id) < (`+arg(cur.T)+`, `+arg(cur.I)+`)`)
+			}
+			rows, err := s.d.DB.Pool.Query(ctx, `SELECT `+threadColumns+`, `+order+` FROM collab_threads t WHERE `+strings.Join(where, " AND ")+`
+				ORDER BY `+order+` DESC, t.id DESC LIMIT `+arg(limit+1), args...)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (*threadRow, error) { return scanThread(r) })
+			keys := map[uuid.UUID]time.Time{}
+			list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (*threadRow, error) {
+				var at time.Time
+				t, err := scanThread(rowWith{r, []any{&at}})
+				if err == nil {
+					keys[t.ID] = at
+				}
+				return t, err
+			})
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -280,7 +299,7 @@ func (s *service) registerThreadRoutes(api huma.API) {
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
-			page := httpx.NewPage(out, limit, func(t MailThread) any { return threadCursor{T: t.LastMessageAt, I: t.ID} })
+			page := httpx.NewPage(out, limit, func(t MailThread) any { return threadCursor{T: keys[t.ID], I: t.ID} })
 			return &struct{ Body httpx.Page[MailThread] }{page}, nil
 		})
 
@@ -664,8 +683,12 @@ func (s *service) threadDetail(ctx context.Context, q db.Querier, p *auth.Princi
 	if err != nil {
 		return out, err
 	}
+	follows, err := following(ctx, q, p.WorkspaceID, t.ID, p.UserID)
+	if err != nil {
+		return out, err
+	}
 	return MailThreadDetail{Thread: threads[0], Messages: messages, Comments: comments, Shares: shares, CanAct: canAct(p),
-		Account: account, Ticket: ticket, AISkips: skips, UnusedAIDrafts: unused}, nil
+		Account: account, Ticket: ticket, AISkips: skips, UnusedAIDrafts: unused, Following: follows}, nil
 }
 
 // threadAISkips are the skips of a conversation still in force (no new mail since), by
@@ -755,8 +778,10 @@ func (s *service) counts(ctx context.Context, q db.Querier, p *auth.Principal) (
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1 AND `+threadVisibleSQL("t", "$2")+`
 			AND EXISTS (SELECT 1 FROM collab_shares xs WHERE xs.thread_id = t.id) AND t.folder_ids && `+inboxSQL+`),
 		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1
-			AND EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = $2) AND t.folder_ids && `+inboxSQL+`)`,
-		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.NeedsAction, &out.Boxes.Snoozed, &out.Boxes.Shared, &out.Boxes.Assigned)
+			AND EXISTS (SELECT 1 FROM collab_assignees xa WHERE xa.thread_id = t.id AND xa.user_id = $2) AND t.folder_ids && `+inboxSQL+`),
+		(SELECT count(*) FROM collab_threads t WHERE t.workspace_id = $1 AND `+threadVisibleSQL("t", "$2")+` AND `+boxSQL(BoxMentions, "$2")+`)`,
+		p.WorkspaceID, p.UserID).Scan(&out.Boxes.Inbox, &out.Boxes.Unread, &out.Boxes.Drafts, &out.Boxes.NeedsAction, &out.Boxes.Snoozed, &out.Boxes.Shared, &out.Boxes.Assigned,
+		&out.Boxes.Mentions)
 	if err != nil {
 		return out, err
 	}

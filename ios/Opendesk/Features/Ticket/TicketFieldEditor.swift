@@ -264,9 +264,9 @@ struct FieldEditorSheet: View {
             .navigationTitle(field.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    SheetButton(.confirm, "Save") {
                         onSave(value)
                         dismiss()
                     }
@@ -323,18 +323,14 @@ struct RequiredFieldsSheet: View {
             .navigationTitle("Fill in to \(env.statusDisplay.finishTitle.lowercased())")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) { SheetButton(.cancel, "Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        saving = true
+                    SheetButton(.confirm, env.statusDisplay.finishTitle, busy: saving) { saving = true
                         Task {
                             let ok = await onSolve(values)
                             saving = false
                             if ok { dismiss() }
-                        }
-                    } label: {
-                        if saving { ProgressView() } else { Text(env.statusDisplay.finishTitle).fontWeight(.semibold) }
-                    }
+                        } }.fontWeight(.semibold)
                     .disabled(!missing.isEmpty || saving)
                 }
             }

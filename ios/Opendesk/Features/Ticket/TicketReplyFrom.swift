@@ -295,10 +295,10 @@ struct ReplyPreviewSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Keep editing") { dismiss() }
+                    SheetButton(.cancel, "Keep editing") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Send") {
+                    SheetButton(.send, "Send") {
                         dismiss()
                         onSend()
                     }

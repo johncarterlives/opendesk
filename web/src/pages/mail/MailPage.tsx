@@ -798,10 +798,14 @@ export default function MailPage() {
     "mail.comment": () => openId && threadRef.current?.comment(),
     "mail.people": () => openId && threadRef.current?.people(),
     "mail.search": () => searchRef.current?.focus(),
-    "mail.escape": () => {
-      if (selected.size || every.running) clearSelection();
-      else if (openId) close();
-    },
+    // Only with something to clear or close: otherwise Escape is left to others (the sidebar's edit mode).
+    "mail.escape":
+      selected.size || every.running || openId
+        ? () => {
+            if (selected.size || every.running) clearSelection();
+            else if (openId) close();
+          }
+        : undefined,
     "mail.selectAll": () => !openId && setSelected(new Set(threads.map((x) => x.id))),
   });
 
@@ -864,6 +868,7 @@ export default function MailPage() {
     if (box === "inbox" && !folder) return <EmptyState art="solved" title={t("list.empty.inbox")} description={t("list.empty.inboxHint")} />;
     if (box === "shared") return <EmptyState art="inbox" title={t("list.empty.shared")} description={t("list.empty.sharedHint")} />;
     if (box === "assigned") return <EmptyState art="mine" title={t("list.empty.assigned")} description={t("list.empty.assignedHint")} />;
+    if (box === "mentions") return <EmptyState art="inbox" title={t("list.empty.mentions")} description={t("list.empty.mentionsHint")} />;
     if (box === "ai_review") return <EmptyState art="solved" title={t("list.empty.aiReview")} description={t("list.empty.aiReviewHint")} />;
     if (box === "starred") return <EmptyState art="generic" title={t("list.empty.starred")} description={t("list.empty.starredHint")} tips={[{ label: t("shortcuts.star"), kbd: "s" }]} />;
     return <EmptyState art="generic" title={t("list.empty.generic")} description={t("list.empty.genericHint")} />;
@@ -898,15 +903,16 @@ export default function MailPage() {
                 className="w-[220px]"
               />
             )}
-            {/* Compose leads the sidebar (components/collab/SidebarCompose.tsx); a phone's sidebar is a drawer, so it stays here. */}
-            {canAct && !noAccounts && phone && (
+            {canAct && !noAccounts && (
               <Tooltip content={t("list.compose")} shortcut="c">
-                <Button size="sm" variant="ghost" square icon={<PenSquare />} onClick={() => compose.open({ accountId: account?.id ?? folderAccount?.id })} aria-label={t("list.compose")} />
+                <Button size="sm" variant={compact ? "ghost" : "secondary"} square={compact} icon={<PenSquare />} onClick={() => compose.open({ accountId: account?.id ?? folderAccount?.id })} aria-label={t("list.compose")}>
+                  {compact ? null : t("list.compose")}
+                </Button>
               </Tooltip>
             )}
           </div>
         </div>
-        {!noAccounts && accounts && box !== "shared" && box !== "assigned" && (
+        {!noAccounts && accounts && box !== "shared" && box !== "assigned" && box !== "mentions" && (
           <FolderBar
             box={box}
             account={account}

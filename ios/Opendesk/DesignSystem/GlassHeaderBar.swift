@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The header every list screen shares: a glass menu button, the scope as a
 /// title with one line under it, and a search button that morphs into the
-/// field. `trailing` holds the screen's own glass buttons.
+/// field. `trailing` holds the screen's own glass buttons. Beside a side column
+/// (`SideColumn`) the buttons stand in it and the title has the row.
 struct GlassHeaderBar<Trailing: View>: View {
     let title: String
     var subtitle: Text?
@@ -18,6 +19,7 @@ struct GlassHeaderBar<Trailing: View>: View {
     @State private var searchOpen = false
     @Namespace private var glass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.sideColumn) private var column
 
     var body: some View {
         GlassEffectContainer(spacing: 10) {
@@ -54,10 +56,7 @@ struct GlassHeaderBar<Trailing: View>: View {
                     GlassCircleButton(symbol: "xmark", label: "Close search") { close() }
                         .glassEffectID("menu", in: glass)
                 } else {
-                    if let onMenu {
-                        GlassCircleButton(symbol: menuSymbol, label: menuLabel, action: onMenu)
-                            .glassEffectID("menu", in: glass)
-                    }
+                    if column == nil { menuButton }
                     VStack(alignment: .leading, spacing: 1) {
                         Text(title)
                             .font(ODFont.sans(19, weight: .semibold))
@@ -74,22 +73,42 @@ struct GlassHeaderBar<Trailing: View>: View {
                                 .contentTransition(.numericText())
                         }
                     }
-                    .padding(.leading, onMenu == nil ? 4 : 2)
+                    .padding(.leading, onMenu == nil || column != nil ? 4 : 2)
 
                     Spacer(minLength: 6)
-                    if searchable {
-                        GlassCircleButton(symbol: "magnifyingglass", label: "Search") { open() }
-                            .glassEffectID("search", in: glass)
+                    if column == nil {
+                        searchButton
+                        trailing()
                     }
-                    trailing()
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 6)
         .padding(.bottom, 8)
+        .sideColumnActions {
+            if !searchOpen {
+                menuButton
+                searchButton
+                trailing()
+            }
+        }
         .onAppear {
             if !query.isEmpty { searchOpen = true }
+        }
+    }
+
+    @ViewBuilder private var menuButton: some View {
+        if let onMenu {
+            GlassCircleButton(symbol: menuSymbol, label: menuLabel, action: onMenu)
+                .glassEffectID("menu", in: glass)
+        }
+    }
+
+    @ViewBuilder private var searchButton: some View {
+        if searchable {
+            GlassCircleButton(symbol: "magnifyingglass", label: "Search") { open() }
+                .glassEffectID("search", in: glass)
         }
     }
 

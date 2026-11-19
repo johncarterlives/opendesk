@@ -28,6 +28,7 @@ export const boxIcon: Record<MailBox | "folder", ReactNode> = {
   all: <Layers />,
   shared: <Users />,
   assigned: <UserCheck />,
+  mentions: <AtSign />,
   needs_action: <CircleDot />,
   snoozed: <AlarmClock />,
   ai_review: <FileCheck />,

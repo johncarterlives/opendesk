@@ -38,7 +38,7 @@ struct AddInboxSheet: View {
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(ready == nil ? "Cancel" : "Close") { dismiss() }
+                    SheetButton(.cancel, ready == nil ? "Cancel" : "Close") { dismiss() }
                 }
             }
         }

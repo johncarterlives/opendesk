@@ -456,13 +456,16 @@ export default function InboxPage() {
       searchRef.current?.focus();
       if (!searchRef.current) document.querySelector<HTMLButtonElement>("[data-inbox-search]")?.click();
     },
-    "tickets.escape": () => {
-      if (selected.size || allMatching) {
-        setSelected(new Set());
-        setAllMatching(false);
-      }
-      else if (openId) close();
-    },
+    // Only with something to clear or close: otherwise Escape is left to others (the sidebar's edit mode).
+    "tickets.escape":
+      selected.size || allMatching || openId
+        ? () => {
+            if (selected.size || allMatching) {
+              setSelected(new Set());
+              setAllMatching(false);
+            } else if (openId) close();
+          }
+        : undefined,
     "tickets.selectAll": () => {
       if (!openId) {
         setAllMatching(false);

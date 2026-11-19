@@ -78,7 +78,7 @@ struct MailBoxesSheet: View {
             .navigationTitle("Mailboxes")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { SheetButton(.confirm, "Done") { dismiss() } }
             }
         }
         .sheet(item: $handingOver) { account in

@@ -15,6 +15,7 @@
     "kb_draft": "Hilfeartikel entwerfen",
     "assistant": "Nachrichten an den Assistenten",
     "assistant_peer": "Ollie fragt beim Ollie eines Teammitglieds nach",
+    "app_help": "Eine Frage zu opendesk beantworten",
     "procedure": "Einen Ablauf aus einer Automatisierung ausführen",
     "wiki_write": "Im Wiki schreiben"
   },
@@ -247,6 +248,11 @@
     "send": "Nach Bedeutung suchen",
     "example_1": "Kunden, denen doppelt abgebucht wurde",
     "example_2": "Anmeldeprobleme nach dem Zurücksetzen des Passworts",
-    "example_3": "Anfragen zum Datenexport"
+    "example_3": "Anfragen zum Datenexport",
+    "inApp": "In der App",
+    "docs": "Aus der Dokumentation",
+    "answer_item": "Mit {{name}} beantworten",
+    "answering": "{{name}} liest die Dokumentation",
+    "answer_error": "Gerade keine Antwort möglich. Die Orte und die Dokumentation unten helfen vielleicht weiter."
   }
 }

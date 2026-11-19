@@ -117,17 +117,14 @@ struct SidebarEditorSheet: View {
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    SheetButton(.cancel, "Cancel") {
                         if draft == original { dismiss() } else { confirmDiscard = true }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        Task { await save() }
-                    } label: {
-                        if saving { ProgressView() } else { Text("Save").bold() }
-                    }
-                    .disabled(saving || !ready)
+                    SheetButton(.confirm, "Save", busy: saving) { Task { await save() } }
+                        .bold()
+                        .disabled(saving || !ready)
                 }
             }
         }

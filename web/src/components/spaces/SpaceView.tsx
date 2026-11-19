@@ -29,6 +29,9 @@ import { buildEverywhereRow, buildRow, InWorkspace, NavItemRow, useMailLocation,
 import { SpaceRowMenu } from "./SpaceRowMenu";
 import { useSpaceActions } from "./actions";
 import { defaultSidebarPrefs } from "@/lib/collab/sidebarPrefs";
+import { applyRowOrder, isOrdered } from "@/lib/collab/rowOrder";
+import { arrangedPrefs, isArranged } from "@/lib/spaces/arrange";
+import { ArrangedCtx } from "./arranged";
 
 const LazyTeamspace = lazy(() => import("@/components/wiki/PagesSection").then((m) => ({ default: m.SpaceTeamspace })));
 
@@ -64,10 +67,12 @@ function SpaceSectionBlock({ section, first, rail, onFold, edit, children }: { s
   );
 }
 
-/** A whole built-in section of another workspace: that workspace's rows, by its own preferences. */
-function RemoteSection({ d, id, first, rail, mark, ctx }: { d: WorkspaceData; id: SidebarSectionId; first: boolean; rail: boolean; mark: ReactNode; ctx: RowContext }) {
-  const p = d.prefs;
+/** A whole built-in section of another workspace: that workspace's rows, by its own preferences arranged by the Space (`item`). */
+function RemoteSection({ d, id, item, first, rail, mark, ctx }: { d: WorkspaceData; id: SidebarSectionId; item: SpaceItem; first: boolean; rail: boolean; mark: ReactNode; ctx: RowContext }) {
+  const p = arrangedPrefs(d.prefs, id, item);
   const hidden = new Set(p.hidden);
+  // The member's order of the sections they order (contracts/collab.md "Row order"), the Space's first.
+  const ordered = <T,>(rows: T[], key: (r: T) => string) => (isOrdered(id) ? applyRowOrder(rows, key, p.row_order[id]) : rows);
   const row = (kind: string, rid: string, via?: SidebarSectionId[]) => buildRow({ kind, id: rid }, d, { ...ctx, via });
   let list: (RowModel | null)[] = [];
   switch (id) {
@@ -79,14 +84,15 @@ function RemoteSection({ d, id, first, rail, mark, ctx }: { d: WorkspaceData; id
       ).flatMap((x) => x.target);
       break;
     case "inbox":
-      list = ticketFolders.filter((f) => !hidden.has(hid.ticketFolder(f.id))).map((f) => row("ticket_folder", f.id));
+      list = ordered(ticketFolders.filter((f) => !hidden.has(hid.ticketFolder(f.id))), (f) => hid.ticketFolder(f.id)).map((f) => row("ticket_folder", f.id));
       break;
     case "mail": {
       if (!d.collab) break;
-      const accounts = (d.accounts ?? []).filter((a) => !hidden.has(hid.account(a.id)));
+      const accounts = ordered((d.accounts ?? []).filter((a) => !hidden.has(hid.account(a.id))), (a) => hid.account(a.id));
       if (p.unified_inbox && (d.accounts?.length ?? 0) >= 2 && !hidden.has(hid.box("inbox"))) list.push(row("box", "inbox"));
       if (!hidden.has(hid.box("shared")) && d.mailCounts?.boxes.shared) list.push(row("box", "shared"));
       if (!hidden.has(hid.box("assigned")) && d.mailCounts?.boxes.assigned) list.push(row("box", "assigned"));
+      if (!hidden.has(hid.box("mentions")) && d.mailCounts?.boxes.mentions) list.push(row("box", "mentions"));
       list.push(...accounts.map((a) => row("account", a.id)));
       break;
     }
@@ -95,7 +101,7 @@ function RemoteSection({ d, id, first, rail, mark, ctx }: { d: WorkspaceData; id
       const visible = (d.teams ?? []).filter((x) => canSeeTeam(d, x) && !hidden.has(hid.team(x.id)));
       const mine = visible.filter((x) => d.myTeams.has(x.id)).sort(byName);
       // The person's teams; someone on none of them gets the teams they can see.
-      list = [...(mine.length > 1 ? [row("team", "mine")] : []), ...(mine.length ? mine : visible.sort(byName)).map((x) => row("team", x.id))];
+      list = ordered([...(mine.length > 1 && !hidden.has(hid.team("mine")) ? ["mine"] : []), ...(mine.length ? mine : visible.sort(byName)).map((x) => x.id)], hid.team).map((tid) => row("team", tid));
       break;
     }
     case "views":
@@ -111,7 +117,7 @@ function RemoteSection({ d, id, first, rail, mark, ctx }: { d: WorkspaceData; id
         .map((n) => row("wiki_page", n.id));
       break;
     case "workspace":
-      list = SPACE_PAGES.map((pg) => row("page", pg));
+      list = ordered(SPACE_PAGES.filter((pg) => !hidden.has(hid.page(pg))), hid.page).map((pg) => row("page", pg));
       break;
   }
   const models = list.filter((m, i): m is RowModel => !!m && list.findIndex((x) => x?.key === m.key) === i);
@@ -238,10 +244,10 @@ export function SpaceView({
         if (d.open)
           return (
             <SectionMarkCtx.Provider key={itemKey(it)} value={null}>
-              {renderSection(it.id, bi === 0)}
+              <ArrangedCtx.Provider value={isArranged(it) ? it : null}>{renderSection(it.id, bi === 0)}</ArrangedCtx.Provider>
             </SectionMarkCtx.Provider>
           );
-        return <RemoteSection key={itemKey(it)} d={d} id={it.id} first={bi === 0} rail={rail} mark={badgeFor(d)} ctx={{ labels }} />;
+        return <RemoteSection key={itemKey(it)} d={d} id={it.id} item={it} first={bi === 0} rail={rail} mark={badgeFor(d)} ctx={{ labels }} />;
       }
       return (
         <div key={`rows-${bi}`} className={cn("flex flex-col gap-px", bi > 0 && "mt-3")}>

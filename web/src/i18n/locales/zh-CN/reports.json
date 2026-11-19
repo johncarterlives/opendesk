@@ -90,7 +90,8 @@
     "title": "响应时间",
     "subtitle": "该时段的中位数",
     "fastest": "最快的首次回复",
-    "none": "该时段内还没有回复。"
+    "none": "该时段内还没有回复。",
+    "yours": "你的首次回复"
   },
   "filter": {
     "teamLabel": "团队：{{value}}",
