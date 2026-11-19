@@ -2,7 +2,8 @@
 // assigned to, the actions (each mirrored at the provider), the messages oldest
 // first with the older ones folded, the team's comments, and the reply composer.
 // Writing a comment and the reply buttons are pinned under it, whatever its length; while a
-// reply is written the reply buttons step aside for it, and the comment entry and count stay.
+// reply is written the reply buttons step aside for it, and the comment entry and count stay,
+// with feedback on the AI draft being written beside them.
 // Beside it, who it is with: the people panel (] shows and hides it).
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +23,7 @@ import {
   MailOpen,
   MessageSquare,
   MessageSquarePlus,
+  MessageSquareText,
   MoreHorizontal,
   PanelRight,
   RefreshCw,
@@ -190,6 +192,8 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   // An AI draft just discarded: feedback on it, offered from the toast, never required.
   const [discardedAI, setDiscardedAI] = useState<AIDraftRef | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // Feedback on the AI draft open in the composer, from the bar under it.
+  const [composerFeedback, setComposerFeedback] = useState(false);
   const [composerDraftId, setComposerDraftId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // The newest message is open unless folded by hand.
@@ -528,6 +532,19 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
         { value: "comment", label: t("comments.add"), icon: <Lock /> },
       ]}
     />
+  );
+  // An AI draft open in the composer: its row is hidden meanwhile, so its feedback sits in
+  // the bar under it, right of the comment entry. The newest copy says whether feedback was given.
+  const composingAI = editing ? (all.find((m) => m.id === editing.id)?.ai_draft ?? editing.ai_draft) : undefined;
+  const feedbackButton = composingAI && (
+    <>
+      <Tooltip content={t("aiFeedback.description", { name: composingAI.client })}>
+        <Button size="md" variant="ghost" icon={<MessageSquareText />} onClick={() => setComposerFeedback(true)}>
+          {composingAI.has_feedback ? t("aiFeedback.edit") : t("aiFeedback.give")}
+        </Button>
+      </Tooltip>
+      <AIDraftFeedbackDialog draft={composingAI} threadId={th.id} open={composerFeedback} onOpenChange={setComposerFeedback} />
+    </>
   );
   const commentsButton = detail.comments.length > 0 && (
     <Tooltip content={t("thread.showComments")}>
@@ -897,7 +914,10 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
               <>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   {writeSwitch("comment")}
-                  {commentsButton}
+                  <span className="flex items-center gap-1">
+                    {commentsButton}
+                    {feedbackButton}
+                  </span>
                 </div>
                 <p className="mb-1.5 flex items-center gap-1.5 rounded-md bg-note px-2.5 py-1.5 text-[11.5px] text-fg-3">
                   <Lock aria-hidden className="size-3 shrink-0 text-fg-4" />
@@ -932,6 +952,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                     </Button>
                   </Tooltip>
                   {commentsButton}
+                  {feedbackButton}
                 </span>
               </div>
             )
