@@ -88,7 +88,14 @@ function AIDraftStrip({ t, busy, onDraft }: { t: MailThread; busy?: boolean; onD
     </Tooltip>
   );
   return (
-    <div className="flex items-center gap-2 border-b border-line-soft bg-sunken/40 py-1.5 pl-10 pr-3" onClick={(e) => e.stopPropagation()}>
+    // A click anywhere else on the strip opens the conversation, as on the row above (GH#591).
+    // Its buttons act on the draft only, a disabled one (while busy) included.
+    <div
+      className="flex cursor-pointer items-center gap-2 border-b border-line-soft bg-sunken/40 py-1.5 pl-10 pr-3 transition-colors duration-100 hover:bg-sunken/70"
+      onClick={(e) => {
+        if ((e.target as Element).closest("button")) e.stopPropagation();
+      }}
+    >
       <span className="inline-flex h-[18px] shrink-0 items-center gap-1 rounded-sm bg-tone-violet-soft px-1.5 text-[10.5px] font-medium text-tone-violet">
         <Sparkles className="size-3" />
         {tr("thread.aiDraftBy", { name: d.drafted_by })}
