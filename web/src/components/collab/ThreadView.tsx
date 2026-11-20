@@ -375,6 +375,12 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
     };
   }, [isPending]);
 
+  // A comment's Reply set the reply target: the comment bar opens, or takes focus if open.
+  const replyToComment = () => {
+    setCommentThread(threadId);
+    requestAnimationFrame(() => commentBar.current?.focus());
+  };
+
   // Jumping to the comments marks them for a moment, so the eye lands there.
   const showComments = () => {
     commentsRef.current?.scrollIntoView({ block: "start", behavior });
@@ -835,7 +841,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                 transition={springs.row}
                 className={cn("mt-3 scroll-my-4 rounded-lg transition-shadow duration-500 ease-out motion-reduce:transition-none", flash && "shadow-[0_0_0_3px_var(--focus)] duration-150")}
               >
-                <Comments detail={detail} />
+                <Comments detail={detail} onReply={canAct ? replyToComment : undefined} />
               </motion.div>
             )}
           </AnimatePresence>

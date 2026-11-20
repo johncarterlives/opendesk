@@ -25,6 +25,7 @@ import type {
   SidebarPrefs,
   UseForTicketsBody,
 } from "@/lib/api/types";
+import { firstLine } from "@/lib/collab/html";
 import { collabFromName } from "@/lib/collab/identities";
 import { LABEL_TONES, toneHex, type LabelTone } from "@/lib/collab/labelTones";
 import { defaultSidebarPrefs, normalizePrefs, SECTION_IDS } from "@/lib/collab/sidebarPrefs";
@@ -48,6 +49,10 @@ type Account = Omit<MailAccount, "identities" | "default_from" | "categories"> &
 /** category: its tab once sorted (undefined: not yet); byPerson: someone moved it, so sorting leaves it. */
 /** followers: who follows it in their Mentions box, with when it last had something for them (contracts/collab.md "Mentions"). */
 type ThreadMeta = { id: string; account_id: string; subject: string; shares: MailAudience; assignees: string[]; comments: MailComment[]; needsAction?: boolean; snoozedUntil?: string; category?: string; categoryByPerson?: boolean; followers?: Record<string, string> };
+
+/** A comment's reply fields when it replies to nothing. */
+const noReply = { reply_to: null, parent: null, parent_deleted: false } satisfies Pick<MailComment, "reply_to" | "parent" | "parent_deleted">;
+
 type State = { accounts: Account[]; folders: MailFolder[]; threads: Map<string, ThreadMeta>; messages: MailMessage[]; prefs: Record<string, SidebarPrefs> };
 
 const states = new Map<string, State>();
@@ -387,7 +392,7 @@ function seedState(ws: WsData): State {
   const salesThreads = [...threads.values()].filter((t) => t.account_id === sales.id);
   if (salesThreads[1]) {
     salesThreads[1].assignees = [me];
-    salesThreads[1].comments.push({ id: uuid(), thread_id: salesThreads[1].id, author: userRef(other), body_html: `<p>Can you take this one? They asked about the annual discount.</p>`, mentions: [me], created_at: new Date(now - 2 * HOUR).toISOString(), updated_at: new Date(now - 2 * HOUR).toISOString() });
+    salesThreads[1].comments.push({ id: uuid(), thread_id: salesThreads[1].id, author: userRef(other), body_html: `<p>Can you take this one? They asked about the annual discount.</p>`, mentions: [me], ...noReply, created_at: new Date(now - 2 * HOUR).toISOString(), updated_at: new Date(now - 2 * HOUR).toISOString() });
     // The mention put it in your Mentions.
     salesThreads[1].followers = { [me]: new Date(now - 2 * HOUR).toISOString() };
   }
@@ -570,7 +575,7 @@ function seedState(ws: WsData): State {
     const from = { name: "Webdrop", email: "newsletter@webdrop.dev" };
     const text = "New web apps this week. Featuring Base44, Plane, and Quo.";
     const at = (ago: number) => new Date(now - ago).toISOString();
-    const comment = (author: string, body: string, ago: number): MailComment => ({ id: uuid(), thread_id: tid, author: userRef(author), body_html: `<p>${body}</p>`, mentions: [], created_at: at(ago), updated_at: at(ago) });
+    const comment = (author: string, body: string, ago: number): MailComment => ({ id: uuid(), thread_id: tid, author: userRef(author), body_html: `<p>${body}</p>`, mentions: [], ...noReply, created_at: at(ago), updated_at: at(ago) });
     threads.set(tid, {
       id: tid,
       account_id: sales.id,
@@ -1969,14 +1974,23 @@ export function registerCollab() {
     if (!html.trim() || html.length > 20000) throw invalid("body_html must be 1 to 20000 characters");
     const mentions = (strArr(ctx.body.mentions) ?? []).filter((id) => ctx.ws.members.some((m) => m.user_id === id));
     const at = nowIso();
-    const c: MailComment = { id: uuid(), thread_id: t.id, author: userRef(db.meId), body_html: html, mentions, created_at: at, updated_at: at };
-    // Who it answers: those who commented and since whose latest comment only you have (before it is added).
-    const answered = answeredBy(t.comments, db.meId);
+    // A reply answers a comment of this conversation, and its author (contracts/collab.md "Replies").
+    const replyTo = typeof ctx.body.reply_to === "string" ? ctx.body.reply_to : null;
+    const parent = replyTo ? t.comments.find((x) => x.id === replyTo) : undefined;
+    if (replyTo && !parent) throw invalid("The comment you reply to is not in this conversation.");
+    const reply = parent ? { reply_to: parent.id, parent: { author: parent.author, excerpt: firstLine(parent.body_html) }, parent_deleted: false } : noReply;
+    const c: MailComment = { id: uuid(), thread_id: t.id, author: userRef(db.meId), body_html: html, mentions, ...reply, created_at: at, updated_at: at };
+    // Who it answers: the author of the comment it replies to, or else those who commented and since
+    // whose latest comment only you have (before it is added).
+    const parentAuthor = parent?.author?.id;
+    const answered = parent ? (parentAuthor && parentAuthor !== db.meId ? [parentAuthor] : []) : answeredBy(t.comments, db.meId);
     t.comments.push(c);
     for (const uid of mentions) {
       if (!seesThread(ctx.ws, t, uid)) t.shares = { ...t.shares, user_ids: [...new Set([...t.shares.user_ids, uid])] };
       if (uid !== db.meId) notifyUser(ctx.ws, uid, "collab_mention", { thread_id: t.id, comment_id: c.id, subject: t.subject });
     }
+    if (parent && parentAuthor && parentAuthor !== db.meId && !mentions.includes(parentAuthor) && seesThread(ctx.ws, t, parentAuthor))
+      notifyUser(ctx.ws, parentAuthor, "collab_mention", { thread_id: t.id, comment_id: c.id, reply_to: parent.id, subject: t.subject });
     // Every follower sees new activity; the people it mentions or answers follow it.
     const followers = { ...t.followers };
     for (const uid of Object.keys(followers)) followers[uid] = at;
@@ -2022,7 +2036,7 @@ export function registerCollab() {
       if (!c) continue;
       threadOr404(ctx.ws, t.id);
       if (c.author?.id !== db.meId && !isAdmin(ctx.ws, db.meId)) throw new HttpError(403, "forbidden", "Only its author or an admin can delete a comment.");
-      t.comments = t.comments.filter((x) => x.id !== c.id);
+      t.comments = t.comments.filter((x) => x.id !== c.id).map((x) => (x.reply_to === c.id ? { ...x, reply_to: null, parent: null, parent_deleted: true } : x));
       changed(ctx.ws, t.account_id, [t.id], false);
       return respond(204);
     }

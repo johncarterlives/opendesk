@@ -14,6 +14,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/db"
 	"github.com/useopendesk/opendesk/internal/domain"
+	"github.com/useopendesk/opendesk/internal/helpdesk/hd"
 	"github.com/useopendesk/opendesk/internal/httpx"
 	"github.com/useopendesk/opendesk/internal/ids"
 )
@@ -463,16 +464,18 @@ type commentRow struct {
 	AuthorID  *uuid.UUID
 	BodyHTML  string
 	Mentions  []uuid.UUID
+	ReplyTo   *uuid.UUID // the comment it replies to, while that comment is kept
+	Replied   bool       // it was written as a reply, kept when the comment it answered is deleted
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	AIClient  *string
 }
 
-const commentColumns = `id, thread_id, author_id, body_html, mentions, created_at, updated_at, ai_client`
+const commentColumns = `id, thread_id, author_id, body_html, mentions, reply_to, replied, created_at, updated_at, ai_client`
 
 func scanComment(row pgx.Row) (*commentRow, error) {
 	var c commentRow
-	if err := row.Scan(&c.ID, &c.ThreadID, &c.AuthorID, &c.BodyHTML, &c.Mentions, &c.CreatedAt, &c.UpdatedAt, &c.AIClient); err != nil {
+	if err := row.Scan(&c.ID, &c.ThreadID, &c.AuthorID, &c.BodyHTML, &c.Mentions, &c.ReplyTo, &c.Replied, &c.CreatedAt, &c.UpdatedAt, &c.AIClient); err != nil {
 		return nil, err
 	}
 	if c.Mentions == nil {
@@ -481,10 +484,35 @@ func scanComment(row pgx.Row) (*commentRow, error) {
 	return &c, nil
 }
 
-// commentsOut converts comments.
+// commentsOut converts comments, each reply with a quote of the comment it answers.
 func commentsOut(ctx context.Context, q db.Querier, list []*commentRow) ([]MailComment, error) {
-	var authors []uuid.UUID
+	parents := map[uuid.UUID]*commentRow{}
 	for _, c := range list {
+		parents[c.ID] = c
+	}
+	var missing, threads []uuid.UUID
+	for _, c := range list {
+		if c.ReplyTo != nil && parents[*c.ReplyTo] == nil {
+			missing = appendNew(missing, *c.ReplyTo)
+			threads = appendNew(threads, c.ThreadID)
+		}
+	}
+	if len(missing) > 0 {
+		// The database keeps a reply in its comment's conversation; the thread ids hold the read there too.
+		rows, err := q.Query(ctx, `SELECT `+commentColumns+` FROM collab_comments WHERE id = ANY($1) AND thread_id = ANY($2)`, missing, threads)
+		if err != nil {
+			return nil, err
+		}
+		found, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (*commentRow, error) { return scanComment(r) })
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range found {
+			parents[p.ID] = p
+		}
+	}
+	var authors []uuid.UUID
+	for _, c := range parents {
 		if c.AuthorID != nil {
 			authors = append(authors, *c.AuthorID)
 		}
@@ -495,10 +523,31 @@ func commentsOut(ctx context.Context, q db.Querier, list []*commentRow) ([]MailC
 	}
 	out := make([]MailComment, 0, len(list))
 	for _, c := range list {
-		out = append(out, MailComment{ID: c.ID, ThreadID: c.ThreadID, Author: refOf(refs, c.AuthorID), BodyHTML: c.BodyHTML,
-			Mentions: c.Mentions, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt, AINoteBy: c.AIClient})
+		m := MailComment{ID: c.ID, ThreadID: c.ThreadID, Author: refOf(refs, c.AuthorID), BodyHTML: c.BodyHTML,
+			Mentions: c.Mentions, CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt, AINoteBy: c.AIClient}
+		if c.ReplyTo != nil {
+			if p := parents[*c.ReplyTo]; p != nil && p.ThreadID == c.ThreadID {
+				m.ReplyTo = &p.ID
+				m.Parent = &CommentQuote{Author: refOf(refs, p.AuthorID), Excerpt: firstLine(p.BodyHTML)}
+			}
+		}
+		m.ParentDeleted = c.Replied && m.ReplyTo == nil
+		out = append(out, m)
 	}
 	return out, nil
+}
+
+// quoteRunes bounds the line a reply quotes from the comment it answers.
+const quoteRunes = 120
+
+// firstLine is a comment's first line of text, cut to quoteRunes.
+func firstLine(body string) string {
+	for _, line := range strings.Split(hd.HTMLToText(body), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			return hd.Excerpt(line, quoteRunes)
+		}
+	}
+	return ""
 }
 
 // nextTry is when a failing account is tried again: its backoff, or the end of the wait its

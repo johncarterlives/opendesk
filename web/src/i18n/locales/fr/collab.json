@@ -400,7 +400,12 @@
     "aiSkipped": "{{name}} a examiné cette conversation sans rédiger de brouillon : {{reason}}",
     "aiSkippedNoReason": "{{name}} a examiné cette conversation sans rédiger de brouillon",
     "empty": "Aucun commentaire pour le moment. Discutez de cette conversation avec votre équipe ici.",
-    "menu": "Actions du commentaire"
+    "menu": "Actions du commentaire",
+    "reply": "Répondre",
+    "replyingTo": "En réponse à {{name}} :",
+    "cancelReply": "Annuler la réponse",
+    "parentDeleted": "Commentaire d’origine supprimé",
+    "showParent": "Aller au commentaire d’origine de {{name}}"
   },
   "share": {
     "title": "Partager la conversation",
@@ -693,6 +698,8 @@
     "assignedAnon": "Une conversation vous a été attribuée",
     "mention": "{{who}} vous a mentionné dans un commentaire",
     "mentionAnon": "Vous avez été mentionné dans un commentaire",
+    "reply": "{{who}} a répondu à votre commentaire",
+    "replyAnon": "Quelqu’un a répondu à votre commentaire",
     "open": "Ouvrir"
   },
   "shortcuts": {
@@ -872,6 +879,12 @@
     "moved_one": "Conversation déplacée vers {{name}}",
     "moved_many": "{{count}} conversations déplacées vers {{name}}",
     "moved_other": "{{count}} conversations déplacées vers {{name}}",
+    "dropRefused_one": "Sa boîte de réception n’a pas de catégorie {{name}}",
+    "dropRefused_many": "Leurs boîtes de réception n’ont pas de catégorie {{name}}",
+    "dropRefused_other": "Leurs boîtes de réception n’ont pas de catégorie {{name}}",
+    "dropSome_one": "{{count}} conversation reste en place : sa boîte de réception n’a pas de catégorie {{name}}",
+    "dropSome_many": "{{count}} conversations restent en place : leurs boîtes de réception n’ont pas de catégorie {{name}}",
+    "dropSome_other": "{{count}} conversations restent en place : leurs boîtes de réception n’ont pas de catégorie {{name}}",
     "always": "Toujours",
     "alwaysHint": "Envoyer ici aussi les prochains e-mails de {{sender}}",
     "ruleSaved": "Les e-mails de {{sender}} vont désormais dans {{name}}",
@@ -880,6 +893,12 @@
       "body": "Les e-mails des personnes restent dans Principale, tandis que les newsletters, les notifications et les promotions ont leurs propres onglets. Ollie peut proposer des catégories à partir de vos e-mails.",
       "action": "Configurer les catégories",
       "dismiss": "Plus tard"
+    },
+    "reorder": {
+      "hint": "Faites glisser pour réordonner, ou appuyez sur {{left}} ou {{right}}",
+      "hintDrag": "Faites glisser pour réordonner",
+      "moved": "{{name}} déplacé en position {{position}} sur {{count}}",
+      "failed": "Impossible d’enregistrer le nouvel ordre des onglets"
     }
   },
   "aiFeedback": {

@@ -561,16 +561,29 @@ struct MailComment: Codable, Hashable, Sendable, Identifiable {
     var mentions: [String] = []
     var createdAt: Date
     var updatedAt: Date
+    /// The comment of this conversation it replies to, quoted by `parent` (contracts/collab.md "Replies").
+    var replyTo: String?
+    var parent: MailCommentQuote?
+    /// It replied to a comment that has since been deleted.
+    var parentDeleted: Bool = false
 
     enum CodingKeys: String, CodingKey {
-        case id, author, mentions
+        case id, author, mentions, parent
         case threadID = "thread_id"
         case bodyHTML = "body_html"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case replyTo = "reply_to"
+        case parentDeleted = "parent_deleted"
     }
 
     var edited: Bool { updatedAt.timeIntervalSince(createdAt) > 1 }
+}
+
+/// What a reply shows of the comment it answers: who wrote it and its first line.
+struct MailCommentQuote: Codable, Hashable, Sendable {
+    var author: UserRef?
+    var excerpt: String
 }
 
 extension MailComment {
@@ -583,6 +596,9 @@ extension MailComment {
         mentions = c.lenient([String].self, forKey: .mentions) ?? []
         createdAt = c.lenient(Date.self, forKey: .createdAt) ?? .distantPast
         updatedAt = c.lenient(Date.self, forKey: .updatedAt) ?? createdAt
+        replyTo = c.lenient(String.self, forKey: .replyTo)
+        parent = c.lenient(MailCommentQuote.self, forKey: .parent)
+        parentDeleted = c.lenient(Bool.self, forKey: .parentDeleted) ?? false
     }
 }
 

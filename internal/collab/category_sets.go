@@ -29,7 +29,7 @@ import (
 const (
 	categoryPrimary    = "primary"
 	minCategories      = 2
-	maxCategories      = 8
+	maxCategories      = 10
 	maxCategoryName    = 40
 	maxCategoryDesc    = 300
 	maxCategoryRules   = 500
@@ -361,10 +361,10 @@ func slugKey(name string) string {
 	return strings.Trim(b.String(), "-")
 }
 
-// cleanCategories checks a set's categories: 2..8, primary first, keys and names once.
+// cleanCategories checks a set's categories: 2..10, primary first, keys and names once.
 func cleanCategories(in []MailCategory) ([]MailCategory, error) {
 	if len(in) < minCategories || len(in) > maxCategories {
-		return nil, httpx.Validation("Use 2 to 8 categories.")
+		return nil, httpx.Validation("Use 2 to 10 categories.")
 	}
 	out := make([]MailCategory, 0, len(in))
 	keys, names := map[string]bool{}, map[string]bool{}

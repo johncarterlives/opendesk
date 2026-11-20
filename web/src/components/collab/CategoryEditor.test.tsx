@@ -59,7 +59,7 @@ it("keeps Primary first without a remove button, and offers the presets not in t
   expect(host.querySelector('button[aria-label="Remove Updates"]')).not.toBeNull();
   expect(button("Updates")).toBeUndefined();
   expect(button("Newsletters")).toBeDefined();
-  expect(host.textContent).toContain("2 of 8");
+  expect(host.textContent).toContain("2 of 10");
   await unmount();
 });
 
@@ -76,7 +76,7 @@ it("says when a set has too few categories, and offers Ollie only when it can su
   const { host, button, unmount } = await render([PRESETS[0], PRESETS[1]]);
   expect(button("Suggest with Ollie")).toBeUndefined();
   await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Remove Updates"]')!.click());
-  expect(host.querySelector('[role="alert"]')?.textContent).toBe("Use between 2 and 8 categories.");
+  expect(host.querySelector('[role="alert"]')?.textContent).toBe("Use between 2 and 10 categories.");
   await unmount();
   const withOllie = await render([PRESETS[0], PRESETS[1]], true);
   expect(withOllie.button("Suggest with Ollie")).toBeDefined();

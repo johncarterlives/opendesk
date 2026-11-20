@@ -248,6 +248,8 @@ func TestAIQueueCategories(t *testing.T) {
 	mustExec(t, w.d, `UPDATE collab_threads SET category = 'primary', category_source = 'ai', category_pending = false WHERE id = $1`, q)
 	mustExec(t, w.d, `UPDATE collab_threads SET category = 'updates', category_source = 'rule', category_pending = false WHERE id = $1`, upd)
 	mustExec(t, w.d, `UPDATE collab_threads SET category = 'retired', category_source = 'ai', category_pending = false WHERE id = $1`, gone)
+	// From another sender: a move sorts the mover's sender's other conversations again ("Learning from moves").
+	mustExec(t, w.d, `UPDATE collab_messages SET from_addr = '{"name": "Gina", "email": "gina@elsewhere.example"}' WHERE thread_id = $1`, gone)
 	mustExec(t, w.d, `UPDATE collab_threads SET category = NULL, category_source = NULL, category_pending = true WHERE id = $1`, pending)
 
 	if id, _ := claim([]string{"updates", "updates"}, false); id != upd {
@@ -284,7 +286,7 @@ func TestAIQueueCategories(t *testing.T) {
 	}
 
 	var e apiError
-	for _, bad := range [][]string{{"Not a key"}, {"a", "b", "c", "d", "e", "f", "g", "h", "i"}} {
+	for _, bad := range [][]string{{"Not a key"}, {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"}} {
 		if st := doJSON(t, "POST", bot.URL+"/v1/collab/ai-queue/claim", map[string]any{"categories": bad}, &e); st != 422 {
 			t.Fatalf("categories %v: %d", bad, st)
 		}

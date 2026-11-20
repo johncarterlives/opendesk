@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -21,12 +22,14 @@ type fakeMailAI struct {
 	err      error
 	calls    int
 	asked    []string // senders asked about
+	reqs     []decide.Request
 }
 
 func (f *fakeMailAI) Enabled() bool                             { return true }
 func (f *fakeMailAI) CanDecide(context.Context, uuid.UUID) bool { return true }
 func (f *fakeMailAI) DecideMail(_ context.Context, _ uuid.UUID, req decide.Request) (decide.Result, bool, error) {
 	f.calls++
+	f.reqs = append(f.reqs, req)
 	if f.err != nil {
 		return decide.Result{}, false, f.err
 	}
@@ -180,6 +183,40 @@ func TestCleanCategories(t *testing.T) {
 	}
 	if _, err := cleanCategories(cats); err != nil {
 		t.Fatalf("a cleaned suggestion does not pass: %v", err)
+	}
+}
+
+func TestCategoryLimit(t *testing.T) {
+	set := func(n int) []MailCategory {
+		out := []MailCategory{{Name: "Primary"}}
+		for i := 1; i < n; i++ {
+			out = append(out, MailCategory{Name: "Tab " + strconv.Itoa(i)})
+		}
+		return out
+	}
+	got, err := cleanCategories(set(10))
+	if err != nil || len(got) != 10 {
+		t.Fatalf("10 categories: %d, %v", len(got), err)
+	}
+	if _, err := cleanCategories(set(11)); err == nil {
+		t.Fatal("11 categories passed")
+	}
+	var many []SuggestedCategory
+	for i := 1; i <= 12; i++ {
+		many = append(many, SuggestedCategory{Key: "tab-" + strconv.Itoa(i), Name: "Tab " + strconv.Itoa(i)})
+	}
+	if cats := suggestedCategories(many); len(cats) != 10 {
+		t.Fatalf("Ollie's suggestion kept %d", len(cats))
+	}
+	keys := make([]string, 10)
+	for i := range keys {
+		keys[i] = "tab-" + strconv.Itoa(i)
+	}
+	if _, err := queueCategories(keys); err != nil {
+		t.Fatalf("a claim of 10 categories: %v", err)
+	}
+	if _, err := queueCategories(append(keys, "tab-10")); err == nil {
+		t.Fatal("a claim of 11 categories passed")
 	}
 }
 

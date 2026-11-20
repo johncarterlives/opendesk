@@ -9,7 +9,16 @@ import Callout from '../../../components/Callout.astro';
 
 With Collab, an inbox can be split into tabs, like Gmail's: **Primary** for mail from people, and categories such as **Updates**, **Newsletters** and **Promotions** for the rest. New mail is sorted as it arrives. Local categories only change where mail shows in opendesk. For Google accounts, you can also choose **Sync with Gmail** to keep category changes in both places. Changing a category preserves inbox membership, unread state and labels.
 
-The tabs sit above the inbox while an account in view is split. In **All inboxes**, the tabs of every split account are joined, each with its unread count.
+The tabs sit above the inbox while an account in view is split, in the order of its categories. In **All inboxes**, the tabs of every split account are joined, each with its unread count. They follow the order most of those accounts share (the first account's when there is no majority), and a category only another account has comes right after the one before it in that account's own order.
+
+To change the order of the tabs without opening settings, drag a tab left or right along the row, or focus it and press <kbd>mod</kbd> <kbd>shift</kbd> <kbd>←</kbd> or <kbd>→</kbd> (<kbd>mod</kbd> is <kbd>⌘</kbd> on macOS and <kbd>Ctrl</kbd> elsewhere). Primary always stays first. The new order is saved where the tab bar's settings button leads:
+
+- **Your own account**, when it is the only split account in view. If it followed your team's or the workspace's categories, it now has its own copy of them in the new order. Choose **Follow** in the account's category settings to go back.
+- **The workspace default or a team's categories**, for admins, when every split account in view follows that set. Everyone who follows it sees the new order.
+
+Tabs don't move when the order isn't yours to change: for viewers, for Gmail's categories, when admins turned off **Members choose their own**, or when the tabs in view join several different sets.
+
+To move a conversation to another category, drag it from the list onto that category's tab, or choose **Move to** in its menu. Drag one of several selected conversations to move them all. In **All inboxes**, a tab can be a category only some of your accounts have: the conversations whose account has it move, and the message that follows says how many stayed. When none of them can go there, the tab says so while you hold them over it. You can undo the move from the message that follows.
 
 ## Who decides
 
@@ -32,7 +41,7 @@ Open **Settings**, **Inbox categories** (under **Channels**, next to **Mail acco
 </Step>
 <Step title="Make them yours">
 
-Rename, recolour, reorder or remove categories, add one of your own, or choose **Suggest with Ollie** and say in a few words what the inboxes are for. Primary always comes first and may be renamed, for example to *Important*. A set has 2 to 8 categories.
+Rename, recolour, reorder or remove categories, add one of your own, or choose **Suggest with Ollie** and say in a few words what the inboxes are for. Primary always comes first and may be renamed, for example to *Important*. A set has 2 to 10 categories.
 
 Give each category a short description of what belongs in it. Ollie sorts by these descriptions.
 
@@ -86,11 +95,13 @@ New mail in an inbox is sorted in this order:
 
 Mail Ollie is unsure of stays in Primary. A conversation you answer moves to Primary, and one you move by hand stays where you put it. Sorting never archives, reads or moves mail at your provider.
 
+Moving mail teaches Ollie. Each conversation you move to a category, from its menu, by dragging it onto a tab or several at once, becomes an example for that account: when Ollie sorts the account's new mail, it sees your recent moves and puts similar mail where you put it, not only mail from the same sender. Right after a move, the sender's other recent conversations that Ollie or the headers placed are sorted again with what it learned; conversations you moved yourself stay put. Sender rules still come first, and undoing a move forgets it.
+
 ## Privacy
 
 Admins choose the categories but never see anyone's mail or how it was sorted. A category and a sender rule are seen only by whoever sees the account.
 
-To sort a message, Ollie reads its sender, subject and first lines, nothing more, and keeps nothing but the category it chose. Anyone can turn off **Let Ollie sort new mail** for an account they manage, whatever admins set. Sender rules and mail headers still sort it.
+To sort a message, Ollie reads its sender, subject and first lines, nothing more, and keeps nothing but the category it chose. For the conversations you move by hand, the account keeps the sender, subject and first lines of your latest moves as Ollie's examples, used only to sort that account's mail and never shown to anyone. Anyone can turn off **Let Ollie sort new mail** for an account they manage, whatever admins set. Sender rules and mail headers still sort it.
 
 <Callout>
 

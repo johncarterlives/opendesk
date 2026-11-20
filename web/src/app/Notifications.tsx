@@ -178,6 +178,7 @@ export function describe(n: Notification, t: TFunction<"shell">): string {
     case "collab_mention": {
       const c = i18n.getFixedT(null, "collab");
       if (n.type === "collab_assigned") return who ? c("notifications.assigned", { who }) : c("notifications.assignedAnon");
+      if (text(n.data.reply_to)) return who ? c("notifications.reply", { who }) : c("notifications.replyAnon");
       return who ? c("notifications.mention", { who }) : c("notifications.mentionAnon");
     }
     case "wiki_mention":

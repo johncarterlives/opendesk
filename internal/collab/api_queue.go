@@ -85,7 +85,7 @@ func (s *service) registerQueueRoutes(api huma.API) {
 			Body *struct {
 				AccountID  *uuid.UUID `json:"account_id,omitempty" doc:"Only this account's conversations"`
 				TTLSeconds int        `json:"ttl_seconds,omitempty" minimum:"0" maximum:"900" doc:"How long the claim holds (60 to 900; default 300)"`
-				Categories []string   `json:"categories,omitempty" maxItems:"8" doc:"Only conversations in these categories (keys; primary also takes accounts not split), once sorted"`
+				Categories []string   `json:"categories,omitempty" maxItems:"10" doc:"Only conversations in these categories (keys; primary also takes accounts not split), once sorted"`
 			}
 		}) (*aiClaimOut, error) {
 			p, err := s.requireQueueKey(ctx)
@@ -212,7 +212,7 @@ type queueFilter struct {
 // repeats. None means every category.
 func queueCategories(in []string) ([]string, error) {
 	if len(in) > maxCategories {
-		return nil, httpx.Validation("At most 8 categories.")
+		return nil, httpx.Validation("At most 10 categories.")
 	}
 	var out []string
 	for _, c := range in {

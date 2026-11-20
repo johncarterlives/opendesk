@@ -41,6 +41,9 @@ group("Collab notifications", () => {
   it("names who assigned or mentioned, or says it plainly", () => {
     expect(describe(collab("collab_assigned", { thread_id: "th1", actor: { name: "Maya Chen" } }), t)).toBe("Maya Chen assigned you a conversation");
     expect(describe(collab("collab_mention", { thread_id: "th1" }), t)).toBe("You were mentioned in a comment");
+    // A reply to your comment says so.
+    expect(describe(collab("collab_mention", { thread_id: "th1", reply_to: "c0", actor: { name: "Maya Chen" } }), t)).toBe("Maya Chen replied to your comment");
+    expect(describe(collab("collab_mention", { thread_id: "th1", reply_to: "c0" }), t)).toBe("Someone replied to your comment");
   });
 });
 

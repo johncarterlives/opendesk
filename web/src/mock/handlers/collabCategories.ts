@@ -74,7 +74,7 @@ export function resolveCategories(ws: WsData, choice: AccountChoice, ownerId: st
   return { ...base, enabled: false, categories: [], source: "none", team: null };
 }
 
-/** A set as the server checks it: 2..8, Primary first, keys and names once each. */
+/** A set as the server checks it: 2..10, Primary first, keys and names once each. */
 export function parseCategories(v: unknown): MailCategory[] {
   if (!Array.isArray(v) || v.length < MIN_CATEGORIES || v.length > MAX_CATEGORIES) throw invalid(`categories must hold ${MIN_CATEGORIES} to ${MAX_CATEGORIES} categories`);
   const keys = new Set<string>();

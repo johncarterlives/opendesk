@@ -3468,11 +3468,19 @@ export type MailComment = {
   body_html: string;
   /** User ids. */
   mentions: string[];
+  /** The comment of this conversation it replies to (contracts/collab.md "Replies"). */
+  reply_to: string | null;
+  /** That comment's author and first line, with `reply_to`. */
+  parent: MailCommentQuote | null;
+  /** It replied to a comment that has since been deleted. */
+  parent_deleted: boolean;
   created_at: string;
   updated_at: string;
   /** An AI note: the key's name when it added it (contracts/collab.md "AI notes"). */
   ai_note_by?: string | null;
 };
+
+export type MailCommentQuote = { author: UserRef | null; excerpt: string };
 
 /** An AI key that skipped a conversation since its last message (contracts/collab.md "AI notes"). */
 export type MailAISkip = { client: string; reason: string; at: string };

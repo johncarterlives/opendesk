@@ -32,7 +32,7 @@ var errCategoriesLocked = httpx.E(http.StatusUnprocessableEntity, "categories_lo
 
 type categorySetInput struct {
 	Enabled    bool           `json:"enabled"`
-	Categories []MailCategory `json:"categories,omitempty" maxItems:"8" doc:"2..8 when enabled, primary first; left out: the default set"`
+	Categories []MailCategory `json:"categories,omitempty" maxItems:"10" doc:"2..10 when enabled, primary first; left out: the default set"`
 }
 
 type settingsBody struct {
@@ -152,7 +152,7 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 		func(ctx context.Context, in *struct {
 			Body struct {
 				Enabled    bool           `json:"enabled"`
-				Categories []MailCategory `json:"categories,omitempty" maxItems:"8" doc:"2..8 when enabled, primary first; left out: the default set"`
+				Categories []MailCategory `json:"categories,omitempty" maxItems:"10" doc:"2..10 when enabled, primary first; left out: the default set"`
 				Locked     *bool          `json:"locked,omitempty" doc:"Members who are not admins cannot choose their own"`
 			}
 		}) (*settingsBody, error) {
@@ -383,7 +383,7 @@ func (s *service) registerCategoryRoutes(api huma.API) {
 			ID   string `path:"id"`
 			Body struct {
 				Mode       string         `json:"mode" enum:"follow,custom,off,gmail"`
-				Categories []MailCategory `json:"categories,omitempty" maxItems:"8" doc:"custom: 2..8, primary first; left out keeps its own, else the default set"`
+				Categories []MailCategory `json:"categories,omitempty" maxItems:"10" doc:"custom: 2..10, primary first; left out keeps its own, else the default set"`
 				AI         *bool          `json:"ai,omitempty" doc:"Ollie may sort its new mail"`
 			}
 		}) (*struct{ Body MailAccount }, error) {
@@ -705,7 +705,7 @@ func inboxSample(ctx context.Context, q db.Querier, a *accountRow) ([]string, er
 }
 
 // suggestedCategories cleans Ollie's proposal into a set that passes cleanCategories:
-// primary first, names checked, up to 8.
+// primary first, names checked, up to maxCategories.
 func suggestedCategories(in []SuggestedCategory) []MailCategory {
 	out := []MailCategory{presetCategories[0]}
 	seen := map[string]bool{categoryPrimary: true}

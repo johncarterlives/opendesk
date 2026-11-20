@@ -108,7 +108,9 @@
       "comment": "Comment",
       "people": "Show the people",
       "search": "Search mail",
-      "escape": "Close or clear selection"
+      "escape": "Close or clear selection",
+      "tabLeft": "Move the category tab left",
+      "tabRight": "Move the category tab right"
     },
     "page": {
       "new": "New page",

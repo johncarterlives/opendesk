@@ -46,6 +46,9 @@ func (s *service) refreshCategoryPolicy(ctx context.Context, tx pgx.Tx, a *accou
         WHERE account_id = $1 AND state IN ('pending','confirming','blocked')`, a.ID); err != nil {
 		return err
 	}
+	if err := forgetCategoryExamples(ctx, tx, a.ID, keys); err != nil {
+		return err
+	}
 	if old == modeGmail || c.Engine == modeGmail || len(keys) == 0 {
 		if _, err := tx.Exec(ctx, `UPDATE collab_threads SET category = NULL, category_source = NULL, category_pending = false WHERE account_id = $1`, a.ID); err != nil {
 			return err
@@ -137,6 +140,8 @@ func (s *service) chooseCategories(ctx context.Context, p *auth.Principal, threa
 			return httpx.NotFound("Conversation")
 		}
 		tids := []uuid.UUID{}
+		// What a member moves by hand teaches the account's local sorting ("Learning from moves").
+		learn := map[uuid.UUID][]movedThread{}
 		for _, t := range threads {
 			a := accounts[t.AccountID]
 			// Revalidate identity inside the transaction; a removed conversation is not an admission.
@@ -164,6 +169,16 @@ func (s *service) chooseCategories(ctx context.Context, p *auth.Principal, threa
 			source := sortedByPerson
 			if policies[a.ID].Engine == modeGmail {
 				source = sortedByGmail
+			} else {
+				var was *string
+				if err := tx.QueryRow(ctx, `SELECT category FROM collab_threads WHERE id = $1`, t.ID).Scan(&was); err != nil {
+					return err
+				}
+				from := ""
+				if c := effectiveCategory(a.CategoryKeys, was); c != nil {
+					from = *c
+				}
+				learn[a.ID] = append(learn[a.ID], movedThread{ID: t.ID, From: from})
 			}
 			if _, err := tx.Exec(ctx, `UPDATE collab_threads SET category = $4, category_source = $5, category_pending = false
                 WHERE workspace_id = $1 AND account_id = $2 AND id = $3`, p.WorkspaceID, a.ID, t.ID, key, source); err != nil {
@@ -172,6 +187,11 @@ func (s *service) chooseCategories(ctx context.Context, p *auth.Principal, threa
 			tids = append(tids, t.ID)
 		}
 		for _, id := range accountIDs {
+			if moved := learn[id]; len(moved) > 0 {
+				if err := s.learnFromMoves(ctx, tx, accounts[id], moved, key); err != nil {
+					return err
+				}
+			}
 			if policies[id].Engine == modeGmail {
 				if err := s.publishAccounts(ctx, tx, p.WorkspaceID, id, nil); err != nil {
 					return err

@@ -108,7 +108,9 @@
       "comment": "Comentar",
       "people": "Mostrar las personas",
       "search": "Buscar correo",
-      "escape": "Cerrar o borrar la selección"
+      "escape": "Cerrar o borrar la selección",
+      "tabLeft": "Mover la pestaña de categoría a la izquierda",
+      "tabRight": "Mover la pestaña de categoría a la derecha"
     },
     "page": {
       "new": "Nueva página",

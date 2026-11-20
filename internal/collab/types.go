@@ -330,15 +330,26 @@ type MailAttachment struct {
 }
 
 type MailComment struct {
-	ID        uuid.UUID       `json:"id"`
-	ThreadID  uuid.UUID       `json:"thread_id"`
-	Author    *domain.UserRef `json:"author"`
-	BodyHTML  string          `json:"body_html"`
-	Mentions  []uuid.UUID     `json:"mentions"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ID       uuid.UUID       `json:"id"`
+	ThreadID uuid.UUID       `json:"thread_id"`
+	Author   *domain.UserRef `json:"author"`
+	BodyHTML string          `json:"body_html"`
+	Mentions []uuid.UUID     `json:"mentions"`
+	// ReplyTo is the comment it replies to (contracts/collab.md "Replies"); Parent quotes it.
+	ReplyTo *uuid.UUID    `json:"reply_to"`
+	Parent  *CommentQuote `json:"parent"`
+	// ParentDeleted: it replied to a comment that has since been deleted.
+	ParentDeleted bool      `json:"parent_deleted"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 	// AINoteBy is, for a note an AI key added, the key's name then ("AI note by <name>").
 	AINoteBy *string `json:"ai_note_by"`
+}
+
+// CommentQuote is what a reply shows of the comment it answers: who wrote it and its first line.
+type CommentQuote struct {
+	Author  *domain.UserRef `json:"author"`
+	Excerpt string          `json:"excerpt"`
 }
 
 // ThreadAccount is the account a conversation belongs to, as its detail shows it.

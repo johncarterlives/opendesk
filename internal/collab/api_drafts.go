@@ -143,7 +143,7 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				if err != nil {
 					return nil, httpx.Wrap(err)
 				}
-				if _, err := s.addComment(ctx, p, t.thread, b.AINote, nil, ai); err != nil {
+				if _, err := s.addComment(ctx, p, t.thread, b.AINote, nil, nil, ai); err != nil {
 					return nil, err
 				}
 			}

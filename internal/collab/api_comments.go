@@ -2,6 +2,7 @@ package collab
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"regexp"
 	"slices"
@@ -38,6 +39,7 @@ func (s *service) registerCommentRoutes(api huma.API) {
 			Body struct {
 				BodyHTML string      `json:"body_html" minLength:"1" maxLength:"20000"`
 				Mentions []uuid.UUID `json:"mentions,omitempty" maxItems:"50"`
+				ReplyTo  *uuid.UUID  `json:"reply_to,omitempty" doc:"The comment of this conversation it replies to"`
 			}
 		}) (*commentBody, error) {
 			// A collab:draft key may add an AI note ("AI notes"); every other comment route
@@ -63,7 +65,7 @@ func (s *service) registerCommentRoutes(api huma.API) {
 					return nil, httpx.Wrap(err)
 				}
 			}
-			cid, err := s.addComment(ctx, p, t, in.Body.BodyHTML, in.Body.Mentions, ai)
+			cid, err := s.addComment(ctx, p, t, in.Body.BodyHTML, in.Body.Mentions, in.Body.ReplyTo, ai)
 			if err != nil {
 				return nil, err
 			}
@@ -163,10 +165,16 @@ const aiNotesPerMinute = 30
 
 var errAINoteMentions = httpx.E(422, "ai_note_mentions", "An AI note cannot mention anyone: a mention would share the conversation.")
 
-// addComment stores a comment on t by p, notifies and shares with the people it mentions,
-// and publishes the change. ai is the key adding an AI note (nil for a person): it is
-// labelled with the key's name, may mention no one, and is audit-logged.
-func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRow, raw string, listed []uuid.UUID, ai *aiDrafter) (uuid.UUID, error) {
+var errAINoteReply = httpx.E(422, "ai_note_reply", "An AI note cannot reply to a comment: a reply would notify its author.")
+
+// addComment stores a comment on t by p, optionally as a reply to another comment of t,
+// notifies and shares with the people it mentions (and the author it answers), and
+// publishes the change. ai is the key adding an AI note (nil for a person): it is
+// labelled with the key's name, may mention and answer no one, and is audit-logged.
+func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRow, raw string, listed []uuid.UUID, replyTo *uuid.UUID, ai *aiDrafter) (uuid.UUID, error) {
+	if ai != nil && replyTo != nil {
+		return uuid.Nil, errAINoteReply
+	}
 	body, err := cleanComment(raw)
 	if err != nil {
 		return uuid.Nil, err
@@ -181,6 +189,10 @@ func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRo
 		if err != nil {
 			return err
 		}
+		parent, err := replyParent(ctx, tx, p, t, replyTo)
+		if err != nil {
+			return err
+		}
 		var keyID *uuid.UUID
 		var client *string
 		if ai != nil {
@@ -189,8 +201,8 @@ func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRo
 			}
 			keyID, client = &ai.APIKeyID, &ai.Client
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO collab_comments (id, workspace_id, thread_id, author_id, body_html, mentions, ai_api_key_id, ai_client)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`, cid, p.WorkspaceID, t.ID, p.UserID, body, mentions, keyID, client); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO collab_comments (id, workspace_id, thread_id, author_id, body_html, mentions, reply_to, replied, ai_api_key_id, ai_client)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, cid, p.WorkspaceID, t.ID, p.UserID, body, mentions, replyTo, replyTo != nil, keyID, client); err != nil {
 			return err
 		}
 		if ai != nil {
@@ -206,7 +218,10 @@ func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRo
 		// A person's comment answers the teammates who commented before (Mentions); an AI
 		// note is the key's, not its creator's answer, so it brings no one into Mentions.
 		if ai == nil {
-			if err := commentFollowers(ctx, tx, p.WorkspaceID, t.ID, cid, p.UserID, mentions); err != nil {
+			if err := s.answerPerson(ctx, tx, p, t, cid, body, parent, mentions); err != nil {
+				return err
+			}
+			if err := commentFollowers(ctx, tx, p.WorkspaceID, t.ID, cid, p.UserID, mentions, parent); err != nil {
 				return err
 			}
 		}
@@ -296,6 +311,59 @@ func (s *service) mentionPeople(ctx context.Context, tx pgx.Tx, p *auth.Principa
 		}
 	}
 	return nil
+}
+
+// replyParent checks the comment a new one replies to, in tx: a comment of the same conversation,
+// in the caller's workspace (`422 validation_failed` otherwise). It returns who wrote it, nil when
+// the reply answers no one or its author has left; the row is locked against deletion until tx ends.
+func replyParent(ctx context.Context, tx pgx.Tx, p *auth.Principal, t *threadRow, replyTo *uuid.UUID) (*replyTarget, error) {
+	if replyTo == nil {
+		return nil, nil
+	}
+	var author *uuid.UUID
+	err := tx.QueryRow(ctx, `SELECT author_id FROM collab_comments WHERE workspace_id = $1 AND thread_id = $2 AND id = $3 FOR KEY SHARE`,
+		p.WorkspaceID, t.ID, *replyTo).Scan(&author)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, httpx.Validation("The comment you reply to is not in this conversation.")
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &replyTarget{CommentID: *replyTo, AuthorID: author}, nil
+}
+
+// replyTarget is the comment a new comment replies to.
+type replyTarget struct {
+	CommentID uuid.UUID
+	AuthorID  *uuid.UUID // nil once its author left
+}
+
+// answered is the member a reply answers: the author of the comment it replies to, unless that is
+// the replier. Nil for a comment that replies to nothing.
+func (r *replyTarget) answered(by uuid.UUID) *uuid.UUID {
+	if r == nil || r.AuthorID == nil || *r.AuthorID == by {
+		return nil
+	}
+	return r.AuthorID
+}
+
+// answerPerson notifies the author of the comment a reply answers, like a mention, in tx. A reply
+// shares nothing: its author is told only while they are a member who sees the conversation, and
+// not twice when the reply mentions them too.
+func (s *service) answerPerson(ctx context.Context, tx pgx.Tx, p *auth.Principal, t *threadRow, commentID uuid.UUID, body string, parent *replyTarget, mentions []uuid.UUID) error {
+	u := parent.answered(p.UserID)
+	if u == nil || slices.Contains(mentions, *u) {
+		return nil
+	}
+	var sees bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM collab_threads t WHERE t.workspace_id = $1 AND t.id = $2
+		AND EXISTS (SELECT 1 FROM members m WHERE m.workspace_id = $1 AND m.user_id = $3)
+		AND `+threadVisibleSQL("t", "$3")+`)`, p.WorkspaceID, t.ID, *u).Scan(&sees); err != nil || !sees {
+		return err
+	}
+	return s.notify(ctx, tx, p.WorkspaceID, *u, NotifyMention, map[string]any{"thread_id": t.ID.String(),
+		"comment_id": commentID.String(), "reply_to": parent.CommentID.String(), "by": p.UserID.String(), "subject": t.Subject,
+		"preview": hd.Excerpt(hd.HTMLToText(body), 140)})
 }
 
 // visibleComment loads a comment on a conversation the caller sees.

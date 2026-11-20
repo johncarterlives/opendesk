@@ -35,6 +35,17 @@ func TestAINotes(t *testing.T) {
 		map[string]any{"body_html": `<p><span data-type="mention" data-id="` + w.agent2.UserID.String() + `">@B</span></p>`}, &e); st != 422 {
 		t.Fatalf("mention by mark: %d", st)
 	}
+	// A reply would notify the comment's author: refused. A person may reply to the note.
+	if st := doJSON(t, "POST", bot.URL+"/v1/collab/threads/"+threads[0].String()+"/comments",
+		map[string]any{"body_html": "<p>Agreed</p>", "reply_to": note.ID}, &e); st != 422 || e.Code != "ai_note_reply" {
+		t.Fatalf("AI note as a reply: %d %+v", st, e)
+	}
+	var answer MailComment
+	if st := doJSON(t, "POST", human.URL+"/v1/collab/threads/"+threads[0].String()+"/comments",
+		map[string]any{"body_html": "<p>I'll decide.</p>", "reply_to": note.ID}, &answer); st != 200 ||
+		answer.ReplyTo == nil || *answer.ReplyTo != note.ID || answer.AINoteBy != nil {
+		t.Fatalf("reply to an AI note: %d %+v", st, answer)
+	}
 
 	// Never edited, by the key or the member it acts as; the member may delete it.
 	if st := doJSON(t, "PATCH", bot.URL+"/v1/collab/comments/"+note.ID.String(), map[string]any{"body_html": "<p>x</p>"}, nil); st != 403 {
