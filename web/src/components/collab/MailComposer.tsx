@@ -26,6 +26,7 @@ import { cn } from "@/lib/cn";
 import { q, qk } from "@/lib/queries";
 import { RichEditor, type RichEditorHandle } from "@/components/editor/RichEditor";
 import { replaceSignature, SignatureBlock, signatureBlockHtml, withoutSignature } from "@/components/editor/signature";
+import { SuggestionPopup } from "@/components/tickets/detail/suggestions";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { Select } from "@/components/ui/select";
@@ -33,6 +34,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
 import { AccountDot } from "./bits";
+import { MailSavedReplyButton, useMailSavedReplies } from "./MailSavedReplies";
 import { holdSend, reopenDraft, undoSendSeconds } from "./outbox";
 import { RecipientField } from "./RecipientField";
 
@@ -138,11 +140,6 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
   const navigate = useNavigate();
   const accountIdRef = useRef(accountId);
   accountIdRef.current = accountId;
-  // The signature block's settings button opens the account's settings (its signature and its addresses').
-  const extensions = useMemo(
-    () => [SignatureBlock.configure({ onSettings: () => void navigate({ to: "/settings/mail-accounts/$accountId", params: { accountId: accountIdRef.current } }) })],
-    [navigate],
-  );
   // The address it goes out from, and the signature that comes with it.
   const identity = account ? (findIdentity(account, draft.from) ?? defaultIdentity(account)) : undefined;
   const fromEmail = identity?.email;
@@ -266,6 +263,13 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
     setDraft(patch);
     changed();
   };
+  const savedReplies = useMailSavedReplies(changed);
+  const replyExtension = savedReplies.extension;
+  // The signature block's settings button opens the account's settings (its signature and its addresses').
+  const extensions = useMemo(
+    () => [SignatureBlock.configure({ onSettings: () => void navigate({ to: "/settings/mail-accounts/$accountId", params: { accountId: accountIdRef.current } }) }), replyExtension],
+    [navigate, replyExtension],
+  );
 
   // Closing (or moving to another conversation) saves what is not saved yet.
   useEffect(
@@ -599,11 +603,12 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         placeholder={draft.mode === "new" ? t("composer.newPlaceholder") : t("composer.placeholder")}
         ariaLabel={draft.mode === "new" ? t("composer.newPlaceholder") : t("composer.placeholder")}
         onSubmit={() => void submit()}
-        editable={!saving}
+        editable={!saving && !send.isPending}
         extensions={extensions}
         className={variant === "floating" ? "min-h-[200px] flex-1" : undefined}
         contentClassName={cn("text-[13px]", variant === "floating" ? "min-h-[180px]" : "min-h-[96px] max-h-[360px]")}
         toolbar="compact"
+        toolbarFolded="responsive"
         // Send first and on the left, as Gmail and Outlook put it: where the eye lands when
         // the writing is done.
         toolbarStart={
@@ -627,6 +632,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
                 {saveState === "saving" ? t("composer.saving") : saveState === "saved" ? t("composer.saved") : t("composer.saveFailed")}
               </span>
             )}
+            <MailSavedReplyButton saved={savedReplies} getEditor={() => editor.current?.editor} onInsert={changed} disabled={saving || send.isPending} />
             <input ref={fileInput} type="file" multiple hidden onChange={(e) => e.target.files && upload(e.target.files)} />
             <Tooltip content={t("composer.attach")}>
               <button
@@ -653,6 +659,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
           </>
         }
       />
+      <SuggestionPopup store={savedReplies.store} />
       {(uploads.length > 0 || keptFiles.length > 0 || draft.mode === "forward") && (
         <div className="flex flex-wrap items-center gap-1.5 border-t border-line-soft px-3 py-2">
           {draft.mode === "forward" && !draft.draftId && message && message.attachments.some((a) => !a.inline) && (

@@ -22,7 +22,7 @@ import { stripWorkspaceParam, workspaceParam } from "./lib/workspaceParam";
 import { queryClient } from "./lib/queryClient";
 import { q } from "./lib/queries";
 import { companyFilter, parseCompanySearch, parsePeopleSearch, peopleFilter } from "./lib/directorySort";
-import { productHome, productsOf, requireTickets, TICKET_SETTINGS } from "./lib/products";
+import { productHome, productsOf, requireTickets, settingsProductAvailable } from "./lib/products";
 import { folderById, listQuery, parseInboxSearch, teamQuery } from "./lib/folders";
 import { viewOrTicket } from "./lib/viewLink";
 import { withRememberedSort } from "./lib/listSort";
@@ -733,9 +733,10 @@ const reportsRoute = createRoute({
 const settingsLayout = createRoute({
   getParentRoute: () => appLayout,
   path: "/settings",
-  // A link to a ticket setting is a link to nothing while Tickets is off.
+  // Send links to settings for disabled products to the workspace home.
   beforeLoad: async ({ context, location }) => {
-    if ([...TICKET_SETTINGS].some((p) => location.pathname === p || location.pathname.startsWith(p + "/"))) await requireTickets(context.queryClient);
+    const products = productsOf(await context.queryClient.ensureQueryData(q.workspace()));
+    if (!settingsProductAvailable(location.pathname, products)) throw await productHome(context.queryClient);
   },
   component: page(() => import("./pages/settings/SettingsLayout")),
   staticData: { title: "settings" },

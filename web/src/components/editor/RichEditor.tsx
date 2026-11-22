@@ -33,8 +33,8 @@ export type RichEditorProps = {
   /** Before the formatting buttons: a mail composer's Send, first and on the left, as mail clients put it. */
   toolbarStart?: ReactNode;
   toolbarEnd?: ReactNode;
-  /** The formatting buttons fold into one, to leave the toolbar's end the room it needs. */
-  toolbarFolded?: boolean;
+  /** Fold the formatting buttons into one, optionally only in a narrow toolbar. */
+  toolbarFolded?: boolean | "responsive";
   /** Drawn under what is written, above the toolbar: what goes out with it (a reply's signature). */
   afterContent?: ReactNode;
   extensions?: Extensions;
@@ -189,7 +189,7 @@ export function Toolbar({
   onImage?: () => void;
   start?: ReactNode;
   end?: ReactNode;
-  folded?: boolean;
+  folded?: RichEditorProps["toolbarFolded"];
 }) {
   const { t: ui } = useTranslation("ui");
   const formatting = (
@@ -244,14 +244,19 @@ export function Toolbar({
     </>
   );
   return (
-    <div className="flex items-center gap-0.5 px-1.5 pb-1.5">
+    <div className="@container flex items-center gap-0.5 px-1.5 pb-1.5">
       {start && (
         <>
           <div className="flex items-center gap-1">{start}</div>
           <span aria-hidden className="mx-1.5 h-4 w-px bg-line" />
         </>
       )}
-      {folded ? <FoldedFormatting>{formatting}</FoldedFormatting> : formatting}
+      {folded === "responsive" ? (
+        <>
+          <div className="min-w-7 @min-[420px]:hidden"><FoldedFormatting>{formatting}</FoldedFormatting></div>
+          <div className="hidden items-center gap-0.5 @min-[420px]:flex">{formatting}</div>
+        </>
+      ) : folded ? <FoldedFormatting>{formatting}</FoldedFormatting> : formatting}
       <div className="ml-auto flex items-center gap-1">{end}</div>
     </div>
   );

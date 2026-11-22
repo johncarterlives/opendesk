@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Role } from "@/lib/api/types";
 import type { Gate } from "@/lib/appSearch/types";
 import { useCollab } from "@/lib/collab/hooks";
-import { TICKET_SETTINGS, useProducts } from "@/lib/products";
+import { settingsProductAvailable, useProducts } from "@/lib/products";
 import { q } from "@/lib/queries";
 import { atLeast, useRole, useSession } from "@/lib/session";
 
@@ -113,14 +113,9 @@ function meets(need: SettingsNeed, a: SettingsAccess): boolean {
   }
 }
 
-function needsOf(route: string): SettingsNeed[] {
-  const needs = SETTINGS_RULES[route]?.needs ?? [];
-  return TICKET_SETTINGS.has(route) ? [...needs, "tickets"] : needs;
-}
-
 /** The settings nav lists the page. */
 export function settingsListed(route: string, a: SettingsAccess): boolean {
-  return needsOf(route).every((n) => meets(n, a));
+  return settingsProductAvailable(route, { tickets: a.tickets, mail: a.collab }) && (SETTINGS_RULES[route]?.needs ?? []).every((n) => meets(n, a));
 }
 
 /** Settings search offers the page: it is listed and the reader can change something on it. */

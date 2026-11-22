@@ -38,6 +38,7 @@ type Common = {
   emptyText?: string;
   open?: boolean;
   onOpenChange?: (o: boolean) => void;
+  onCloseAutoFocus?: (event: Event) => void;
   align?: "start" | "center" | "end";
   side?: "top" | "bottom" | "left" | "right";
   width?: number;
@@ -96,8 +97,9 @@ export function Picker(props: Single | Multi) {
           side={side}
           sideOffset={6}
           collisionPadding={8}
+          onCloseAutoFocus={props.onCloseAutoFocus}
           style={{ width }}
-          className={cn(floatingPanel, "overflow-hidden p-0")}
+          className={cn(floatingPanel, "max-w-[var(--radix-popover-content-available-width)] overflow-hidden p-0")}
           onClick={(e) => e.stopPropagation()}
         >
           <Command loop shouldFilter={!props.onQueryChange} className="flex flex-col">

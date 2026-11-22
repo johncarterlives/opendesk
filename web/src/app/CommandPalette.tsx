@@ -57,7 +57,7 @@ import { useAI } from "@/lib/ai";
 import { sortTeams, TeamDot, useTeamsCtx } from "@/components/tickets/teams";
 import { ViewIcon, viewName } from "@/components/tickets/ViewIcon";
 import { useCollab, useMailAccounts } from "@/lib/collab/hooks";
-import { TICKET_SETTINGS, useProducts } from "@/lib/products";
+import { settingsProductAvailable, useProducts } from "@/lib/products";
 import { compose } from "@/lib/collab/compose";
 import { accountView } from "@/lib/collab/accountView";
 import { AccountDot } from "@/components/collab/bits";
@@ -490,7 +490,7 @@ export function CommandPalette() {
                 {ticketsOn && <Item value="go reports analytics" keywords={[tNav("titles.reports")]} icon={<BarChart3 />} {...link({ to: "/reports" })}>
                   {tNav("titles.reports")}
                 </Item>}
-                {GO_SETTINGS_PAGES.filter(([to]) => (ticketsOn || !TICKET_SETTINGS.has(to)) && (collab.enabled || to !== "/settings/mail-accounts")).map(([to, labelKey]) => (
+                {GO_SETTINGS_PAGES.filter(([to]) => settingsProductAvailable(to, { tickets: ticketsOn, mail: collab.enabled }) && (collab.enabled || to !== "/settings/mail-accounts")).map(([to, labelKey]) => (
                   <Item key={to} value={`settings ${to}`} keywords={[tNav(labelKey)]} icon={<Settings />} hint={tNav("titles.settings")} {...link({ to })}>
                     {tNav(labelKey)}
                   </Item>
