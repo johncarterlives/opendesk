@@ -528,7 +528,7 @@ func commentsOut(ctx context.Context, q db.Querier, list []*commentRow) ([]MailC
 		if c.ReplyTo != nil {
 			if p := parents[*c.ReplyTo]; p != nil && p.ThreadID == c.ThreadID {
 				m.ReplyTo = &p.ID
-				m.Parent = &CommentQuote{Author: refOf(refs, p.AuthorID), Excerpt: firstLine(p.BodyHTML)}
+				m.Parent = &CommentQuote{Author: refOf(refs, p.AuthorID), Excerpt: firstLine(p.BodyHTML), AINoteBy: p.AIClient}
 			}
 		}
 		m.ParentDeleted = c.Replied && m.ReplyTo == nil

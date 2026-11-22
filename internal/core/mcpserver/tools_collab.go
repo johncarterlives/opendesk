@@ -95,7 +95,7 @@ func collabTools() []*tool {
 		},
 		{
 			Name: "add_collab_note", Title: "Leave the team an internal note on a mail conversation", Scopes: scopes,
-			Description: "Add an internal comment to a Collab conversation, labelled \"AI note by\" your key's name. It is never sent to the customer: " +
+			Description: "Add an internal comment to a Collab conversation, shown as an AI note under your key's name. It is never sent to the customer: " +
 				"use it to tell the reviewer why a draft needs a person (for example a credit to decide, a date to confirm) or why you did not draft. " +
 				"Keep such notes out of draft bodies. A note cannot mention anyone. Write it in markdown.",
 			Schema: obj(map[string]any{

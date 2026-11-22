@@ -144,3 +144,33 @@ it("keeps the reply target with the conversation's unsent comment, and sends it"
   expect(send).toHaveBeenCalledWith(detail.thread.id, expect.objectContaining({ reply_to: "c1" }));
   expect(useReplyTargets.getState().byThread[detail.thread.id]).toBeUndefined();
 });
+
+it("shows an AI note as the key's, in the AI tone, never with the face of the member who made the key", async () => {
+  const tid = detail.thread.id;
+  const withFace = { ...bea, avatar_url: "https://example.com/bea.png" };
+  detail.comments = [
+    { ...comment("n1", "<p>Past the refund window: a person decides.</p>", { author: withFace, ai_note_by: "Support drafter" }), thread_id: tid },
+    { ...comment("n2", "<p>I'll decide.</p>", { reply_to: "n1", parent: { author: withFace, excerpt: "Past the refund window: a person decides.", ai_note_by: "Support drafter" } }), thread_id: tid },
+  ];
+  detail.ai_skips = [{ client: "Support drafter", reason: "Refund outside the 30-day window", at }];
+  qc.setQueryData(qk.mailThread(tid), detail);
+  await mount();
+
+  const note = host!.querySelector<HTMLElement>("#comment-n1")!;
+  // The AI mark stands where the member's avatar would: no photo, no initials, no member's name.
+  expect(note.querySelector("[data-ai-mark]")?.className).toContain("text-tone-violet");
+  expect(note.querySelector("img")).toBeNull();
+  expect(note.querySelector("[title='Support drafter'], [title='Bea Agent']")).toBeNull();
+  expect(note.textContent).not.toContain("Bea Agent");
+  const author = [...note.querySelectorAll("span")].find((s) => s.textContent === "Support drafter");
+  expect(author?.className).toContain("text-tone-violet");
+  expect([...note.querySelectorAll("span")].some((s) => s.textContent === "AI note")).toBe(true);
+  // A reply to it quotes the key, not the member.
+  expect(host!.querySelector("#comment-n2 button[aria-label='Go to the original comment by Support drafter']")).not.toBeNull();
+  // A person's comment keeps their face.
+  expect(host!.querySelector("#comment-n2 [title='Bea Agent']")).not.toBeNull();
+
+  // The skip is one line in the same tone.
+  const skip = [...host!.querySelectorAll("p")].find((p) => p.textContent === "Support drafter looked at this and did not draft: Refund outside the 30-day window");
+  expect(skip?.className).toContain("text-tone-violet");
+});

@@ -765,17 +765,22 @@ internal comments, never in a draft body (GH#431).
 
 - `POST /v1/collab/threads/{id}/comments` from a `collab:draft` key (member an agent or above, on a
   conversation the member sees) adds an internal comment written as the member, with `ai_note_by`
-  the key's name then (shown "AI note by <name>"). It mentions no one (`422 ai_note_mentions` for a
+  the key's name then. It mentions no one (`422 ai_note_mentions` for a
   mention mark or `mentions`), so a note never shares a conversation, and replies to no comment
   (`422 ai_note_reply` for `reply_to`), so it notifies no one. People may reply to an AI note like
-  any comment. At most 30 a minute per key.
+  any comment. At most 30 a minute per key, notes with drafts included.
   Audit-logged (`collab.ai_note_added`, `actor: "ai"` with the key and its name, never the words).
   An AI note is never edited (`403`), so its words stay the key's; it is deleted like a comment.
-- `ai_note` (≤20000) on `POST /v1/collab/drafts` from a key: the same note, checked before the draft
-  is saved and added once it is; refused from a person (`422`).
+- `ai_note` (≤20000) on `POST /v1/collab/drafts` from a key: the same note, under the same limit,
+  checked before the draft is saved and stored in the draft's transaction, so both are kept or
+  neither; refused from a person (`422`).
+- Web: an AI note reads as AI, never as the member: a violet AI mark in place of their avatar, the
+  key's name as its author with a quiet "AI note" tag, and "Added through an API key made by
+  <member>" on hovering the name. A reply to one quotes the key's name.
 - **Skips shown**: a conversation's `ai_skips` are the keys that released it with `skip` since its
-  last message (`{client, reason, at}`, the key's name now; revoked keys left out), shown "<name>
-  skipped: <reason>", so a person knows an AI looked and why it did not draft.
+  last message (`{client, reason, at}`, the key's name now; revoked keys left out), shown as one
+  violet line "<name> looked at this and did not draft: <reason>", so a person knows an AI looked
+  and why it did not draft.
 
 ### AI queue
 
@@ -1064,7 +1069,7 @@ interface MailComment {
   body_html: string            // sanitized like a note
   mentions: string[]           // user ids
   reply_to: string | null      // the comment of this conversation it replies to ("Replies")
-  parent: { author: UserRef | null; excerpt: string } | null  // that comment's author and first line, with reply_to
+  parent: { author: UserRef | null; excerpt: string; ai_note_by: string | null } | null  // that comment's author and first line, with reply_to (ai_note_by: it is an AI note)
   parent_deleted: boolean      // it replied to a comment since deleted
   created_at: string
   updated_at: string

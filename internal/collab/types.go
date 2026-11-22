@@ -342,7 +342,7 @@ type MailComment struct {
 	ParentDeleted bool      `json:"parent_deleted"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
-	// AINoteBy is, for a note an AI key added, the key's name then ("AI note by <name>").
+	// AINoteBy is, for a note an AI key added, the key's name then, shown as its author ("AI notes").
 	AINoteBy *string `json:"ai_note_by"`
 }
 
@@ -350,6 +350,8 @@ type MailComment struct {
 type CommentQuote struct {
 	Author  *domain.UserRef `json:"author"`
 	Excerpt string          `json:"excerpt"`
+	// AINoteBy names the key when the comment is an AI note ("AI notes").
+	AINoteBy *string `json:"ai_note_by"`
 }
 
 // ThreadAccount is the account a conversation belongs to, as its detail shows it.
@@ -387,7 +389,7 @@ type MailThreadDetail struct {
 	Following bool `json:"following"`
 }
 
-// AISkip is an AI key skipping a conversation: "<client> skipped: <reason>".
+// AISkip is an AI key skipping a conversation: "<client> looked at this and did not draft: <reason>".
 type AISkip struct {
 	Client string    `json:"client"`
 	Reason string    `json:"reason"`

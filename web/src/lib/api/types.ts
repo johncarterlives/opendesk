@@ -3480,7 +3480,7 @@ export type MailComment = {
   ai_note_by?: string | null;
 };
 
-export type MailCommentQuote = { author: UserRef | null; excerpt: string };
+export type MailCommentQuote = { author: UserRef | null; excerpt: string; ai_note_by?: string | null };
 
 /** An AI key that skipped a conversation since its last message (contracts/collab.md "AI notes"). */
 export type MailAISkip = { client: string; reason: string; at: string };

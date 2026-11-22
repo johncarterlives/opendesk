@@ -55,6 +55,7 @@ import { useSyncNow } from "@/lib/collab/syncNow";
 import { hasReplyAll, replyTarget, type ComposeMode } from "@/lib/collab/recipients";
 import { identitySignature, ownEmails, replyIdentity } from "@/lib/collab/identities";
 import { cn } from "@/lib/cn";
+import { AI_TONE, tone } from "@/lib/tones";
 import { springs } from "@/lib/motion";
 import { qk, q } from "@/lib/queries";
 import { usePageCrumb } from "@/app/useBreadcrumbs";
@@ -819,14 +820,20 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
           {drafts.map((m) => (canAct ? <DraftRow key={m.id} m={m} composing={!!composer || !!editing} onOpen={() => editDraft(m)} /> : <MailMessageItem key={m.id} m={m} open={false} onToggle={() => undefined} />))}
 
           {/* AI keys that looked at it in the queue and handed it back (contracts/collab.md "AI notes"). */}
-          {detail.ai_skips?.map((s) => (
-            <p key={`${s.client}-${s.at}`} className="flex min-h-7 items-center gap-1.5 px-1 text-[11.5px] text-fg-4">
-              <Sparkles className="size-3 shrink-0" aria-hidden />
-              <span data-text className="cursor-text select-text">
-                {s.reason ? t("comments.aiSkipped", { name: s.client, reason: s.reason }) : t("comments.aiSkippedNoReason", { name: s.client })}
-              </span>
-            </p>
-          ))}
+          {detail.ai_skips?.map((s) => {
+            const line = s.reason ? t("comments.aiSkipped", { name: s.client, reason: s.reason }) : t("comments.aiSkippedNoReason", { name: s.client });
+            // One line: a long reason is cut short and reads in full on hover.
+            return (
+              <p key={`${s.client}-${s.at}`} className={cn("flex min-h-7 min-w-0 items-center gap-1.5 px-1 text-[11.5px]", tone[AI_TONE].text)}>
+                <Sparkles className="size-3 shrink-0" aria-hidden />
+                <Tooltip content={line}>
+                  <span data-text className="min-w-0 cursor-text select-text truncate">
+                    {line}
+                  </span>
+                </Tooltip>
+              </p>
+            );
+          })}
           {canAct && detail.unused_ai_drafts?.map((d) => <UnusedAIDraft key={d.id} draft={d} threadId={th.id} />)}
           {discardedAI && <AIDraftFeedbackDialog draft={discardedAI} threadId={th.id} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
 
