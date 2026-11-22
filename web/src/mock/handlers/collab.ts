@@ -565,7 +565,7 @@ function seedState(ws: WsData): State {
       account_id: work.id,
       message_id: `${uuid()}@lindqvist.se`,
       from,
-      to: [{ name: "Margin Support", email: "support@margin.app" }],
+      to: [{ name: work.display_name, email: work.email }],
       cc: [],
       bcc: [],
       reply_to: [],
