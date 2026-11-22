@@ -42,6 +42,8 @@ type composeIn struct {
 	NeedRecipients bool
 	// ClientRef is an AI key's label for the instructions behind a draft ("AI draft outcomes").
 	ClientRef string
+	// AINote is the sanitized AI note an AI key's new draft comes with ("AI notes").
+	AINote string
 }
 
 // composed is a message ready for the provider.

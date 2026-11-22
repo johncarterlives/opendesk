@@ -1,6 +1,7 @@
 package collab
 
 import (
+	"context"
 	"testing"
 
 	"github.com/useopendesk/opendesk/internal/auth"
@@ -73,5 +74,69 @@ func TestAINotes(t *testing.T) {
 
 	if st := doJSON(t, "DELETE", human.URL+"/v1/collab/comments/"+note.ID.String(), nil, nil); st != 204 {
 		t.Fatalf("member deletes the AI note: %d", st)
+	}
+}
+
+// A note that comes with a draft is stored in the draft's transaction, so both are kept or
+// neither, and counts against the same 30-a-minute limit as the key's other notes.
+func TestAINoteWithDraft(t *testing.T) {
+	w, _, a, threads := queueWorld(t, 2)
+	bot := w.api(w.key(w.agent, "Local drafter", auth.ScopeCollabDraft))
+	m2 := w.messageByRemote(a, "m2")
+	draft := func(note string) map[string]any {
+		return map[string]any{"account_id": a.ID, "mode": "reply", "message_id": m2.ID, "to": []string{"frank@example.com"}, "subject": "",
+			"body_html": "<p>Yes, we can.</p>", "ai_note": note}
+	}
+	drafts := func() int {
+		return w.count(`SELECT count(*) FROM collab_messages WHERE thread_id = $1 AND draft`, threads[1])
+	}
+	notes := func() int {
+		return w.count(`SELECT count(*) FROM collab_comments WHERE thread_id = $1 AND ai_client IS NOT NULL`, threads[1])
+	}
+
+	// The note's write fails: the draft is not stored either.
+	if _, err := w.d.DB.Pool.Exec(w.ctx, `ALTER TABLE collab_comments ADD CONSTRAINT test_refuse_note CHECK (body_html NOT LIKE '%refuse this note%')`); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = w.d.DB.Pool.Exec(context.Background(), `ALTER TABLE collab_comments DROP CONSTRAINT IF EXISTS test_refuse_note`)
+	})
+	if st := doJSON(t, "POST", bot.URL+"/v1/collab/drafts", draft("<p>Please refuse this note.</p>"), nil); st != 500 {
+		t.Fatalf("draft whose note fails: %d", st)
+	}
+	if d, n := drafts(), notes(); d != 0 || n != 0 {
+		t.Fatalf("a failed note left %d drafts and %d notes", d, n)
+	}
+	if _, err := w.d.DB.Pool.Exec(w.ctx, `ALTER TABLE collab_comments DROP CONSTRAINT test_refuse_note`); err != nil {
+		t.Fatal(err)
+	}
+
+	// The refused try, 28 notes on the conversation and one with a draft use the key's minute.
+	for i := range 28 {
+		if st := doJSON(t, "POST", bot.URL+"/v1/collab/threads/"+threads[0].String()+"/comments",
+			map[string]any{"body_html": "<p>Note</p>"}, nil); st != 200 {
+			t.Fatalf("note %d: %d", i, st)
+		}
+	}
+	if st := doJSON(t, "POST", bot.URL+"/v1/collab/drafts", draft("<p>Check the total.</p>"), nil); st != 200 {
+		t.Fatalf("30th note, with a draft: %d", st)
+	}
+	if d, n := drafts(), notes(); d != 1 || n != 1 {
+		t.Fatalf("draft with its note: %d drafts, %d notes", d, n)
+	}
+	// The 31st is refused before the draft is saved, whichever route it comes by.
+	if st := doJSON(t, "POST", bot.URL+"/v1/collab/drafts", draft("<p>And again.</p>"), nil); st != 429 {
+		t.Fatalf("31st note, with a draft: %d", st)
+	}
+	if st := doJSON(t, "POST", bot.URL+"/v1/collab/threads/"+threads[0].String()+"/comments",
+		map[string]any{"body_html": "<p>Note</p>"}, nil); st != 429 {
+		t.Fatalf("31st note: %d", st)
+	}
+	if d, n := drafts(), notes(); d != 1 || n != 1 {
+		t.Fatalf("a refused note changed the drafts: %d drafts, %d notes", d, n)
+	}
+	// A draft without a note is not an AI note: the limit does not hold it back.
+	if st := doJSON(t, "POST", bot.URL+"/v1/collab/drafts", draft(""), nil); st != 200 {
+		t.Fatalf("draft without a note: %d", st)
 	}
 }

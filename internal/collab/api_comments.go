@@ -58,7 +58,7 @@ func (s *service) registerCommentRoutes(api huma.API) {
 			}
 			var ai *aiDrafter
 			if viaAIClient(p) {
-				if !s.d.Limiter.Allow("collab-ai-note:"+p.APIKeyID.String(), aiNotesPerMinute, time.Minute) {
+				if !s.allowAINote(p) {
 					return nil, httpx.RateLimited()
 				}
 				if ai, err = s.aiDrafterOf(ctx, p); err != nil {
@@ -159,9 +159,13 @@ func (s *service) registerCommentRoutes(api huma.API) {
 		})
 }
 
-// cleanComment sanitizes a comment like a note; nothing left is refused.
-// aiNotesPerMinute bounds the AI notes one key adds.
+// aiNotesPerMinute bounds the AI notes one key adds, on a conversation or with a draft.
 const aiNotesPerMinute = 30
+
+// allowAINote counts an AI note against its key's limit.
+func (s *service) allowAINote(p *auth.Principal) bool {
+	return s.d.Limiter.Allow("collab-ai-note:"+p.APIKeyID.String(), aiNotesPerMinute, time.Minute)
+}
 
 var errAINoteMentions = httpx.E(422, "ai_note_mentions", "An AI note cannot mention anyone: a mention would share the conversation.")
 
@@ -193,24 +197,11 @@ func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRo
 		if err != nil {
 			return err
 		}
-		var keyID *uuid.UUID
-		var client *string
-		if ai != nil {
-			if len(mentions) > 0 {
-				return errAINoteMentions
-			}
-			keyID, client = &ai.APIKeyID, &ai.Client
+		if ai != nil && len(mentions) > 0 {
+			return errAINoteMentions
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO collab_comments (id, workspace_id, thread_id, author_id, body_html, mentions, reply_to, replied, ai_api_key_id, ai_client)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, cid, p.WorkspaceID, t.ID, p.UserID, body, mentions, replyTo, replyTo != nil, keyID, client); err != nil {
+		if err := insertComment(ctx, tx, p, t.ID, cid, body, mentions, replyTo, ai); err != nil {
 			return err
-		}
-		if ai != nil {
-			// The words are the client's; the entry names the conversation, never them.
-			if err := audit.Log(ctx, tx, p, p.WorkspaceID, "collab.ai_note_added", "collab_comment", &cid,
-				map[string]any{"actor": "ai", "client": ai.Client, "api_key_id": ai.APIKeyID, "thread_id": t.ID}); err != nil {
-				return err
-			}
 		}
 		if err := s.mentionPeople(ctx, tx, p, t, cid, body, mentions); err != nil {
 			return err
@@ -233,6 +224,38 @@ func (s *service) addComment(ctx context.Context, p *auth.Principal, t *threadRo
 	return cid, nil
 }
 
+// insertComment writes comment cid on conversation threadID as p, in tx. An AI note (ai set)
+// carries the key's name and is audit-logged, never with its words.
+func insertComment(ctx context.Context, tx pgx.Tx, p *auth.Principal, threadID, cid uuid.UUID, body string, mentions []uuid.UUID, replyTo *uuid.UUID, ai *aiDrafter) error {
+	var keyID *uuid.UUID
+	var client *string
+	if ai != nil {
+		keyID, client = &ai.APIKeyID, &ai.Client
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO collab_comments (id, workspace_id, thread_id, author_id, body_html, mentions, reply_to, replied, ai_api_key_id, ai_client)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`, cid, p.WorkspaceID, threadID, p.UserID, body, mentions, replyTo, replyTo != nil, keyID, client); err != nil {
+		return err
+	}
+	if ai == nil {
+		return nil
+	}
+	return audit.Log(ctx, tx, p, p.WorkspaceID, "collab.ai_note_added", "collab_comment", &cid,
+		map[string]any{"actor": "ai", "client": ai.Client, "api_key_id": ai.APIKeyID, "thread_id": threadID})
+}
+
+// cleanAINote sanitizes an AI note that comes with a draft; a mention in it is refused.
+func cleanAINote(raw string) (string, error) {
+	body, err := cleanComment(raw)
+	if err != nil {
+		return "", err
+	}
+	if mentionAttr.MatchString(body) {
+		return "", errAINoteMentions
+	}
+	return body, nil
+}
+
+// cleanComment sanitizes a comment like a note; nothing left is refused.
 func cleanComment(raw string) (string, error) {
 	if len(raw) > maxCommentHTML {
 		return "", httpx.Validation("A comment is at most 20000 characters.")
