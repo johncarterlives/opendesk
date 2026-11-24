@@ -14,7 +14,7 @@
     "off": "Desactivado"
   },
   "editor": {
-    "primaryHint": "Principal siempre va primero: correo de personas y todo lo que Ollie no tiene claro",
+    "primaryHint": "Principal siempre va primero: el correo que te necesita y no encaja en ninguna otra categoría",
     "untitled": "Sin título",
     "name": "Nombre",
     "namePlaceholder": "Nombre de la categoría",
@@ -59,7 +59,7 @@
     "chooseOn": "Los miembros pueden elegir sus propias categorías, o ninguna, para las cuentas que administran.",
     "chooseOff": "Todos siguen el espacio de trabajo o su equipo. Los miembros todavía pueden desactivar el orden de Ollie en sus cuentas.",
     "sorting": "Cómo se ordena el correo",
-    "sortingAi": "Ollie ordena el correo nuevo al llegar, según la descripción de cada categoría. El correo del que Ollie no está seguro se queda en Principal.",
+    "sortingAi": "Ollie ordena el correo nuevo al llegar, según la descripción de cada categoría, y prefiere una categoría distinta de Principal. El correo del que Ollie no está seguro va a Principal solo si parece necesitarte.",
     "sortingRules": "Ordenado por reglas de remitente y encabezados del correo.",
     "sortingRulesHint": "Activa la IA para que Ollie ordene.",
     "byOllie": "Ollie",

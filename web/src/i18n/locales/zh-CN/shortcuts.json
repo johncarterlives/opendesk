@@ -108,7 +108,9 @@
       "comment": "评论",
       "people": "显示参与者",
       "search": "搜索邮件",
-      "escape": "关闭或清除选择"
+      "escape": "关闭或清除选择",
+      "tabLeft": "将分类标签页左移",
+      "tabRight": "将分类标签页右移"
     },
     "page": {
       "new": "新建页面",

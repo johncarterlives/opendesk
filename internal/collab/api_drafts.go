@@ -16,6 +16,7 @@ import (
 	"github.com/useopendesk/opendesk/internal/auth"
 	"github.com/useopendesk/opendesk/internal/email"
 	"github.com/useopendesk/opendesk/internal/httpx"
+	"github.com/useopendesk/opendesk/internal/ids"
 )
 
 // Drafts (contracts/collab.md "Drafts"): saved at the provider first, then stored like
@@ -66,6 +67,7 @@ type draftCreateInput struct {
 		FromEmail          string      `json:"from_email,omitempty" maxLength:"254" doc:"One of the account's usable addresses"`
 		ClaimToken         *uuid.UUID  `json:"claim_token,omitempty" doc:"AI queue: the claim this reply reports back on; refused once that claim has expired or passed on"`
 		ClientRef          string      `json:"client_ref,omitempty" maxLength:"200" doc:"AI keys: a label of your own for the instructions behind this draft, returned with its outcome"`
+		AINote             string      `json:"ai_note,omitempty" maxLength:"20000" doc:"AI keys: an internal note for the team, saved as an AI note on the conversation with the draft (never sent)"`
 	}
 }
 
@@ -97,6 +99,19 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				if len(b.AttachmentIDs) > 0 || b.ForwardAttachments {
 					return nil, errAIDraftFiles
 				}
+			} else if b.AINote != "" {
+				return nil, httpx.Validation("ai_note is for AI keys; a person comments on the conversation.")
+			}
+			note := ""
+			if b.AINote != "" {
+				// The note counts against the key's AI note limit and is checked before the
+				// provider is called; it is stored in the draft's transaction ("AI notes").
+				if !s.allowAINote(p) {
+					return nil, httpx.RateLimited()
+				}
+				if note, err = cleanAINote(b.AINote); err != nil {
+					return nil, err
+				}
 			}
 			t, err := s.composeTarget(ctx, p, b.AccountID, b.Mode, b.MessageID)
 			if err != nil {
@@ -121,7 +136,7 @@ func (s *service) registerDraftRoutes(api huma.API) {
 			}
 			id, _, err := s.saveDraft(ctx, p, t, nil, threadRemote, threadID, composeIn{Mode: b.Mode, To: b.To, Cc: b.Cc, Bcc: b.Bcc,
 				Subject: b.Subject, BodyHTML: b.BodyHTML, AttachmentIDs: b.AttachmentIDs, ForwardAttachments: b.ForwardAttachments, FromEmail: b.FromEmail,
-				ClientRef: b.ClientRef})
+				ClientRef: b.ClientRef, AINote: note})
 			if err != nil {
 				return nil, err
 			}
@@ -445,7 +460,7 @@ func (s *service) saveDraft(ctx context.Context, p *auth.Principal, t target, dr
 		return uuid.Nil, nil, httpx.Wrap(err)
 	}
 	if ai != nil {
-		ai.Ref = in.ClientRef
+		ai.Ref, ai.Note = in.ClientRef, in.AINote
 	}
 	ref, err := dp.SaveDraft(pctx, d)
 	if err != nil {
@@ -544,6 +559,12 @@ func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref
 				err = markTakenOver(ctx, tx, id, by)
 			}
 			if err != nil {
+				return err
+			}
+		}
+		if ai != nil && ai.Note != "" && id != uuid.Nil && in.ThreadID != nil {
+			// The note that came with the draft: both are stored or neither ("AI notes").
+			if err := insertComment(ctx, tx, ai.P, *in.ThreadID, ids.New(), ai.Note, []uuid.UUID{}, nil, ai); err != nil {
 				return err
 			}
 		}

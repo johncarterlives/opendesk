@@ -108,7 +108,9 @@
       "comment": "Přidat komentář",
       "people": "Zobrazit osoby",
       "search": "Hledat v poště",
-      "escape": "Zavřít nebo zrušit výběr"
+      "escape": "Zavřít nebo zrušit výběr",
+      "tabLeft": "Posunout kartu kategorie doleva",
+      "tabRight": "Posunout kartu kategorie doprava"
     },
     "page": {
       "new": "Nová stránka",

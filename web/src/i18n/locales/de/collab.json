@@ -373,8 +373,17 @@
     "deleteTitle": "Kommentar löschen",
     "edited": "bearbeitet",
     "someone": "Ein ehemaliges Teammitglied",
+    "aiNote": "KI-Notiz",
+    "aiNoteVia": "Über einen API-Schlüssel von {{name}} hinzugefügt",
+    "aiSkipped": "{{name}} hat sich das angesehen und keinen Entwurf geschrieben: {{reason}}",
+    "aiSkippedNoReason": "{{name}} hat sich das angesehen und keinen Entwurf geschrieben",
     "empty": "Noch keine Kommentare. Besprich diese Unterhaltung hier mit deinem Team.",
-    "menu": "Kommentaraktionen"
+    "menu": "Kommentaraktionen",
+    "reply": "Antworten",
+    "replyingTo": "Antwort an {{name}}:",
+    "cancelReply": "Antwort abbrechen",
+    "parentDeleted": "Ursprünglicher Kommentar gelöscht",
+    "showParent": "Zum ursprünglichen Kommentar von {{name}}"
   },
   "share": {
     "title": "Unterhaltung teilen",
@@ -664,6 +673,8 @@
     "assignedAnon": "Dir wurde eine Unterhaltung zugewiesen",
     "mention": "{{who}} hat dich in einem Kommentar erwähnt",
     "mentionAnon": "Du wurdest in einem Kommentar erwähnt",
+    "reply": "{{who}} hat auf deinen Kommentar geantwortet",
+    "replyAnon": "Jemand hat auf deinen Kommentar geantwortet",
     "open": "Öffnen"
   },
   "shortcuts": {
@@ -939,6 +950,10 @@
     "settings": "Einstellungen der Kategorien",
     "moved_one": "Unterhaltung nach {{name}} verschoben",
     "moved_other": "{{count}} Unterhaltungen nach {{name}} verschoben",
+    "dropRefused_one": "Ihr Posteingang hat keine Kategorie {{name}}",
+    "dropRefused_other": "Ihre Posteingänge haben keine Kategorie {{name}}",
+    "dropSome_one": "{{count}} Unterhaltung bleibt: Ihr Posteingang hat keine Kategorie {{name}}",
+    "dropSome_other": "{{count}} Unterhaltungen bleiben: Ihre Posteingänge haben keine Kategorie {{name}}",
     "always": "Immer",
     "alwaysHint": "Künftige E-Mails von {{sender}} auch hierher",
     "ruleSaved": "E-Mails von {{sender}} landen jetzt in {{name}}",
@@ -947,6 +962,12 @@
       "body": "E-Mails von Menschen bleiben in Allgemein, während Newsletter, Updates und Werbung eigene Tabs bekommen. Ollie kann Kategorien aus deinen E-Mails vorschlagen.",
       "action": "Kategorien einrichten",
       "dismiss": "Nicht jetzt"
+    },
+    "reorder": {
+      "hint": "Zum Umsortieren ziehen oder {{left}} bzw. {{right}} drücken",
+      "hintDrag": "Zum Umsortieren ziehen",
+      "moved": "{{name}} an Stelle {{position}} von {{count}} verschoben",
+      "failed": "Die neue Reihenfolge der Tabs konnte nicht gespeichert werden"
     }
   },
   "aiFeedback": {

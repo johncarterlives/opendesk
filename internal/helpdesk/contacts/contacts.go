@@ -200,7 +200,7 @@ func registerContacts(d *deps.Deps, api huma.API) {
 			if in.fieldsErr != nil {
 				return nil, in.fieldsErr
 			}
-			f := contactFilter{Q: in.Q, CompanyID: in.CompanyID, Tag: in.Tag, Blocked: in.Blocked, Fields: in.fields}
+			f := contactFilter{Q: in.Q, CompanyID: in.CompanyID, Tag: in.Tag, Blocked: in.Blocked, ExternalID: in.ExternalID, Fields: in.fields}
 			where, args, err := f.where(ctx, d.DB.Pool, p)
 			if err != nil {
 				return nil, httpx.Wrap(err)

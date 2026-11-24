@@ -24,7 +24,11 @@ import (
 // entries the same request over HTTP would.
 type caller struct {
 	h http.Handler
-	p *auth.Principal
+	// srv is the MCP handler, for the API bridge's catalog.
+	srv *Handler
+	// files downloads a file a tool names by URL.
+	files *fileFetcher
+	p     *auth.Principal
 	// idem derives the Idempotency-Key of a write from its route and body.
 	idem func(method, path string, body []byte) string
 	// names caches team and brand names for the tool call.
@@ -56,7 +60,7 @@ func statusOf(err error) int {
 	return 0
 }
 
-// do sends one request and decodes a 2xx JSON answer into out (when non-nil).
+// do sends one JSON request and decodes a 2xx JSON answer into out (when non-nil).
 func (c *caller) do(ctx context.Context, method, path string, query url.Values, body any, out any) error {
 	var raw []byte
 	if body != nil {
@@ -65,6 +69,23 @@ func (c *caller) do(ctx context.Context, method, path string, query url.Values, 
 			return err
 		}
 	}
+	contentType := ""
+	if raw != nil {
+		contentType = "application/json"
+	}
+	resp, err := c.send(ctx, method, path, query, contentType, raw)
+	if err != nil {
+		return err
+	}
+	if out != nil && len(resp) > 0 {
+		return json.Unmarshal(resp, out)
+	}
+	return nil
+}
+
+// send sends one request with a body of contentType and returns a 2xx answer's body.
+// Anything else is an *apiError with the problem's detail.
+func (c *caller) send(ctx context.Context, method, path string, query url.Values, contentType string, raw []byte) ([]byte, error) {
 	target := path
 	if len(query) > 0 {
 		target += "?" + query.Encode()
@@ -78,8 +99,8 @@ func (c *caller) do(ctx context.Context, method, path string, query url.Values, 
 	ctx = context.WithValue(ctx, chi.RouteCtxKey, (*chi.Context)(nil))
 	req := httptest.NewRequestWithContext(auth.WithPrincipal(ctx, c.p), method, target, rd)
 	req.Header.Set("Accept", "application/json")
-	if raw != nil {
-		req.Header.Set("Content-Type", "application/json")
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
 	}
 	if method == http.MethodPost && c.idem != nil {
 		if k := c.idem(method, path, raw); k != "" {
@@ -110,12 +131,9 @@ func (c *caller) do(ctx context.Context, method, path string, query url.Values, 
 		if detail == "" {
 			detail = http.StatusText(rec.Code)
 		}
-		return &apiError{Status: rec.Code, Code: p.Code, Detail: detail}
+		return nil, &apiError{Status: rec.Code, Code: p.Code, Detail: detail}
 	}
-	if out != nil && rec.Body.Len() > 0 {
-		return json.Unmarshal(rec.Body.Bytes(), out)
-	}
-	return nil
+	return rec.Body.Bytes(), nil
 }
 
 func (c *caller) get(ctx context.Context, path string, q url.Values, out any) error {

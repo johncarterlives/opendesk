@@ -293,7 +293,7 @@ func (o *oauth) registerAPI(api huma.API) {
 			}
 			out := AIClientServer{URL: Resource(o.d), ResourceMetadata: ResourceMetadataURL(o.d), AuthorizationServer: o.issuer(),
 				Scopes: oauthgrant.Scopes, Tools: []AIClientTool{}}
-			for _, t := range catalog() {
+			for _, t := range tools() {
 				out.Tools = append(out.Tools, AIClientTool{Name: t.Name, Title: t.Title, Description: t.Description, Scopes: t.Scopes,
 					ReadOnly: t.ReadOnly, Destructive: t.Destructive})
 			}

@@ -232,7 +232,7 @@ func TestOrigin(t *testing.T) {
 		t.Fatalf("allowed origin: %v", err)
 	}
 	defer s.Close()
-	if n := toolNames(t, s); len(n) != 3 {
+	if n := toolNames(t, s); len(n) != 6 {
 		t.Fatalf("tools: %v", n)
 	}
 }
@@ -240,15 +240,15 @@ func TestOrigin(t *testing.T) {
 func TestToolsFollowScopes(t *testing.T) {
 	e := newEnv(t)
 	got := toolNames(t, e.session(e.APIKey(e.WS, auth.ScopeTicketsRead)))
-	if !slices.Equal(got, []string{"get_ticket", "list_custom_fields", "search_tickets"}) {
+	if !slices.Equal(got, []string{"api_read", "describe_api", "find_api", "get_ticket", "list_custom_fields", "search_tickets"}) {
 		t.Fatalf("tickets:read tools: %v", got)
 	}
 	got = toolNames(t, e.session(e.APIKey(e.WS, auth.ScopeKBRead, auth.ScopeContactsRead)))
-	if !slices.Equal(got, []string{"get_contact", "search_contacts", "search_knowledge"}) {
+	if !slices.Equal(got, []string{"api_read", "describe_api", "find_api", "get_company", "get_contact", "search_companies", "search_contacts", "search_knowledge"}) {
 		t.Fatalf("kb and contacts tools: %v", got)
 	}
 	got = toolNames(t, e.session(e.APIKey(e.WS, auth.ScopeWikiRead)))
-	if !slices.Equal(got, []string{"get_wiki_page", "search_wiki"}) {
+	if !slices.Equal(got, []string{"api_read", "describe_api", "find_api", "get_wiki_page", "search_wiki"}) {
 		t.Fatalf("wiki:read tools: %v", got)
 	}
 	// Knowledge base scopes don't reach the wiki.
@@ -256,7 +256,7 @@ func TestToolsFollowScopes(t *testing.T) {
 		t.Fatalf("kb tools: %v", got)
 	}
 	// get_report reads tickets through the overview route: settings:read alone is not enough.
-	if got = toolNames(t, e.session(e.APIKey(e.WS, auth.ScopeSettingsRead))); len(got) != 0 {
+	if got = toolNames(t, e.session(e.APIKey(e.WS, auth.ScopeSettingsRead))); !slices.Equal(got, []string{"api_read", "describe_api", "find_api"}) {
 		t.Fatalf("settings:read tools: %v", got)
 	}
 
@@ -266,17 +266,20 @@ func TestToolsFollowScopes(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []string{"search_tickets", "get_ticket", "list_custom_fields", "reply_to_ticket", "draft_reply", "add_note", "update_ticket", "create_ticket",
-		"search_contacts", "get_contact", "search_knowledge", "create_kb_draft",
+		"upload_attachment", "search_contacts", "get_contact", "create_contact", "update_contact",
+		"search_companies", "get_company", "create_company", "update_company", "search_knowledge", "create_kb_draft",
+		"find_api", "describe_api", "api_read", "api_write",
 		"search_wiki", "get_wiki_page", "create_wiki_page", "update_wiki_page", "get_report",
 		"list_collab_conversations", "get_collab_conversation", "draft_collab_reply", "claim_collab_conversation", "release_collab_conversation",
-		"list_collab_draft_outcomes"}
+		"add_collab_note", "list_collab_draft_outcomes"}
 	var names []string
 	for _, tl := range res.Tools {
 		names = append(names, tl.Name)
 		if tl.Description == "" || tl.InputSchema == nil || tl.Annotations == nil {
 			t.Fatalf("%s lacks a description, schema or annotations", tl.Name)
 		}
-		read := strings.HasPrefix(tl.Name, "search_") || strings.HasPrefix(tl.Name, "get_") || strings.HasPrefix(tl.Name, "list_")
+		read := strings.HasPrefix(tl.Name, "search_") || strings.HasPrefix(tl.Name, "get_") || strings.HasPrefix(tl.Name, "list_") ||
+			tl.Name == "find_api" || tl.Name == "describe_api" || tl.Name == "api_read"
 		if tl.Annotations.ReadOnlyHint != read {
 			t.Fatalf("%s readOnlyHint = %v", tl.Name, tl.Annotations.ReadOnlyHint)
 		}
@@ -285,6 +288,9 @@ func TestToolsFollowScopes(t *testing.T) {
 		}
 		if tl.Name == "update_wiki_page" && (tl.Annotations.DestructiveHint == nil || !*tl.Annotations.DestructiveHint) {
 			t.Fatal("update_wiki_page should be marked destructive")
+		}
+		if (tl.Name == "update_contact" || tl.Name == "update_company" || tl.Name == "api_write") && (tl.Annotations.DestructiveHint == nil || !*tl.Annotations.DestructiveHint) {
+			t.Fatalf("%s should be marked destructive", tl.Name)
 		}
 		if tl.Name == "add_note" && (tl.Annotations.DestructiveHint == nil || *tl.Annotations.DestructiveHint) {
 			t.Fatal("add_note should not be marked destructive")

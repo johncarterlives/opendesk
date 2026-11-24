@@ -14,7 +14,7 @@
     "off": "Vypnuto"
   },
   "editor": {
-    "primaryHint": "Kategorie „Hlavní“ je vždy první: pošta od lidí a vše, u čeho si Ollie není jistý",
+    "primaryHint": "Kategorie „Hlavní“ je vždy první: pošta, která potřebuje vaši pozornost a nehodí se do žádné jiné kategorie",
     "untitled": "Bez názvu",
     "name": "Název",
     "namePlaceholder": "Název kategorie",
@@ -60,7 +60,7 @@
     "chooseOn": "Členové si u spravovaných účtů mohou vybrat vlastní kategorie, nebo je nepoužívat.",
     "chooseOff": "Všichni se řídí nastavením workspace nebo týmu. Členové stále mohou u svých účtů vypnout třídění asistentem Ollie.",
     "sorting": "Jak se pošta třídí",
-    "sortingAi": "Ollie třídí novou poštu při doručení podle popisů kategorií. Pošta, u které si Ollie není jistý, zůstává v kategorii „Hlavní“.",
+    "sortingAi": "Ollie třídí novou poštu při doručení podle popisů kategorií a dává přednost jiné kategorii než „Hlavní“. Pošta, u které si Ollie není jistý, jde do kategorie „Hlavní“, jen když se zdá, že potřebuje vaši pozornost.",
     "sortingRules": "Třídění podle pravidel odesílatelů a hlaviček e-mailů.",
     "sortingRulesHint": "Zapněte AI, aby mohl třídit Ollie.",
     "byOllie": "Ollie",

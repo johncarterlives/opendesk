@@ -17,7 +17,7 @@ function tables(): Map<string, string[]> {
   return out;
 }
 
-const SHOWN: Record<string, string> = { arrowup: "↑", arrowdown: "↓", escape: "esc", delete: "del", "\\": "\\\\" };
+const SHOWN: Record<string, string> = { arrowup: "↑", arrowdown: "↓", arrowleft: "←", arrowright: "→", escape: "esc", delete: "del", "\\": "\\\\" };
 
 /** A binding as the guide writes it: "mod+shift+p" → "<kbd>mod</kbd> <kbd>shift</kbd> <kbd>p</kbd>", steps joined by "then". */
 function asGuide(binding: string): string {

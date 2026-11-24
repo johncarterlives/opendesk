@@ -15,7 +15,7 @@ import (
 )
 
 // Mentions (contracts/collab.md "Mentions"): a member follows a conversation once a comment
-// mentions them or answers theirs, and it stays in their Mentions box until they remove
+// mentions them or answers theirs (a reply to it, or the next comment after it), and it stays in their Mentions box until they remove
 // themselves. Following never changes who sees a conversation: only members who see it
 // follow it, and the box lists only what its member still sees.
 
@@ -46,16 +46,24 @@ func follow(ctx context.Context, tx pgx.Tx, wid, threadID uuid.UUID, users []uui
 }
 
 // commentFollowers applies a new comment to who follows its conversation, in tx: everyone
-// following sees new activity, the people it mentions follow, and so do the people it answers.
+// following sees new activity, the people it mentions follow, and so does the person it answers.
 //
-// Comments have no reply link, so a comment answers a member when, since that member's latest
-// comment, only its author has commented: the first comments after theirs, however many the
-// author writes. Another teammate chiming in later answers no one but the author before them,
-// so someone who removed themselves comes back when they are answered, not with every comment.
-func commentFollowers(ctx context.Context, tx pgx.Tx, wid, threadID, commentID, author uuid.UUID, mentions []uuid.UUID) error {
+// A reply answers the author of the comment it replies to (contracts/collab.md "Replies"), and
+// no one else. A comment that replies to nothing answers a member when, since that member's latest
+// comment, only its author has commented: the first comments after theirs, however many the author
+// writes. Another teammate chiming in later answers no one but the author before them, so someone
+// who removed themselves comes back when they are answered, not with every comment.
+func commentFollowers(ctx context.Context, tx pgx.Tx, wid, threadID, commentID, author uuid.UUID, mentions []uuid.UUID, parent *replyTarget) error {
 	if _, err := tx.Exec(ctx, `UPDATE collab_thread_followers SET activity_at = now() WHERE workspace_id = $1 AND thread_id = $2`,
 		wid, threadID); err != nil {
 		return err
+	}
+	people := appendNew(nil, mentions...)
+	if parent != nil {
+		if u := parent.answered(author); u != nil {
+			people = appendNew(people, *u)
+		}
+		return follow(ctx, tx, wid, threadID, people)
 	}
 	rows, err := tx.Query(ctx, `SELECT mine.author_id FROM (
 			SELECT c.author_id, max(c.created_at) AS last FROM collab_comments c
@@ -71,7 +79,7 @@ func commentFollowers(ctx context.Context, tx pgx.Tx, wid, threadID, commentID, 
 	if err != nil {
 		return err
 	}
-	return follow(ctx, tx, wid, threadID, appendNew(appendNew(nil, mentions...), answered...))
+	return follow(ctx, tx, wid, threadID, appendNew(people, answered...))
 }
 
 // following reports whether the user follows the conversation.

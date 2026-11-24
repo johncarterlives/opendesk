@@ -731,11 +731,16 @@ func collabCopy(n Note, actor string) copyOf {
 		return copyOf{title: who + " assigned you a conversation", heading: who + " assigned you a conversation" + on,
 			intro: []string{"It now shows in your mail under Assigned to me."}, cta: "Open conversation"}
 	}
-	intro := []string{who + " mentioned you in a comment on a conversation."}
+	// A reply to the member's comment reaches them as a mention does, with its own words.
+	title, heading, line := who+" mentioned you in a comment", who+" mentioned you"+on, who+" mentioned you in a comment on a conversation."
+	if str(n.Data, "reply_to") != "" {
+		title, heading, line = who+" replied to your comment", who+" replied to your comment"+on, who+" replied to your comment on a conversation."
+	}
+	intro := []string{line}
 	if sn := snippet(n); sn != "" {
 		intro = append(intro, "“"+sn+"”")
 	}
-	return copyOf{title: who + " mentioned you in a comment", heading: who + " mentioned you" + on, intro: intro, cta: "Open conversation"}
+	return copyOf{title: title, heading: heading, intro: intro, cta: "Open conversation"}
 }
 
 // wikiCopy names who mentioned the member or commented, or the reminder that is due, and

@@ -383,6 +383,7 @@ type aiDrafter struct {
 	Client   string          // the key's name, for "AI draft by <name>"
 	P        *auth.Principal // for the audit entry
 	Ref      string          // client_ref: the client's own label, kept with the outcome
+	Note     string          // the sanitized AI note stored with the draft ("AI notes")
 }
 
 // insert parses, sanitizes and stores a new message and returns its id. A message that

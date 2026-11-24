@@ -643,24 +643,54 @@ no severity to filter on, set or create with.
 | `search_tickets` | `tickets:read` | filters (status, assignee, team, label, priority, text, dates), at most 50 |
 | `get_ticket` | `tickets:read` | a ticket with its thread (notes included), team, brand, `received_at` and the reply address |
 | `list_custom_fields` | `tickets:read` | custom field definitions (`GET /v1/custom-fields`): key, name, entity, type, options (id, label), `required_on_solve`; optional `entity`, archived left out unless `include_archived` |
-| `reply_to_ticket` | `tickets:write` | a public reply (`body` markdown) |
+| `reply_to_ticket` | `tickets:write` | a public reply (`body` markdown), optional `attachment_ids`; `direction: "inbound"` logs it as the contact's own words instead (`POST /v1/tickets/{id}/messages` rules: nothing sent, no `cc`, not on a chat) |
 | `draft_reply` | `tickets:write` | stages the ticket's shared draft (`body` markdown) without sending; a teammate sends it from the composer (`contracts/api.md` "Drafts") |
-| `add_note` | `tickets:write` | an internal note |
+| `add_note` | `tickets:write` | an internal note, optional `attachment_ids` |
 | `update_ticket` | `tickets:write` | status, priority, severity, assignee, team, labels, `fields` (custom field values by key, merged; null clears one); returns the ticket with its `fields` |
-| `create_ticket` | `tickets:write` | a ticket for a contact email, with optional `fields`; returns the ticket with its `fields` |
-| `search_contacts` / `get_contact` | `contacts:read` | |
+| `create_ticket` | `tickets:write` | a ticket for a contact email, with optional `fields` and `attachment_ids`; `direction: "inbound"` logs the first message as the contact's request (`POST /v1/tickets` rules); returns the ticket with its `fields` |
+| `upload_attachment` | `tickets:write` | a file from an https `url` (fetched through the SSRF guard, at most 3 redirects, 25 MB) or `content_base64` (6 MB) with `filename`, uploaded as `POST /v1/attachments` → `attachment_id` |
+| `search_contacts` / `get_contact` | `contacts:read` | by text, `company`, `label` or `external_id`, paged by `cursor`; one contact by id, email (primary or extra) or `external_id` (an id or address that matches nothing is tried as an `external_id`) |
+| `create_contact` / `update_contact` | `contacts:write` | email, name, phone, `company` (id, `external_id`, domain or exact name; `"none"` clears), `external_id`, notes, labels (create: `labels`; update: `add_labels`, `remove_labels`, never a replace) and `fields` (merged). An empty string clears a text value. A create that collides on email or `external_id` is a tool error `already_exists` with the contact as `existing`, or with `if_exists: "update"` updates it. Delete, merge and block stay in the app or the bridge |
+| `search_companies` / `get_company` | `contacts:read` | by text, `label` or `external_id`; one company by id, `external_id`, domain or exact name (a name several share is refused with their ids), with its first 25 people |
+| `create_company` / `update_company` | `contacts:write` | name, domain, `external_id`, notes, labels and `fields` as for contacts; a collision on domain or `external_id` is `already_exists` with `existing`, or `if_exists: "update"` |
 | `search_knowledge` | `kb:read` | KB articles and knowledge sources |
 | `create_kb_draft` | `kb:write` | a draft article |
 | `search_wiki` / `get_wiki_page` | `wiki:read` | the team's internal wiki (`contracts/wiki.md`): matching pages with their place and a passage; one page's text in Markdown (as `update_wiki_page` takes it), subpages and `version` |
 | `create_wiki_page` | `wiki:write` | a page (`body` markdown), optionally under `parent` |
 | `update_wiki_page` | `wiki:write` | a new title or text (`body` markdown replaces it); with `version`, a page changed since is refused (`page_changed`). Marked destructive |
 | `get_report` | `tickets:read` + `settings:read` | the overview report for a range |
+| `find_api` / `describe_api` | any | the API bridge (below): routes by keywords or area; one route's parameters, body and response |
+| `api_read` | any | the API bridge: a documented `GET` |
+| `api_write` | a write scope | the API bridge: a documented `POST`, `PUT`, `PATCH` or `DELETE`. Marked destructive |
 | `list_collab_conversations` | `collab:draft` (API keys only) | the Collab conversations of the key's creator (box, account, text), at most 50; reading changes no read state |
 | `get_collab_conversation` | `collab:draft` (API keys only) | a conversation with its messages and internal comments, as the creator sees it |
-| `draft_collab_reply` | `collab:draft` (API keys only) | saves a reply (or reply-all) draft to a message, `body` markdown, labelled "AI draft by" the key's name; never sends (contracts/collab.md "AI drafts"); with the `claim_token` of a claim it reports back on it (refused once the claim has expired or passed on) and ends it |
+| `draft_collab_reply` | `collab:draft` (API keys only) | saves a reply (or reply-all) draft to a message, `body` markdown, labelled "AI draft by" the key's name; never sends (contracts/collab.md "AI drafts"); with the `claim_token` of a claim it reports back on it (refused once the claim has expired or passed on) and ends it; an optional `note` (markdown) is saved beside it as an AI note |
 | `claim_collab_conversation` | `collab:draft` (API keys only) | claims the conversation that has waited longest in Needs action with no draft, optionally only in `categories` (inbox category keys, at most 8; mail still waiting to be sorted is held back), for `minutes` (1..15, 5), and returns it like `get_collab_conversation` with its `claim_token`; `claimed: false` when nothing waits (contracts/collab.md "AI queue") |
 | `release_collab_conversation` | `collab:draft` (API keys only) | gives a claimed conversation back; `skip` (with a short `reason`) keeps it from the key until new mail arrives |
+| `add_collab_note` | `collab:draft` (API keys only) | an internal comment (`note` markdown, ≤4000) shown as an AI note under the key's name, never sent, mentioning no one (contracts/collab.md "AI notes") |
 | `list_collab_draft_outcomes` | `collab:draft` (API keys only) | what became of the key's drafts after its `cursor` (contracts/collab.md "AI draft outcomes"): outcome, its own last text, `client_ref`, the sent message's id and any feedback, at most 50 |
+
+#### API bridge
+
+`find_api`, `describe_api`, `api_read` and `api_write` reach every route in the public API's own
+OpenAPI document (`/v1/openapi.json`, read from the running server, so it always matches), for what
+no dedicated tool covers. A call runs in process as the connection like every other tool, so the
+route's own scope, role and visibility checks decide; a refusal comes back as the route's error.
+
+- A path is concrete (`/v1/tickets/#123/tags`; `/v1` may be left out), with no query string, host,
+  empty or dot segment; segments are escaped before the call. A literal segment beats a parameter.
+- `api_read` calls only `GET`; `api_write` everything else, and is offered only with a write scope.
+- Never callable, with the reason in the tool error: `/v1/auth`, `/v1/me`, `/v1/oauth`,
+  `/v1/ai-clients`, `/v1/api-keys`, `/v1/webhooks`, `/v1/admin`, `/v1/billing`, `/v1/realtime`,
+  `/v1/events`, `/v1/push`, `/v1/public`, `/v1/widget`, `/v1/customer`, `/v1/inbound`,
+  `/v1/workspaces`, `/v1/invitations`; any route with a `rotate` segment (it answers with the new
+  secret); routes without security; multipart uploads (`upload_attachment` for attachments); and
+  any route whose JSON body has a credential-shaped member (`secret`, `password`, `token`,
+  `api_key`, `header_value`, `private_key`, `credentials`, `webhook_url` and `*_secret`,
+  `*_password`, `*_token`, `*_api_key`, `*_private_key`, `*_credentials`, `*_signing_key`,
+  `*_webhook_url`), so no credential passes through a conversation.
+- Responses have credential-shaped string members replaced by `[withheld]` and are cut at 24,000
+  characters (`truncated: true`). `describe_api` inlines schemas to fit 14,000 characters.
 
 Tool annotations mark read-only and destructive tools. Output is JSON text. No `Mcp-Session-Id` is
 issued. The server checks `Origin` (browser requests must come from

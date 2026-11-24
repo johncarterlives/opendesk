@@ -30,30 +30,33 @@ func (f *fieldParams) Resolve(ctx huma.Context) []error {
 
 type contactListIn struct {
 	httpx.ListParams
-	Q         string `query:"q" maxLength:"200" doc:"Search name, email, phone and custom field values"`
-	CompanyID string `query:"company_id" doc:"Only contacts of this company; none for those without one"`
-	Tag       string `query:"tag" maxLength:"50" doc:"Label name"`
-	Blocked   string `query:"blocked" enum:"true,false," doc:"Only blocked contacts, or only those who are not"`
-	Sort      string `query:"sort" enum:"-created,created,name,-name,-tickets,tickets,-updated,updated," doc:"Newest first by default"`
+	Q          string `query:"q" maxLength:"200" doc:"Search name, email, phone and custom field values"`
+	CompanyID  string `query:"company_id" doc:"Only contacts of this company; none for those without one"`
+	Tag        string `query:"tag" maxLength:"50" doc:"Label name"`
+	Blocked    string `query:"blocked" enum:"true,false," doc:"Only blocked contacts, or only those who are not"`
+	ExternalID string `query:"external_id" maxLength:"200" doc:"Only the contact with this external id, matched exactly"`
+	Sort       string `query:"sort" enum:"-created,created,name,-name,-tickets,tickets,-updated,updated," doc:"Newest first by default"`
 	fieldParams
 }
 
 type companyListIn struct {
 	httpx.ListParams
-	Q    string `query:"q" maxLength:"200" doc:"Search name, domain and custom field values"`
-	Tag  string `query:"tag" maxLength:"50" doc:"Label name"`
-	Sort string `query:"sort" enum:"name,-name,-created,created,-contacts,contacts,-updated,updated," doc:"By name, A to Z, by default"`
+	Q          string `query:"q" maxLength:"200" doc:"Search name, domain and custom field values"`
+	Tag        string `query:"tag" maxLength:"50" doc:"Label name"`
+	ExternalID string `query:"external_id" maxLength:"200" doc:"Only the company with this external id, matched exactly"`
+	Sort       string `query:"sort" enum:"name,-name,-created,created,-contacts,contacts,-updated,updated," doc:"By name, A to Z, by default"`
 	fieldParams
 }
 
 // contactFilter is the People list's filters: the list's query parameters, and the `query` of a
 // bulk request, which acts on exactly what the list shows for them.
 type contactFilter struct {
-	Q         string           `json:"q,omitempty" maxLength:"200"`
-	CompanyID string           `json:"company_id,omitempty" doc:"A company id, or none for people without one"`
-	Tag       string           `json:"tag,omitempty" maxLength:"50"`
-	Blocked   string           `json:"blocked,omitempty" enum:"true,false,"`
-	Fields    []hd.FieldFilter `json:"fields,omitempty" maxItems:"20" doc:"Custom field filters, as the list's field.<key>[op]"`
+	Q          string           `json:"q,omitempty" maxLength:"200"`
+	CompanyID  string           `json:"company_id,omitempty" doc:"A company id, or none for people without one"`
+	Tag        string           `json:"tag,omitempty" maxLength:"50"`
+	Blocked    string           `json:"blocked,omitempty" enum:"true,false,"`
+	ExternalID string           `json:"external_id,omitempty" maxLength:"200" doc:"The contact with this external id, matched exactly"`
+	Fields     []hd.FieldFilter `json:"fields,omitempty" maxItems:"20" doc:"Custom field filters, as the list's field.<key>[op]"`
 }
 
 // where is the filter's WHERE clause on contacts ct, from $1 (the workspace) on.
@@ -82,6 +85,10 @@ func (f contactFilter) where(ctx context.Context, q db.Querier, p *auth.Principa
 	case "false":
 		extra += " AND NOT ct.blocked"
 	}
+	if ext := strings.TrimSpace(f.ExternalID); ext != "" {
+		more = append(more, ext)
+		extra += " AND ct.external_id = $" + strconv.Itoa(len(args)+len(more))
+	}
 	return ` WHERE ct.workspace_id = $1
 		AND ($2 = '' OR ct.search @@ websearch_to_tsquery('simple', $2) OR ct.fields_search @@ websearch_to_tsquery('simple', $2)
 			OR ct.email::text ILIKE $3 OR ct.name ILIKE $3 OR ` + domain.ExtraEmailLikeSQL("lower($3)") + `)
@@ -90,9 +97,10 @@ func (f contactFilter) where(ctx context.Context, q db.Querier, p *auth.Principa
 
 // companyFilter is the Companies list's filters, as contactFilter.
 type companyFilter struct {
-	Q      string           `json:"q,omitempty" maxLength:"200"`
-	Tag    string           `json:"tag,omitempty" maxLength:"50"`
-	Fields []hd.FieldFilter `json:"fields,omitempty" maxItems:"20" doc:"Custom field filters, as the list's field.<key>[op]"`
+	Q          string           `json:"q,omitempty" maxLength:"200"`
+	Tag        string           `json:"tag,omitempty" maxLength:"50"`
+	ExternalID string           `json:"external_id,omitempty" maxLength:"200" doc:"The company with this external id, matched exactly"`
+	Fields     []hd.FieldFilter `json:"fields,omitempty" maxItems:"20" doc:"Custom field filters, as the list's field.<key>[op]"`
 }
 
 // where is the filter's WHERE clause on companies co, from $1 (the workspace) on.
@@ -102,6 +110,10 @@ func (f companyFilter) where(ctx context.Context, q db.Querier, p *auth.Principa
 	extra, more, err := recordFilters(ctx, q, p, domain.CompanyLabels, domain.FieldEntityCompany, "co", f.Tag, f.Fields, len(args))
 	if err != nil {
 		return "", nil, err
+	}
+	if ext := strings.TrimSpace(f.ExternalID); ext != "" {
+		more = append(more, ext)
+		extra += " AND co.external_id = $" + strconv.Itoa(len(args)+len(more))
 	}
 	return ` WHERE co.workspace_id = $1
 		AND ($2 = '' OR co.name ILIKE $3 OR co.domain::text ILIKE $3 OR co.fields_search @@ websearch_to_tsquery('simple', $2))` + extra, append(args, more...), nil

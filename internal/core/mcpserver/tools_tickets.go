@@ -53,7 +53,7 @@ func ticketTools() []*tool {
 		"team":          str(`Move to a team by id or name (a name needs the settings:read scope), or "none" to remove the team.`),
 		"add_labels":    arr("Label names to add.", strN("", 1, 50), 50),
 		"remove_labels": arr("Label names to remove.", strN("", 1, 50), 50),
-		"fields":        fieldsArg("Custom field values to change, by key; the others keep theirs. null clears a field."),
+		"fields":        fieldsArg("Custom field values to change, by key; the others keep theirs. null clears a field.", domain.FieldEntityTicket),
 	}
 	return []*tool{
 		{
@@ -85,12 +85,16 @@ func ticketTools() []*tool {
 		{
 			Name: "reply_to_ticket", Title: "Reply to a ticket", Scopes: []string{auth.ScopeTicketsWrite}, OpenWorld: true,
 			Description: "Send a public reply on a ticket. The customer receives it (by email for email tickets). Write the body in markdown, without a signature. " +
-				"Optionally set the ticket's status after sending, for example pending while waiting on the customer.",
+				"Optionally set the ticket's status after sending, for example pending while waiting on the customer. " +
+				"With direction inbound the message is instead logged as the customer's own words, for something they said elsewhere " +
+				"(a phone call, a meeting): nothing is sent, and the ticket waits for the team's answer as after an email from them.",
 			Schema: obj(map[string]any{
-				"ticket": str(ticketArg),
-				"body":   strN("The reply, in markdown.", 1, maxBodyChars),
-				"status": enum("Status to set after the reply is sent.", statuses...),
-				"cc":     arr("Extra email addresses to copy (email tickets).", str(""), 20),
+				"ticket":         str(ticketArg),
+				"body":           strN("The reply, in markdown.", 1, maxBodyChars),
+				"status":         enum("Status to set after the reply is sent.", statuses...),
+				"cc":             arr("Extra email addresses to copy (email tickets).", str(""), 20),
+				"direction":      directionArg,
+				"attachment_ids": attachmentsArg,
 			}, "ticket", "body"),
 			Run: replyToTicket,
 		},
@@ -109,8 +113,9 @@ func ticketTools() []*tool {
 			Name: "add_note", Title: "Add an internal note", Scopes: []string{auth.ScopeTicketsWrite},
 			Description: "Add an internal note to a ticket. Notes are visible to the team only, never to the customer. Markdown body.",
 			Schema: obj(map[string]any{
-				"ticket": str(ticketArg),
-				"body":   strN("The note, in markdown.", 1, maxBodyChars),
+				"ticket":         str(ticketArg),
+				"body":           strN("The note, in markdown.", 1, maxBodyChars),
+				"attachment_ids": attachmentsArg,
 			}, "ticket", "body"),
 			Run: addNote,
 		},
@@ -125,21 +130,25 @@ func ticketTools() []*tool {
 			Name: "create_ticket", Title: "Create a ticket", Scopes: []string{auth.ScopeTicketsWrite}, OpenWorld: true,
 			Description: "Create a ticket for a contact by email (the contact is created when new). The body is the first message: " +
 				"a reply (default) or an internal note. With mailbox_id the ticket is an email ticket and a reply is emailed to the contact; " +
-				"without it the ticket is recorded on the api channel and nothing is sent. Set custom fields with fields, by the keys list_custom_fields returns.",
+				"without it the ticket is recorded on the api channel and nothing is sent. With direction inbound the body is logged as the contact's own " +
+				"request, for one that came in elsewhere (a phone call, a meeting): nothing is sent and the ticket waits for the team's answer. " +
+				"Set custom fields with fields, by the keys list_custom_fields returns.",
 			Schema: obj(map[string]any{
-				"email":      strN("The contact's email address.", 3, 254),
-				"name":       strN("The contact's name, used when the contact is new.", 1, 200),
-				"subject":    strN("The ticket subject.", 1, 500),
-				"body":       strN("The first message, in markdown.", 1, maxBodyChars),
-				"kind":       enum("Whether the body is a reply to the contact (default) or an internal note.", "reply", "note"),
-				"mailbox_id": str("Send from this mailbox: makes an email ticket and emails a reply to the contact."),
-				"status":     enum("Initial status (default open).", statuses...),
-				"priority":   enum("Initial priority (default normal).", priorities...),
-				"severity":   enum("Initial severity.", severities...),
-				"assignee":   str("Assign to a teammate by user id or email (an email needs the settings:read scope)."),
-				"team":       str("A team id, or a team name (a name needs the settings:read scope)."),
-				"labels":     arr("Label names.", strN("", 1, 50), 50),
-				"fields":     fieldsArg("Custom field values, by key."),
+				"email":          strN("The contact's email address.", 3, 254),
+				"name":           strN("The contact's name, used when the contact is new.", 1, 200),
+				"subject":        strN("The ticket subject.", 1, 500),
+				"body":           strN("The first message, in markdown.", 1, maxBodyChars),
+				"kind":           enum("Whether the body is a reply to the contact (default) or an internal note.", "reply", "note"),
+				"direction":      directionArg,
+				"attachment_ids": attachmentsArg,
+				"mailbox_id":     str("Send from this mailbox: makes an email ticket and emails a reply to the contact."),
+				"status":         enum("Initial status (default open).", statuses...),
+				"priority":       enum("Initial priority (default normal).", priorities...),
+				"severity":       enum("Initial severity.", severities...),
+				"assignee":       str("Assign to a teammate by user id or email (an email needs the settings:read scope)."),
+				"team":           str("A team id, or a team name (a name needs the settings:read scope)."),
+				"labels":         arr("Label names.", strN("", 1, 50), 50),
+				"fields":         fieldsArg("Custom field values, by key.", domain.FieldEntityTicket),
 			}, "email", "subject"),
 			Run: createTicket,
 		},
@@ -475,6 +484,7 @@ type messageResult struct {
 	TicketID     string `json:"ticket_id"`
 	TicketNumber int64  `json:"ticket_number,omitempty"`
 	Kind         string `json:"kind"`
+	Direction    string `json:"direction,omitempty"`
 	Status       string `json:"status,omitempty"`
 	Delivery     string `json:"delivery_status,omitempty"`
 }
@@ -490,24 +500,46 @@ func markdownBody(body string) (string, error) {
 	return ai.MarkdownToHTML(body), nil
 }
 
-func postMessage(ctx context.Context, c *caller, ticket, kind, body string, status string, cc []string) (any, error) {
-	ref, err := ticketRef(ticket)
+// newMessage is a message a tool adds to a ticket.
+type newMessage struct {
+	Ticket        string   `json:"ticket"`
+	Body          string   `json:"body"`
+	Status        string   `json:"status"`
+	Cc            []string `json:"cc"`
+	Direction     string   `json:"direction"`
+	AttachmentIDs []string `json:"attachment_ids"`
+}
+
+func postMessage(ctx context.Context, c *caller, kind string, a newMessage) (any, error) {
+	ref, err := ticketRef(a.Ticket)
 	if err != nil {
 		return nil, err
 	}
-	html, err := markdownBody(body)
+	html, err := markdownBody(a.Body)
 	if err != nil {
 		return nil, err
 	}
 	req := map[string]any{"kind": kind, "body_html": html}
-	if status != "" {
-		if err := oneOf(status, "status", statuses...); err != nil {
+	if a.Status != "" {
+		if err := oneOf(a.Status, "status", statuses...); err != nil {
 			return nil, err
 		}
-		req["status"] = status
+		req["status"] = a.Status
 	}
-	if len(cc) > 0 {
-		req["cc"] = cc
+	if len(a.Cc) > 20 {
+		return nil, invalid("at most 20 cc addresses")
+	}
+	if len(a.Cc) > 0 {
+		req["cc"] = a.Cc
+	}
+	if err := setDirection(req, a.Direction); err != nil {
+		return nil, err
+	}
+	if a.Direction == "inbound" && len(a.Cc) > 0 {
+		return nil, invalid("a message logged as the customer's (direction inbound) is not sent, so it takes no cc")
+	}
+	if err := setAttachments(req, a.AttachmentIDs); err != nil {
+		return nil, err
 	}
 	var m struct {
 		ID             string `json:"id"`
@@ -518,7 +550,10 @@ func postMessage(ctx context.Context, c *caller, ticket, kind, body string, stat
 	if err := c.do(ctx, http.MethodPost, "/v1/tickets/"+ref+"/messages", nil, req, &m); err != nil {
 		return nil, err
 	}
-	out := messageResult{MessageID: m.ID, TicketID: m.TicketID, Kind: m.Kind, Status: status}
+	out := messageResult{MessageID: m.ID, TicketID: m.TicketID, Kind: m.Kind, Status: a.Status}
+	if a.Direction == "inbound" {
+		out.Direction = "inbound"
+	}
 	if m.DeliveryStatus != "none" {
 		out.Delivery = m.DeliveryStatus
 	}
@@ -529,19 +564,48 @@ func postMessage(ctx context.Context, c *caller, ticket, kind, body string, stat
 }
 
 func replyToTicket(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
-	a, err := decode[struct {
-		Ticket string   `json:"ticket"`
-		Body   string   `json:"body"`
-		Status string   `json:"status"`
-		Cc     []string `json:"cc"`
-	}](raw)
+	a, err := decode[newMessage](raw)
 	if err != nil {
 		return nil, err
 	}
-	if len(a.Cc) > 20 {
-		return nil, invalid("at most 20 cc addresses")
+	return postMessage(ctx, c, "reply", a)
+}
+
+const maxAttachments = 20
+
+var (
+	directionArg = enum("outbound (default): the team's reply. inbound: the customer's own words, logged on their behalf and never sent; "+
+		"replies only, on a ticket with a contact, not a chat.", "outbound", "inbound")
+	attachmentsArg = arr("Files to attach: ids from upload_attachment.", str(""), maxAttachments)
+)
+
+func setDirection(req map[string]any, direction string) error {
+	if err := oneOf(direction, "direction", "outbound", "inbound"); err != nil {
+		return err
 	}
-	return postMessage(ctx, c, a.Ticket, "reply", a.Body, a.Status, a.Cc)
+	if direction != "" {
+		req["direction"] = direction
+	}
+	return nil
+}
+
+func setAttachments(req map[string]any, ids []string) error {
+	if len(ids) > maxAttachments {
+		return invalid("at most 20 attachments")
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	clean := make([]string, 0, len(ids))
+	for _, id := range ids {
+		v, err := idRef(id, "each attachment id")
+		if err != nil {
+			return err
+		}
+		clean = append(clean, v)
+	}
+	req["attachment_ids"] = clean
+	return nil
 }
 
 type draftResult struct {
@@ -585,13 +649,14 @@ func draftReply(ctx context.Context, c *caller, raw json.RawMessage) (any, error
 
 func addNote(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
 	a, err := decode[struct {
-		Ticket string `json:"ticket"`
-		Body   string `json:"body"`
+		Ticket        string   `json:"ticket"`
+		Body          string   `json:"body"`
+		AttachmentIDs []string `json:"attachment_ids"`
 	}](raw)
 	if err != nil {
 		return nil, err
 	}
-	return postMessage(ctx, c, a.Ticket, "note", a.Body, "", nil)
+	return postMessage(ctx, c, "note", newMessage{Ticket: a.Ticket, Body: a.Body, AttachmentIDs: a.AttachmentIDs})
 }
 
 func cleanLabels(in []string) ([]string, error) {
@@ -699,19 +764,21 @@ func updateTicket(ctx context.Context, c *caller, raw json.RawMessage) (any, err
 
 func createTicket(ctx context.Context, c *caller, raw json.RawMessage) (any, error) {
 	a, err := decode[struct {
-		Email     string         `json:"email"`
-		Name      string         `json:"name"`
-		Subject   string         `json:"subject"`
-		Body      string         `json:"body"`
-		Kind      string         `json:"kind"`
-		MailboxID string         `json:"mailbox_id"`
-		Status    string         `json:"status"`
-		Priority  string         `json:"priority"`
-		Severity  string         `json:"severity"`
-		Assignee  string         `json:"assignee"`
-		Team      string         `json:"team"`
-		Labels    []string       `json:"labels"`
-		Fields    map[string]any `json:"fields"`
+		Email       string         `json:"email"`
+		Name        string         `json:"name"`
+		Subject     string         `json:"subject"`
+		Body        string         `json:"body"`
+		Kind        string         `json:"kind"`
+		Direction   string         `json:"direction"`
+		Attachments []string       `json:"attachment_ids"`
+		MailboxID   string         `json:"mailbox_id"`
+		Status      string         `json:"status"`
+		Priority    string         `json:"priority"`
+		Severity    string         `json:"severity"`
+		Assignee    string         `json:"assignee"`
+		Team        string         `json:"team"`
+		Labels      []string       `json:"labels"`
+		Fields      map[string]any `json:"fields"`
 	}](raw)
 	if err != nil {
 		return nil, err
@@ -741,6 +808,12 @@ func createTicket(ctx context.Context, c *caller, raw json.RawMessage) (any, err
 	}
 	if a.Kind != "" {
 		body["kind"] = a.Kind
+	}
+	if err := setDirection(body, a.Direction); err != nil {
+		return nil, err
+	}
+	if err := setAttachments(body, a.Attachments); err != nil {
+		return nil, err
 	}
 	if a.MailboxID != "" {
 		id, err := idRef(a.MailboxID, "mailbox_id")
@@ -809,9 +882,9 @@ func (c *caller) written(ctx context.Context, t apiTicket) outTicket {
 
 // fieldsArg is the schema of a custom field values argument: values by key, as the API
 // takes them (contracts/api.md "Labels and custom fields").
-func fieldsArg(desc string) map[string]any {
+func fieldsArg(desc, entity string) map[string]any {
 	return map[string]any{"type": "object", "maxProperties": domain.MaxFieldsPerEntity, "additionalProperties": true, "description": desc +
-		" Keys come from list_custom_fields (entity ticket). Values by type: text, long_text, url and email a string; number a number; " +
+		" Keys come from list_custom_fields (entity " + entity + "). Values by type: text, long_text, url and email a string; number a number; " +
 		"checkbox true or false; date YYYY-MM-DD; select one option id; multi_select a list of option ids; user a teammate's user id."}
 }
 

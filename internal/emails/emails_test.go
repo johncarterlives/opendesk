@@ -106,6 +106,11 @@ func TestWebPushText(t *testing.T) {
 	if body != "Quarterly numbers" {
 		t.Errorf("collab: %q", body)
 	}
+	// A reply to the member's comment says so.
+	title, _, _ = WebPush(s, wid, Note{Type: "collab_mention", Data: map[string]any{"reply_to": uuid.NewString(), "actor": map[string]any{"name": "Maya Chen"}}})
+	if title != "Maya Chen replied to your comment" {
+		t.Errorf("collab reply: %q", title)
+	}
 	// A wiki notification opens its page, at the comment's thread when it is about one.
 	page, thread := uuid.New(), uuid.New()
 	title, body, link = WebPush(s, wid, Note{Type: "wiki_comment", TicketSubject: "Onboarding",

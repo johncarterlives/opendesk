@@ -80,3 +80,7 @@ func (s *service) formVisitorOK(visitor string, own []string) bool {
 	return visitor != "" && validAddress(visitor) && !slicesContainsFold(own, visitor) &&
 		!strings.EqualFold(emailDomain(visitor), s.inboundDomain())
 }
+
+// PublicMailDomain reports a provider anyone can sign up to (gmail.com, outlook.com and the like):
+// its users have nothing in common but the provider.
+func PublicMailDomain(d string) bool { return publicMailDomains[strings.ToLower(d)] }

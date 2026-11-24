@@ -193,7 +193,7 @@ func registerCompanies(d *deps.Deps, api huma.API) {
 			if in.fieldsErr != nil {
 				return nil, in.fieldsErr
 			}
-			where, args, err := companyFilter{Q: in.Q, Tag: in.Tag, Fields: in.fields}.where(ctx, d.DB.Pool, p)
+			where, args, err := companyFilter{Q: in.Q, Tag: in.Tag, ExternalID: in.ExternalID, Fields: in.fields}.where(ctx, d.DB.Pool, p)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}

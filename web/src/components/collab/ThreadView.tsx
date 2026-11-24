@@ -2,7 +2,8 @@
 // assigned to, the actions (each mirrored at the provider), the messages oldest
 // first with the older ones folded, the team's comments, and the reply composer.
 // Writing a comment and the reply buttons are pinned under it, whatever its length; while a
-// reply is written the reply buttons step aside for it, and the comment entry and count stay.
+// reply is written the reply buttons step aside for it, and the comment entry and count stay,
+// with feedback on the AI draft being written beside them.
 // Beside it, who it is with: the people panel (] shows and hides it).
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +23,7 @@ import {
   MailOpen,
   MessageSquare,
   MessageSquarePlus,
+  MessageSquareText,
   MoreHorizontal,
   PanelRight,
   RefreshCw,
@@ -30,6 +32,7 @@ import {
   Settings,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Star,
   Tag,
   Ticket,
@@ -54,6 +57,7 @@ import { useSyncNow } from "@/lib/collab/syncNow";
 import { hasReplyAll, replyTarget, type ComposeMode } from "@/lib/collab/recipients";
 import { identitySignature, ownEmails, replyIdentity } from "@/lib/collab/identities";
 import { cn } from "@/lib/cn";
+import { AI_TONE, tone } from "@/lib/tones";
 import { springs } from "@/lib/motion";
 import { qk, q } from "@/lib/queries";
 import { usePageCrumb } from "@/app/useBreadcrumbs";
@@ -190,6 +194,8 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
   // An AI draft just discarded: feedback on it, asked at once, never required.
   const [discardedAI, setDiscardedAI] = useState<AIDraftRef | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // Feedback on the AI draft open in the composer, from the bar under it.
+  const [composerFeedback, setComposerFeedback] = useState(false);
   const [composerDraftId, setComposerDraftId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // The newest message is open unless folded by hand.
@@ -375,6 +381,12 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
     };
   }, [isPending]);
 
+  // A comment's Reply set the reply target: the comment bar opens, or takes focus if open.
+  const replyToComment = () => {
+    setCommentThread(threadId);
+    requestAnimationFrame(() => commentBar.current?.focus());
+  };
+
   // Jumping to the comments marks them for a moment, so the eye lands there.
   const showComments = () => {
     commentsRef.current?.scrollIntoView({ block: "start", behavior });
@@ -529,6 +541,19 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
         { value: "comment", label: t("comments.add"), icon: <Lock /> },
       ]}
     />
+  );
+  // An AI draft open in the composer: its row is hidden meanwhile, so its feedback sits in
+  // the bar under it, right of the comment entry. The newest copy says whether feedback was given.
+  const composingAI = editing ? (all.find((m) => m.id === editing.id)?.ai_draft ?? editing.ai_draft) : undefined;
+  const feedbackButton = composingAI && (
+    <>
+      <Tooltip content={t("aiFeedback.description", { name: composingAI.client })}>
+        <Button size="md" variant="ghost" icon={<MessageSquareText />} onClick={() => setComposerFeedback(true)}>
+          {composingAI.has_feedback ? t("aiFeedback.edit") : t("aiFeedback.give")}
+        </Button>
+      </Tooltip>
+      <AIDraftFeedbackDialog draft={composingAI} threadId={th.id} open={composerFeedback} onOpenChange={setComposerFeedback} />
+    </>
   );
   const commentsButton = detail.comments.length > 0 && (
     <Tooltip content={t("thread.showComments")}>
@@ -812,6 +837,21 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
 
           {drafts.map((m) => (canAct ? <DraftRow key={m.id} m={m} composing={!!composer || !!editing} onOpen={() => editDraft(m)} /> : <MailMessageItem key={m.id} m={m} open={false} onToggle={() => undefined} />))}
 
+          {/* AI keys that looked at it in the queue and handed it back (contracts/collab.md "AI notes"). */}
+          {detail.ai_skips?.map((s) => {
+            const line = s.reason ? t("comments.aiSkipped", { name: s.client, reason: s.reason }) : t("comments.aiSkippedNoReason", { name: s.client });
+            // One line: a long reason is cut short and reads in full on hover.
+            return (
+              <p key={`${s.client}-${s.at}`} className={cn("flex min-h-7 min-w-0 items-center gap-1.5 px-1 text-[11.5px]", tone[AI_TONE].text)}>
+                <Sparkles className="size-3 shrink-0" aria-hidden />
+                <Tooltip content={line}>
+                  <span data-text className="min-w-0 cursor-text select-text truncate">
+                    {line}
+                  </span>
+                </Tooltip>
+              </p>
+            );
+          })}
           {canAct && detail.unused_ai_drafts?.map((d) => <UnusedAIDraft key={d.id} draft={d} threadId={th.id} />)}
           {discardedAI && <AIDraftFeedbackDialog draft={discardedAI} threadId={th.id} open={feedbackOpen} onOpenChange={setFeedbackOpen} defaultReason="should_not_answer" />}
 
@@ -826,7 +866,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                 transition={springs.row}
                 className={cn("mt-3 scroll-my-4 rounded-lg transition-shadow duration-500 ease-out motion-reduce:transition-none", flash && "shadow-[0_0_0_3px_var(--focus)] duration-150")}
               >
-                <Comments detail={detail} />
+                <Comments detail={detail} onReply={canAct ? replyToComment : undefined} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -901,7 +941,10 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
               <>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   {writeSwitch("comment")}
-                  {commentsButton}
+                  <span className="flex items-center gap-1">
+                    {commentsButton}
+                    {feedbackButton}
+                  </span>
                 </div>
                 <p className="mb-1.5 flex items-center gap-1.5 rounded-md bg-note px-2.5 py-1.5 text-[11.5px] text-fg-3">
                   <Lock aria-hidden className="size-3 shrink-0 text-fg-4" />
@@ -936,6 +979,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                     </Button>
                   </Tooltip>
                   {commentsButton}
+                  {feedbackButton}
                 </span>
               </div>
             )
