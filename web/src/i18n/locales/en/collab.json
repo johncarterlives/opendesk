@@ -333,6 +333,7 @@
     "noMailSavedReplies": "No workspace-wide saved replies without variables yet.",
     "savedRepliesFailed": "Couldn't load saved replies.",
     "manageSavedReplies": "Manage saved replies",
+    "savedRepliesTip": "Saved replies, or type / in the message",
     "uploading": "Uploading",
     "uploadFailed": "{{name}} did not upload",
     "failed": "Failed",

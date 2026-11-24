@@ -84,7 +84,7 @@ export function MailSavedReplyButton({ saved, getEditor, onInsert, disabled }: {
         </div>
       }
       trigger={
-        <Tooltip content={label} shortcut="/">
+        <Tooltip content={t("composer.savedRepliesTip")}>
           <button type="button" disabled={disabled} aria-label={label} className="flex size-7 shrink-0 items-center justify-center rounded-md text-fg-3 transition-colors hover:bg-hover hover:text-fg disabled:opacity-50">
             <MessageSquareText aria-hidden className="size-[15px]" />
           </button>
