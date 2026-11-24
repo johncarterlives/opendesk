@@ -23,8 +23,12 @@ const HOLD_MS = 350; // a finger holds this long on a row before it drags it
 const sameTarget = (a: Target | null, b: Target | null) =>
   a === b || (!!a && !!b && a.kind === b.kind && a.before === b.before && (a.kind === "section" || (b.kind === "row" && a.section === b.section)));
 
-/** Which drop a point names: for a section drag, the gap between headers; for a row drag, the gap between the rows of the section under it. */
-function targetAt(root: HTMLElement, x: number, y: number, kind: "section" | "row"): Target | null {
+/**
+ * Which drops a point names: for a section drag, the gap between headers; for a row drag, the gap
+ * between the rows of the section under it, then of each section around that one (a group of rows
+ * inside a section, as the Space editor has), innermost first.
+ */
+function targetsAt(root: HTMLElement, x: number, y: number, kind: "section" | "row"): Target[] {
   if (kind === "section") {
     // Only the sidebar's own sections: groups inside one (a teamspace under Pages) are not places a section goes.
     const blocks = [...root.querySelectorAll<HTMLElement>("[data-edit-section]")].filter((b) => {
@@ -34,18 +38,24 @@ function targetAt(root: HTMLElement, x: number, y: number, kind: "section" | "ro
     for (const b of blocks) {
       const head = b.querySelector<HTMLElement>("[data-edit-head]") ?? b;
       const r = head.getBoundingClientRect();
-      if (y <= r.top + r.height / 2) return { kind: "section", before: b.dataset.editSection ?? null };
+      if (y <= r.top + r.height / 2) return [{ kind: "section", before: b.dataset.editSection ?? null }];
     }
-    return { kind: "section", before: null };
+    return [{ kind: "section", before: null }];
   }
-  const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-edit-section]");
-  if (!el || !root.contains(el)) return null;
-  const section = el.dataset.editSection ?? "";
-  for (const row of el.querySelectorAll<HTMLElement>("[data-edit-row]")) {
-    const r = row.getBoundingClientRect();
-    if (y < r.top + r.height / 2) return { kind: "row", section, before: row.dataset.editRow ?? null };
+  const out: Target[] = [];
+  let el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-edit-section]") ?? null;
+  while (el && root.contains(el)) {
+    const section = el.dataset.editSection ?? "";
+    // Its own rows: a nested section's rows are that section's.
+    const rows = [...el.querySelectorAll<HTMLElement>("[data-edit-row]")].filter((r) => r.closest("[data-edit-section]") === el);
+    const row = rows.find((r) => {
+      const b = r.getBoundingClientRect();
+      return y < b.top + b.height / 2;
+    });
+    out.push({ kind: "row", section, before: row?.dataset.editRow ?? null });
+    el = el.parentElement?.closest<HTMLElement>("[data-edit-section]") ?? null;
   }
-  return { kind: "row", section, before: null };
+  return out;
 }
 
 export function useEditDrag<S extends { kind: "section" | "row" }>({
@@ -73,8 +83,7 @@ export function useEditDrag<S extends { kind: "section" | "row" }>({
       const d = live.current;
       const el = root.current;
       if (!d || !el) return;
-      const t = targetAt(el, x, y, d.source.kind);
-      const ok = t && handlers.current.accepts(d.source, t) ? t : null;
+      const ok = targetsAt(el, x, y, d.source.kind).find((t) => handlers.current.accepts(d.source, t)) ?? null;
       if (!sameTarget(ok, d.target)) {
         d.target = ok;
         setTarget(ok);

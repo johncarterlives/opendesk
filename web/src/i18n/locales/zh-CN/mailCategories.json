@@ -14,7 +14,7 @@
     "off": "关闭"
   },
   "editor": {
-    "primaryHint": "“主要”始终排在第一位：来自真人的邮件，以及 Ollie 无法确定的邮件",
+    "primaryHint": "“主要”始终排在第一位：需要你处理、且不属于其他分类的邮件",
     "untitled": "未命名",
     "name": "名称",
     "namePlaceholder": "分类名称",
@@ -57,7 +57,7 @@
     "chooseOn": "成员可以为自己管理的账户选择分类，也可以不选。",
     "chooseOff": "所有人遵循工作区或其团队的设置。成员仍然可以为自己的账户关闭 Ollie 分类。",
     "sorting": "邮件如何分类",
-    "sortingAi": "Ollie 会按每个分类的描述，在新邮件到达时进行分类。Ollie 无法确定的邮件会留在“主要”中。",
+    "sortingAi": "Ollie 会按每个分类的描述，在新邮件到达时进行分类，并优先选择“主要”以外的分类。Ollie 无法确定的邮件只有在看起来需要你处理时才会放进“主要”。",
     "sortingRules": "按发件人规则和邮件头分类。",
     "sortingRulesHint": "开启 AI 让 Ollie 来分类。",
     "byOllie": "Ollie",

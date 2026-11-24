@@ -20,3 +20,17 @@ export const springs = {
 
 /** A staggered entrance for a group of children. */
 export const stagger = (each = 0.04, delay = 0) => ({ staggerChildren: each, delayChildren: delay });
+
+/** How long a found setting stays highlighted (flash). */
+export const FLASH_MS = 1800;
+
+/**
+ * Draws the eye to what the reader was sent to (a setting found by search): a soft
+ * highlight that fades. Under reduced motion it shows still for the same time, then goes.
+ */
+export function flash(el: HTMLElement, reduced: boolean) {
+  el.dataset.findFlash = reduced ? "still" : "on";
+  window.setTimeout(() => {
+    delete el.dataset.findFlash;
+  }, FLASH_MS);
+}

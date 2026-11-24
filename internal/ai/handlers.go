@@ -308,6 +308,24 @@ func (s *Service) register(api huma.API) {
 			return &struct{ Body KBDraftOutput }{*out}, nil
 		})
 
+	huma.Register(api, huma.Operation{OperationID: "ai-app-help", Method: http.MethodPost, Path: "/v1/ai/app-help",
+		Summary: "Answer a question about the app", Description: "A few sentences on how to do something in opendesk, from the places in the app and the " +
+			"documentation sections the app's own search found for the question (contracts/ai.md \"Asking about the app\"). People only.", Tags: tags},
+		func(ctx context.Context, in *struct{ Body AppHelpInput }) (*struct{ Body AppHelpOutput }, error) {
+			p, err := auth.RequireWorkspace(ctx, auth.RoleViewer, "")
+			if err != nil {
+				return nil, httpx.Wrap(err)
+			}
+			if !s.d.Limiter.Allow("ai:app-help:"+p.UserID.String(), 20, time.Minute) {
+				return nil, httpx.E(http.StatusTooManyRequests, "rate_limited", "Too many questions; try again in a minute.")
+			}
+			out, err := s.AppHelp(ctx, p, in.Body)
+			if err != nil {
+				return nil, apiErr(err)
+			}
+			return &struct{ Body AppHelpOutput }{*out}, nil
+		})
+
 	huma.Register(api, huma.Operation{OperationID: "ai-search", Method: http.MethodGet, Path: "/v1/ai/search",
 		Summary: "Semantic search", Description: "Tickets and articles by meaning (embeddings fused with full-text search; full-text only without embeddings), " +
 			"and contacts. Same shape as /v1/search.", Tags: tags},

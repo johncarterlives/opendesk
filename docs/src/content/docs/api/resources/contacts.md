@@ -7,7 +7,7 @@ Scopes: `contacts:read` to read, `contacts:write` to change.
 
 | Method | Path | Description |
 | --- | --- | --- |
-| `GET` | `/v1/contacts` | List contacts. Filters: `q`, `company_id` (`none` for people without a company), `tag`, `blocked`, `field.<key>`. `sort`: `-created` (default), `created`, `name`, `-name`, `-tickets`, `tickets`, `-updated`, `updated` |
+| `GET` | `/v1/contacts` | List contacts. Filters: `q`, `company_id` (`none` for people without a company), `tag`, `blocked`, `external_id` (exact), `field.<key>`. `sort`: `-created` (default), `created`, `name`, `-name`, `-tickets`, `tickets`, `-updated`, `updated` |
 | `POST` | `/v1/contacts` | Create a contact |
 | `GET` | `/v1/contacts/{id}` | Get a contact |
 | `PATCH` | `/v1/contacts/{id}` | Update a contact |
@@ -18,7 +18,7 @@ Scopes: `contacts:read` to read, `contacts:write` to change.
 | `POST` | `/v1/contacts/{id}/portal/invite` | Email the contact a 7-day link to choose a portal password, from `brand_id` or the default brand |
 | `POST` | `/v1/contacts/portal/invite` | Invite up to 100 contacts by `ids`; answers `{sent, skipped}` with the skipped counted by reason |
 | `DELETE` | `/v1/contacts/{id}/portal` | Remove the portal password, sign out portal sessions and close open links |
-| `GET`, `POST` | `/v1/companies` | List or create companies. Filters: `q`, `tag`, `field.<key>`. `sort`: `name` (default), `-name`, `created`, `-created`, `contacts`, `-contacts`, `-updated`, `updated` |
+| `GET`, `POST` | `/v1/companies` | List or create companies. Filters: `q`, `tag`, `external_id` (exact), `field.<key>`. `sort`: `name` (default), `-name`, `created`, `-created`, `contacts`, `-contacts`, `-updated`, `updated` |
 | `GET`, `PATCH`, `DELETE` | `/v1/companies/{id}` | Get, update or delete a company |
 | `POST` | `/v1/companies/bulk` | Label, set a custom field of, or delete many companies, by `ids` or `query` (`q`, `tag`, `fields`) |
 
@@ -67,7 +67,7 @@ Every sort pages by key: `next_cursor` holds the last record's value and id, so 
 
 ## Many at once
 
-`POST /v1/contacts/bulk` and `POST /v1/companies/bulk` name their records with `ids` (1 to 100) or with `query`, the list's filters as a body (`q`, `tag`, `fields` as `[{ "key", "op", "value" }]`, and for contacts `company_id` and `blocked`), which acts on at most 1000 records. They take `delete: true` or a `patch`: `add_tags`, `remove_tags`, `fields` (merged, `null` clears a field) and, for contacts, `company_id` (`null` clears it). The answer is `{ "updated": n, "deleted": n }`.
+`POST /v1/contacts/bulk` and `POST /v1/companies/bulk` name their records with `ids` (1 to 100) or with `query`, the list's filters as a body (`q`, `tag`, `external_id`, `fields` as `[{ "key", "op", "value" }]`, and for contacts `company_id` and `blocked`), which acts on at most 1000 records. They take `delete: true` or a `patch`: `add_tags`, `remove_tags`, `fields` (merged, `null` clears a field) and, for contacts, `company_id` (`null` clears it). The answer is `{ "updated": n, "deleted": n }`.
 
 A request is all or nothing: an id of another workspace (`404`), a company of another workspace or a value a field refuses (`422`) changes no record. Each record is audited and announced as a single write is. Deleting a contact keeps its tickets, without a contact; deleting a company keeps its people, without a company.
 

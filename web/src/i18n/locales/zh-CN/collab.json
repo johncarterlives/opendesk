@@ -362,7 +362,12 @@
     "edited": "已编辑",
     "someone": "已离开的同事",
     "empty": "还没有评论。在这里和团队讨论这个会话。",
-    "menu": "评论操作"
+    "menu": "评论操作",
+    "reply": "回复",
+    "replyingTo": "回复 {{name}}：",
+    "cancelReply": "取消回复",
+    "parentDeleted": "原评论已删除",
+    "showParent": "转到 {{name}} 的原评论"
   },
   "share": {
     "title": "共享会话",
@@ -654,6 +659,8 @@
     "assignedAnon": "有一个会话分配给了你",
     "mention": "{{who}} 在评论中提到了你",
     "mentionAnon": "有人在评论中提到了你",
+    "reply": "{{who}} 回复了你的评论",
+    "replyAnon": "有人回复了你的评论",
     "open": "打开"
   },
   "shortcuts": {
@@ -923,6 +930,8 @@
     "tabs": "收件箱分类",
     "settings": "分类设置",
     "moved_other": "已将 {{count}} 个会话移到 {{name}}",
+    "dropRefused_other": "它们的收件箱没有 {{name}} 分类",
+    "dropSome_other": "{{count}} 个会话未移动：它们的收件箱没有 {{name}} 分类",
     "always": "始终",
     "alwaysHint": "将来自 {{sender}} 的后续邮件也发到这里",
     "ruleSaved": "来自 {{sender}} 的邮件现在会发到 {{name}}",
@@ -931,6 +940,12 @@
       "body": "来自个人的邮件留在主要标签页，简报、更新和推广则各有自己的标签页。Ollie 可以根据你的邮件推荐分类。",
       "action": "设置分类",
       "dismiss": "以后再说"
+    },
+    "reorder": {
+      "hint": "拖动以调整顺序，或按 {{left}} 或 {{right}}",
+      "hintDrag": "拖动以调整顺序",
+      "moved": "{{name}} 已移到第 {{position}} 位，共 {{count}} 个",
+      "failed": "无法保存标签页的新顺序"
     }
   },
   "aiFeedback": {
@@ -1029,8 +1044,8 @@
     "add": "添加",
     "newSection": "新建分区",
     "newSectionTitle": "新建分区",
-    "emptySection": "把行拖到这里，或添加一些",
-    "emptyFavorites": "把行拖到这里即可加入收藏",
+    "emptySection": "把行拖到这里",
+    "emptyFavorites": "拖到这里加入收藏",
     "spaceSettings": "空间设置",
     "editingSpace": "正在编辑 {{name}}",
     "hintTitle": "让侧边栏成为你的",
@@ -1054,9 +1069,7 @@
     "customize": "自定义",
     "customizeHint": "整理你的侧边栏：拖动、重命名、隐藏",
     "doneHint": "完成侧边栏整理",
-    "doneEditing": "完成",
-    "layoutsShort": "布局",
-    "barHint": "拖动即可移动。点击名称即可重命名。点击眼睛图标可隐藏。"
+    "doneEditing": "完成"
   },
   "layouts": {
     "title": "从布局开始",

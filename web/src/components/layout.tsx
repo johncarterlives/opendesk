@@ -112,7 +112,7 @@ export function SettingsPage({
         <div className={cn("mx-auto flex flex-wrap items-start gap-4 px-5 pb-5 pt-6 md:px-8 md:pt-7", wide ? "max-w-[1120px]" : "max-w-[880px]")}>
           <div className="min-w-0 flex-1 basis-60">
             {back && <div className="mb-2">{back}</div>}
-            <h1 className="text-[17px] font-semibold leading-6 tracking-[-0.025em]">{title}</h1>
+            <h1 data-find-label className="text-[17px] font-semibold leading-6 tracking-[-0.025em]">{title}</h1>
             {description && <p className="mt-1 max-w-[600px] text-[12.5px] leading-[19px] text-fg-3">{description}</p>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
@@ -143,11 +143,11 @@ export function Section({
   danger?: boolean;
 }) {
   return (
-    <section className={cn("animate-rise-in", className)}>
+    <section data-find className={cn("animate-rise-in", className)}>
       {(title || actions) && (
         <div className="mb-3 flex items-end justify-between gap-4">
           <div className="min-w-0">
-            {title && <h2 className={cn("text-[13px] font-semibold tracking-[-0.01em]", danger && "text-danger-fg")}>{title}</h2>}
+            {title && <h2 data-find-label className={cn("text-[13px] font-semibold tracking-[-0.01em]", danger && "text-danger-fg")}>{title}</h2>}
             {description && <p className="mt-0.5 text-[12px] leading-[18px] text-fg-3">{description}</p>}
           </div>
           {actions && <div className="flex shrink-0 items-center gap-1.5">{actions}</div>}
@@ -185,6 +185,7 @@ export function Row({
 }) {
   return (
     <div
+      data-find
       className={cn(
         "flex gap-4 border-b border-line-soft py-3.5 last:border-0",
         stack ? "flex-col gap-2.5" : "flex-col sm:flex-row sm:items-center sm:justify-between",
@@ -193,11 +194,11 @@ export function Row({
     >
       <div className="min-w-0">
         {htmlFor ? (
-          <label htmlFor={htmlFor} className="text-[12.5px] font-medium text-fg">
+          <label data-find-label htmlFor={htmlFor} className="text-[12.5px] font-medium text-fg">
             {label}
           </label>
         ) : (
-          <div className="text-[12.5px] font-medium text-fg">{label}</div>
+          <div data-find-label className="text-[12.5px] font-medium text-fg">{label}</div>
         )}
         {description && <div className="mt-0.5 text-[12px] leading-[18px] text-fg-3">{description}</div>}
       </div>

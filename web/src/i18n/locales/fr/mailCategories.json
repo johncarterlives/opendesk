@@ -14,7 +14,7 @@
     "off": "Désactivé"
   },
   "editor": {
-    "primaryHint": "Principal vient toujours en premier : le courrier des personnes, et tout ce dont Ollie n’est pas sûr",
+    "primaryHint": "Principal vient toujours en premier : le courrier qui a besoin de vous et ne va dans aucune autre catégorie",
     "untitled": "Sans nom",
     "name": "Nom",
     "namePlaceholder": "Nom de la catégorie",
@@ -59,7 +59,7 @@
     "chooseOn": "Les membres peuvent choisir leurs propres catégories, ou aucune, pour les comptes qu’ils gèrent.",
     "chooseOff": "Tout le monde suit l’espace de travail ou son équipe. Les membres peuvent toujours désactiver le tri par Ollie pour leurs comptes.",
     "sorting": "Comment le courrier est trié",
-    "sortingAi": "Ollie trie le nouveau courrier à son arrivée, d’après la description de chaque catégorie. Le courrier dont Ollie n’est pas sûr reste dans Principal.",
+    "sortingAi": "Ollie trie le nouveau courrier à son arrivée, d’après la description de chaque catégorie, et préfère une autre catégorie que Principal. Le courrier dont Ollie n’est pas sûr va dans Principal seulement s’il semble avoir besoin de vous.",
     "sortingRules": "Trié par les règles d’expéditeur et les en-têtes des messages.",
     "sortingRulesHint": "Activez l’IA pour laisser Ollie trier.",
     "byOllie": "Ollie",

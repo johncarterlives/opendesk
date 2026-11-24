@@ -15,6 +15,7 @@ import { DropdownMenu as M } from "radix-ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
 import { applyRowOrder } from "@/lib/collab/rowOrder";
+import { useShownPrefs } from "@/components/spaces/arranged";
 import { iconOf, nameOf } from "@/lib/collab/sidebarPrefs";
 import { RowEmoji } from "@/components/spaces/rows";
 import { useTranslation } from "react-i18next";
@@ -214,7 +215,7 @@ function TeamRow({
  * The caller's teams (once the workspace has one), "My teams" across them, and the
  * other public teams under a fold. g then t opens a team switcher.
  */
-function TeamsSection({ rail, drawer, first, counts, hidden = NONE, rp }: { rail: boolean; drawer?: boolean; first?: boolean; counts: TicketCounts | undefined; hidden?: ReadonlySet<string>; rp: RowPrefs }) {
+function TeamsSection({ rail, drawer, first, counts, hidden = NONE, rp, order }: { rail: boolean; drawer?: boolean; first?: boolean; counts: TicketCounts | undefined; hidden?: ReadonlySet<string>; rp: RowPrefs; order: string[] | undefined }) {
   const { t } = useTranslation("shell");
   const ctx = useTeamsCtx();
   const role = useRole();
@@ -232,8 +233,7 @@ function TeamsSection({ rail, drawer, first, counts, hidden = NONE, rp }: { rail
   if (!ctx.hasTeams) return null;
   const byName = (a: Team, b: Team) => a.name.localeCompare(b.name);
   const shown = (x: Team) => !hidden.has(hid.team(x.id));
-  // The member's own order (contracts/collab.md "Row order"), else by name.
-  const order = rp.prefs.row_order.teams;
+  // The member's own order (contracts/collab.md "Row order"), or the Space's, else by name.
   const mine = applyRowOrder(ctx.teams.filter((x) => ctx.myTeams.has(x.id) && shown(x)).sort(byName), (x) => hid.team(x.id), order);
   const others = applyRowOrder(ctx.teams.filter((x) => !ctx.myTeams.has(x.id) && ctx.canSeeTeam(x) && shown(x)).sort(byName), (x) => hid.team(x.id), order);
   const myTeamsRow = mine.length > 1 && !hidden.has(hid.team("mine"));
@@ -402,7 +402,9 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
   // Collab adds the Mail section (contracts/collab.md SidebarPrefs).
   const collab = useCollab();
   const prefs = useSidebarPrefs();
-  const hidden: ReadonlySet<string> = new Set(prefs.hidden);
+  // What shows follows the Space showing this section, when one arranges it (components/spaces/arranged.ts); menus change the member's own.
+  const shownPrefs = useShownPrefs(prefs, id);
+  const hidden: ReadonlySet<string> = new Set(shownPrefs.hidden);
   const rp: RowPrefs = { prefs };
   const shown = (key: string, section: SidebarSectionId, nums: BadgeNumbers) => pickCount(badgeFor(prefs, key, section, "ticket"), nums);
   const waitingFor = useWaitingFor();
@@ -415,11 +417,11 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
           <InboxOffer rail={rail} />
           {applyRowOrder(
             [
-              ...(isHidden(prefs, hid.waitingChats) ? [] : [{ key: hid.waitingChats, f: null }]),
+              ...(isHidden(shownPrefs, hid.waitingChats) ? [] : [{ key: hid.waitingChats, f: null }]),
               ...folders.filter((f) => !hidden.has(hid.ticketFolder(f.id))).map((f) => ({ key: hid.ticketFolder(f.id), f })),
             ],
             (r) => r.key,
-            prefs.row_order.inbox,
+            shownPrefs.row_order.inbox,
           ).map(({ key, f }) => {
             if (!f)
               return (
@@ -476,7 +478,7 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
         </Section>
       );
     case "teams":
-      return <TeamsSection rail={rail} drawer={drawer} first={first} counts={counts} hidden={hidden} rp={rp} />;
+      return <TeamsSection rail={rail} drawer={drawer} first={first} counts={counts} hidden={hidden} rp={rp} order={shownPrefs.row_order.teams} />;
     case "views":
       return (
         <Section
@@ -609,7 +611,7 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
           ),
         },
       ];
-      const rows = applyRowOrder(pages.filter((x) => !hidden.has(hid.page(x.id))), (x) => hid.page(x.id), prefs.row_order.workspace);
+      const rows = applyRowOrder(pages.filter((x) => !hidden.has(hid.page(x.id))), (x) => hid.page(x.id), shownPrefs.row_order.workspace);
       if (!rows.length) return null;
       return (
         <Section id="workspace" label={t("nav.workspace")} rail={rail} first={first}>
@@ -637,20 +639,20 @@ function BuiltinSection({ id, first, rail, drawer }: { id: SidebarSectionId; fir
       return (
         <FavoritesDrop>
           <Suspense fallback={null}>
-            <LazyFavorites prefs={prefs} rail={rail} first={first} />
+            <LazyFavorites prefs={prefs} shown={shownPrefs} rail={rail} first={first} />
           </Suspense>
         </FavoritesDrop>
       );
     case "pages":
       return (
         <Suspense fallback={null}>
-          <LazyPages prefs={prefs} rail={rail} first={first} />
+          <LazyPages prefs={prefs} shown={shownPrefs} rail={rail} first={first} />
         </Suspense>
       );
     case "mail":
       return collab.enabled ? (
         <Suspense fallback={null}>
-          <LazyMail prefs={prefs} rail={rail} first={first} />
+          <LazyMail prefs={prefs} shown={shownPrefs} rail={rail} first={first} />
         </Suspense>
       ) : null;
   }

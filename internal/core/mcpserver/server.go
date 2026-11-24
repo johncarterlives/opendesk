@@ -17,6 +17,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -52,7 +53,7 @@ const instructions = "opendesk is a helpdesk. These tools read and work its tick
 // Register mounts the MCP endpoint, its OAuth authorization server and metadata, and
 // the consent and AI clients API. Tools call the API through api's handler.
 func Register(d *deps.Deps, api huma.API, r chi.Router) {
-	r.Handle(Path, New(d, api.Adapter()))
+	r.Handle(Path, New(d, api))
 	o := &oauth{d: d}
 	o.mount(r)
 	o.registerAPI(api)
@@ -68,13 +69,24 @@ type Handler struct {
 	d   *deps.Deps
 	api http.Handler
 	mcp *mcp.StreamableHTTPHandler
+	// spec is the public API's OpenAPI document, indexed for the API bridge on first use
+	// (every route is registered by then).
+	spec    func() *huma.OpenAPI
+	catOnce sync.Once
+	cat     *apiCatalog
+	catErr  error
+	files   *fileFetcher
 }
+
+// maxRequestBody bounds one MCP request: a tool call with a file inline (maxInlineFile)
+// as base64 fits.
+const maxRequestBody = 9 << 20
 
 type serverKey struct{}
 
-// New returns the MCP endpoint. api is the public API handler the tools call.
-func New(d *deps.Deps, api http.Handler) *Handler {
-	h := &Handler{d: d, api: api}
+// New returns the MCP endpoint. Tools call api's handler; the API bridge reads its spec.
+func New(d *deps.Deps, api huma.API) *Handler {
+	h := &Handler{d: d, api: api.Adapter(), spec: api.OpenAPI, files: newFileFetcher(!d.Cfg.IsProduction())}
 	h.mcp = mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		s, _ := r.Context().Value(serverKey{}).(*mcp.Server)
 		return s
@@ -87,7 +99,7 @@ func New(d *deps.Deps, api http.Handler) *Handler {
 		// browser origins are checked below; the SDK's loopback Host check would refuse
 		// self-hosts behind a reverse proxy on the same machine.
 		DisableLocalhostProtection: true,
-		MaxRequestBodyBytes:        1 << 20,
+		MaxRequestBodyBytes:        maxRequestBody,
 	})
 	return h
 }
@@ -144,7 +156,7 @@ func (h *Handler) server(ctx context.Context, p *auth.Principal, clientKey strin
 	if err != nil {
 		severity = true
 	}
-	for _, t := range catalog() {
+	for _, t := range tools() {
 		if !t.offered(&cp) {
 			continue
 		}
@@ -169,7 +181,7 @@ func (h *Handler) run(t *tool, p *auth.Principal, clientKey string) mcp.ToolHand
 			base = uuid.NewString()
 		}
 		base += "\x00" + t.Name
-		c := &caller{h: h.api, p: p, idem: func(method, path string, body []byte) string {
+		c := &caller{h: h.api, srv: h, files: h.files, p: p, idem: func(method, path string, body []byte) string {
 			sum := sha256.New()
 			for _, part := range [][]byte{[]byte(base), {0}, []byte(method), {0}, []byte(path), {0}, body} {
 				sum.Write(part)
@@ -186,6 +198,19 @@ func (h *Handler) run(t *tool, p *auth.Principal, clientKey string) mcp.ToolHand
 		}
 		return textResult(out), nil
 	}
+}
+
+// catalog is the API bridge's index of the public API, built once.
+func (h *Handler) catalog() (*apiCatalog, error) {
+	h.catOnce.Do(func() {
+		raw, err := json.Marshal(h.spec())
+		if err != nil {
+			h.catErr = err
+			return
+		}
+		h.cat, h.catErr = parseCatalog(raw)
+	})
+	return h.cat, h.catErr
 }
 
 // oauthPrincipal resolves an OAuth access token (purpose mcp_access, aud this server)

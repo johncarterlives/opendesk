@@ -2358,8 +2358,17 @@ export type AutoRecharge = {
   failure: { code: AutoRechargeFailure; at: string } | null;
 };
 export type AutoRechargePatch = Partial<Pick<AutoRecharge, "enabled" | "threshold_usd" | "amount_usd" | "monthly_limit_usd">>;
+/** POST /v1/ai/app-help (contracts/ai.md "Asking about the app"). */
+export type AppHelpInput = {
+  question: string;
+  /** The reader's language, a BCP 47 tag. */
+  language?: string;
+  /** 1 to 8 excerpts: places in the app and docs sections, `title` the path to them. */
+  sources: { title: string; url?: string; text?: string }[];
+};
+
 export type AIFeature =
-  | "summarize" | "rewrite" | "translate" | "triage" | "decide" | "answer_check" | "copilot" | "draft_reply" | "answer" | "answer_email" | "playground" | "kb_draft" | "assistant" | "assistant_peer" | "procedure" | "wiki_write";
+  | "summarize" | "rewrite" | "translate" | "triage" | "decide" | "answer_check" | "copilot" | "draft_reply" | "answer" | "answer_email" | "playground" | "kb_draft" | "assistant" | "assistant_peer" | "procedure" | "wiki_write" | "app_help";
 /**
  * GET /v1/billing/usage (contracts/billing.md). `from`/`to` are RFC 3339; `to` is exclusive.
  * Every usd value is US dollars, a number with up to 6 decimals.
@@ -3459,9 +3468,22 @@ export type MailComment = {
   body_html: string;
   /** User ids. */
   mentions: string[];
+  /** The comment of this conversation it replies to (contracts/collab.md "Replies"). */
+  reply_to: string | null;
+  /** That comment's author and first line, with `reply_to`. */
+  parent: MailCommentQuote | null;
+  /** It replied to a comment that has since been deleted. */
+  parent_deleted: boolean;
   created_at: string;
   updated_at: string;
+  /** An AI note: the key's name when it added it (contracts/collab.md "AI notes"). */
+  ai_note_by?: string | null;
 };
+
+export type MailCommentQuote = { author: UserRef | null; excerpt: string; ai_note_by?: string | null };
+
+/** An AI key that skipped a conversation since its last message (contracts/collab.md "AI notes"). */
+export type MailAISkip = { client: string; reason: string; at: string };
 
 export type MailThreadAccount = {
   id: string;
@@ -3490,6 +3512,8 @@ export type MailThreadDetail = {
   can_act: boolean;
   /** The ticket it answered or was answered from, when you see it (contracts/collab.md "Answering tickets"). */
   ticket?: { id: string; number: number; subject: string } | null;
+  /** AI keys that skipped it since its last message, newest first. */
+  ai_skips?: MailAISkip[];
   /** AI drafts discarded, replaced or abandoned and gone, oldest first (contracts/collab.md "AI draft outcomes"). */
   unused_ai_drafts?: (AIDraftRef & { outcome_at: string })[];
   /** You follow it: it is in your Mentions box (contracts/collab.md "Mentions"). */
@@ -3567,7 +3591,7 @@ export type SidebarPrefs = {
 };
 
 /** A row of a member's own section: a Space row of this workspace. */
-export type SidebarItem = Omit<SpaceItem, "workspace_id" | "kind"> & { kind: Exclude<SpaceItemKind, "section" | "everywhere"> };
+export type SidebarItem = Omit<SpaceItem, "workspace_id" | "kind" | "rows" | "hidden"> & { kind: Exclude<SpaceItemKind, "section" | "everywhere"> };
 
 /** One of a member's own sidebar sections: at most 20, 60 rows each, 300 in all. */
 export type SidebarSection = { id: string; title: string; collapsed: boolean; icon?: string; items: SidebarItem[] };
@@ -3663,6 +3687,14 @@ export type SpaceItem = {
   badge?: SidebarBadge;
   /** One emoji in place of the row's own icon. */
   icon?: string;
+  /**
+   * A whole section only (kind "section"), contracts/spaces.md "Arranging a whole section": its rows
+   * top to bottom as row keys (`team:<id>`, `box:assigned`), the rest following in their usual
+   * order; in Favorites, rows the Space adds before the person's own favorites. At most 300.
+   */
+  rows?: string[];
+  /** A whole section only: the row keys it does not show in this Space. At most 300. */
+  hidden?: string[];
 };
 
 export type SpaceSection = {

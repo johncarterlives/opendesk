@@ -76,6 +76,10 @@ Where a draft still needs something from you, it leaves a short note in square b
 
 On a reply, the customer's or your side's (the AI agent's answer, a colleague's reply), **Translate** shows it in your language (the app's), whether or not triage detected the message's language; it is left out only when the message is known to be in your language already. A reply without a language of its own is taken to be in the conversation's. Notes and side conversations don't offer it. Nothing is translated until you click. Ollie's section on the ticket summarizes it and answers questions about it; see [Ollie on a ticket](/guides/ollie/#ollie-on-a-ticket).
 
+## Ask about opendesk
+
+In the command menu (<kbd>mod</kbd> <kbd>k</kbd>), press <kbd>tab</kbd> to **Ask AI**. Besides tickets and articles related by meaning, it lists the places in the app and the sections of these docs that answer a question about opendesk itself, such as *how do I customize my sidebar*. Choose **Answer with Ollie** for a short answer written from them. Only your question and those places and docs go to the AI provider, nothing from your workspace.
+
 ## The AI agent for chat and email
 
 The AI agent answers customers for you: chat visitors in the widget and, if you choose, emails to a mailbox. It answers from your help center and the knowledge you add, can use your own tools, and hands the conversation to your team when it should. It answers as a bot: Ollie by default, or [bots you build](/guides/bots/) with their own name, face and personality, one per widget or address if you like.
@@ -228,6 +232,7 @@ With Claude Haiku 5.5 as the main model and GLM-5.3 Flash as the fast one:
 | Email answer, each model turn | main | $0.0011 |
 | Ollie, each model turn | main | $0.0012 |
 | Ollie asking a teammate's Ollie, each answer | fast | $0.00042 |
+| A question about opendesk in the command menu | fast | $0.00021 |
 | Draft an article | main | $0.0023 |
 
 The agent's playground and test runs cost what their answers cost, about $0.001 a reply.

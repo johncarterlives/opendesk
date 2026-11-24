@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useNavigate, useRouterState, type NavigateOptions } from "@tanstack/react-router";
 import { Command } from "cmdk";
 import { Dialog as D } from "radix-ui";
@@ -27,7 +27,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useDeferredValue, useEffect, useRef, useState, type ReactNode } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { useStartChat } from "@/components/tickets/useNewTicket";
 import { EmptyState } from "@/components/ui/empty";
@@ -56,9 +56,8 @@ import { useDebounced } from "@/components/contacts/hooks";
 import { useAI } from "@/lib/ai";
 import { sortTeams, TeamDot, useTeamsCtx } from "@/components/tickets/teams";
 import { ViewIcon, viewName } from "@/components/tickets/ViewIcon";
-import type { SearchResults } from "@/lib/api/types";
 import { useCollab, useMailAccounts } from "@/lib/collab/hooks";
-import { TICKET_SETTINGS, useProducts } from "@/lib/products";
+import { settingsProductAvailable, useProducts } from "@/lib/products";
 import { compose } from "@/lib/collab/compose";
 import { accountView } from "@/lib/collab/accountView";
 import { AccountDot } from "@/components/collab/bits";
@@ -66,34 +65,47 @@ import { WorkspaceBadge } from "@/components/workspaces/WorkspaceBadge";
 import { useWorkspaces } from "@/lib/workspaces";
 import { cleanSection } from "@/lib/viewSections";
 import { useHref } from "@/lib/links";
-import { LinkItem, openSelectedInNewTab } from "./paletteLink";
+import { openSelectedInNewTab } from "./paletteLink";
+import { AiResults } from "./PaletteAiResults";
+import { groupCls, HitItem, Item } from "./paletteItems";
+import { usePaletteHighlight } from "./paletteHighlight";
+import { asSource, useAppSearch, type AppHit } from "@/lib/appSearch";
+import { useOpenHit } from "@/lib/appSearch/open";
+import { useSettingsAccess } from "@/lib/settingsAccess";
+import { api } from "@/lib/api/endpoints";
+import { uiLanguage } from "@/i18n";
 
-const itemCls =
-  "flex h-9 cursor-default select-none items-center gap-2.5 rounded-md px-2.5 text-[13px] text-fg transition-colors duration-100 animate-item-in motion-reduce:animate-none data-[selected=true]:bg-hover [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-fg-3";
-const groupCls =
-  "[&_[cmdk-group-heading]]:px-2.5 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:pt-3 [&_[cmdk-group-heading]]:text-[11.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-fg-3";
-
-function Item({ children, onSelect, icon, hint, value, keywords, forceMount, href }: { children: ReactNode; onSelect: () => void; icon?: ReactNode; hint?: ReactNode; value: string; keywords?: string[]; forceMount?: boolean; href?: string }) {
-  const body = (
-    <>
-      {icon}
-      <span className="flex min-w-0 flex-1 items-center gap-2 truncate">{children}</span>
-      {hint && <span className="shrink-0 text-xs text-fg-4">{hint}</span>}
-    </>
-  );
-  // An item that goes to a page is a real link, which the browser can open in a new tab.
-  if (href)
-    return (
-      <LinkItem href={href} value={value} keywords={keywords} onSelect={onSelect} forceMount={forceMount} className={itemCls}>
-        {body}
-      </LinkItem>
-    );
-  return (
-    <Command.Item value={value} keywords={keywords} onSelect={onSelect} forceMount={forceMount} className={itemCls}>
-      {body}
-    </Command.Item>
-  );
-}
+/** Settings pages Go to lists by name. */
+const GO_SETTINGS_PAGES = [
+  ["/settings/profile", "titles.profile"],
+  ["/settings/security", "titles.security"],
+  ["/settings/notifications", "titles.notifications"],
+  ["/settings/workspace", "command.workspaceSettings"],
+  ["/settings/members", "titles.members"],
+  ["/settings/teams", "titles.teams"],
+  ["/settings/mailboxes", "titles.mailboxes"],
+  ["/settings/mail-accounts", "titles.mailAccounts"],
+  ["/settings/email-design", "titles.emailDesign"],
+  ["/settings/tags", "titles.labels"],
+  ["/settings/saved-replies", "titles.savedReplies"],
+  ["/settings/views", "titles.views"],
+  ["/settings/sla", "titles.slaPolicies"],
+  ["/settings/automations", "titles.automations"],
+  ["/settings/ai", "command.aiSettings"],
+  ["/settings/ai/agent", "command.aiOverview"],
+  ["/settings/ai/bots", "command.aiBots"],
+  ["/settings/ai/behaviour", "command.aiBehaviour"],
+  ["/settings/ai/knowledge", "command.aiKnowledge"],
+  ["/settings/ai/tools", "command.aiTools"],
+  ["/settings/ai/playground", "command.aiPlayground"],
+  ["/settings/widget", "titles.chatWidget"],
+  ["/settings/api-keys", "titles.apiKeys"],
+  ["/settings/webhooks", "titles.webhooks"],
+  ["/settings/audit-log", "titles.auditLog"],
+  ["/settings/trash", "titles.trash"],
+  ["/settings/import", "command.importHistory"],
+] as const;
+const GO_SETTINGS: ReadonlySet<string> = new Set(GO_SETTINGS_PAGES.map(([to]) => to));
 
 export function CommandPalette() {
   const { t: tNav } = useTranslation("navigation");
@@ -127,13 +139,42 @@ export function CommandPalette() {
   const several = useWorkspaces().several;
   const aiQuery = useDebounced(query.trim(), 300);
   const aiSearch = useQuery({ ...q.aiSearch(aiQuery), enabled: open && aiMode && ai.enabled && aiQuery.length > 1 });
+  // The app's own search: settings and places like the sidebar, and the docs for Ask AI.
+  const access = useSettingsAccess({ cloud: open });
+  const assistant = ai.config?.assistant_name ?? "Ollie";
+  const app = useAppSearch(aiMode ? aiQuery : deferred, {
+    access,
+    settings: open,
+    // The docs index is the larger one: loaded for Ask AI's questions only.
+    docs: open && aiMode,
+    mode: aiMode ? "most" : "all",
+    limit: aiMode ? 4 : 6,
+    assistant,
+  });
+  const openHit = useOpenHit();
+  const hitLink = (h: AppHit) => openHit(h, () => shell.palette(false));
+  // Ollie's short answer from what the app's own search found (POST /v1/ai/app-help).
+  const appHelp = useMutation({ mutationFn: api.ai.appHelp });
+  const { reset: resetHelp } = appHelp;
+  const root = useRef<HTMLDivElement>(null);
+  // The highlighted item. Results arrive after the words that asked for them, when cmdk has
+  // already picked its first item: a search's tickets after the settings hits, Ask AI's results.
+  // The first item is highlighted again so Enter acts on it, until the arrow keys move it; in Ask
+  // AI, only once none is highlighted.
+  const [active, setActive] = useState("");
+  const highlight = usePaletteHighlight(root, setActive);
+  const helpStatus = appHelp.status;
+  useEffect(() => {
+    highlight.pickFirst(aiMode);
+  }, [highlight, aiMode, aiQuery, aiSearch.data, deferred, search.data, ticketsOn, app.settings, app.docs, helpStatus]);
 
   useEffect(() => {
     if (!open) {
       setQuery("");
       setAiMode(false);
+      resetHelp();
     }
-  }, [open]);
+  }, [open, resetHelp]);
 
   const { t: tWiki } = useTranslation("wiki");
   // The new page popup: in the wiki while the wiki is open, else in Pages (contracts/pages.md).
@@ -147,7 +188,6 @@ export function CommandPalette() {
   // A page as a link: its href for the browser, and the navigation in place.
   const toHref = useHref();
   const link = (to: NavigateOptions) => ({ href: toHref(to), onSelect: () => go(() => void navigate(to)) });
-  const root = useRef<HTMLDivElement>(null);
 
   // The server leaves tickets out while Tickets is off; a result cached before that is not shown either.
   const results = search.data && !ticketsOn ? { ...search.data, tickets: [] } : search.data;
@@ -157,6 +197,9 @@ export function CommandPalette() {
   const wikiPages = hits.filter(inArea("wiki"));
   const hasResults = !!results && (results.tickets.length + results.contacts.length + results.articles.length + hits.length > 0);
   const role = useRole();
+  // Go to lists these pages already; the Settings group adds their sections and fields.
+  const settingsHits = app.settings.filter((h) => !(h.kind === "setting" && h.entry.k === "p" && GO_SETTINGS.has(h.route)));
+  const appResults = settingsHits.length > 0;
 
   return (
     <D.Root open={open} onOpenChange={(o) => shell.palette(o)}>
@@ -168,7 +211,7 @@ export function CommandPalette() {
           className="fixed left-1/2 top-[14vh] z-50 w-[calc(100vw-32px)] max-w-[620px] -translate-x-1/2 overflow-hidden rounded-xl border border-line bg-raised shadow-float origin-top outline-none data-[state=open]:animate-palette-in data-[state=closed]:animate-palette-out motion-reduce:animate-none"
         >
           <D.Title className="sr-only">{tNav("command.menu")}</D.Title>
-          <Command ref={root} loop shouldFilter={!aiMode} className="flex flex-col">
+          <Command ref={root} loop shouldFilter={!aiMode} value={active} onValueChange={setActive} className="flex flex-col">
             <div className="relative flex h-12 items-center gap-2.5 border-b border-line px-4">
               {aiMode ? (
                 <button
@@ -186,8 +229,12 @@ export function CommandPalette() {
               <Command.Input
                 autoFocus
                 value={query}
-                onValueChange={setQuery}
+                onValueChange={(v) => {
+                  highlight.reset();
+                  setQuery(v);
+                }}
                 onKeyDown={(e) => {
+                  highlight.onKeyDown(e);
                   if (e.key === "Tab" && !e.shiftKey && ai.enabled) {
                     e.preventDefault();
                     setAiMode((m) => !m);
@@ -214,6 +261,18 @@ export function CommandPalette() {
                   data={aiSearch.data}
                   error={!!aiSearch.error}
                   onExample={setQuery}
+                  places={app.settings}
+                  docs={app.docs}
+                  hitLink={hitLink}
+                  assistant={assistant}
+                  answer={
+                    appHelp.variables?.question === aiQuery
+                      ? { pending: appHelp.isPending, text: appHelp.data?.answer, error: appHelp.isError }
+                      : null
+                  }
+                  onAnswer={() =>
+                    appHelp.mutate({ question: aiQuery, language: uiLanguage(), sources: [...app.settings.slice(0, 4), ...app.docs.slice(0, 4)].map(asSource) })
+                  }
                   ticket={(id) => link({ to: "/inbox/$folder/{-$ticketId}", params: { folder: "open", ticketId: id } })}
                   article={(id) => link({ to: "/kb/articles/$articleId", params: { articleId: id }, search: { collection: undefined } })}
                 />
@@ -226,7 +285,7 @@ export function CommandPalette() {
                   </Item>
                 </Command.Group>
               )}
-              {!hasResults && !(ai.enabled && query.trim().length > 2) && (
+              {!hasResults && !appResults && !(ai.enabled && query.trim().length > 2) && (
                 <Command.Empty>
                   {deferred.length > 1 && search.isFetching ? (
                     <p className="py-10 text-center text-[13px] text-fg-3">{tNav("command.searching")}</p>
@@ -328,6 +387,14 @@ export function CommandPalette() {
                 </Command.Group>
               )}
 
+              {settingsHits.length > 0 && (
+                <Command.Group heading={tNav("titles.settings")} forceMount className={groupCls}>
+                  {settingsHits.map((h) => (
+                    <HitItem key={h.id} hit={h} query={deferred} {...hitLink(h)} />
+                  ))}
+                </Command.Group>
+              )}
+
               {pageCommands.length > 0 && (
                 <Command.Group heading={tNav("command.thisTicket")} className={groupCls}>
                   {pageCommands.map((c) => (
@@ -423,37 +490,7 @@ export function CommandPalette() {
                 {ticketsOn && <Item value="go reports analytics" keywords={[tNav("titles.reports")]} icon={<BarChart3 />} {...link({ to: "/reports" })}>
                   {tNav("titles.reports")}
                 </Item>}
-                {(
-                  [
-                    ["/settings/profile", "titles.profile"],
-                    ["/settings/security", "titles.security"],
-                    ["/settings/notifications", "titles.notifications"],
-                    ["/settings/workspace", "command.workspaceSettings"],
-                    ["/settings/members", "titles.members"],
-                    ["/settings/teams", "titles.teams"],
-                    ["/settings/mailboxes", "titles.mailboxes"],
-                    ...(collab.enabled ? ([["/settings/mail-accounts", "titles.mailAccounts"]] as const) : []),
-                    ["/settings/email-design", "titles.emailDesign"],
-                    ["/settings/tags", "titles.labels"],
-                    ["/settings/saved-replies", "titles.savedReplies"],
-                    ["/settings/views", "titles.views"],
-                    ["/settings/sla", "titles.slaPolicies"],
-                    ["/settings/automations", "titles.automations"],
-                    ["/settings/ai", "command.aiSettings"],
-                    ["/settings/ai/agent", "command.aiOverview"],
-                    ["/settings/ai/bots", "command.aiBots"],
-                    ["/settings/ai/behaviour", "command.aiBehaviour"],
-                    ["/settings/ai/knowledge", "command.aiKnowledge"],
-                    ["/settings/ai/tools", "command.aiTools"],
-                    ["/settings/ai/playground", "command.aiPlayground"],
-                    ["/settings/widget", "titles.chatWidget"],
-                    ["/settings/api-keys", "titles.apiKeys"],
-                    ["/settings/webhooks", "titles.webhooks"],
-                    ["/settings/audit-log", "titles.auditLog"],
-                    ["/settings/trash", "titles.trash"],
-                    ["/settings/import", "command.importHistory"],
-                  ] as const
-                ).filter(([to]) => ticketsOn || !TICKET_SETTINGS.has(to)).map(([to, labelKey]) => (
+                {GO_SETTINGS_PAGES.filter(([to]) => settingsProductAvailable(to, { tickets: ticketsOn, mail: collab.enabled }) && (collab.enabled || to !== "/settings/mail-accounts")).map(([to, labelKey]) => (
                   <Item key={to} value={`settings ${to}`} keywords={[tNav(labelKey)]} icon={<Settings />} hint={tNav("titles.settings")} {...link({ to })}>
                     {tNav(labelKey)}
                   </Item>
@@ -561,101 +598,5 @@ export function CommandPalette() {
         </D.Content>
       </D.Portal>
     </D.Root>
-  );
-}
-
-/** Semantic results (GET /v1/ai/search): tickets and articles related by meaning. */
-function AiResults({
-  query,
-  pending,
-  data,
-  error,
-  ticket,
-  article,
-  onExample,
-}: {
-  query: string;
-  onExample: (q: string) => void;
-  pending: boolean;
-  data: SearchResults | undefined;
-  error: boolean;
-  /** A ticket's and an article's link (CommandPalette's link()). */
-  ticket: (id: string) => { href: string; onSelect: () => void };
-  article: (id: string) => { href: string; onSelect: () => void };
-}) {
-  const { t } = useTranslation("ai");
-  const { t: tKb } = useTranslation("kb");
-  if (query.length < 2)
-    return (
-      <div className="animate-fade-in">
-        <div className="flex items-center gap-2.5 px-2.5 pb-2 pt-2.5">
-          <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-sm", tone[AI_TONE].soft)}>
-            <AiIcon className="size-3.5" />
-          </span>
-          <p className="text-[12.5px] text-fg-3">{t("palette.start")}</p>
-        </div>
-        <Command.Group heading={t("palette.try")} className={groupCls}>
-          {(["palette.example_1", "palette.example_2", "palette.example_3"] as const).map((k) => (
-            <Item key={k} value={`ai example ${k}`} icon={<ArrowRight />} hint={<Kbd>enter</Kbd>} onSelect={() => onExample(t(k))}>
-              <span className="truncate text-fg-2">{t(k)}</span>
-            </Item>
-          ))}
-        </Command.Group>
-      </div>
-    );
-  if (!data && pending)
-    return (
-      <div className="flex flex-col gap-1 p-1" aria-live="polite" aria-label={t("palette.searching")}>
-        <div className="px-1.5 pb-1.5 pt-2 text-[11.5px] font-medium text-fg-3">{t("palette.searching")}</div>
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="flex h-9 items-center gap-2.5 px-2.5">
-            <span className="skeleton size-4 rounded-[3px]" />
-            <span className="skeleton h-2.5" style={{ width: `${62 - i * 14}%` }} />
-          </div>
-        ))}
-      </div>
-    );
-  const tickets = data?.tickets ?? [];
-  const articles = data?.articles ?? [];
-  if (error || (!tickets.length && !articles.length))
-    return <p className="px-6 py-10 text-center text-[13px] text-fg-3">{error ? t("palette.error") : t("palette.empty")}</p>;
-  const heading = (label: string) => (
-    <span className="flex items-center gap-1.5">
-      <AiIcon className="size-3" />
-      {label}
-    </span>
-  );
-  return (
-    <div className={pending ? "opacity-60 transition-opacity" : "transition-opacity"}>
-      {tickets.length > 0 && (
-        <Command.Group heading={heading(t("palette.tickets"))} className={groupCls}>
-          {tickets.map((x) => (
-            <Item
-              key={x.id}
-              value={`ai ticket ${x.id}`}
-              icon={<StatusIcon status={x.status} />}
-              hint={<span className="mono inline-block text-right sm:min-w-[12ch]">{relShort(x.last_message_at)}</span>}
-              {...ticket(x.id)}
-            >
-              <span className="mono shrink-0 text-xs text-fg-3">#{x.number}</span>
-              <span className="truncate" data-ph-mask>
-                {x.subject}
-              </span>
-              <Requester contact={x.contact} className="ml-auto" />
-            </Item>
-          ))}
-        </Command.Group>
-      )}
-      {articles.length > 0 && (
-        <Command.Group heading={heading(t("palette.articles"))} className={groupCls}>
-          {articles.map((a) => (
-            <Item key={a.id} value={`ai article ${a.id}`} icon={<FileText />} hint={a.status === "draft" ? tKb("status.draft") : undefined} {...article(a.id)}>
-              <span className="truncate">{a.title}</span>
-              {a.excerpt && <span className="hidden min-w-0 truncate text-xs text-fg-3 sm:inline">{a.excerpt}</span>}
-            </Item>
-          ))}
-        </Command.Group>
-      )}
-    </div>
   );
 }

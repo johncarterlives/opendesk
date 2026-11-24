@@ -218,6 +218,7 @@ interface AIModel {
 | POST | `/v1/ai/translate` | agent | $0.01 | `{html?: string, text?: string, target: string /* BCP 47 */}` → `{html?, text?, source_language}` |
 | POST | `/v1/kb/articles/ai/draft` | agent | $0.05 | `{ticket_ids?: string[] /* at most 10 */, topic?: string /* up to 300 chars */}` → `{title, body_html, excerpt}` (not saved) |
 | GET | `/v1/ai/search` | viewer | $0 | `?q` semantic search over tickets and articles (embeddings), FTS fallback → same shape as `/v1/search` |
+| POST | `/v1/ai/app-help` | viewer, people only | $0.005 | `{question: string /* 1..500 */, language?: string /* BCP 47, the reader's */, sources: {title: string /* 1..300, where it is */, url?: string /* ..500 */, text?: string /* ..2000 */}[] /* 1..8 */}` → `{answer: string}`: a few sentences of plain text on doing something in opendesk, from the excerpts the app's own search found ("Asking about the app" below); fast model; 20 a minute per person (`429 rate_limited`) |
 
 `{id}` is a ticket uuid, `#123` (URL-encoded `%23123`) or `123`. API keys need the scope
 of the data the route reads or writes: `tickets:read` (summary, ask, search),
@@ -252,6 +253,30 @@ for rewrite) for a live preview only; render and insert the sanitized `done` pay
 error before the first event is a normal problem+json response with its status (so `402
 ai_balance_empty` arrives as JSON even on a streaming request); an error after the stream started
 is `event: error` with the problem object as data, and the stream ends.
+
+### Asking about the app
+
+The command menu's Ask AI also answers questions about opendesk itself
+("how do I customize my sidebar"), from two indexes the web app builds with itself (`web/indexer`), each
+loaded on first use as a chunk of its own:
+
+- **settings**: every settings page's title, sections, rows and the field labels and hints inside
+  them, read from the code (`<SettingsPage>`, `<Section>`, `<Row>`, `<Field>`) as i18n keys and shown in the
+  reader's language. An entry opens its page at `#find=<ns:key>`, which scrolls that section or row into
+  view and highlights it briefly. Entries are left out for whoever cannot use them: the page's rule in
+  `web/src/lib/settingsAccess.ts` (the settings nav reads the same table) and the conditions the code
+  shows the part under (admin, owner, Collab, Tickets, AI, Cloud). A few places that are not settings
+  pages (Customize sidebar, New Space) join them.
+- **docs**: the docs site's pages and their `##` sections with their first words, linking to
+  `docs.opendesk.sh`. Built from `docs/src/content/docs`; nothing is fetched from the docs site at runtime.
+  The larger of the two, it loads only in Ask AI: the menu's normal search lists settings, never docs.
+
+Matching runs in the browser (words anywhere, stems, everyday synonyms, a typo in a word of five letters
+or more and two from eight), with or without AI.
+With AI, **Answer with {assistant}** sends the question and the top excerpts (at most four places and four
+docs sections: the app's own strings and the public docs, never workspace data) to
+`POST /v1/ai/app-help`, which answers from them alone on the fast model, metered as `app_help`. API keys
+and OAuth grants are refused (`403`): it serves the app's own menu.
 
 ### Drafts and connected tools
 

@@ -53,7 +53,7 @@ function name(v: unknown, what: string, max: number, empty = false): string {
 
 function readItem(v: unknown): SpaceItem {
   if (!isRecord(v)) throw invalid("An item must be an object");
-  only(v, ["workspace_id", "kind", "id", "name", "badge"], "An item");
+  only(v, ["workspace_id", "kind", "id", "name", "badge", "icon", "rows", "hidden"], "An item");
   if (typeof v.workspace_id !== "string" || typeof v.id !== "string" || typeof v.kind !== "string") throw invalid("An item needs workspace_id, kind and id");
   if (!(SPACE_KINDS as readonly string[]).includes(v.kind)) throw invalid(`Unknown item kind: ${v.kind}`);
   if (!v.id || v.id.length > LIMITS.itemId) throw invalid("An item id is 1 to 100 characters");
@@ -63,12 +63,24 @@ function readItem(v: unknown): SpaceItem {
     if (!["unread", "total", "count", "awaiting", "urgent", "overdue", "open", "none"].includes(String(v.badge))) throw invalid("Unknown badge");
     out.badge = v.badge as SpaceItem["badge"];
   }
+  if (v.icon !== undefined && v.icon !== "") {
+    if (typeof v.icon !== "string" || [...v.icon].length > 16) throw invalid("An item's icon is one emoji");
+    out.icon = v.icon;
+  }
+  // A whole section's arrangement; checked with the rest by spaceProblems.
+  for (const k of ["rows", "hidden"] as const) {
+    if (v[k] === undefined) continue;
+    if (!Array.isArray(v[k]) || v[k].some((x: unknown) => typeof x !== "string")) throw invalid(`${k} must be a list of row keys`);
+    if (out.kind !== "section") throw invalid(`Only a whole section has ${k}`);
+    if (new Set(v[k] as string[]).size !== (v[k] as string[]).length) throw invalid(`Each key appears once in ${k}`);
+    if ((v[k] as string[]).length) out[k] = v[k] as string[];
+  }
   return out;
 }
 
 function readSection(v: unknown): SpaceSection {
   if (!isRecord(v)) throw invalid("A section must be an object");
-  only(v, ["id", "title", "collapsed", "items"], "A section");
+  only(v, ["id", "title", "collapsed", "icon", "items"], "A section");
   if (typeof v.id !== "string") throw invalid("A section needs an id");
   if (v.collapsed !== undefined && typeof v.collapsed !== "boolean") throw invalid("collapsed must be true or false");
   if (v.items !== undefined && !Array.isArray(v.items)) throw invalid("items must be a list");
@@ -76,6 +88,7 @@ function readSection(v: unknown): SpaceSection {
     id: v.id,
     title: v.title === undefined ? "" : name(v.title, "A section title", LIMITS.title, true),
     collapsed: v.collapsed === true,
+    ...(typeof v.icon === "string" && v.icon ? { icon: v.icon } : {}),
     items: ((v.items as unknown[] | undefined) ?? []).map(readItem),
   };
 }
@@ -112,6 +125,7 @@ const PROBLEM_TEXT: Record<SpaceProblem["code"], string> = {
   not_member: "An item names a workspace you are not a member of",
   bad_section_id: "Section ids are 1 to 40 of A-Z, a-z, 0-9, _ and -, once per Space",
   bad_item: "An item is not valid",
+  too_many_arranged: "A whole section's rows and hidden rows hold at most 300 keys each",
 };
 
 function check(s: Space, members: Set<string>) {

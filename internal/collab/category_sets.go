@@ -29,7 +29,7 @@ import (
 const (
 	categoryPrimary    = "primary"
 	minCategories      = 2
-	maxCategories      = 8
+	maxCategories      = 10
 	maxCategoryName    = 40
 	maxCategoryDesc    = 300
 	maxCategoryRules   = 500
@@ -312,8 +312,8 @@ func categoryKeys(c MailAccountCategories) []string {
 	return out
 }
 
-// categorySig hashes what sorting depends on: the categories and whether Ollie may sort.
-// A change sorts the account's recent mail again.
+// categorySig hashes the categories and whether Ollie may sort. A change has the account's
+// categorize job record them, and sort again what resortPlan says the change can affect.
 func categorySig(c MailAccountCategories, aiOn bool) string {
 	if !c.Enabled {
 		return ""
@@ -324,6 +324,73 @@ func categorySig(c MailAccountCategories, aiOn bool) string {
 	}{c.Categories, c.AI && aiOn})
 	h := sha256.Sum256(b)
 	return hex.EncodeToString(h[:12])
+}
+
+// sortBasis is what sorting read of an account's categories when it last sorted
+// (collab_accounts.category_basis): each category's key, name and description, and whether
+// Ollie sorted. Order and colours are not part of it, since they never change where mail goes.
+type sortBasis struct {
+	AI         bool            `json:"ai"`
+	Categories []basisCategory `json:"categories"`
+}
+
+type basisCategory struct {
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// basisOf is the sortBasis of an account's categories, nil when its inbox is not split.
+func basisOf(c MailAccountCategories, aiOn bool) *sortBasis {
+	if !c.Enabled {
+		return nil
+	}
+	b := &sortBasis{AI: c.AI && aiOn, Categories: make([]basisCategory, 0, len(c.Categories))}
+	for _, x := range c.Categories {
+		b.Categories = append(b.Categories, basisCategory{Key: x.Key, Name: x.Name, Description: x.Description})
+	}
+	return b
+}
+
+// resortPlan is what a change of an account's categories sorts again ("Categories", "What a
+// change sorts again"): every recent inbox conversation (all), or those in these keys, where
+// primary also stands for the conversations not sorted yet. Conversations in a category the
+// account no longer has are always sorted again, and nothing here touches one a member moved.
+//
+//   - a new category: Primary's conversations, to see whether they belong in it;
+//   - a renamed or redescribed category: Primary's and its own;
+//   - Primary's own name or description: Primary's;
+//   - order and colours: nothing.
+//
+// The first sort (no basis and no signature) and a change of whether Ollie sorts take in
+// everything. An account sorted before bases were recorded has only its keys to go by: a change
+// then sorts Primary's conversations again, never one in a category it kept.
+func resortPlan(old *sortBasis, oldSig string, next *sortBasis) (all bool, keys []string) {
+	if old == nil && oldSig == "" || next == nil {
+		return next != nil, nil
+	}
+	if old == nil {
+		return false, []string{categoryPrimary}
+	}
+	if old.AI != next.AI {
+		return true, nil
+	}
+	add := func(k string) {
+		if !slices.Contains(keys, k) {
+			keys = append(keys, k)
+		}
+	}
+	for _, c := range next.Categories {
+		i := slices.IndexFunc(old.Categories, func(o basisCategory) bool { return o.Key == c.Key })
+		switch {
+		case i < 0:
+			add(categoryPrimary)
+		case old.Categories[i] != c:
+			add(categoryPrimary)
+			add(c.Key)
+		}
+	}
+	return false, keys
 }
 
 // effectiveCategory is a conversation's key for its account's keys: nil when the inbox
@@ -361,10 +428,10 @@ func slugKey(name string) string {
 	return strings.Trim(b.String(), "-")
 }
 
-// cleanCategories checks a set's categories: 2..8, primary first, keys and names once.
+// cleanCategories checks a set's categories: 2..10, primary first, keys and names once.
 func cleanCategories(in []MailCategory) ([]MailCategory, error) {
 	if len(in) < minCategories || len(in) > maxCategories {
-		return nil, httpx.Validation("Use 2 to 8 categories.")
+		return nil, httpx.Validation("Use 2 to 10 categories.")
 	}
 	out := make([]MailCategory, 0, len(in))
 	keys, names := map[string]bool{}, map[string]bool{}

@@ -418,7 +418,7 @@ struct MailCategoryPills: View {
     }
 }
 
-/// A set of 2 to 8 categories, Primary first: names, descriptions for Ollie, colours and order.
+/// A set of 2 to 10 categories, Primary first: names, descriptions for Ollie, colours and order.
 struct MailCategoryEditor: View {
     @Binding var categories: [MailCategory]
     var presets: [MailCategory] = []
@@ -605,7 +605,7 @@ struct MailCategoryEditor: View {
 /// The editor's rules, as the web's (`lib/collab/categories`).
 enum MailCategoryKit {
     static let minimum = 2
-    static let maximum = 8
+    static let maximum = 10
     static let tones = ["gray", "red", "orange", "amber", "green", "teal", "blue", "indigo", "violet", "pink"]
     static let newTones = ["blue", "green", "amber", "pink", "teal", "indigo", "orange", "red"]
     private static let draftPrefix = "~"

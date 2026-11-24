@@ -91,7 +91,7 @@ const AREAS: Area[] = [
     },
   },
   { name: "migrations", match: /^migrations\//, checks: () => [{ name: "migration versions", dir: ".", cmd: ["./scripts/check-migrations.sh"] }] },
-  { name: "web", match: /^(web|brand)\//, checks: (f) => pnpmTree("web", f, { lint: true, related: true }) },
+  { name: "web", match: /^(web|brand|docs\/src\/content\/docs)\//, checks: (f) => pnpmTree("web", f, { lint: true, related: true }) },
   { name: "admin", match: /^admin\//, checks: (f) => pnpmTree("admin", f, { lint: true, related: true }) },
   { name: "site", match: /^(site|brand)\//, checks: (f) => pnpmTree("site", f, { typecheck: false, build: true }) },
   { name: "docs", match: /^docs\//, checks: (f) => pnpmTree("docs", f, { typecheck: false, build: true }) },

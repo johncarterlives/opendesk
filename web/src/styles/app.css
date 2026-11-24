@@ -502,6 +502,16 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+/* A setting search sent the reader to (lib/appSearch/find.ts, flash in lib/motion.ts): a soft
+   highlight that fades, or under reduced motion one that stays a moment and goes. */
+[data-find] { scroll-margin-top: 20px; }
+[data-find-flash] { border-radius: 8px; outline-offset: 3px; }
+[data-find-flash="on"] { animation: find-flash 1.8s var(--ease-out-soft) both; }
+[data-find-flash="still"] { outline: 2px solid var(--tone-yellow-line); background-color: var(--tone-yellow-soft); }
+@keyframes find-flash {
+  0%, 40% { outline: 2px solid var(--tone-yellow-line); background-color: var(--tone-yellow-soft); }
+  100% { outline: 2px solid transparent; background-color: transparent; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }

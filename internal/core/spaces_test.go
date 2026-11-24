@@ -267,6 +267,14 @@ func TestSpacesValidation(t *testing.T) {
 		{"unknown badge", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "inbox", "badge": "all"})},
 		{"row icon not an emoji", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "inbox", "icon": "inbox"})},
 		{"section icon not one emoji", one(spaceBody(uuid.NewString(), "Space", map[string]any{"id": "a", "icon": "🚀🚀", "items": []any{}}))},
+		{"rows on a single row", withItem(map[string]any{"workspace_id": wid, "kind": "team", "id": uuid.NewString(), "rows": []any{"team:mine"}})},
+		{"hidden on a single row", withItem(map[string]any{"workspace_id": wid, "kind": "box", "id": "inbox", "hidden": []any{"box:shared"}})},
+		{"row key without a kind", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "mail", "hidden": []any{"assigned"}})},
+		{"row key of an unknown kind", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "mail", "hidden": []any{"settings:billing"}})},
+		{"row key twice", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "teams", "rows": []any{"team:mine", "team:mine"}})},
+		{"301 rows in order", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "teams", "rows": rowKeys(301)})},
+		{"a page in Favorites", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "favorites", "rows": []any{"page:contacts"}})},
+		{"an unknown box in Favorites", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "favorites", "rows": []any{"box:starred"}})},
 		{"over 64 KB", big()},
 	}
 	for _, tc := range cases {
@@ -288,6 +296,69 @@ func TestSpacesValidation(t *testing.T) {
 	}
 	if r := c.do("PUT", "/v1/me/spaces", one(spaceBody(uuid.NewString(), strings.Repeat("a", 40)))); r.Status != 200 {
 		t.Fatalf("40 character name: %d %s", r.Status, r.Raw)
+	}
+	if r := c.do("PUT", "/v1/me/spaces", withItem(map[string]any{"workspace_id": wid, "kind": "section", "id": "teams", "rows": rowKeys(300), "hidden": rowKeys(300)})); r.Status != 200 {
+		t.Fatalf("300 rows in order and hidden: %d %s", r.Status, r.Raw)
+	}
+}
+
+// rowKeys is n team row keys.
+func rowKeys(n int) []any {
+	out := make([]any, n)
+	for i := range out {
+		out[i] = fmt.Sprint("team:t", i)
+	}
+	return out
+}
+
+// A whole section keeps the Space's arrangement of its rows: Mail's Assigned to me moved to the
+// top of Favorites, a team out into a section of its own, Teams in an order of the Space's.
+// Spaces saved before keep reading as they were.
+func TestSpacesArrangedSections(t *testing.T) {
+	e := newEnv(t)
+	c, email := e.signup("spacesarranged")
+	wid := c.newWorkspace("Arranged")
+	team := uuid.NewString()
+	main := spaceSection("main",
+		map[string]any{"workspace_id": wid, "kind": "section", "id": "favorites", "rows": []any{"box:assigned", "ticket_folder:mine"}},
+		map[string]any{"workspace_id": wid, "kind": "section", "id": "mail", "hidden": []any{"box:assigned"}},
+		map[string]any{"workspace_id": wid, "kind": "section", "id": "teams", "rows": []any{"team:" + team, "team:mine"}, "hidden": []any{"team:" + team}},
+		map[string]any{"workspace_id": wid, "kind": "section", "id": "inbox", "rows": []any{}, "hidden": []any{"row:waiting_chats"}},
+	)
+	mine := spaceSection("mine", spaceItem(wid, "team", team))
+
+	// The starter keeps it, every row of the workspace.
+	r := c.do("PUT", "/v1/sidebar/starter", spaceBody(uuid.NewString(), "Starter", main, mine))
+	if r.Status != 200 {
+		t.Fatalf("starter: %d %s", r.Status, r.Raw)
+	}
+	items := r.Body["space"].(map[string]any)["sections"].([]any)[0].(map[string]any)["items"].([]any)
+	if got := fmt.Sprint(items[0].(map[string]any)["rows"], items[1].(map[string]any)["hidden"], items[2].(map[string]any)["rows"]); got != "[box:assigned ticket_folder:mine] [box:assigned] [team:"+team+" team:mine]" {
+		t.Fatalf("starter arranged: %s", got)
+	}
+	if _, ok := items[3].(map[string]any)["rows"]; ok {
+		t.Fatalf("empty rows are left out: %s", r.Raw)
+	}
+
+	// A person's Space, round trip.
+	c.workspace = ""
+	body := map[string]any{"spaces": []any{spaceBody(uuid.NewString(), "Mine", main, mine)}}
+	r = c.do("PUT", "/v1/me/spaces", body)
+	if r.Status != 200 {
+		t.Fatalf("put: %d %s", r.Status, r.Raw)
+	}
+	g := c.do("GET", "/v1/me/spaces", nil)
+	if string(mustJSON(g.Body["spaces"])) != string(mustJSON(r.Body["spaces"])) {
+		t.Fatalf("get after put: %s", g.Raw)
+	}
+
+	// A list saved before whole sections were arranged reads as it was.
+	e.exec(`UPDATE user_spaces SET spaces = $2 FROM users u WHERE u.id = user_spaces.user_id AND u.email = $1`, email,
+		`[{"id":"`+uuid.NewString()+`","name":"Old","icon":"","color":"grey","marks":true,"sections":[{"id":"main","title":"","collapsed":false,"items":[{"workspace_id":"`+wid+`","kind":"section","id":"mail"}]}]}]`)
+	g = c.do("GET", "/v1/me/spaces", nil)
+	old := spacesOf(t, g)[0]["sections"].([]any)[0].(map[string]any)["items"].([]any)[0].(map[string]any)
+	if g.Status != 200 || len(old) != 3 || old["id"] != "mail" {
+		t.Fatalf("old list: %d %s", g.Status, g.Raw)
 	}
 }
 

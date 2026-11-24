@@ -3,7 +3,7 @@ title: MCP server
 description: Connect Claude, ChatGPT, Cursor, VS Code or any MCP client to opendesk with a sign-in or an API key, and the tools it offers.
 ---
 
-opendesk is an [MCP](https://modelcontextprotocol.io) server. Connect an AI client such as Claude, ChatGPT, Cursor or VS Code and it can search and read tickets, reply, add notes, update and create tickets, look up contacts, search the knowledge base, draft articles and read reports.
+opendesk is an [MCP](https://modelcontextprotocol.io) server. Connect an AI client such as Claude, ChatGPT, Cursor or VS Code and it can search and read tickets, reply, add notes, update and create tickets, attach files, create and update contacts and companies, search the knowledge base, draft articles and read reports. Anything else the API offers, it can reach through the [API bridge](#the-api-bridge).
 
 There are two ways to connect:
 
@@ -142,13 +142,20 @@ A tool is offered only when the key, or the OAuth connection together with your 
 | `search_tickets` | `tickets:read` | Finds tickets by text, status, priority, severity, assignee, team, label, channel, contact or creation date. At most 50 per call. | No |
 | `get_ticket` | `tickets:read` | Reads a ticket with its thread as plain text, internal notes included. | No |
 | `list_custom_fields` | `tickets:read` | Lists the custom fields: key, name, type, options and whether a ticket needs the field set to be solved. Filter by `entity` (`ticket`, `contact` or `company`); archived fields only with `include_archived`. | No |
-| `reply_to_ticket` | `tickets:write` | Sends a public reply (markdown). The customer receives it. Can set the status after sending. | Yes |
+| `reply_to_ticket` | `tickets:write` | Sends a public reply (markdown), optionally with files. The customer receives it. Can set the status after sending. With `direction: "inbound"` it logs what the customer said elsewhere, such as on a call, as their own message instead, and sends nothing. | Yes |
 | `draft_reply` | `tickets:write` | Stages a reply (markdown) on the ticket without sending it. Every teammate who opens the ticket finds it in their composer, to edit and send as their own reply. Staging again replaces it; a reply going out clears it. | Yes |
-| `add_note` | `tickets:write` | Adds an internal note the customer never sees. | Yes |
+| `add_note` | `tickets:write` | Adds an internal note the customer never sees, optionally with files. | Yes |
 | `update_ticket` | `tickets:write` | Changes status, priority, severity, assignee, team, labels or custom fields. | Yes |
-| `create_ticket` | `tickets:write` | Creates a ticket for a contact email, optionally with custom field values. With a mailbox, the first reply is emailed to the contact. | Yes |
-| `search_contacts` | `contacts:read` | Finds contacts by name, email, phone or field value. | No |
-| `get_contact` | `contacts:read` | Reads a contact by id or email, with their latest tickets when the key also has `tickets:read`. | No |
+| `create_ticket` | `tickets:write` | Creates a ticket for a contact email, optionally with custom field values and files. With a mailbox, the first reply is emailed to the contact. With `direction: "inbound"` the first message is logged as the contact's own request, for one that came in by phone or in person, and nothing is sent. | Yes |
+| `upload_attachment` | `tickets:write` | Uploads a file from an https URL (up to 25 MB) or as base64 (up to 6 MB) and returns its `attachment_id`, for `attachment_ids` on the three tools above. | Yes |
+| `search_contacts` | `contacts:read` | Finds contacts by name, email, phone or field value, or by company, label or `external_id`. | No |
+| `get_contact` | `contacts:read` | Reads a contact by id, email or `external_id`, with their latest tickets when the key also has `tickets:read`. | No |
+| `create_contact` | `contacts:write` | Creates a contact with email, name, phone, company, `external_id`, labels, notes and custom fields. | Yes |
+| `update_contact` | `contacts:write` | Changes only what you pass. Labels are added and removed by name, fields are merged. | Yes |
+| `search_companies` | `contacts:read` | Finds companies by name, domain or field value, or by label or `external_id`. | No |
+| `get_company` | `contacts:read` | Reads a company by id, `external_id`, domain or name, with its people. | No |
+| `create_company` | `contacts:write` | Creates a company with name, domain, `external_id`, labels, notes and custom fields. | Yes |
+| `update_company` | `contacts:write` | Changes only what you pass, as `update_contact`. | Yes |
 | `search_knowledge` | `kb:read` | Searches knowledge base articles and knowledge sources; the top matches come with their full text. | No |
 | `create_kb_draft` | `kb:write` | Creates an unpublished draft article for the team to review. | Yes |
 | `search_wiki` | `wiki:read` | Searches the team's internal wiki; each match comes with where it sits and a passage. | No |
@@ -156,14 +163,30 @@ A tool is offered only when the key, or the OAuth connection together with your 
 | `create_wiki_page` | `wiki:write` | Adds a wiki page (markdown), at the top level or under another page. | Yes |
 | `update_wiki_page` | `wiki:write` | Renames a wiki page or replaces its text (markdown). With the version it read, a teammate's newer edit is never overwritten. | Yes |
 | `get_report` | `settings:read` and `tickets:read` | Reads the overview report for a date range. | No |
+| `find_api` | any | Finds API routes by keywords or area. | No |
+| `describe_api` | any | Describes one route: parameters, body and response. | No |
+| `api_read` | any | Calls a `GET` route. | No |
+| `api_write` | any write scope | Calls a `POST`, `PUT`, `PATCH` or `DELETE` route. | Yes |
 
 Tickets are referenced by number (`#123`) or id. Assigning by email or moving to a team by name looks the teammate or team up, which needs `settings:read`; with user and team ids it does not.
 
 `create_ticket` and `update_ticket` take custom field values in `fields`, an object keyed by the field keys `list_custom_fields` returns, for example `{"customer": "Acme", "plan": "pro"}`. A select takes an option id, a multi-select a list of them, a date `YYYY-MM-DD` and a user field a user id. On update only the keys you pass change, and `null` clears a field. Values are checked as in the API ([Labels and custom fields](/api/resources/labels-fields/)): an unknown key or a value that does not fit the field is refused.
 
+### Syncing contacts and companies
+
+Give each contact and company the id your own system uses as its `external_id`. The tools find a record by it wherever they take one (`contact`, `company`), and `search_contacts` and `search_companies` filter on it exactly. A `company` can also be its id, domain or exact name; `"none"` removes a contact from their company.
+
+Creating a contact whose email or `external_id` another contact already has, or a company whose domain or `external_id` is taken, fails with `already_exists` and returns that record as `existing`, so the client can update it. Pass `if_exists: "update"` to update it in the same call. Updates never drop labels or field values you did not name. Deleting, merging and blocking contacts stay in the app (or the API bridge, with the same permissions).
+
+### The API bridge
+
+The tools above cover the everyday work. For anything else the API can do, such as saved replies, views, automations, SLA policies or merging tickets, the client can use the bridge: `find_api` searches the API's routes, `describe_api` shows one route's parameters and body, and `api_read` and `api_write` call it. Each call runs as the key or the connected person, with the same permissions, checks and history as the API itself.
+
+Some routes are never reachable through the bridge: signing in and your own account, API keys, webhooks, AI client connections, billing, the instance admin, and any route that takes a password, token or other secret. Secrets in responses are withheld. Files go through `upload_attachment`.
+
 Tools carry MCP annotations, so clients can tell read-only tools from ones that change data and ask you before running them. Results are compact JSON text.
 
-A suggested starting point: `tickets:read`, `contacts:read` and `kb:read` for an assistant that only reads, plus `tickets:write` when you want it to reply and update tickets.
+A suggested starting point: `tickets:read`, `contacts:read` and `kb:read` for an assistant that only reads, plus `tickets:write` when you want it to reply and update tickets, and `contacts:write` to keep contacts and companies in sync.
 
 ## Limits and security
 

@@ -192,7 +192,12 @@
     "aiPlayground": "Zona de pruebas del agente de IA",
     "importHistory": "Importar historial de Zendesk, Help Scout, FreeScout, Freshdesk, Intercom, Front o CSV",
     "pages": "Páginas",
-    "newPage": "Nueva página"
+    "newPage": "Nueva página",
+    "sidebarPlace": "Barra lateral",
+    "docs": "Documentación",
+    "searchSettings": "Buscar en los ajustes",
+    "settingsNoResults": "Ningún ajuste coincide",
+    "settingsNoResultsHelp": "Prueba con otras palabras o busca en la documentación desde el menú de comandos."
   },
   "shortcuts": {
     "general": "General",

@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type navigation from "@/i18n/locales/en/navigation.json";
-import { atLeast, useRole, useSession } from "@/lib/session";
+import { atLeast, useRole } from "@/lib/session";
 import { useQuery } from "@tanstack/react-query";
 import { q } from "@/lib/queries";
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
@@ -53,10 +53,11 @@ import {
   LayoutPanelLeft,
   ScrollText,
 } from "lucide-react";
-import { Fragment, type ReactNode } from "react";
+import { Fragment, useRef, type ReactNode } from "react";
 import { BrandMark } from "@/components/settings2/teams";
-import { useCollab } from "@/lib/collab/hooks";
-import { TICKET_SETTINGS, useProducts } from "@/lib/products";
+import { settingsListed, useSettingsAccess } from "@/lib/settingsAccess";
+import { SettingsSearch } from "@/components/settings2/SettingsSearch";
+import { useFindOnPage } from "@/lib/appSearch/find";
 
 type NavPath =
   | "/settings/profile"
@@ -103,9 +104,6 @@ type NavPath =
   | "/settings/ai/tests"
   | "/settings/integrations"
   | "/settings/import";
-
-const AGENT_GROUP = "aiAgent";
-
 
 const groups: { title: keyof typeof navigation.groups; items: { to: NavPath; label: keyof typeof navigation.settings; icon: ReactNode }[] }[] = [
   {
@@ -160,7 +158,7 @@ const groups: { title: keyof typeof navigation.groups; items: { to: NavPath; lab
     ],
   },
   {
-    title: AGENT_GROUP,
+    title: "aiAgent",
     items: [
       { to: "/settings/ai/agent", label: "overview", icon: <LayoutDashboard /> },
       { to: "/settings/ai/bots", label: "bots", icon: <Smile /> },
@@ -189,30 +187,10 @@ const groups: { title: keyof typeof navigation.groups; items: { to: NavPath; lab
   },
 ];
 
-/**
- * The AI page is listed when the instance has an AI provider. Admins always see
- * it, because without a provider it explains how to connect one. The AI agent
- * pages are for admins on an instance with AI.
- */
+/** The pages listed for the reader (lib/settingsAccess.ts, which settings search reads too). */
 function useVisibleGroups() {
-  const { data: ai, isFetched } = useQuery(q.aiConfig());
-  const admin = atLeast(useRole(), "admin");
-  const hideAi = isFetched && !ai?.enabled && !admin;
-  const hideAgent = !admin || (isFetched && !ai?.enabled);
-  // Mail accounts are Collab's, listed only while the workspace has it; agent-to-agent also needs AI.
-  const collab = useCollab();
-  const peer = collab.enabled && !!ai?.enabled;
-  const { tickets } = useProducts();
-  const workspaceCount = useSession((s) => s.memberships.length);
-  return groups
-    .filter((g) => !(hideAgent && g.title === AGENT_GROUP))
-    .map((g) => (tickets ? g : { ...g, items: g.items.filter((i) => !TICKET_SETTINGS.has(i.to)) }))
-    .filter((g) => g.items.length > 0)
-    .map((g) => (hideAi ? { ...g, items: g.items.filter((i) => i.to !== "/settings/ai") } : g))
-    .map((g) => (collab.enabled ? g : { ...g, items: g.items.filter((i) => i.to !== "/settings/mail-accounts" && i.to !== "/settings/mail-categories") }))
-    .map((g) => (peer ? g : { ...g, items: g.items.filter((i) => i.to !== "/settings/agent-to-agent") }))
-    // Arranging workspaces needs two of them.
-    .map((g) => (workspaceCount > 1 ? g : { ...g, items: g.items.filter((i) => i.to !== "/settings/workspaces") }));
+  const access = useSettingsAccess();
+  return groups.map((g) => ({ ...g, items: g.items.filter((i) => settingsListed(i.to, access)) })).filter((g) => g.items.length > 0);
 }
 
 /** With a second brand, each brand is listed under Brands (contracts/teams.md). */
@@ -235,73 +213,79 @@ export default function SettingsLayout() {
   const current = all
     .filter((i) => path === i.to || path.startsWith(`${i.to}/`))
     .sort((a, b) => b.to.length - a.to.length)[0]?.to;
+  // A setting search opened (#find=): shown and highlighted once the page renders it.
+  const content = useRef<HTMLDivElement>(null);
+  useFindOnPage(content);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col md:flex-row">
       <nav aria-label={t("titles.settings")} className="hidden w-[232px] shrink-0 overflow-y-auto border-r border-line px-2.5 pb-6 pt-4 md:block">
-        {groups.map((g, gi) => (
-          <div key={g.title} className={gi ? "mt-4" : undefined}>
-            <div className="label-caps px-2 pb-1">{t(`groups.${g.title}`)}</div>
-            <div className="flex flex-col gap-px">
-              {g.items.map((i) => {
-                const active = current === i.to && !(i.to === "/settings/brands" && activeBrand);
-                return (
-                  <Fragment key={i.to}>
-                  <Link
-                    key={i.to}
-                    to={i.to}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "group relative flex h-7 items-center gap-2.5 rounded-md px-2 text-[12.5px] outline-none transition-colors focus-visible:shadow-[0_0_0_2px_var(--focus)] [&_svg]:relative [&_svg]:z-10 [&_svg]:size-[14px] [&_svg]:shrink-0",
-                      active ? "font-medium text-fg [&_svg]:text-fg-2" : "text-fg-2 hover:bg-hover hover:text-fg [&_svg]:text-fg-4 hover:[&_svg]:text-fg-3",
-                    )}
-                  >
-                    {active && (
-                      <motion.span
-                        layoutId="settings-active"
-                        className="absolute inset-0 rounded-md bg-active"
-                        transition={{ type: "spring", stiffness: 520, damping: 42 }}
-                      />
-                    )}
-                    {i.icon}
-                    <span className="relative z-10 truncate">{t(`settings.${i.label}`)}</span>
-                  </Link>
-                  {i.to === "/settings/brands" &&
-                    brands.map((b) => {
-                      const on = activeBrand === b.id;
-                      return (
-                        <Link
-                          key={b.id}
-                          to="/settings/brands/$brandId"
-                          params={{ brandId: b.id }}
-                          search={{}}
-                          aria-current={on ? "page" : undefined}
-                          className={cn(
-                            "relative ml-[22px] flex h-7 items-center gap-2 rounded-md px-2 text-[12.5px] outline-none transition-colors focus-visible:shadow-[0_0_0_2px_var(--focus)]",
-                            on ? "font-medium text-fg" : "text-fg-3 hover:bg-hover hover:text-fg",
-                          )}
-                        >
-                          {on && (
-                            <motion.span
-                              layoutId="settings-active"
-                              className="absolute inset-0 rounded-md bg-active"
-                              transition={{ type: "spring", stiffness: 520, damping: 42 }}
-                            />
-                          )}
-                          <BrandMark brand={b} size="xs" className="relative z-10" />
-                          <span className="relative z-10 truncate">{b.name}</span>
-                        </Link>
-                      );
-                    })}
-                  </Fragment>
-                );
-              })}
+        <SettingsSearch className="mb-3">
+          {groups.map((g, gi) => (
+            <div key={g.title} className={gi ? "mt-4" : undefined}>
+              <div className="label-caps px-2 pb-1">{t(`groups.${g.title}`)}</div>
+              <div className="flex flex-col gap-px">
+                {g.items.map((i) => {
+                  const active = current === i.to && !(i.to === "/settings/brands" && activeBrand);
+                  return (
+                    <Fragment key={i.to}>
+                    <Link
+                      key={i.to}
+                      to={i.to}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "group relative flex h-7 items-center gap-2.5 rounded-md px-2 text-[12.5px] outline-none transition-colors focus-visible:shadow-[0_0_0_2px_var(--focus)] [&_svg]:relative [&_svg]:z-10 [&_svg]:size-[14px] [&_svg]:shrink-0",
+                        active ? "font-medium text-fg [&_svg]:text-fg-2" : "text-fg-2 hover:bg-hover hover:text-fg [&_svg]:text-fg-4 hover:[&_svg]:text-fg-3",
+                      )}
+                    >
+                      {active && (
+                        <motion.span
+                          layoutId="settings-active"
+                          className="absolute inset-0 rounded-md bg-active"
+                          transition={{ type: "spring", stiffness: 520, damping: 42 }}
+                        />
+                      )}
+                      {i.icon}
+                      <span className="relative z-10 truncate">{t(`settings.${i.label}`)}</span>
+                    </Link>
+                    {i.to === "/settings/brands" &&
+                      brands.map((b) => {
+                        const on = activeBrand === b.id;
+                        return (
+                          <Link
+                            key={b.id}
+                            to="/settings/brands/$brandId"
+                            params={{ brandId: b.id }}
+                            search={{}}
+                            aria-current={on ? "page" : undefined}
+                            className={cn(
+                              "relative ml-[22px] flex h-7 items-center gap-2 rounded-md px-2 text-[12.5px] outline-none transition-colors focus-visible:shadow-[0_0_0_2px_var(--focus)]",
+                              on ? "font-medium text-fg" : "text-fg-3 hover:bg-hover hover:text-fg",
+                            )}
+                          >
+                            {on && (
+                              <motion.span
+                                layoutId="settings-active"
+                                className="absolute inset-0 rounded-md bg-active"
+                                transition={{ type: "spring", stiffness: 520, damping: 42 }}
+                              />
+                            )}
+                            <BrandMark brand={b} size="xs" className="relative z-10" />
+                            <span className="relative z-10 truncate">{b.name}</span>
+                          </Link>
+                        );
+                      })}
+                    </Fragment>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </SettingsSearch>
       </nav>
 
-      <div className="border-b border-line px-4 py-2 md:hidden">
+      <div className="flex flex-col gap-2 border-b border-line px-4 py-2 md:hidden">
+        <SettingsSearch collapse />
         <Select
           aria-label={t("settingsPage")}
           value={current}
@@ -310,7 +294,7 @@ export default function SettingsLayout() {
         />
       </div>
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div ref={content} className="min-h-0 min-w-0 flex-1 overflow-y-auto">
         <div key={current ?? path} className="flex min-h-full flex-col animate-rise-in">
           <Outlet />
         </div>

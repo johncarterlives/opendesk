@@ -332,6 +332,10 @@
     "discardConfirm": "Discard this message? What you wrote is lost.",
     "discardTitle": "Discard message",
     "attach": "Attach files",
+    "noMailSavedReplies": "No workspace-wide saved replies without variables yet.",
+    "savedRepliesFailed": "Couldn't load saved replies.",
+    "manageSavedReplies": "Manage saved replies",
+    "savedRepliesTip": "Saved replies, or type / in the message",
     "uploading": "Uploading",
     "uploadFailed": "{{name}} did not upload",
     "failed": "Failed",
@@ -386,8 +390,17 @@
     "deleteTitle": "Delete comment",
     "edited": "edited",
     "someone": "A former teammate",
+    "aiNote": "AI note",
+    "aiNoteVia": "Added through an API key made by {{name}}",
+    "aiSkipped": "{{name}} looked at this and did not draft: {{reason}}",
+    "aiSkippedNoReason": "{{name}} looked at this and did not draft",
     "empty": "No comments yet. Discuss this conversation with your team here.",
-    "menu": "Comment actions"
+    "menu": "Comment actions",
+    "reply": "Reply",
+    "replyingTo": "Replying to {{name}}:",
+    "cancelReply": "Cancel reply",
+    "parentDeleted": "Original comment deleted",
+    "showParent": "Go to the original comment by {{name}}"
   },
   "share": {
     "title": "Share conversation",
@@ -683,6 +696,8 @@
     "assignedAnon": "A conversation was assigned to you",
     "mention": "{{who}} mentioned you in a comment",
     "mentionAnon": "You were mentioned in a comment",
+    "reply": "{{who}} replied to your comment",
+    "replyAnon": "Someone replied to your comment",
     "open": "Open"
   },
   "shortcuts": {
@@ -962,6 +977,10 @@
     "settings": "Category settings",
     "moved_one": "Conversation moved to {{name}}",
     "moved_other": "{{count}} conversations moved to {{name}}",
+    "dropRefused_one": "Its inbox has no {{name}} category",
+    "dropRefused_other": "Their inboxes have no {{name}} category",
+    "dropSome_one": "{{count}} conversation stayed: its inbox has no {{name}} category",
+    "dropSome_other": "{{count}} conversations stayed: their inboxes have no {{name}} category",
     "always": "Always",
     "alwaysHint": "Send future mail from {{sender}} here too",
     "ruleSaved": "Mail from {{sender}} now goes to {{name}}",
@@ -970,6 +989,12 @@
       "body": "Mail from people stays in Primary, while newsletters, updates and promotions get their own tabs. Ollie can suggest categories from your mail.",
       "action": "Set up categories",
       "dismiss": "Not now"
+    },
+    "reorder": {
+      "hint": "Drag to reorder, or press {{left}} or {{right}}",
+      "hintDrag": "Drag to reorder",
+      "moved": "{{name}} moved to place {{position}} of {{count}}",
+      "failed": "Couldn't save the new order of the tabs"
     }
   },
   "aiFeedback": {
@@ -1069,8 +1094,8 @@
     "add": "Add",
     "newSection": "New section",
     "newSectionTitle": "New section",
-    "emptySection": "Drag rows here or add some",
-    "emptyFavorites": "Drag rows here to make them favorites",
+    "emptySection": "Drop rows here",
+    "emptyFavorites": "Drop favorites here",
     "spaceSettings": "Space settings",
     "editingSpace": "Editing {{name}}",
     "hintTitle": "Make the sidebar yours",
@@ -1094,9 +1119,7 @@
     "customize": "Customize",
     "customizeHint": "Arrange your sidebar: drag, rename, hide",
     "doneHint": "Done arranging the sidebar",
-    "doneEditing": "Done",
-    "layoutsShort": "Layouts",
-    "barHint": "Drag to move. Click a name to rename it. The eye hides it."
+    "doneEditing": "Done"
   },
   "layouts": {
     "title": "Start from a layout",

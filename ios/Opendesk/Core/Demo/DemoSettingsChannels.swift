@@ -1459,11 +1459,11 @@ extension DemoBackend {
         channelResolveCategories(in: &ws)
     }
 
-    /// The categories a body names, with keys for those made in the editor; between 2 and 8, named once each.
+    /// The categories a body names, with keys for those made in the editor; between 2 and 10, named once each.
     private func channelCategories(_ value: JSONValue?) throws -> [MailCategory] {
         let list = (try? value?.decode([MailCategory].self)) ?? []
-        guard (2 ... 8).contains(list.count) else {
-            throw Failure(status: 422, code: "validation_failed", detail: "Use between 2 and 8 categories.")
+        guard (2 ... 10).contains(list.count) else {
+            throw Failure(status: 422, code: "validation_failed", detail: "Use between 2 and 10 categories.")
         }
         var keys = Set<String>()
         var names = Set<String>()

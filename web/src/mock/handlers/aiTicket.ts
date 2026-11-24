@@ -8,7 +8,7 @@ import { publish } from "../gateway";
 import { reserve, spend } from "../aiBalance";
 import { chunk, HttpError, invalid, notFound, post, sse, type Ctx } from "../router";
 import { addMessage, applyPatch, computeSla, ensureTags, findTicket, newTicket, publishTicketUpdated } from "../tickets";
-import { ago, escapeHtml, MIN, nowIso, uuid } from "../util";
+import { ago, escapeHtml, isRecord, MIN, nowIso, uuid } from "../util";
 import { applyDecisions, severityFor } from "../decisions";
 import { decisionEngine } from "./ai";
 import { botForTicket } from "../bots";
@@ -616,6 +616,19 @@ export function registerAiTicket() {
     }
     spend(ctx.ws, "translate");
     return html ? { html: textToParagraphs(outText), source_language: source } : { text: outText, source_language: source };
+  });
+
+  // A question about the app, answered from the excerpts the app's own search found.
+  post("/v1/ai/app-help", (ctx) => {
+    guard(ctx);
+    const question = typeof ctx.body.question === "string" ? ctx.body.question.trim() : "";
+    const sources = Array.isArray(ctx.body.sources) ? ctx.body.sources.filter(isRecord) : [];
+    if (!question) throw invalid("question is required");
+    if (!sources.length || sources.length > 8) throw invalid("sources must have 1 to 8 items");
+    reserve(ctx.ws, "app_help");
+    const first = String(sources[0].title ?? "").trim();
+    spend(ctx.ws, "app_help");
+    return { answer: `(Mock answer) Go to ${first}. The places and docs below have the details.` };
   });
 
   seedAiTicketData();

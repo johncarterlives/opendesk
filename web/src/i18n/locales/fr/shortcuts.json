@@ -109,7 +109,9 @@
       "people": "Afficher les personnes",
       "list": "Afficher ou masquer la liste",
       "search": "Rechercher dans le mail",
-      "escape": "Fermer ou vider la sélection"
+      "escape": "Fermer ou vider la sélection",
+      "tabLeft": "Déplacer l’onglet de catégorie vers la gauche",
+      "tabRight": "Déplacer l’onglet de catégorie vers la droite"
     },
     "page": {
       "new": "Nouvelle page",

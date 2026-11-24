@@ -14,7 +14,7 @@
     "off": "Aus"
   },
   "editor": {
-    "primaryHint": "Allgemein steht immer zuerst: E-Mails von Menschen und alles, bei dem Ollie unsicher ist",
+    "primaryHint": "Allgemein steht immer zuerst: E-Mails, die dich brauchen und in keine andere Kategorie passen",
     "untitled": "Ohne Namen",
     "name": "Name",
     "namePlaceholder": "Name der Kategorie",
@@ -58,7 +58,7 @@
     "chooseOn": "Mitglieder können für die Konten, die sie verwalten, eigene Kategorien wählen oder keine.",
     "chooseOff": "Alle folgen dem Workspace oder ihrem Team. Mitglieder können Ollies Sortierung für ihre Konten trotzdem ausschalten.",
     "sorting": "Wie E-Mails einsortiert werden",
-    "sortingAi": "Ollie sortiert neue E-Mails beim Eintreffen nach der Beschreibung jeder Kategorie. E-Mails, bei denen Ollie unsicher ist, bleiben in Allgemein.",
+    "sortingAi": "Ollie sortiert neue E-Mails beim Eintreffen nach der Beschreibung jeder Kategorie und wählt lieber eine andere Kategorie als Allgemein. E-Mails, bei denen Ollie unsicher ist, kommen nur nach Allgemein, wenn sie dich zu brauchen scheinen.",
     "sortingRules": "Einsortiert nach Absenderregeln und E-Mail-Headern.",
     "sortingRulesHint": "Schalte KI ein, damit Ollie sortiert.",
     "byOllie": "Ollie",

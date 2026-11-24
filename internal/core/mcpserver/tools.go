@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"net/url"
 	"slices"
 	"strings"
@@ -25,6 +26,8 @@ type tool struct {
 	Schema      map[string]any
 	// Scopes are all required for the tool to be offered.
 	Scopes []string
+	// Offer, when set, must also allow the caller.
+	Offer func(*auth.Principal) bool
 	// Hints for the client (MCP tool annotations).
 	ReadOnly, Destructive, Idempotent, OpenWorld bool
 	Run                                          func(ctx context.Context, c *caller, args json.RawMessage) (any, error)
@@ -36,7 +39,7 @@ func (t *tool) offered(p *auth.Principal) bool {
 			return false
 		}
 	}
-	return true
+	return t.Offer == nil || t.Offer(p)
 }
 
 func (t *tool) mcpTool() *mcp.Tool {
@@ -56,9 +59,9 @@ func (t *tool) mcpTool() *mcp.Tool {
 	}
 }
 
-// catalog is every tool, in the order clients list them (contracts/agent.md).
-func catalog() []*tool {
-	return slices.Concat(ticketTools(), contactTools(), knowledgeTools(), wikiTools(), reportTools(), collabTools())
+// tools is every tool, in the order clients list them (contracts/agent.md).
+func tools() []*tool {
+	return slices.Concat(ticketTools(), fileTools(), contactTools(), knowledgeTools(), wikiTools(), reportTools(), collabTools(), apiTools())
 }
 
 // --- results -------------------------------------------------------------------------
@@ -79,13 +82,18 @@ func errorResult(d *deps.Deps, name string, err error) *mcp.CallToolResult {
 		Error  string `json:"error"`
 		Code   string `json:"code,omitempty"`
 		Status int    `json:"status,omitempty"`
+		// Existing is the record a create collided with.
+		Existing any `json:"existing,omitempty"`
 	}
 	var b body
 	var ae *apiError
 	var ie *errInput
+	var ee *errExists
 	switch {
 	case errors.As(err, &ie):
 		b = body{Error: ie.msg, Code: "invalid_arguments"}
+	case errors.As(err, &ee):
+		b = body{Error: ee.msg, Code: "already_exists", Status: http.StatusConflict, Existing: ee.existing}
 	case errors.As(err, &ae) && ae.Status < 500:
 		b = body{Error: ae.Detail, Code: ae.Code, Status: ae.Status}
 		if ae.Status == 403 {

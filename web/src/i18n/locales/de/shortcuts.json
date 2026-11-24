@@ -109,7 +109,9 @@
       "people": "Personen anzeigen",
       "list": "Liste ein- oder ausblenden",
       "search": "Mail durchsuchen",
-      "escape": "Schließen oder Auswahl aufheben"
+      "escape": "Schließen oder Auswahl aufheben",
+      "tabLeft": "Kategorie-Tab nach links verschieben",
+      "tabRight": "Kategorie-Tab nach rechts verschieben"
     },
     "page": {
       "new": "Neue Seite",

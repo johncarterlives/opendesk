@@ -75,6 +75,8 @@ jobs:
               - 'web/**'
               - 'brand/**'
               - 'contracts/**'
+              # The app's docs index and its tests are built from the docs' pages.
+              - 'docs/src/content/docs/**'
             admin:
               - *shared
               - 'admin/**'
@@ -109,6 +111,7 @@ jobs:
               - '**/*.go'
               - 'migrations/**'
               - 'web/**'
+              - 'docs/src/content/docs/**'
               - 'admin/**'
               - 'realtime/**'
             installer:

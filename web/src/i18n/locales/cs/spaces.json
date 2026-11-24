@@ -97,7 +97,7 @@
       "sparkles": "Jiskry"
     },
     "structure": "Sekce a řádky",
-    "structureHint": "Přetáhněte řádky a sekce za úchyt nebo na úchyt přesuňte fokus a stiskněte Alt se šipkou.",
+    "structureHint": "Přetáhněte řádky a sekce za úchyt nebo na úchyt přesuňte fokus a stiskněte šipku. Otevřete celou sekci a uspořádejte její řádky; zůstane aktuální.",
     "rows_one": "{{count}} řádek",
     "rows_few": "{{count}} řádky",
     "rows_many": "{{count}} řádku",
@@ -130,6 +130,20 @@
       "teamspaces": "Teamspaces"
     },
     "wholeHint": "Průběžně aktualizováno",
+    "arrangedHint": "Uspořádáno, průběžně aktualizováno",
+    "groupRows": "Řádky sekce {{name}}",
+    "groupEmpty": "Zatím tu nic není",
+    "move": "Přesunout {{name}}",
+    "hideRow": "Skrýt {{name}} v tomto Space",
+    "showRow": "Zobrazit {{name}} v tomto Space",
+    "removeFavorite": "Odebrat {{name}} z Oblíbených",
+    "toFavorites": "Přidat do Oblíbených",
+    "addTo": "Přidat do sekce",
+    "backInto": "Vrátit do {{name}}",
+    "resetArrangement": "Vrátit obvyklé řádky",
+    "favoritesEmpty": "Přetáhněte sem řádky a dejte je do Oblíbených.",
+    "favoritesTheirs": "Pak následují vlastní oblíbené každého člověka.",
+    "favoritesYours": "Pak následují vaše vlastní oblíbené.",
     "noCollab": "Collab je ve workspace {{workspace}} vypnutý, takže jeho poštu nelze přidat.",
     "loading": "Načítání obsahu workspace {{workspace}}",
     "noMatches": "Nic neodpovídá hledání.",
@@ -162,7 +176,8 @@
       "too_many_spaces": "Můžete mít nejvýše 20 Spaces.",
       "too_large": "Tento Space je příliš velký na uložení. Odeberte některé řádky.",
       "duplicate_id": "Dva Spaces mají stejné ID. Načtěte stránku znovu a opakujte akci.",
-      "space": "Tento Space nelze v současné podobě uložit."
+      "space": "Tento Space nelze v současné podobě uložit.",
+      "too_many_arranged": "Celá sekce udrží nejvýše 300 řádků v pořadí nebo skrytých."
     },
     "everyWorkspace": "Každý workspace"
   },

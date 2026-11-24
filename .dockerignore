@@ -30,6 +30,8 @@ erl_crash.dump
 # Parts no image is built from.
 site/
 docs/
+# The docs' pages stay: the web build indexes them for the app's search.
+!docs/src/content/docs/
 deploy/terraform/
 deploy/cloudflare/
 deploy/install/

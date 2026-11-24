@@ -15,6 +15,7 @@
     "kb_draft": "起草帮助文章",
     "assistant": "助手消息",
     "assistant_peer": "Ollie 向同事的 Ollie 提问",
+    "app_help": "回答关于 opendesk 的问题",
     "procedure": "从自动化中运行流程",
     "wiki_write": "在 Wiki 中撰写"
   },
@@ -246,6 +247,11 @@
     "send": "按含义搜索",
     "example_1": "被重复扣款的客户",
     "example_2": "重置密码后无法登录",
-    "example_3": "导出数据的请求"
+    "example_3": "导出数据的请求",
+    "inApp": "应用内",
+    "docs": "来自文档",
+    "answer_item": "让 {{name}} 回答",
+    "answering": "{{name}} 正在阅读文档",
+    "answer_error": "暂时无法回答。下面的位置和文档或许有帮助。"
   }
 }

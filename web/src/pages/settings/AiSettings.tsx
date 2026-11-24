@@ -28,7 +28,7 @@ import { AutoRunSettings } from "@/components/ai/AutoRunSettings";
 const PRESET_TONES = ["friendly", "professional", "concise"] as const;
 type ToneChoice = (typeof PRESET_TONES)[number] | "custom";
 
-const FEATURE_ORDER: AIFeature[] = ["summarize", "rewrite", "translate", "triage", "copilot", "draft_reply", "answer", "kb_draft", "wiki_write", "assistant", "assistant_peer", "procedure"];
+const FEATURE_ORDER: AIFeature[] = ["summarize", "rewrite", "translate", "triage", "copilot", "draft_reply", "answer", "kb_draft", "wiki_write", "assistant", "assistant_peer", "procedure", "app_help"];
 
 const DEFAULTS: AISettings = {
   enabled: true,

@@ -1306,7 +1306,11 @@ struct AppNotification: Codable, Hashable, Sendable, Identifiable {
             let from = data["from"]?["name"]?.string.flatMap { $0.isEmpty ? nil : $0 } ?? data["from"]?["email"]?.string.flatMap { $0.isEmpty ? nil : $0 }
             return from.map { "\($0) answered your side conversation" } ?? "Someone answered your side conversation"
         case .collabAssigned: return who.map { "\($0) assigned you a conversation" } ?? "A conversation was assigned to you"
-        case .collabMention: return who.map { "\($0) mentioned you in a comment" } ?? "You were mentioned in a comment"
+        case .collabMention:
+            if data["reply_to"]?.string.map({ !$0.isEmpty }) == true {
+                return who.map { "\($0) replied to your comment" } ?? "Someone replied to your comment"
+            }
+            return who.map { "\($0) mentioned you in a comment" } ?? "You were mentioned in a comment"
         case .wikiMention:
             if data["comment_id"]?.string.map({ !$0.isEmpty }) == true {
                 return who.map { "\($0) mentioned you in a wiki comment" } ?? "You were mentioned in a wiki comment"

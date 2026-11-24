@@ -13,7 +13,7 @@ import { bindingOf, displayKeys, parseStep, useShortcutKeys, type ShortcutDef, t
 /** Scopes whose keys work wherever the command menu was opened from. */
 const ANYWHERE: readonly ShortcutScope[] = ["global"];
 /** Shortcuts that only make sense while something has the focus, or that the menu has already. */
-const NOT_HERE = new Set(["global.palette", "sidebar.done", "sidebar.next", "sidebar.previous", "sidebar.rename", "sidebar.moveUp", "sidebar.moveDown", "sidebar.pin", "sidebar.hide", "sidebar.remove"]);
+const NOT_HERE = new Set(["global.palette", "sidebar.done", "sidebar.next", "sidebar.previous", "sidebar.rename", "sidebar.moveUp", "sidebar.moveDown", "sidebar.pin", "sidebar.hide", "sidebar.remove", "mail.tabLeft", "mail.tabRight"]);
 
 /** Presses binding on the page as the keyboard would. */
 export function pressBinding(binding: string) {

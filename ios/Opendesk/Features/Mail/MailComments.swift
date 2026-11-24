@@ -53,6 +53,7 @@ struct MailCommentRow: View {
                     if comment.edited { Text("edited").font(ODFont.sans(11.5)).foregroundStyle(Theme.fg4) }
                     Spacer(minLength: 0)
                 }
+                MailCommentParentQuote(comment: comment)
                 Text(MailCommentText.attributed(comment.bodyHTML))
                     .font(ODFont.sans(14))
                     .foregroundStyle(Theme.fg)
@@ -77,6 +78,33 @@ struct MailCommentRow: View {
             glow = true
             withAnimation(.easeOut(duration: 1.4).delay(0.3)) { glow = false }
         }
+    }
+}
+
+/// A reply's one-line quote of the comment it answers, read only; the web app writes replies.
+struct MailCommentParentQuote: View {
+    let comment: MailComment
+
+    var body: some View {
+        if comment.parentDeleted {
+            line(Text("Original comment deleted").italic(), label: "Original comment deleted")
+        } else if comment.replyTo != nil, let parent = comment.parent {
+            let name = parent.author?.name ?? "A former teammate"
+            line(Text(name).font(ODFont.sans(12.5, weight: .semibold)).foregroundColor(Theme.fg3) + Text("  " + parent.excerpt), label: "Reply to \(name): \(parent.excerpt)")
+        }
+    }
+
+    private func line(_ text: Text, label: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrowshape.turn.up.left").font(.system(size: 10, weight: .semibold))
+            text.lineLimit(1).truncationMode(.tail)
+        }
+        .font(ODFont.sans(12.5))
+        .foregroundStyle(Theme.fg4)
+        .padding(.leading, 8)
+        .overlay(alignment: .leading) { Rectangle().fill(Theme.line).frame(width: 2) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
     }
 }
 

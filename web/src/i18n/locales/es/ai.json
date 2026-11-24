@@ -15,6 +15,7 @@
     "kb_draft": "Redactar un artículo de ayuda",
     "assistant": "Mensajes del asistente",
     "assistant_peer": "Ollie preguntando al Ollie de un compañero",
+    "app_help": "Responder una pregunta sobre opendesk",
     "procedure": "Ejecutar un procedimiento desde una automatización",
     "wiki_write": "Escribir en el wiki"
   },
@@ -248,6 +249,11 @@
     "send": "Buscar por significado",
     "example_1": "Clientes a los que se les cobró dos veces",
     "example_2": "Problemas para iniciar sesión después de restablecer la contraseña",
-    "example_3": "Solicitudes para exportar datos"
+    "example_3": "Solicitudes para exportar datos",
+    "inApp": "En la app",
+    "docs": "De la documentación",
+    "answer_item": "Responder con {{name}}",
+    "answering": "{{name}} está leyendo la documentación",
+    "answer_error": "No se pudo responder ahora. Los lugares y la documentación de abajo pueden ayudar."
   }
 }

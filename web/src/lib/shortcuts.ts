@@ -124,6 +124,9 @@ export const SHORTCUTS = def([
   { id: "mail.list", keys: "[", scope: "mail", needs: "mail" },
   { id: "mail.search", keys: "/", scope: "mail", needs: "mail" },
   { id: "mail.escape", keys: "escape", scope: "mail", needs: "mail" },
+  // While an inbox category tab has the focus, for whoever may reorder the tabs (components/collab/CategoryTabs.tsx).
+  { id: "mail.tabLeft", keys: "mod+shift+arrowleft", scope: "mail", needs: "mail" },
+  { id: "mail.tabRight", keys: "mod+shift+arrowright", scope: "mail", needs: "mail" },
   // A page of Pages or the wiki.
   { id: "page.new", keys: "n", scope: "page" },
   { id: "page.newSubpage", keys: "shift+n", scope: "page" },

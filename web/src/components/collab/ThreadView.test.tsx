@@ -148,6 +148,86 @@ it("puts the focus back in the open reply when a comment switches back to it", a
   expect(document.activeElement).toBe(editor);
 });
 
+it("asks for feedback on the AI draft open in the composer from the bar under it, right of Comment", async () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  vi.stubGlobal("requestAnimationFrame", vi.fn());
+  const received = detail.messages[0];
+  detail = {
+    ...detail,
+    messages: [
+      received,
+      {
+        ...received, id: "ai-draft-message", draft: true, outgoing: true, in_reply_to_id: received.id,
+        from: { name: "", email: account.email }, to: [{ name: "Sender", email: "sender@example.com" }], cc: [],
+        drafted_by_ai: "aidevops", ai_draft: { id: "ai-1", client: "aidevops", outcome: null, has_feedback: false },
+      },
+    ],
+  };
+  qc.setQueryData(qk.mailThread(detail.thread.id), detail);
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () => {
+    root?.render(<QueryClientProvider client={qc}><TooltipProvider><ConfirmProvider>
+      <ThreadView threadId={detail.thread.id} onClose={() => undefined} onAction={() => undefined} markReadOnOpen={false} />
+    </ConfirmProvider></TooltipProvider></QueryClientProvider>);
+  });
+  const footerFeedback = () => [...host!.querySelectorAll<HTMLButtonElement>("footer button")].find((b) => b.textContent === "Give feedback");
+  // Waiting: the draft's own row offers it, the bar does not.
+  expect(footerFeedback()).toBeUndefined();
+  const row = [...host.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent?.includes("AI draft by aidevops"));
+  await act(async () => row?.click());
+  // Open in the composer: its row is hidden, the bar under it offers feedback after Comment.
+  expect(host.textContent).not.toContain("AI draft by aidevops");
+  const footerButtons = [...host.querySelectorAll<HTMLButtonElement>("footer button")].map((b) => b.getAttribute("aria-label") ?? b.textContent);
+  expect(footerButtons).toEqual(["Comment", "Give feedback"]);
+  await act(async () => footerFeedback()?.click());
+  expect(document.querySelector("[role=dialog]")?.textContent).toContain("Feedback on this AI draft");
+});
+
+it("keeps an unread conversation unread while its AI draft is reviewed and discarded, and asks for feedback at once", async () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+  vi.stubGlobal("requestAnimationFrame", vi.fn());
+  const remove = vi.spyOn(api.collab.drafts, "remove").mockResolvedValue(undefined as never);
+  const received = detail.messages[0];
+  detail = {
+    ...detail,
+    thread: { ...detail.thread, unread: true },
+    messages: [
+      { ...received, unread: true },
+      {
+        ...received, id: "ai-draft-message", draft: true, outgoing: true, unread: false, in_reply_to_id: received.id,
+        from: { name: "", email: account.email }, to: [{ name: "Sender", email: "sender@example.com" }], cc: [],
+        drafted_by_ai: "aidevops", ai_draft: { id: "ai-1", client: "aidevops", outcome: null, has_feedback: false },
+      },
+    ],
+  };
+  qc.setQueryData(qk.mailThread(detail.thread.id), detail);
+  const onAction = vi.fn();
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
+  await act(async () => {
+    root?.render(<QueryClientProvider client={qc}><TooltipProvider><ConfirmProvider>
+      <ThreadView threadId={detail.thread.id} onClose={() => undefined} onAction={onAction} markReadOnOpen />
+    </ConfirmProvider></TooltipProvider></QueryClientProvider>);
+  });
+  // Opened on the waiting draft: not read.
+  expect(onAction).not.toHaveBeenCalled();
+  const row = [...host.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent?.includes("AI draft by aidevops"));
+  await act(async () => row?.click());
+  await act(async () => host?.querySelector<HTMLButtonElement>("button[aria-label='Discard']")?.click());
+  const confirm = [...document.querySelectorAll<HTMLButtonElement>("[role=alertdialog] button, [role=dialog] button")].find((b) => b.textContent === "Discard");
+  await act(async () => confirm?.click());
+  expect(remove).toHaveBeenCalledWith("ai-draft-message");
+  // Discarded: still unread, and the feedback form is open with "Should not have answered" chosen.
+  expect(onAction).not.toHaveBeenCalled();
+  const dialog = [...document.querySelectorAll("[role=dialog]")].find((d) => d.textContent?.includes("Feedback on this AI draft"));
+  expect(dialog?.textContent).toContain("Should not have answered");
+});
+
 it("uses the account's Reply all default and keeps Reply after it", async () => {
   await api.collab.accounts.update(account.id, { reply_all: true });
   detail.account = (await api.collab.threads.get(detail.thread.id)).account;

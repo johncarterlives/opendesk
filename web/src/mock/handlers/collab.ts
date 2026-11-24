@@ -11,6 +11,7 @@ import type {
   MailAttachment,
   MailAudience,
   MailCategoryRule,
+  MailAISkip,
   MailComment,
   MailFolder,
   MailFolderRole,
@@ -25,6 +26,7 @@ import type {
   SidebarPrefs,
   UseForTicketsBody,
 } from "@/lib/api/types";
+import { firstLine } from "@/lib/collab/html";
 import { collabFromName } from "@/lib/collab/identities";
 import { LABEL_TONES, toneHex, type LabelTone } from "@/lib/collab/labelTones";
 import { defaultSidebarPrefs, normalizePrefs, SECTION_IDS } from "@/lib/collab/sidebarPrefs";
@@ -47,7 +49,11 @@ import { PRIMARY } from "@/lib/collab/categories";
 type Account = Omit<MailAccount, "identities" | "default_from" | "categories"> & { ownerId: string | null; aliases: MailIdentity[]; defaultFrom: string; catChoice: AccountChoice; catRules: MailCategoryRule[] };
 /** category: its tab once sorted (undefined: not yet); byPerson: someone moved it, so sorting leaves it. */
 /** followers: who follows it in their Mentions box, with when it last had something for them (contracts/collab.md "Mentions"). */
-type ThreadMeta = { id: string; account_id: string; subject: string; shares: MailAudience; assignees: string[]; comments: MailComment[]; needsAction?: boolean; snoozedUntil?: string; category?: string; categoryByPerson?: boolean; followers?: Record<string, string> };
+type ThreadMeta = { id: string; account_id: string; subject: string; shares: MailAudience; assignees: string[]; comments: MailComment[]; aiSkips?: MailAISkip[]; needsAction?: boolean; snoozedUntil?: string; category?: string; categoryByPerson?: boolean; followers?: Record<string, string> };
+
+/** A comment's reply fields when it replies to nothing. */
+const noReply = { reply_to: null, parent: null, parent_deleted: false } satisfies Pick<MailComment, "reply_to" | "parent" | "parent_deleted">;
+
 type State = { accounts: Account[]; folders: MailFolder[]; threads: Map<string, ThreadMeta>; messages: MailMessage[]; prefs: Record<string, SidebarPrefs> };
 
 const states = new Map<string, State>();
@@ -387,7 +393,7 @@ function seedState(ws: WsData): State {
   const salesThreads = [...threads.values()].filter((t) => t.account_id === sales.id);
   if (salesThreads[1]) {
     salesThreads[1].assignees = [me];
-    salesThreads[1].comments.push({ id: uuid(), thread_id: salesThreads[1].id, author: userRef(other), body_html: `<p>Can you take this one? They asked about the annual discount.</p>`, mentions: [me], created_at: new Date(now - 2 * HOUR).toISOString(), updated_at: new Date(now - 2 * HOUR).toISOString() });
+    salesThreads[1].comments.push({ id: uuid(), thread_id: salesThreads[1].id, author: userRef(other), body_html: `<p>Can you take this one? They asked about the annual discount.</p>`, mentions: [me], ...noReply, created_at: new Date(now - 2 * HOUR).toISOString(), updated_at: new Date(now - 2 * HOUR).toISOString() });
     // The mention put it in your Mentions.
     salesThreads[1].followers = { [me]: new Date(now - 2 * HOUR).toISOString() };
   }
@@ -531,6 +537,53 @@ function seedState(ws: WsData): State {
     });
   }
 
+  // A refund an AI drafting key looked at and handed back, with a note for the team on why (contracts/collab.md "AI notes").
+  {
+    const tid = uuid();
+    const subject = "Refund for our annual plan";
+    const from = { name: "Tomas Berg", email: "tomas@lindqvist.se" };
+    const text = "Hello,\n\nWe moved to another tool last month and would like a refund for the rest of our annual plan. We paid for the year in September.\n\nRegards,\nTomas";
+    const at = (ago: number) => new Date(now - ago).toISOString();
+    const key = "Support drafter";
+    threads.set(tid, {
+      id: tid,
+      account_id: work.id,
+      subject,
+      shares: emptyAudience(),
+      assignees: [],
+      comments: [
+        {
+          id: uuid(), thread_id: tid, author: userRef(other), mentions: [], ...noReply, created_at: at(33 * MIN), updated_at: at(33 * MIN), ai_note_by: key,
+          body_html: "<p>Paid more than 30 days ago, past the refund window. A partial refund is a person's call, so I left it without a draft.</p>",
+        },
+      ],
+      aiSkips: [{ client: key, reason: "Refund outside the 30-day window", at: at(33 * MIN) }],
+    });
+    messages.push({
+      id: uuid(),
+      thread_id: tid,
+      account_id: work.id,
+      message_id: `${uuid()}@lindqvist.se`,
+      from,
+      to: [{ name: work.display_name, email: work.email }],
+      cc: [],
+      bcc: [],
+      reply_to: [],
+      subject,
+      snippet: text.replace(/\s+/g, " ").slice(0, 140),
+      body_html: `<p>${escapeHtml(text).replace(/\n\n/g, "</p><p>").replace(/\n/g, "<br>")}</p>`,
+      body_text: text,
+      sent_at: at(41 * MIN),
+      unread: true,
+      starred: false,
+      draft: false,
+      folder_ids: [roleId(work.id, "inbox")],
+      attachments: [],
+      sent_by: null,
+      outgoing: false,
+    });
+  }
+
   // A customer writing to one of the Gmail account's send-as addresses (support@): a reply goes from it.
   {
     const tid = uuid();
@@ -570,7 +623,7 @@ function seedState(ws: WsData): State {
     const from = { name: "Webdrop", email: "newsletter@webdrop.dev" };
     const text = "New web apps this week. Featuring Base44, Plane, and Quo.";
     const at = (ago: number) => new Date(now - ago).toISOString();
-    const comment = (author: string, body: string, ago: number): MailComment => ({ id: uuid(), thread_id: tid, author: userRef(author), body_html: `<p>${body}</p>`, mentions: [], created_at: at(ago), updated_at: at(ago) });
+    const comment = (author: string, body: string, ago: number): MailComment => ({ id: uuid(), thread_id: tid, author: userRef(author), body_html: `<p>${body}</p>`, mentions: [], ...noReply, created_at: at(ago), updated_at: at(ago) });
     threads.set(tid, {
       id: tid,
       account_id: sales.id,
@@ -950,6 +1003,8 @@ function detailOut(ws: WsData, t: ThreadMeta): MailThreadDetail {
     comments: t.comments,
     shares: t.shares,
     can_act: canActRole(ws, db.meId),
+    // A skip shows until the conversation's next message (contracts/collab.md "AI notes").
+    ai_skips: (t.aiSkips ?? []).filter((x) => !msgsOf(s, t.id).some((m) => !m.draft && m.sent_at > x.at)),
     // The demo keeps no AI draft records once a draft is gone.
     unused_ai_drafts: [],
     following: !!t.followers?.[db.meId],
@@ -1967,14 +2022,23 @@ export function registerCollab() {
     if (!html.trim() || html.length > 20000) throw invalid("body_html must be 1 to 20000 characters");
     const mentions = (strArr(ctx.body.mentions) ?? []).filter((id) => ctx.ws.members.some((m) => m.user_id === id));
     const at = nowIso();
-    const c: MailComment = { id: uuid(), thread_id: t.id, author: userRef(db.meId), body_html: html, mentions, created_at: at, updated_at: at };
-    // Who it answers: those who commented and since whose latest comment only you have (before it is added).
-    const answered = answeredBy(t.comments, db.meId);
+    // A reply answers a comment of this conversation, and its author (contracts/collab.md "Replies").
+    const replyTo = typeof ctx.body.reply_to === "string" ? ctx.body.reply_to : null;
+    const parent = replyTo ? t.comments.find((x) => x.id === replyTo) : undefined;
+    if (replyTo && !parent) throw invalid("The comment you reply to is not in this conversation.");
+    const reply = parent ? { reply_to: parent.id, parent: { author: parent.author, excerpt: firstLine(parent.body_html), ai_note_by: parent.ai_note_by ?? null }, parent_deleted: false } : noReply;
+    const c: MailComment = { id: uuid(), thread_id: t.id, author: userRef(db.meId), body_html: html, mentions, ...reply, created_at: at, updated_at: at };
+    // Who it answers: the author of the comment it replies to, or else those who commented and since
+    // whose latest comment only you have (before it is added).
+    const parentAuthor = parent?.author?.id;
+    const answered = parent ? (parentAuthor && parentAuthor !== db.meId ? [parentAuthor] : []) : answeredBy(t.comments, db.meId);
     t.comments.push(c);
     for (const uid of mentions) {
       if (!seesThread(ctx.ws, t, uid)) t.shares = { ...t.shares, user_ids: [...new Set([...t.shares.user_ids, uid])] };
       if (uid !== db.meId) notifyUser(ctx.ws, uid, "collab_mention", { thread_id: t.id, comment_id: c.id, subject: t.subject });
     }
+    if (parent && parentAuthor && parentAuthor !== db.meId && !mentions.includes(parentAuthor) && seesThread(ctx.ws, t, parentAuthor))
+      notifyUser(ctx.ws, parentAuthor, "collab_mention", { thread_id: t.id, comment_id: c.id, reply_to: parent.id, subject: t.subject });
     // Every follower sees new activity; the people it mentions or answers follow it.
     const followers = { ...t.followers };
     for (const uid of Object.keys(followers)) followers[uid] = at;
@@ -2020,7 +2084,7 @@ export function registerCollab() {
       if (!c) continue;
       threadOr404(ctx.ws, t.id);
       if (c.author?.id !== db.meId && !isAdmin(ctx.ws, db.meId)) throw new HttpError(403, "forbidden", "Only its author or an admin can delete a comment.");
-      t.comments = t.comments.filter((x) => x.id !== c.id);
+      t.comments = t.comments.filter((x) => x.id !== c.id).map((x) => (x.reply_to === c.id ? { ...x, reply_to: null, parent: null, parent_deleted: true } : x));
       changed(ctx.ws, t.account_id, [t.id], false);
       return respond(204);
     }

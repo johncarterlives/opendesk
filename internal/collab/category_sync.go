@@ -21,6 +21,9 @@ import (
 
 // refreshCategoryPolicy runs with the account locked. Configuration changes install
 // effective keys synchronously and revoke the authority of previously queued results.
+// Categories in a new order are the same categories: only the stored order changes. Within
+// the local engine the recorded basis stays, so the categorize job sorts again only what
+// the change can affect (resortPlan); a change of engine starts sorting over.
 func (s *service) refreshCategoryPolicy(ctx context.Context, tx pgx.Tx, a *accountRow) error {
 	cs, err := loadAccountCategorySets(ctx, tx, a)
 	if err != nil {
@@ -31,6 +34,11 @@ func (s *service) refreshCategoryPolicy(ctx context.Context, tx pgx.Tx, a *accou
 	if a.CategoryEngine == c.Engine && slices.Equal(a.CategoryKeys, keys) {
 		return nil
 	}
+	if a.CategoryEngine == c.Engine && sameKeys(a.CategoryKeys, keys) {
+		a.CategoryKeys = keys
+		_, err := tx.Exec(ctx, `UPDATE collab_accounts SET category_keys = $2 WHERE id = $1`, a.ID, keys)
+		return err
+	}
 	old := a.CategoryEngine
 	a.CategoryEpoch++
 	a.CategoryEngine, a.CategoryKeys = c.Engine, keys
@@ -38,12 +46,22 @@ func (s *service) refreshCategoryPolicy(ctx context.Context, tx pgx.Tx, a *accou
 	if c.Engine == modeGmail {
 		refresh = []byte(`{}`)
 	}
+	restart := old != c.Engine
+	if restart {
+		a.CategorySig, a.CategoryBasis = "", nil
+	}
 	if _, err := tx.Exec(ctx, `UPDATE collab_accounts SET category_engine = $2, category_keys = $3,
-        category_epoch = $4, category_sig = '', category_refresh = $5 WHERE id = $1`, a.ID, c.Engine, keys, a.CategoryEpoch, refresh); err != nil {
+        category_epoch = $4, category_refresh = $5,
+        category_sig = CASE WHEN $6 THEN '' ELSE category_sig END,
+        category_basis = CASE WHEN $6 THEN NULL ELSE category_basis END WHERE id = $1`,
+		a.ID, c.Engine, keys, a.CategoryEpoch, refresh, restart); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(ctx, `UPDATE collab_category_intents SET state = 'canceled', updated_at = now()
         WHERE account_id = $1 AND state IN ('pending','confirming','blocked')`, a.ID); err != nil {
+		return err
+	}
+	if err := forgetCategoryExamples(ctx, tx, a.ID, keys); err != nil {
 		return err
 	}
 	if old == modeGmail || c.Engine == modeGmail || len(keys) == 0 {
@@ -63,6 +81,11 @@ func (s *service) refreshCategoryPolicy(ctx context.Context, tx pgx.Tx, a *accou
 		return err
 	}
 	return s.publishChanged(ctx, tx, a.WorkspaceID, &a.ID, nil, true)
+}
+
+// sameKeys reports whether two key lists hold the same keys, in any order.
+func sameKeys(a, b []string) bool {
+	return len(a) == len(b) && !slices.ContainsFunc(a, func(k string) bool { return !slices.Contains(b, k) })
 }
 
 func (s *service) refreshWorkspaceCategoryPolicies(ctx context.Context, tx pgx.Tx, wid uuid.UUID) error {
@@ -137,6 +160,8 @@ func (s *service) chooseCategories(ctx context.Context, p *auth.Principal, threa
 			return httpx.NotFound("Conversation")
 		}
 		tids := []uuid.UUID{}
+		// What a member moves by hand teaches the account's local sorting ("Learning from moves").
+		learn := map[uuid.UUID][]movedThread{}
 		for _, t := range threads {
 			a := accounts[t.AccountID]
 			// Revalidate identity inside the transaction; a removed conversation is not an admission.
@@ -164,6 +189,16 @@ func (s *service) chooseCategories(ctx context.Context, p *auth.Principal, threa
 			source := sortedByPerson
 			if policies[a.ID].Engine == modeGmail {
 				source = sortedByGmail
+			} else {
+				var was *string
+				if err := tx.QueryRow(ctx, `SELECT category FROM collab_threads WHERE id = $1`, t.ID).Scan(&was); err != nil {
+					return err
+				}
+				from := ""
+				if c := effectiveCategory(a.CategoryKeys, was); c != nil {
+					from = *c
+				}
+				learn[a.ID] = append(learn[a.ID], movedThread{ID: t.ID, From: from})
 			}
 			if _, err := tx.Exec(ctx, `UPDATE collab_threads SET category = $4, category_source = $5, category_pending = false
                 WHERE workspace_id = $1 AND account_id = $2 AND id = $3`, p.WorkspaceID, a.ID, t.ID, key, source); err != nil {
@@ -172,6 +207,11 @@ func (s *service) chooseCategories(ctx context.Context, p *auth.Principal, threa
 			tids = append(tids, t.ID)
 		}
 		for _, id := range accountIDs {
+			if moved := learn[id]; len(moved) > 0 {
+				if err := s.learnFromMoves(ctx, tx, accounts[id], moved, key); err != nil {
+					return err
+				}
+			}
 			if policies[id].Engine == modeGmail {
 				if err := s.publishAccounts(ctx, tx, p.WorkspaceID, id, nil); err != nil {
 					return err

@@ -14,7 +14,7 @@
     "off": "Off"
   },
   "editor": {
-    "primaryHint": "Primary is always first: mail from people, and anything Ollie is unsure of",
+    "primaryHint": "Primary is always first: mail that needs you and fits no other category",
     "untitled": "Untitled",
     "name": "Name",
     "namePlaceholder": "Category name",
@@ -58,7 +58,7 @@
     "chooseOn": "Members can pick their own categories, or none, for the accounts they manage.",
     "chooseOff": "Everyone follows the workspace or their team. Members can still turn off Ollie's sorting for their accounts.",
     "sorting": "How mail is sorted",
-    "sortingAi": "Ollie sorts new mail as it arrives, by each category's description. Mail Ollie is unsure of stays in Primary.",
+    "sortingAi": "Ollie sorts new mail as it arrives, by each category's description, and prefers a category other than Primary. Mail Ollie is unsure of goes to Primary only when it seems to need you.",
     "sortingRules": "Sorted by sender rules and mail headers.",
     "sortingRulesHint": "Turn on AI to let Ollie sort.",
     "byOllie": "Ollie",

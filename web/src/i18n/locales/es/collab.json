@@ -409,7 +409,12 @@
     "edited": "editado",
     "someone": "Un antiguo compañero",
     "empty": "Todavía no hay comentarios. Habla aquí de esta conversación con tu equipo.",
-    "menu": "Acciones del comentario"
+    "menu": "Acciones del comentario",
+    "reply": "Responder",
+    "replyingTo": "Respondiendo a {{name}}:",
+    "cancelReply": "Cancelar respuesta",
+    "parentDeleted": "Comentario original eliminado",
+    "showParent": "Ir al comentario original de {{name}}"
   },
   "share": {
     "title": "Compartir conversación",
@@ -708,6 +713,8 @@
     "assignedAnon": "Se te asignó una conversación",
     "mention": "{{who}} te mencionó en un comentario",
     "mentionAnon": "Te mencionaron en un comentario",
+    "reply": "{{who}} respondió a tu comentario",
+    "replyAnon": "Alguien respondió a tu comentario",
     "open": "Abrir"
   },
   "shortcuts": {
@@ -996,6 +1003,12 @@
     "moved_one": "Conversación movida a {{name}}",
     "moved_other": "{{count}} conversaciones movidas a {{name}}",
     "moved_many": "{{count}} de conversaciones movidas a {{name}}",
+    "dropRefused_one": "Su bandeja de entrada no tiene la categoría {{name}}",
+    "dropRefused_many": "Sus bandejas de entrada no tienen la categoría {{name}}",
+    "dropRefused_other": "Sus bandejas de entrada no tienen la categoría {{name}}",
+    "dropSome_one": "{{count}} conversación se quedó: su bandeja de entrada no tiene la categoría {{name}}",
+    "dropSome_many": "{{count}} de conversaciones se quedaron: sus bandejas de entrada no tienen la categoría {{name}}",
+    "dropSome_other": "{{count}} conversaciones se quedaron: sus bandejas de entrada no tienen la categoría {{name}}",
     "always": "Siempre",
     "alwaysHint": "Enviar también aquí el correo futuro de {{sender}}",
     "ruleSaved": "El correo de {{sender}} ahora va a {{name}}",
@@ -1004,6 +1017,12 @@
       "body": "El correo de las personas se queda en Principal, y los boletines, las actualizaciones y las promociones tienen sus propias pestañas. Ollie puede sugerir categorías a partir de tu correo.",
       "action": "Configurar categorías",
       "dismiss": "Ahora no"
+    },
+    "reorder": {
+      "hint": "Arrastra para reordenar, o pulsa {{left}} o {{right}}",
+      "hintDrag": "Arrastra para reordenar",
+      "moved": "{{name}} movida al puesto {{position}} de {{count}}",
+      "failed": "No se pudo guardar el nuevo orden de las pestañas"
     }
   },
   "aiFeedback": {
@@ -1104,8 +1123,8 @@
     "add": "Añadir",
     "newSection": "Nueva sección",
     "newSectionTitle": "Nueva sección",
-    "emptySection": "Arrastra filas aquí o añade algunas",
-    "emptyFavorites": "Arrastra filas aquí para convertirlas en favoritos",
+    "emptySection": "Suelta filas aquí",
+    "emptyFavorites": "Suelta favoritos aquí",
     "spaceSettings": "Ajustes del Space",
     "editingSpace": "Editando {{name}}",
     "hintTitle": "Haz tuya la barra lateral",
@@ -1129,9 +1148,7 @@
     "customize": "Personalizar",
     "customizeHint": "Organiza tu barra lateral: arrastra, renombra y oculta",
     "doneHint": "Terminar de organizar la barra lateral",
-    "doneEditing": "Listo",
-    "layoutsShort": "Diseños",
-    "barHint": "Arrastra para mover. Haz clic en un nombre para renombrarlo. El ojo lo oculta."
+    "doneEditing": "Listo"
   },
   "layouts": {
     "title": "Empezar desde un diseño",

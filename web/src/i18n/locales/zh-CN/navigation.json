@@ -192,7 +192,12 @@
     "aiPlayground": "AI 客服演练场",
     "importHistory": "从 Zendesk、Help Scout、FreeScout、Freshdesk、Intercom、Front 或 CSV 导入历史记录",
     "pages": "页面",
-    "newPage": "新建页面"
+    "newPage": "新建页面",
+    "sidebarPlace": "侧边栏",
+    "docs": "文档",
+    "searchSettings": "搜索设置",
+    "settingsNoResults": "没有匹配的设置",
+    "settingsNoResultsHelp": "换个说法试试，或在命令菜单中搜索文档。"
   },
   "shortcuts": {
     "general": "常规",

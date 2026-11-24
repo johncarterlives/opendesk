@@ -38,8 +38,11 @@ export function keyBody(key: readonly unknown[]): readonly unknown[] {
   return keyWorkspace(key) === null ? key : key.slice(1);
 }
 
-/** The roots a user-level key may start with (src/lib/queryKeys.test.ts holds every literal key to it). */
-export const USER_ROOTS = new Set(["auth-config", "me", "public", "invitation-lookup", "oauth", "totp-setup", "customerPortal"]);
+/**
+ * The roots a user-level key may start with (src/lib/queryKeys.test.ts holds every literal key to it).
+ * `appSearch` holds the indexes built with the app itself (lib/appSearch), the same in every workspace.
+ */
+export const USER_ROOTS = new Set(["auth-config", "me", "public", "invitation-lookup", "oauth", "totp-setup", "customerPortal", "appSearch"]);
 
 /** Conversations per page of a Collab mail list. */
 export const MAIL_PAGE_SIZE = 50;

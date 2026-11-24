@@ -15,7 +15,8 @@
     "kb_draft": "Rédiger un article d’aide",
     "assistant": "Messages de l’assistant",
     "procedure": "Exécuter une procédure depuis une automatisation",
-    "wiki_write": "Écrire dans le wiki"
+    "wiki_write": "Écrire dans le wiki",
+    "app_help": "Répondre à une question sur opendesk"
   },
   "sentiment": {
     "positive": "Positif",
@@ -228,6 +229,11 @@
     "send": "Rechercher par le sens",
     "example_1": "Clients débités deux fois",
     "example_2": "Problèmes de connexion après une réinitialisation du mot de passe",
-    "example_3": "Demandes d’exportation de données"
+    "example_3": "Demandes d’exportation de données",
+    "inApp": "Dans l’app",
+    "docs": "Dans la documentation",
+    "answer_item": "Répondre avec {{name}}",
+    "answering": "{{name}} lit la documentation",
+    "answer_error": "Impossible de répondre pour l’instant. Les emplacements et la documentation ci-dessous peuvent aider."
   }
 }

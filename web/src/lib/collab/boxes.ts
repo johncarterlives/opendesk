@@ -52,6 +52,9 @@ export function mailListQuery(box: string, s: MailSearch): CollabThreadQuery {
   if (s.folder) q.folder_id = s.folder;
   else {
     q.box = isMailBox(box) ? box : "inbox";
+    // Unread filters mail rather than holding it, so a search there finds read mail too: All mail,
+    // which holds everything Unread and Inbox show.
+    if (s.q && q.box === "unread") q.box = "all";
     if (s.account) q.account_id = s.account;
   }
   if (s.q) q.q = s.q;

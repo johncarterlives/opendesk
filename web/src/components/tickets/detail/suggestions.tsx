@@ -8,7 +8,7 @@ import Suggestion, { type SuggestionKeyDownProps, type SuggestionOptions, type S
 import { PluginKey } from "@tiptap/pm/state";
 import { create } from "zustand";
 import { createPortal } from "react-dom";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Member, SavedReply } from "@/lib/api/types";
 import { Avatar } from "@/components/ui/avatar";
 import { placeBelowOrAbove, useCaretAnchor } from "@/components/editor/anchor";
@@ -30,32 +30,31 @@ type SuggestState = {
   pick: ((item: SuggestItem) => void) | null;
 };
 
-export const useSuggest = create<SuggestState>(() => ({ open: false, kind: "mention", items: [], index: 0, getRect: null, anchorEl: null, pick: null }));
-// Closed by Escape or a click outside: stays closed until "/" or "@" is typed again.
-const dismiss = () => useSuggest.setState({ open: false });
+export const createSuggestions = () => create<SuggestState>(() => ({ open: false, kind: "mention", items: [], index: 0, getRect: null, anchorEl: null, pick: null }));
+export const useSuggest = createSuggestions();
 
-function renderer(kind: "mention" | "reply"): SuggestionOptions<SuggestItem>["render"] {
+function renderer(kind: "mention" | "reply", store = useSuggest): SuggestionOptions<SuggestItem>["render"] {
   return () => ({
     onStart: (p: SuggestionProps<SuggestItem>) => {
-      useSuggest.setState({ open: true, kind, items: p.items, index: 0, getRect: p.clientRect ?? null, anchorEl: p.editor.view.dom, pick: (i) => p.command(i) });
+      store.setState({ open: true, kind, items: p.items, index: 0, getRect: p.clientRect ?? null, anchorEl: p.editor.view.dom, pick: (i) => p.command(i) });
     },
     onUpdate: (p: SuggestionProps<SuggestItem>) => {
-      useSuggest.setState((s) => ({ items: p.items, index: Math.min(s.index, Math.max(0, p.items.length - 1)), getRect: p.clientRect ?? s.getRect, pick: (i) => p.command(i) }));
+      store.setState((s) => ({ items: p.items, index: Math.min(s.index, Math.max(0, p.items.length - 1)), getRect: p.clientRect ?? s.getRect, pick: (i) => p.command(i) }));
     },
     onKeyDown: ({ event }: SuggestionKeyDownProps) => {
-      const s = useSuggest.getState();
+      const s = store.getState();
       if (!s.open) return false;
       if (event.key === "Escape") {
-        dismiss();
+        store.setState({ open: false });
         return true;
       }
       if (!s.items.length) return false;
       if (event.key === "ArrowDown") {
-        useSuggest.setState({ index: (s.index + 1) % s.items.length });
+        store.setState({ index: (s.index + 1) % s.items.length });
         return true;
       }
       if (event.key === "ArrowUp") {
-        useSuggest.setState({ index: (s.index - 1 + s.items.length) % s.items.length });
+        store.setState({ index: (s.index - 1 + s.items.length) % s.items.length });
         return true;
       }
       if (event.key === "Enter" || event.key === "Tab") {
@@ -64,7 +63,7 @@ function renderer(kind: "mention" | "reply"): SuggestionOptions<SuggestItem>["re
       }
       return false;
     },
-    onExit: () => useSuggest.setState({ open: false, pick: null, getRect: null, anchorEl: null }),
+    onExit: () => store.setState({ open: false, pick: null, getRect: null, anchorEl: null }),
   });
 }
 
@@ -88,11 +87,17 @@ export function mentionExtension(getMembers: () => Member[], enabled: () => bool
 
 const replyKey = new PluginKey("saved-replies");
 
-/**
- * "/" saved replies. `pick` inserts the chosen reply's HTML (the composer fills it
- * for the ticket first); `clear` removes the typed "/query".
- */
+/** Ticket composers may clear the shortcut before rendering the reply on the server. */
 export function savedReplyExtension(getReplies: () => SavedReply[], pick: (html: string, clear: () => void, replyId?: string) => void) {
+  return savedReplySuggestion(getReplies, (ed, range, reply) => pick(reply.html, () => ed.chain().focus().deleteRange(range).run(), reply.id));
+}
+
+/** "/" saved replies. The composer decides how to insert the reply over the typed "/query". */
+export function savedReplySuggestion(
+  getReplies: () => SavedReply[],
+  pick: (editor: Editor, range: Range, reply: Extract<SuggestItem, { kind: "reply" }>) => void,
+  store = useSuggest,
+) {
   return Extension.create({
     name: "savedReplies",
     addProseMirrorPlugins() {
@@ -109,19 +114,20 @@ export function savedReplyExtension(getReplies: () => SavedReply[], pick: (html:
               .map((r) => ({ kind: "reply", id: r.id, label: r.title, sub: r.shortcut ? `/${r.shortcut.replace(/^\//, "")}` : undefined, html: r.body_html })),
           command: ({ editor, range, props }: { editor: Editor; range: Range; props: SuggestItem }) => {
             if (props.kind !== "reply") return;
-            pick(props.html, () => editor.chain().focus().deleteRange(range).run(), props.id);
+            pick(editor, range, props);
           },
-          render: renderer("reply"),
+          render: renderer("reply", store),
         }),
       ];
     },
   });
 }
 
-/** The floating list; mount once next to the editor. */
-export function SuggestionPopup() {
+/** The floating list; mount once next to the editor. Mail can have two composers open at once. */
+export function SuggestionPopup({ store = useSuggest }: { store?: typeof useSuggest }) {
   const { t } = useTranslation(["indicators", "inbox"]);
-  const { open, items, index, getRect, anchorEl, pick, kind } = useSuggest();
+  const { open, items, index, getRect, anchorEl, pick, kind } = store();
+  const dismiss = useCallback(() => store.setState({ open: false }), [store]);
   const ref = useRef<HTMLDivElement>(null);
   const rect = useCaretAnchor({ open, getRect, anchorEl, popupRef: ref, onDismiss: dismiss });
   useEffect(() => {
@@ -135,11 +141,11 @@ export function SuggestionPopup() {
       aria-label={kind === "mention" ? t("tickets.mentionTeammate") : t("inbox:composer.savedReplies")}
       data-floating
       style={placeBelowOrAbove(rect, 280, 240)}
-      className="z-[80] max-h-[240px] w-[280px] overflow-y-auto rounded-lg border border-line bg-raised p-1 shadow-pop animate-pop-in"
+      className="z-[80] max-h-[240px] w-[280px] max-w-[calc(100vw-16px)] overflow-y-auto rounded-lg border border-line bg-raised p-1 shadow-pop animate-pop-in"
     >
-      <div className="label-caps px-2 pb-1 pt-1.5">{kind === "mention" ? "Mention" : "Saved replies"}</div>
+      <div className="label-caps px-2 pb-1 pt-1.5">{kind === "mention" ? "Mention" : t("inbox:composer.savedReplies")}</div>
       {items.length === 0 ? (
-        <div className="px-2 py-3 text-xs text-fg-3">{kind === "mention" ? "No teammates match" : "No saved replies match"}</div>
+        <div className="px-2 py-3 text-xs text-fg-3">{kind === "mention" ? "No teammates match" : t("inbox:composer.noReplies")}</div>
       ) : (
         items.map((it, i) => (
           <button
@@ -148,11 +154,10 @@ export function SuggestionPopup() {
             data-i={i}
             role="option"
             aria-selected={i === index}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              pick?.(it);
-            }}
-            onMouseEnter={() => useSuggest.setState({ index: i })}
+            tabIndex={-1}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => pick?.(it)}
+            onMouseEnter={() => store.setState({ index: i })}
             className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-[12.5px]", i === index && "bg-hover")}
           >
             {it.kind === "mention" ? <Avatar name={it.label} src={it.avatar} size="xs" /> : <MessageSquareText className="size-3.5 text-fg-3" />}

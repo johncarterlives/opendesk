@@ -229,10 +229,9 @@ struct SpaceRowBuilder {
         case "workspace":
             entries = ["contacts", "knowledge", "wiki", "reports"].filter { $0 != "reports" || ticketsOn(workspace) }.map { (.page, $0) }
         case "favorites":
-            // The open workspace's favorites, as the member pinned them.
-            guard isOpen(workspace) else { return [] }
+            // The open workspace's favorites, as the member pinned them, after the Space's own.
             let pinnable: [SpaceItemKind] = [.ticketFolder, .team, .view, .box, .account, .folder]
-            entries = SidebarStore.shared.prefs.pinned.compactMap { pin -> (SpaceItemKind, String)? in
+            entries = !isOpen(workspace) ? [] : SidebarStore.shared.prefs.pinned.compactMap { pin -> (SpaceItemKind, String)? in
                 let kind = SpaceItemKind(rawValue: pin.kind)
                 return pinnable.contains(kind) ? (kind, pin.id) : nil
             }
@@ -242,7 +241,7 @@ struct SpaceRowBuilder {
         default:
             entries = []
         }
-        return entries.compactMap { kind, id in
+        return item.arranged(entries).compactMap { kind, id in
             guard var model = base(kind, id, in: workspace) else { return nil }
             model.id = "\(item.id)/\(kind.rawValue):\(id)"
             if item.hidesNumber { model.count = nil }
