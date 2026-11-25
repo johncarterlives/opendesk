@@ -1042,7 +1042,7 @@ export const api = {
       removeRule: (id: string, ruleId: string) => http.del(`/v1/collab/accounts/${id}/category-rules/${ruleId}`),
     },
     /** Sent through the provider within the request (502 send_failed, nothing stored). */
-    send: (b: CollabSendBody) => http.create<T.MailMessage>("/v1/collab/messages", b),
+    send: (b: CollabSendBody, snoozeUntil?: string) => http.create<T.MailMessage>("/v1/collab/messages", b, { query: { snooze_until: snoozeUntil } }),
     /** Read from the message's source at the provider (502 provider_error). */
     messageDetails: (id: string) => http.get<T.MailMessageDetails>(`/v1/collab/messages/${id}/details`),
     messageSource: (id: string) => http.get<T.MailSource>(`/v1/collab/messages/${id}/source`),
@@ -1055,7 +1055,7 @@ export const api = {
       remove: (id: string) => http.del(`/v1/collab/drafts/${id}`),
       /** With a body the draft is saved with it first. `opts` pins the account and workspace a
        * held send started in (components/collab/outbox.ts), and lets it outlive the page. */
-      send: (id: string, b?: CollabDraftBody, opts?: { keepalive?: boolean; as?: string; workspace?: string }) =>
+      send: (id: string, b?: CollabDraftBody, opts?: { keepalive?: boolean; as?: string; workspace?: string; query?: { snooze_until: string } }) =>
         http.post<T.MailMessage>(`/v1/collab/drafts/${id}/send`, b, opts),
     },
     /** A person's feedback on an AI draft, for the key that wrote it (contracts/collab.md "AI draft outcomes"). */

@@ -34,7 +34,8 @@ const sendPerMinute = 60
 const maxSendHTML = 2 << 20
 
 type sendInput struct {
-	Body struct {
+	SnoozeUntil string `query:"snooze_until" maxLength:"40" doc:"RFC3339 follow-up time for a shared account with Handling on"`
+	Body        struct {
 		AccountID          uuid.UUID   `json:"account_id"`
 		Mode               string      `json:"mode" enum:"new,reply,reply_all,forward"`
 		MessageID          *uuid.UUID  `json:"message_id,omitempty" doc:"The message replied to or forwarded; required unless new"`
@@ -76,6 +77,10 @@ func (s *service) send(ctx context.Context, p *auth.Principal, in *sendInput) (M
 	if err != nil {
 		return MailMessage{}, err
 	}
+	snoozeUntil, err := sendSnoozeTime(t.a, in.SnoozeUntil)
+	if err != nil {
+		return MailMessage{}, err
+	}
 	out, err := s.compose(ctx, p, t, composeIn{Mode: b.Mode, To: b.To, Cc: b.Cc, Bcc: b.Bcc, Subject: b.Subject, BodyHTML: b.BodyHTML,
 		AttachmentIDs: b.AttachmentIDs, ForwardAttachments: b.ForwardAttachments, FromEmail: b.FromEmail, NeedRecipients: true})
 	if err != nil {
@@ -102,7 +107,7 @@ func (s *service) send(ctx context.Context, p *auth.Principal, in *sendInput) (M
 		s.log.Warn("collab send refused", "account_id", a.ID, "err", err)
 		return MailMessage{}, errSend(safeError(err))
 	}
-	mid, err := s.storeSent(ctx, a, out.Raw, ref, p.UserID, threadID)
+	mid, err := s.storeSentWithSnooze(ctx, a, out.Raw, ref, p.UserID, threadID, snoozeUntil)
 	if err != nil {
 		return MailMessage{}, httpx.Wrap(err)
 	}

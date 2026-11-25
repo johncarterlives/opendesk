@@ -411,6 +411,10 @@ func (m actionMessage) ref(threadRemoteID string) MessageRef {
 // in its conversation (threadID, else found from its headers, else new) and in Sent, with
 // sent_by, and publishes collab.changed. It returns the stored message's id.
 func (s *service) storeSent(ctx context.Context, a *accountRow, raw []byte, ref SentRef, sentBy uuid.UUID, threadID *uuid.UUID) (uuid.UUID, error) {
+	return s.storeSentWithSnooze(ctx, a, raw, ref, sentBy, threadID, time.Time{})
+}
+
+func (s *service) storeSentWithSnooze(ctx context.Context, a *accountRow, raw []byte, ref SentRef, sentBy uuid.UUID, threadID *uuid.UUID, snoozeUntil time.Time) (uuid.UUID, error) {
 	p, err := s.newPass(ctx, s.d.DB.Pool, a)
 	if err != nil {
 		return uuid.Nil, err
@@ -439,6 +443,9 @@ func (s *service) storeSent(ctx context.Context, a *accountRow, raw []byte, ref 
 	err = p.batch(ctx, func(tx pgx.Tx) error {
 		var err error
 		if id, err = p.insert(ctx, tx, in); err != nil || id == uuid.Nil {
+			return err
+		}
+		if err := p.snoozeAfterSend(ctx, tx, id, snoozeUntil); err != nil {
 			return err
 		}
 		// A reply sent instead of an AI draft of the conversation replaces it ("AI draft outcomes").

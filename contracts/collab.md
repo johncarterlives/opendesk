@@ -344,9 +344,14 @@ action and comes back to it on its own.
   `collab.changed` goes to who sees it. The AI queue then offers it like any other ("AI queue").
 - New mail from someone else in its inbox wakes it sooner (as a customer reply wakes a ticket); the
   account's own reply, sent from opendesk or elsewhere, keeps it snoozed.
-- `box=snoozed` lists snoozed conversations still in an inbox and `counts.boxes.snoozed` counts
-  them. It is kept in opendesk only: the provider's message state, read state and folders do not
-  change, and the conversation stays in the inbox.
+- `box=snoozed` and `box=needs_action` include conversations in Inbox or Sent, excluding Spam and
+  Trash, so an outgoing conversation can be followed up before anyone replies. Snooze stays in
+  opendesk: the provider's message state, read state and folders do not change.
+- **Send and snooze** takes a preset or custom time in the composer. A person may pass the
+  future RFC3339 time as `?snooze_until=` on `POST /v1/collab/messages` or
+  `POST /v1/collab/drafts/{id}/send`. Only shared accounts with Handling on accept it. The server
+  applies the snooze to the sent message's conversation when it stores the successful send, not
+  when it saves the draft. Undo cancels both, and a provider refusal does not set a snooze.
 
 ### Spam beside Needs action
 

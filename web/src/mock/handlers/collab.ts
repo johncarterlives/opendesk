@@ -1016,6 +1016,16 @@ function inRole(s: State, t: MailThread, role: MailFolderRole) {
   const id = roleIdOf(s, t.account_id, role);
   return !!id && t.folder_ids.includes(id);
 }
+function inHandlingQueue(s: State, t: MailThread) {
+  return (inRole(s, t, "inbox") || inRole(s, t, "sent")) && !inRole(s, t, "trash") && !inRole(s, t, "spam") &&
+    s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled);
+}
+function sendSnoozeTime(a: Account, until: string | null) {
+  if (!until) return;
+  if (a.visibility !== "shared" || !a.handling_enabled) throw invalid("Send and snooze needs a shared account with Handling on.");
+  if (!(Date.parse(until) > Date.now())) throw invalid("Choose a snooze time in the future.");
+  return until;
+}
 function unreadInbox(ws: WsData, accountId: string) {
   const s = state(ws);
   return [...s.threads.values()].filter((t) => t.account_id === accountId).map((t) => threadOut(ws, t)).filter((t) => t.unread && inRole(s, t, "inbox")).length;
@@ -1064,9 +1074,9 @@ function listThreads(ws: WsData, ctx: Ctx) {
         case "mentions":
           return !!s.threads.get(t.id)?.followers?.[me] && !junk;
         case "needs_action":
-          return t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox");
+          return t.needs_action && inHandlingQueue(s, t);
         case "snoozed":
-          return !!t.snoozed_until && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox");
+          return !!t.snoozed_until && inHandlingQueue(s, t);
         case "ai_review":
           // The demo has no AI client drafting, so nothing waits for review.
           return false;
@@ -1185,8 +1195,8 @@ function counts(ws: WsData) {
       assigned: assignedOpen.length,
       mentions: all.filter((t) => !!s.threads.get(t.id)?.followers?.[me] && !inRole(s, t, "trash") && !inRole(s, t, "spam")).length,
       drafts: mine.filter((t) => inRole(s, t, "drafts")).length,
-      needs_action: mine.filter((t) => t.needs_action && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
-      snoozed: mine.filter((t) => !!t.snoozed_until && s.accounts.some((a) => a.id === t.account_id && a.visibility === "shared" && a.handling_enabled) && inRole(s, t, "inbox")).length,
+      needs_action: mine.filter((t) => t.needs_action && inHandlingQueue(s, t)).length,
+      snoozed: mine.filter((t) => !!t.snoozed_until && inHandlingQueue(s, t)).length,
       ai_review: 0,
       spam: spamUnread.length,
     },
@@ -2097,6 +2107,7 @@ export function registerCollab() {
     const s = state(ctx.ws);
     const b = ctx.body;
     const a = accountOr404(ctx.ws, String(b.account_id ?? ""));
+    const snoozeUntil = sendSnoozeTime(a, ctx.query.get("snooze_until"));
     const mode = String(b.mode ?? "new");
     const to = strArr(b.to) ?? [];
     const cc = strArr(b.cc) ?? [];
@@ -2145,6 +2156,8 @@ export function registerCollab() {
       outgoing: true,
     };
     s.messages.push(m);
+    thread.needsAction = false;
+    if (snoozeUntil) thread.snoozedUntil = snoozeUntil;
     changed(ctx.ws, a.id, [thread.id], true);
     return respond(201, m);
   });
@@ -2263,12 +2276,16 @@ export function registerCollab() {
     const s = state(ctx.ws);
     const m = draftOr404(ctx.ws, ctx.params.id);
     const a = s.accounts.find((x) => x.id === m.account_id)!;
+    const snoozeUntil = sendSnoozeTime(a, ctx.query.get("snooze_until"));
     if (isRecord(ctx.body) && Object.keys(ctx.body).length) writeDraft(ctx.ws, m, ctx.body, a);
     const all = [...m.to, ...m.cc, ...m.bcc];
     if (!all.length) throw invalid("Add a recipient.");
     if (all.some((x) => x.email.endsWith("@bounce.test"))) throw new HttpError(502, "send_failed", "The provider refused the message: 550 5.1.1 mailbox unavailable");
     const sentId = roleIdOf(s, a.id, "sent");
     Object.assign(m, { draft: false, draft_id: null, folder_ids: sentId ? [sentId] : [], sent_at: nowIso(), outgoing: true, sent_by: a.visibility === "shared" ? userRef(db.meId) : null });
+    const thread = s.threads.get(m.thread_id)!;
+    thread.needsAction = false;
+    if (snoozeUntil) thread.snoozedUntil = snoozeUntil;
     changed(ctx.ws, a.id, [m.thread_id], true);
     return m;
   });

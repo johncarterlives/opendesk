@@ -280,6 +280,43 @@ func TestGmailDrafts(t *testing.T) {
 	}
 }
 
+func TestSendSavedDraftAndSnooze(t *testing.T) {
+	w := newWorld(t)
+	g := newFakeGmail(t)
+	w.useGmail(g)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	mustExec(t, w.d, `UPDATE collab_accounts SET handling_enabled = true WHERE id = $1`, a.ID)
+	if err := w.s.syncAccount(w.ctx, a.ID); err != nil {
+		t.Fatal(err)
+	}
+	srv := w.api(w.agent)
+	var draft, sent MailMessage
+	if st := doJSON(t, "POST", srv.URL+"/v1/collab/drafts", map[string]any{"account_id": a.ID, "mode": "new",
+		"to": []string{"frank@example.com"}, "subject": "Quote", "body_html": "<p>Details</p>"}, &draft); st != 200 {
+		t.Fatalf("save: %d", st)
+	}
+	until := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Second)
+	path := srv.URL + "/v1/collab/drafts/" + draft.ID.String() + "/send?snooze_until=" + until.Format(time.RFC3339)
+	if st := doJSON(t, "POST", path, nil, &sent); st != 200 || sent.Draft || sent.ThreadID != draft.ThreadID ||
+		!slices.Equal(sent.FolderIDs, []uuid.UUID{w.folderByRemote(a, "SENT").ID}) {
+		t.Fatalf("release: %d %+v", st, sent)
+	}
+	var snoozed struct{ Data []MailThread }
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/threads?box=snoozed", nil, &snoozed); st != 200 || len(snoozed.Data) != 1 ||
+		snoozed.Data[0].ID != sent.ThreadID || snoozed.Data[0].NeedsAction || snoozed.Data[0].SnoozedUntil == nil || !snoozed.Data[0].SnoozedUntil.Equal(until) {
+		t.Fatalf("Snoozed: %d %+v", st, snoozed)
+	}
+	mustExec(t, w.d, `UPDATE collab_threads SET snoozed_until = now() - interval '1 second' WHERE id = $1`, sent.ThreadID)
+	if err := w.s.wakeSnoozed(w.ctx); err != nil {
+		t.Fatal(err)
+	}
+	var due struct{ Data []MailThread }
+	if st := doJSON(t, "GET", srv.URL+"/v1/collab/threads?box=needs_action", nil, &due); st != 200 || len(due.Data) != 1 ||
+		due.Data[0].ID != sent.ThreadID || due.Data[0].SnoozedUntil != nil || !due.Data[0].NeedsAction {
+		t.Fatalf("Needs action: %d %+v", st, due)
+	}
+}
+
 func TestGmailDraftMadeInGmail(t *testing.T) {
 	w := newWorld(t)
 	g := newFakeGmail(t)

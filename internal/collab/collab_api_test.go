@@ -999,6 +999,50 @@ func TestAPISend(t *testing.T) {
 	}
 }
 
+func TestAPISendAndSnooze(t *testing.T) {
+	w := newWorld(t)
+	a := w.account(w.agent, ProviderGoogle, VisibilityShared, Audience{Everyone: true})
+	w.folder(a, RoleSent)
+	tid, mid := w.seedThread(a, "Quote", w.folder(a, RoleInbox))
+	fake := &fakeProvider{}
+	w.useFake(fake)
+	srv := w.api(w.agent)
+	until := time.Now().Add(48 * time.Hour).UTC().Truncate(time.Second)
+	path := srv.URL + "/v1/collab/messages?snooze_until="
+	body := map[string]any{"account_id": a.ID, "mode": "reply", "message_id": mid,
+		"to": []string{"frank@example.com"}, "subject": "Re: Quote", "body_html": "<p>Thanks</p>"}
+	if st := doJSON(t, "POST", path+until.Format(time.RFC3339), body, nil); st != 422 || len(fake.sent) != 0 {
+		t.Fatalf("Handling off: status %d, sends %d", st, len(fake.sent))
+	}
+	mustExec(t, w.d, `UPDATE collab_accounts SET handling_enabled = true WHERE id = $1`, a.ID)
+	mustExec(t, w.d, `UPDATE collab_threads SET needs_action = true WHERE id = $1`, tid)
+	for _, invalid := range []string{"tomorrow", until.Add(-72 * time.Hour).Format(time.RFC3339)} {
+		if st := doJSON(t, "POST", path+invalid, body, nil); st != 422 || len(fake.sent) != 0 {
+			t.Fatalf("invalid date: status %d, sends %d", st, len(fake.sent))
+		}
+	}
+	check := func(needs bool, snoozed bool) {
+		t.Helper()
+		var state MailThreadDetail
+		if st := doJSON(t, "GET", srv.URL+"/v1/collab/threads/"+tid.String(), nil, &state); st != 200 ||
+			state.Thread.NeedsAction != needs || (state.Thread.SnoozedUntil != nil) != snoozed ||
+			(snoozed && !state.Thread.SnoozedUntil.Equal(until)) {
+			t.Fatalf("handling: status %d, needs action %t, snoozed until %v", st, state.Thread.NeedsAction, state.Thread.SnoozedUntil)
+		}
+	}
+	fake.err = errors.New("refused")
+	if st := doJSON(t, "POST", path+until.Format(time.RFC3339), body, nil); st != 502 {
+		t.Fatalf("refusal: %d", st)
+	}
+	check(true, false)
+	fake.err = nil
+	var sent MailMessage
+	if st := doJSON(t, "POST", path+until.Format(time.RFC3339), body, &sent); st != 200 || sent.ThreadID != tid {
+		t.Fatalf("send: %d %+v", st, sent)
+	}
+	check(false, true)
+}
+
 func TestAPISendRateLimit(t *testing.T) {
 	w := newWorld(t)
 	a := w.account(w.agent, ProviderGoogle, VisibilityPrivate, Audience{})

@@ -517,7 +517,7 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
     reply: { icon: <Reply />, label: t("action.reply"), shortcut: "r" },
     reply_all: { icon: <ReplyAll />, label: t("action.replyAll"), shortcut: "a" },
   };
-  const composerAccounts = [detail.account];
+  const composerAccounts = [{ ...detail.account, visibility: account?.visibility, handling_enabled: account?.handling_enabled }];
   const participants = th.participants;
   const composing = !!(editing || composer);
   // Replying or commenting, switched at the top of what is being written (the reply's own

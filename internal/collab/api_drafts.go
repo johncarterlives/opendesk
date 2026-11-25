@@ -226,8 +226,9 @@ func (s *service) registerDraftRoutes(api huma.API) {
 	collabOp(api, huma.Operation{OperationID: "send-collab-draft", Method: http.MethodPost, Path: "/v1/collab/drafts/{id}/send",
 		Summary: "Send a draft"},
 		func(ctx context.Context, in *struct {
-			ID   string        `path:"id"`
-			Body *draftContent `doc:"What the composer shows: saved first. Left out: the draft is sent as saved"`
+			ID          string        `path:"id"`
+			SnoozeUntil string        `query:"snooze_until" maxLength:"40" doc:"RFC3339 follow-up time for a shared account with Handling on"`
+			Body        *draftContent `doc:"What the composer shows: saved first. Left out: the draft is sent as saved"`
 		}) (*messageBody, error) {
 			p, err := s.require(ctx, auth.RoleAgent)
 			if err != nil {
@@ -241,6 +242,10 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				return nil, err
 			}
 			defer unlock()
+			snoozeUntil, err := sendSnoozeTime(a, in.SnoozeUntil)
+			if err != nil {
+				return nil, err
+			}
 			var raw []byte
 			var recipients []string
 			from := a.Email
@@ -298,7 +303,7 @@ func (s *service) registerDraftRoutes(api huma.API) {
 				s.log.Warn("collab draft send refused", "account_id", a.ID, "err", err)
 				return nil, errSend(safeError(err))
 			}
-			id, err := s.storeSentDraft(ctx, a, raw, ref, p.UserID, m)
+			id, err := s.storeSentDraft(ctx, a, raw, ref, p.UserID, m, snoozeUntil)
 			if err != nil {
 				return nil, httpx.Wrap(err)
 			}
@@ -597,7 +602,7 @@ func (s *service) storeDraft(ctx context.Context, a *accountRow, raw []byte, ref
 
 // storeSentDraft stores a sent draft as the sent message, in the draft's conversation and
 // in Sent, and removes the draft, in one transaction.
-func (s *service) storeSentDraft(ctx context.Context, a *accountRow, raw []byte, ref SentRef, by uuid.UUID, draft *messageRow) (uuid.UUID, error) {
+func (s *service) storeSentDraft(ctx context.Context, a *accountRow, raw []byte, ref SentRef, by uuid.UUID, draft *messageRow, snoozeUntil time.Time) (uuid.UUID, error) {
 	p, err := s.newPass(ctx, s.d.DB.Pool, a)
 	if err != nil {
 		return uuid.Nil, err
@@ -629,6 +634,9 @@ func (s *service) storeSentDraft(ctx context.Context, a *accountRow, raw []byte,
 		}
 		var err error
 		if id, err = p.insert(ctx, tx, in); err != nil || id == uuid.Nil {
+			return err
+		}
+		if err := p.snoozeAfterSend(ctx, tx, id, snoozeUntil); err != nil {
 			return err
 		}
 		draftID := draft.ID

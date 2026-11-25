@@ -43,9 +43,9 @@ describe("collab outbox", () => {
     expect(useHeldSends.getState().d1).toBeUndefined();
   });
 
-  it("sends nothing after Undo, and opens the draft again", () => {
+  it("sends nothing after Undo, even with a snooze time, and opens the draft again", () => {
     const reopen = vi.fn();
-    holdSend(held("d2", reopen), 10);
+    holdSend({ ...held("d2", reopen), snoozeUntil: "2030-01-02T15:00:00Z" }, 10);
     undoSend("d2");
     vi.advanceTimersByTime(20_000);
     expect(send).not.toHaveBeenCalled();
@@ -67,11 +67,12 @@ describe("collab outbox", () => {
   });
 
   it("sends every held draft by its id, with keepalive, when the page closes", async () => {
+    const snoozeUntil = "2030-01-02T15:00:00Z";
     holdSend(held("d5"), 30);
-    holdSend(held("d6"), 30);
+    holdSend({ ...held("d6"), snoozeUntil }, 30);
     await flushSends({ keepalive: true });
     expect(send).toHaveBeenCalledWith("d5", undefined, { ...plain, keepalive: true });
-    expect(send).toHaveBeenCalledWith("d6", undefined, { ...plain, keepalive: true });
+    expect(send).toHaveBeenCalledWith("d6", undefined, { ...plain, keepalive: true, query: { snooze_until: snoozeUntil } });
     vi.advanceTimersByTime(30_000);
     expect(send).toHaveBeenCalledTimes(2);
   });

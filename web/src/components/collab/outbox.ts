@@ -30,6 +30,8 @@ export type HeldSend = {
   draftId: string;
   /** The address it goes out from, for the "Sent" toast. */
   from: string;
+  /** Applied only when the held send is released, never when the draft is saved. */
+  snoozeUntil?: string;
   /** Undo: opens the draft again where it was written (reopenDraft, or its conversation from the list). */
   reopen: () => void;
 };
@@ -49,7 +51,10 @@ async function deliver(h: HeldSend, origin: Origin, opts: { keepalive?: boolean 
   const t = i18n.getFixedT(null, "collab");
   try {
     // No body: the draft is sent as saved, so a send that outlives the page stays small.
-    const m = await api.collab.drafts.send(h.draftId, undefined, { keepalive: !!opts.keepalive, as: origin.account ?? undefined, workspace: origin.workspace ?? undefined });
+    const m = await api.collab.drafts.send(h.draftId, undefined, {
+      keepalive: !!opts.keepalive, as: origin.account ?? undefined, workspace: origin.workspace ?? undefined,
+      ...(h.snoozeUntil && { query: { snooze_until: h.snoozeUntil } }),
+    });
     here(() => {
       // The conversation shows it at once; collab.changed brings the rest.
       qc.setQueryData<MailThreadDetail>(qk.mailThread(m.thread_id), (old) => {
@@ -59,6 +64,7 @@ async function deliver(h: HeldSend, origin: Origin, opts: { keepalive?: boolean 
       });
       void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
       void qc.invalidateQueries({ queryKey: qk.mailCounts });
+      if (h.snoozeUntil) void qc.invalidateQueries({ queryKey: qk.mailThread(m.thread_id) });
     });
     if (!opts.keepalive) toast.success(t("toast.sent", { email: m.from.email || h.from }));
     return true;

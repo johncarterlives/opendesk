@@ -63,6 +63,8 @@ func roleSQL(roles ...string) string {
 // the caller's SQL parameter.
 func boxSQL(box, u string) string {
 	notJunk := `NOT (t.folder_ids && ` + roleSQL(RoleTrash, RoleSpam) + `)`
+	// Follow-ups can start with an outgoing message, before the conversation has an Inbox copy.
+	workFolders := `t.folder_ids && ` + roleSQL(RoleInbox, RoleSent) + ` AND ` + notJunk
 	switch box {
 	case BoxUnread:
 		return `t.unread AND ` + notJunk
@@ -91,9 +93,9 @@ func boxSQL(box, u string) string {
 	case BoxMentions:
 		return followedSQL(u) + ` AND ` + notJunk
 	case BoxNeedsAction:
-		return `t.needs_action AND ` + handlingSQL + ` AND t.folder_ids && ` + inboxSQL
+		return `t.needs_action AND ` + handlingSQL + ` AND ` + workFolders
 	case BoxSnoozed:
-		return `t.snoozed_until IS NOT NULL AND ` + handlingSQL + ` AND t.folder_ids && ` + inboxSQL
+		return `t.snoozed_until IS NOT NULL AND ` + handlingSQL + ` AND ` + workFolders
 	case BoxAIReview:
 		return aiDraftSQL + ` AND t.folder_ids && ` + inboxSQL
 	}

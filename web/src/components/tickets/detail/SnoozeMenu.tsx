@@ -20,6 +20,8 @@ export function SnoozeMenu({
   unavailableAction,
   trigger,
   note,
+  heading,
+  submitLabel,
 }: {
   onSnooze: (at: Date) => void;
   disabled?: boolean;
@@ -33,6 +35,8 @@ export function SnoozeMenu({
   trigger?: ReactNode;
   /** A line under the choices, e.g. that a snooze set at the provider is not seen here. */
   note?: string;
+  heading?: string;
+  submitLabel?: string;
 }) {
   const { t } = useTranslation("inbox");
   const [innerOpen, setInnerOpen] = useState(false);
@@ -61,7 +65,7 @@ export function SnoozeMenu({
         align="end"
         className="w-[248px] p-2.5"
         trigger={
-          <Tooltip content={unavailable}>
+          trigger ?? <Tooltip content={unavailable}>
             <Button variant="ghost" size="sm" square aria-disabled="true" aria-label={`${t("snooze.title")}: ${unavailable}`} icon={<AlarmClock className="size-3.5 opacity-40" />} />
           </Tooltip>
         }
@@ -89,7 +93,7 @@ export function SnoozeMenu({
         )
       }
     >
-      <div className="label-caps px-2 pb-1 pt-1.5">{t("snooze.until")}</div>
+      <div className="label-caps px-2 pb-1 pt-1.5">{heading ?? t("snooze.until")}</div>
       {opts.map((o, i) => (
         <button
           key={i}
@@ -118,7 +122,7 @@ export function SnoozeMenu({
           <DateField size="sm" value={day} onChange={setDay} min={format(new Date(), "yyyy-MM-dd")} placeholder={t("snooze.pickDay")} aria-label={t("snooze.until")} className="min-w-0 flex-1" />
           <TimeField size="sm" value={time} onChange={setTime} aria-label={t("snooze.time")} />
           <Button type="submit" size="sm" disabled={!valid}>
-            {t("snooze.set")}
+            {submitLabel ?? t("snooze.set")}
           </Button>
         </form>
       </div>

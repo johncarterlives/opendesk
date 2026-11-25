@@ -325,6 +325,8 @@
     "placeholder": "Write your reply",
     "newPlaceholder": "Write your message",
     "send": "Send",
+    "sendAndSnooze": "Send and snooze",
+    "sendAndSnoozeUntil": "Send and snooze until",
     "sending": "Sending",
     "discard": "Discard",
     "discardConfirm": "Discard this message? What you wrote is lost.",

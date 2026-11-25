@@ -10,7 +10,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Loader2, Paperclip, Send, Trash2, X } from "lucide-react";
+import { AlarmClock, Loader2, Paperclip, Send, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
@@ -27,6 +27,7 @@ import { q, qk } from "@/lib/queries";
 import { RichEditor, type RichEditorHandle } from "@/components/editor/RichEditor";
 import { replaceSignature, SignatureBlock, signatureBlockHtml, withoutSignature } from "@/components/editor/signature";
 import { SuggestionPopup } from "@/components/tickets/detail/suggestions";
+import { SnoozeMenu } from "@/components/tickets/detail/SnoozeMenu";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm";
 import { Select } from "@/components/ui/select";
@@ -101,7 +102,8 @@ type SaveState = "idle" | "saving" | "saved" | "error";
 const SAVE_AFTER_MS = 2000;
 
 /** An account the composer sends from, with its addresses. */
-export type ComposerAccount = Pick<MailAccount, "id" | "email" | "name" | "color" | "signature_html" | "display_name"> & { identities?: MailIdentity[]; default_from?: string };
+export type ComposerAccount = Pick<MailAccount, "id" | "email" | "name" | "color" | "signature_html" | "display_name"> &
+  Partial<Pick<MailAccount, "visibility" | "handling_enabled">> & { identities?: MailIdentity[]; default_from?: string };
 
 export type MailComposerProps = {
   variant: "inline" | "floating";
@@ -347,6 +349,9 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
   const recipients = draft.to.length + draft.cc.length + draft.bcc.length;
   const busy = uploads.some((u) => u.status === "uploading");
   const { data: workspace } = useQuery(q.workspace());
+  const snoozeUnavailable = account?.visibility === "shared" && account.handling_enabled
+    ? undefined
+    : t(account?.visibility === "private" ? "action.snoozeNeedsSharing" : "action.snoozeNeedsHandling");
   // Saving it to hold: a second Send meanwhile does nothing, and the editor is read-only so
   // nothing is written that the saved draft would leave out.
   const holding = useRef(false);
@@ -354,8 +359,10 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
 
   const send = useMutation({
     // With a draft, the draft is sent (saved with what the composer shows first).
-    mutationFn: (v: { draftId: string | null; body: CollabSendBody; draftBody: CollabDraftBody }) =>
-      v.draftId ? api.collab.drafts.send(v.draftId, v.draftBody) : api.collab.send(v.body),
+    mutationFn: (v: { draftId: string | null; body: CollabSendBody; draftBody: CollabDraftBody; snoozeUntil?: string }) =>
+      v.draftId
+        ? api.collab.drafts.send(v.draftId, v.draftBody, v.snoozeUntil ? { query: { snooze_until: v.snoozeUntil } } : undefined)
+        : api.collab.send(v.body, v.snoozeUntil),
     onSuccess: (m, v) => {
       // The conversation shows it at once; collab.changed brings the rest.
       qc.setQueryData<MailThreadDetail>(qk.mailThread(m.thread_id), (old) => {
@@ -364,6 +371,10 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         return messages.some((x) => x.id === m.id) ? { ...old, messages } : { ...old, messages: [...messages, m], thread: { ...old.thread, message_count: messages.length + 1, last_message_at: m.sent_at } };
       });
       void qc.invalidateQueries({ queryKey: qk.mailThreadLists });
+      if (v.snoozeUntil) {
+        void qc.invalidateQueries({ queryKey: qk.mailThread(m.thread_id) });
+        void qc.invalidateQueries({ queryKey: qk.mailCounts });
+      }
       if (threadId) useDrafts.setState((s) => {
         const next = { ...s };
         delete next[threadId];
@@ -380,8 +391,9 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
     },
   });
 
-  const submit = async () => {
+  const submit = async (snoozeUntil?: string) => {
     if (send.isPending || holding.current) return;
+    if (snoozeUntil && snoozeUnavailable) return;
     if (busy) return toast.error(t("composer.waitUploads"));
     if (!recipients) return toast.error(t("composer.needRecipient"));
     if (recipients > 100) return toast.error(t("composer.tooMany"));
@@ -389,24 +401,25 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
     // was clicked, so a double click must not mail a blank reply.
     const html = editor.current?.editor?.getHTML() ?? draft.html;
     if (isBlankHtml(withoutSignature(html)) && !uploads.length && !keptFiles.length) {
-      confirm.show(t("composer.emptyConfirm"), () => void sendNow(), { title: t("composer.emptyTitle"), confirmLabel: t("composer.sendAnyway") });
+      confirm.show(t("composer.emptyConfirm"), () => void sendNow(snoozeUntil), { title: t("composer.emptyTitle"), confirmLabel: t("composer.sendAnyway") });
       return;
     }
-    await sendNow();
+    await sendNow(snoozeUntil);
   };
 
-  const sendNow = async () => {
+  const sendNow = async (snoozeUntil?: string) => {
     if (send.isPending || holding.current) return;
+    holding.current = true;
     // A save on its way finishes first, so the draft it makes is the one sent.
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     if (inflight.current) await inflight.current;
     // With an undo window, what is written is saved as the draft (files and all) and the
     // outbox sends that draft when the window ends; Undo opens it again. A save that fails
-    // sends straight away, as before.
+    // sends straight away for plain Send, as before. Send and snooze leaves the draft open
+    // on a save failure so a reminder never bypasses the undo window.
     const seconds = undoSendSeconds(workspace?.settings);
     if (seconds > 0) {
-      holding.current = true;
       setSaving(true);
       lastSaved.current = null;
       await saveNow();
@@ -414,7 +427,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
       if (saved && draftIdRef.current === saved.id) {
         gone.current = true;
         const inline = variant === "inline";
-        holdSend({ draftId: saved.id, from: fromEmail || account?.email || "", reopen: () => reopenDraft(saved, inline) }, seconds);
+        holdSend({ draftId: saved.id, from: fromEmail || account?.email || "", snoozeUntil, reopen: () => reopenDraft(saved, inline) }, seconds);
         if (threadId) useDrafts.setState((s) => {
           const next = { ...s };
           delete next[threadId];
@@ -425,13 +438,19 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         onSent?.(saved);
         return;
       }
-      holding.current = false;
       setSaving(false);
+      if (snoozeUntil) {
+        holding.current = false;
+        toast.error(t("composer.saveFailed"));
+        return;
+      }
     }
+    holding.current = false;
     gone.current = true;
     const content = contentOf(latest.current);
     send.mutate({
       draftId: draftIdRef.current,
+      snoozeUntil,
       body: {
         account_id: accountId,
         mode: draft.mode,
@@ -612,18 +631,37 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         // Send first and on the left, as Gmail and Outlook put it: where the eye lands when
         // the writing is done.
         toolbarStart={
-          <Tooltip content={busy ? t("composer.waitUploads") : t("composer.send")} shortcut="mod enter">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => void submit()}
-              disabled={busy || !recipients}
-              icon={send.isPending || saving ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Send className="size-3.5" />}
-              className="px-3"
-            >
-              {send.isPending || saving ? t("composer.sending") : t("composer.send")}
-            </Button>
-          </Tooltip>
+          <span className="flex shrink-0 items-center gap-0.5">
+            <Tooltip content={busy ? t("composer.waitUploads") : t("composer.send")} shortcut="mod enter">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => void submit()}
+                disabled={busy || !recipients || saving || send.isPending}
+                icon={send.isPending || saving ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" /> : <Send className="size-3.5" />}
+                className="px-3"
+              >
+                {send.isPending || saving ? t("composer.sending") : t("composer.send")}
+              </Button>
+            </Tooltip>
+            <SnoozeMenu
+              onSnooze={(at) => void submit(at.toISOString())}
+              heading={t("composer.sendAndSnoozeUntil")}
+              submitLabel={t("composer.send")}
+              unavailable={snoozeUnavailable}
+              trigger={
+                <Tooltip content={snoozeUnavailable ?? t("composer.sendAndSnooze")}>
+                  <Button
+                    type="button" variant="ghost" size="sm" square
+                    aria-label={t("composer.sendAndSnooze")}
+                    aria-disabled={!!snoozeUnavailable}
+                    disabled={!snoozeUnavailable && (busy || !recipients || saving || send.isPending)}
+                    icon={<AlarmClock className={cn("size-3.5", snoozeUnavailable && "opacity-40")} />}
+                  />
+                </Tooltip>
+              }
+            />
+          </span>
         }
         toolbarEnd={
           <>
