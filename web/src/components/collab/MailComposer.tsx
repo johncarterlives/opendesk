@@ -631,7 +631,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
         // Send first and on the left, as Gmail and Outlook put it: where the eye lands when
         // the writing is done.
         toolbarStart={
-          <span className="flex shrink-0 items-center gap-0.5">
+          <>
             <Tooltip content={busy ? t("composer.waitUploads") : t("composer.send")} shortcut="mod enter">
               <Button
                 variant="primary"
@@ -661,7 +661,7 @@ export function MailComposer({ variant, threadId, accounts, accountId, onAccount
                 </Tooltip>
               }
             />
-          </span>
+          </>
         }
         toolbarEnd={
           <>
