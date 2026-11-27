@@ -322,7 +322,7 @@ func TestIMAPSync(t *testing.T) {
 	if ref.RemoteID != "v4@acme.test" || len(parseLocation(ref.Location)) != 1 {
 		t.Fatalf("ref: %+v", ref)
 	}
-	if _, err := w.s.storeSent(w.ctx, a, raw, ref, w.agent.UserID, &v1.ThreadID); err != nil {
+	if _, err := w.s.storeSent(w.ctx, a, raw, ref, w.agent.UserID, &v1.ThreadID, time.Time{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := w.s.syncAccount(w.ctx, a.ID); err != nil {

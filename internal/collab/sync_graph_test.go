@@ -505,7 +505,7 @@ func TestGraphSync(t *testing.T) {
 	if !strings.Contains(g.drafts[0], "Message-ID: <o3@acme.test>") {
 		t.Fatal("the draft is not the MIME message")
 	}
-	if _, err := w.s.storeSent(w.ctx, a, raw, ref, w.agent.UserID, &c1.ID); err != nil {
+	if _, err := w.s.storeSent(w.ctx, a, raw, ref, w.agent.UserID, &c1.ID, time.Time{}); err != nil {
 		t.Fatal(err)
 	}
 	if tr := w.threadByRemote(a, "c1"); tr.MessageCount != 3 || tr.Snippet != "Shipped" {

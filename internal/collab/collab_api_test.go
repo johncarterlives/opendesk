@@ -991,7 +991,7 @@ func TestAPISend(t *testing.T) {
 		t.Fatalf("Message-ID is not at the account's domain:\n%s", raw)
 	}
 	pendingSync(t, st, func() error {
-		_, err := w.s.storeSent(w.ctx, a, nil, SentRef{}, w.agent.UserID, nil)
+		_, err := w.s.storeSent(w.ctx, a, nil, SentRef{}, w.agent.UserID, nil, time.Time{})
 		return err
 	})
 	if st != 200 || m.ThreadID != tid || m.SentBy == nil || m.SentBy.ID != w.agent.UserID {

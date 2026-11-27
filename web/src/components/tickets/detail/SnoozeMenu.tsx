@@ -35,7 +35,9 @@ export function SnoozeMenu({
   trigger?: ReactNode;
   /** A line under the choices, e.g. that a snooze set at the provider is not seen here. */
   note?: string;
+  /** The menu's heading in place of "Snooze until", e.g. for Send and snooze. */
   heading?: string;
+  /** The custom time's button in place of "Set". */
   submitLabel?: string;
 }) {
   const { t } = useTranslation("inbox");

@@ -602,7 +602,7 @@ func TestGmailCategoriesHistoryImportKnownAndReplies(t *testing.T) {
 	w.wantCategory(a, "t1", "forums")
 	trow := w.threadByRemote(a, "t1")
 	// Reply-to-Primary and sender rules remain dormant.
-	if _, err := w.s.storeSent(w.ctx, w.reload(a), testMail{from: a.Email, to: "alice@example.com", msgID: "reply@example.com"}.raw(), SentRef{RemoteID: "reply", ThreadRemoteID: "t1", FolderRemoteIDs: []string{"SENT"}}, w.agent.UserID, &trow.ID); err != nil {
+	if _, err := w.s.storeSent(w.ctx, w.reload(a), testMail{from: a.Email, to: "alice@example.com", msgID: "reply@example.com"}.raw(), SentRef{RemoteID: "reply", ThreadRemoteID: "t1", FolderRemoteIDs: []string{"SENT"}}, w.agent.UserID, &trow.ID, time.Time{}); err != nil {
 		t.Fatal(err)
 	}
 	w.wantCategory(a, "t1", "forums")

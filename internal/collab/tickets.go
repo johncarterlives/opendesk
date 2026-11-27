@@ -391,7 +391,7 @@ func (s *service) deliverTicketReply(ctx context.Context, wid, mid uuid.UUID, r 
 	if err := s.tickets.RecordSent(ctx, wid, mid, r.TicketID, r.MessageID, from.Email, from.Name, r.To, html); err != nil {
 		return err
 	}
-	stored, err := s.storeSent(ctx, a, raw, ref, *r.AuthorID, threadID)
+	stored, err := s.storeSent(ctx, a, raw, ref, *r.AuthorID, threadID, time.Time{})
 	if err != nil {
 		s.log.Warn("ticket reply sent from account but not stored", "account_id", a.ID, "err", err)
 		return nil

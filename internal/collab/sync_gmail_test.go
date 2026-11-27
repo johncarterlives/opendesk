@@ -1146,7 +1146,7 @@ func TestGmailActionsAndSend(t *testing.T) {
 	if err != nil || ref.RemoteID != "sent-1" || len(g.sent) != 1 || !strings.Contains(g.sent[0], `"threadId":"t1"`) {
 		t.Fatalf("send: %v %+v", err, ref)
 	}
-	id, err := w.s.storeSent(w.ctx, a, raw, ref, w.agent.UserID, &t1.ID)
+	id, err := w.s.storeSent(w.ctx, a, raw, ref, w.agent.UserID, &t1.ID, time.Time{})
 	if err != nil {
 		t.Fatal(err)
 	}

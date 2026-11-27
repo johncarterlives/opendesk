@@ -107,7 +107,7 @@ func (s *service) send(ctx context.Context, p *auth.Principal, in *sendInput) (M
 		s.log.Warn("collab send refused", "account_id", a.ID, "err", err)
 		return MailMessage{}, errSend(safeError(err))
 	}
-	mid, err := s.storeSentWithSnooze(ctx, a, out.Raw, ref, p.UserID, threadID, snoozeUntil)
+	mid, err := s.storeSent(ctx, a, out.Raw, ref, p.UserID, threadID, snoozeUntil)
 	if err != nil {
 		return MailMessage{}, httpx.Wrap(err)
 	}
