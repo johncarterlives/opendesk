@@ -228,7 +228,10 @@
     "shareWith": "Share with…",
     "moveTo": "Move to…",
     "labelAs": "Label as…",
-    "newTab": "Open in new tab"
+    "newTab": "Open in new tab",
+    "copyForAgent": "Copy for AI agent",
+    "copiedForAgent": "Copied. Paste it into your AI agent.",
+    "copyFailed": "Couldn't copy. Try again."
   },
   "drop": {
     "otherAccount": "Those conversations are in another account.",
@@ -299,8 +302,6 @@
     "showQuoted": "Show quoted text",
     "hideQuoted": "Hide quoted text",
     "download": "Download {{name}}",
-    "preview": "Preview {{name}}",
-    "fullSize": "Open full size",
     "readOnly": "You can read this conversation. Agents and above can act on it.",
     "showComments": "Show comments",
     "replyOrComment": "Choose whether to reply to the sender or comment for your team",

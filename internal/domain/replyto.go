@@ -25,15 +25,15 @@ func ReplyAddress(from, replyTo string) string {
 	if a, err := mail.ParseAddress(replyTo); err != nil || !strings.EqualFold(a.Address, replyTo) {
 		return ""
 	}
-	f, r := orgDomain(from), orgDomain(replyTo)
+	f, r := OrgDomain(from), OrgDomain(replyTo)
 	if f == "" || f != r || !strings.Contains(r, ".") {
 		return ""
 	}
 	return strings.ToLower(replyTo)
 }
 
-// orgDomain is the registrable domain of an address (mail.acme.co.uk → acme.co.uk), or "".
-func orgDomain(addr string) string {
+// OrgDomain is the registrable domain of an address (mail.acme.co.uk → acme.co.uk), or "".
+func OrgDomain(addr string) string {
 	i := strings.LastIndexByte(addr, '@')
 	if i < 0 {
 		return ""

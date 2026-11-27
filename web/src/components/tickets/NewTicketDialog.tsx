@@ -17,7 +17,7 @@ import { ChevronDown, Lock, Maximize2, Users } from "lucide-react";
 import { sortTeams, TeamDot } from "./teams";
 import { useNewTicket } from "./useNewTicket";
 import { pageOnlyCount } from "./newTicket";
-import { NewTicketFrom, NewTicketKind, NewTicketTo } from "./NewTicketFields";
+import { NewTicketCopies, NewTicketFrom, NewTicketKind, NewTicketTo } from "./NewTicketFields";
 
 export default function NewTicketDialog() {
   const { t: tr } = useTranslation("inbox");
@@ -97,6 +97,7 @@ export default function NewTicketDialog() {
           <NewTicketTo s={s} />
           <NewTicketFrom s={s} />
         </div>
+        <NewTicketCopies s={s} />
         <Field label={tr("newTicket.subject")}>
           {({ id }) => <TextInput id={id} value={draft.subject} onChange={(e) => set({ subject: e.target.value })} placeholder={s.chat ? tr("newTicket.subjectChat") : tr("newTicket.subjectPlaceholder")} />}
         </Field>

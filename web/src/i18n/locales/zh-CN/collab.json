@@ -216,7 +216,10 @@
     "shareWith": "共享给…",
     "moveTo": "移动到…",
     "labelAs": "标记为…",
-    "newTab": "在新标签页打开"
+    "newTab": "在新标签页打开",
+    "copyForAgent": "复制给 AI 智能体",
+    "copiedForAgent": "已复制，请粘贴到你的 AI 智能体中。",
+    "copyFailed": "复制失败，请重试。"
   },
   "drop": {
     "otherAccount": "这些会话属于另一个账户。",
@@ -274,8 +277,6 @@
     "showQuoted": "显示引用文本",
     "hideQuoted": "隐藏引用文本",
     "download": "下载 {{name}}",
-    "preview": "预览 {{name}}",
-    "fullSize": "打开原图",
     "readOnly": "你可以阅读此会话。客服及以上角色可以对其操作。",
     "showComments": "显示评论",
     "replyOrComment": "选择回复发件人，还是为团队添加评论",

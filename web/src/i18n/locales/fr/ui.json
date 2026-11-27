@@ -206,5 +206,18 @@
     "automations": "Automatisations",
     "slaPolicies": "Politiques SLA",
     "teams": "Équipes"
+  },
+  "attachments": {
+    "preview": "Aperçu de {{name}}",
+    "download": "Télécharger {{name}}",
+    "downloadShort": "Télécharger",
+    "position": "{{n}} sur {{total}}",
+    "previous": "Fichier précédent",
+    "next": "Fichier suivant",
+    "loading": "Chargement de l’aperçu",
+    "failed": "Impossible de charger l’aperçu. Téléchargez le fichier pour l’ouvrir.",
+    "refused": "Ce fichier ne peut pas être affiché ici. Téléchargez-le pour l’ouvrir sur votre appareil.",
+    "tooLarge": "Ce fichier est trop volumineux pour l’aperçu. Téléchargez-le pour l’ouvrir.",
+    "noViewer": "Les PDF ne peuvent pas être affichés dans cette app. Téléchargez le fichier pour l’ouvrir."
   }
 }

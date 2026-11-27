@@ -254,6 +254,7 @@
     "docs": "De la documentación",
     "answer_item": "Responder con {{name}}",
     "answering": "{{name}} está leyendo la documentación",
-    "answer_error": "No se pudo responder ahora. Los lugares y la documentación de abajo pueden ayudar."
+    "answer_error": "No se pudo responder ahora. Los lugares y la documentación de abajo pueden ayudar.",
+    "contacts": "Contactos"
   }
 }

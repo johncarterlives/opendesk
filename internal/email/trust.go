@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"net"
+	"net/mail"
 	"net/netip"
 	"strconv"
 	"strings"
@@ -153,45 +154,177 @@ func (s *service) relayed(addr net.Addr) bool {
 // ARC-Authentication-Results header, from the top, whose authserv-id is trusted. A
 // receiving server adds its results above everything it received, so headers a sender
 // wrote with the same id come after it. Without a trusted header the result is unknown.
+//
+// A fail in that header still passes when the same header shows the original message
+// passed before it was forwarded: Microsoft's composite verdict (compauth=pass), or a
+// valid ARC chain (arc=pass) whose every sealer is trusted and whose first instance
+// passed DMARC for the same From domain (see forwardedPass).
 func dmarcVerdict(raw []byte, trusted []string) authVerdict {
 	if len(trusted) == 0 {
 		return authUnknown
 	}
-	for _, f := range headerFields(raw) {
+	fields := headerFields(raw)
+	for _, f := range fields {
 		var v string
 		switch strings.ToLower(f.key) {
 		case "authentication-results":
 			v = f.value
 		case "arc-authentication-results":
-			// "i=<n>; <authserv-id>; ..."
-			head, rest, ok := strings.Cut(f.value, ";")
-			if !ok || !strings.HasPrefix(strings.ToLower(strings.TrimSpace(head)), "i=") {
+			_, rest, ok := arcInstance(f.value)
+			if !ok {
 				continue
 			}
 			v = rest
 		default:
 			continue
 		}
-		id, results := splitAuthResults(v)
+		id, clauses := splitAuthResults(v)
 		if !slicesContainsExact(trusted, id) {
 			continue
 		}
-		for _, r := range results {
-			method, value := resultMethod(r)
-			if method != "dmarc" {
-				continue
-			}
-			switch value {
-			case "fail":
-				return authFail
-			case "pass":
+		results := readResults(clauses)
+		switch results["dmarc"].value {
+		case "pass":
+			return authPass
+		case "fail":
+			if results["compauth"].value == "pass" || (results["arc"].value == "pass" && forwardedPass(fields, trusted)) {
 				return authPass
 			}
-			return authUnknown
+			return authFail
 		}
 		return authUnknown
 	}
 	return authUnknown
+}
+
+// arcSealers are the ARC sealers believed for any route, by the signing domain (d=) of
+// their ARC-Seal, each with the authserv-id its ARC-Authentication-Results carry. They
+// are the large mailbox providers and forwarding services that seal what they forward.
+var arcSealers = map[string]string{
+	"google.com":           "mx.google.com",
+	"microsoft.com":        "mx.microsoft.com",
+	"email.cloudflare.net": "mx.cloudflare.net",
+	"cloudflare-email.net": "mx.cloudflare.net",
+}
+
+// maxARCInstances is RFC 8617's limit on an ARC chain.
+const maxARCInstances = 50
+
+// forwardedPass reports a message whose original passed DMARC before it was forwarded,
+// as recorded in its ARC chain (RFC 8617). The trusted receiver's arc=pass vouches that
+// every ARC-Seal verified and that the newest ARC-Message-Signature covers the message
+// as it arrived. A seal covers only ARC headers, so each sealer vouches for what it saw
+// and passed on, nothing more: the chain counts only when every instance, 1 to N, has
+// exactly one ARC-Seal and one ARC-Authentication-Results, and every seal is by a trusted
+// sealer (arcSealers, or a domain of an authserv-id trusted for the route) writing its
+// own authserv-id. A sealer nobody trusts could have changed the message, or replayed a
+// trusted sealer's results on another one. Then the first instance must say dmarc=pass
+// for the domain in the message's From.
+func forwardedPass(fields []headerField, trusted []string) bool {
+	from := ""
+	type set struct {
+		seals, results int
+		domain, id     string
+		res            map[string]authResult
+	}
+	sets := map[int]*set{}
+	get := func(i int) *set {
+		if sets[i] == nil {
+			sets[i] = &set{}
+		}
+		return sets[i]
+	}
+	froms := 0
+	for _, f := range fields {
+		switch strings.ToLower(f.key) {
+		case "from":
+			froms++
+			if a, err := mail.ParseAddress(f.value); err == nil {
+				from = emailDomain(a.Address)
+			}
+		case "arc-seal":
+			i, rest, ok := arcInstance(f.value)
+			if !ok {
+				return false
+			}
+			s := get(i)
+			s.seals++
+			s.domain = tagValue(rest, "d")
+		case "arc-authentication-results":
+			i, rest, ok := arcInstance(f.value)
+			if !ok {
+				return false
+			}
+			s := get(i)
+			s.results++
+			id, clauses := splitAuthResults(rest)
+			s.id, s.res = id, readResults(clauses)
+		}
+	}
+	if froms != 1 || from == "" || len(sets) == 0 || len(sets) > maxARCInstances {
+		return false
+	}
+	for i := 1; i <= len(sets); i++ {
+		s := sets[i]
+		if s == nil || s.seals != 1 || s.results != 1 || !trustedSealer(s.domain, s.id, trusted) {
+			return false
+		}
+	}
+	first := sets[1].res["dmarc"]
+	got := first.props["header.from"]
+	if strings.Contains(got, "@") {
+		got = emailDomain(got)
+	}
+	return first.value == "pass" && got == from
+}
+
+// trustedSealer reports an ARC sealer believed for the route: one of arcSealers writing
+// its own authserv-id, or an authserv-id trusted for the route sealed by that host's
+// domain or the domain above it (mx.example.org by example.org).
+func trustedSealer(domain, id string, trusted []string) bool {
+	if domain == "" || id == "" {
+		return false
+	}
+	if want, ok := arcSealers[domain]; ok && want == id {
+		return true
+	}
+	if !slicesContainsExact(trusted, id) {
+		return false
+	}
+	if domain == id {
+		return true
+	}
+	_, parent, ok := strings.Cut(id, ".")
+	return ok && strings.Contains(parent, ".") && domain == parent
+}
+
+// arcInstance splits an ARC header's leading "i=<n>;" from the rest.
+func arcInstance(v string) (int, string, bool) {
+	head, rest, ok := strings.Cut(v, ";")
+	if !ok {
+		return 0, "", false
+	}
+	key, num, ok := strings.Cut(strings.TrimSpace(head), "=")
+	if !ok || !strings.EqualFold(strings.TrimSpace(key), "i") {
+		return 0, "", false
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(num))
+	if err != nil || n < 1 || n > maxARCInstances {
+		return 0, "", false
+	}
+	return n, rest, true
+}
+
+// tagValue reads one tag of a DKIM-style tag list ("a=rsa-sha256; d=google.com; ..."),
+// lowercased.
+func tagValue(list, tag string) string {
+	for _, t := range strings.Split(list, ";") {
+		k, v, ok := strings.Cut(t, "=")
+		if ok && strings.EqualFold(strings.TrimSpace(k), tag) {
+			return strings.ToLower(strings.Join(strings.Fields(v), ""))
+		}
+	}
+	return ""
 }
 
 func slicesContainsExact(list []string, s string) bool {
@@ -221,22 +354,50 @@ func splitAuthResults(v string) (string, []string) {
 	return strings.ToLower(first), parts[1:]
 }
 
-// resultMethod reads "dmarc=fail (p=reject) header.from=x" as ("dmarc", "fail").
-func resultMethod(r string) (string, string) {
-	r = strings.TrimSpace(r)
-	method, rest, ok := strings.Cut(r, "=")
+// authResult is one result clause: "dmarc=fail action=none header.from=example.com" is
+// value "fail" with property header.from "example.com".
+type authResult struct {
+	value string
+	props map[string]string
+}
+
+// readResults reads result clauses by method, the first clause of each method counting.
+func readResults(clauses []string) map[string]authResult {
+	out := map[string]authResult{}
+	for _, c := range clauses {
+		method, r := parseResult(c)
+		if _, seen := out[method]; method != "" && !seen {
+			out[method] = r
+		}
+	}
+	return out
+}
+
+// parseResult reads "dmarc=fail (p=reject) header.from=x" as ("dmarc", fail, header.from=x).
+// Comments are already stripped.
+func parseResult(c string) (string, authResult) {
+	f := strings.Fields(c)
+	if len(f) == 0 {
+		return "", authResult{}
+	}
+	method, value, ok := strings.Cut(f[0], "=")
 	if !ok {
-		return "", ""
+		return "", authResult{}
 	}
 	method = strings.ToLower(strings.TrimSpace(method))
 	if i := strings.IndexByte(method, '/'); i >= 0 { // method version, "dmarc/1"
 		method = strings.TrimSpace(method[:i])
 	}
-	value := strings.Fields(rest)
-	if len(value) == 0 {
-		return method, ""
+	r := authResult{value: strings.ToLower(value), props: map[string]string{}}
+	if r.value == "" && len(f) > 1 && !strings.Contains(f[1], "=") { // "dmarc= fail"
+		r.value, f = strings.ToLower(f[1]), f[1:]
 	}
-	return method, strings.ToLower(value[0])
+	for _, p := range f[1:] {
+		if k, v, ok := strings.Cut(p, "="); ok {
+			r.props[strings.ToLower(k)] = strings.ToLower(strings.Trim(v, `"`))
+		}
+	}
+	return method, r
 }
 
 // stripComments drops RFC 5322 comments ("(...)", nested) outside quoted strings.

@@ -234,6 +234,7 @@
     "docs": "Dans la documentation",
     "answer_item": "Répondre avec {{name}}",
     "answering": "{{name}} lit la documentation",
-    "answer_error": "Impossible de répondre pour l’instant. Les emplacements et la documentation ci-dessous peuvent aider."
+    "answer_error": "Impossible de répondre pour l’instant. Les emplacements et la documentation ci-dessous peuvent aider.",
+    "contacts": "Contacts"
   }
 }

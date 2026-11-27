@@ -149,6 +149,12 @@ type ticketContactInput struct {
 	Name  string `json:"name,omitempty" maxLength:"200"`
 }
 
+// ticketRecipient is one more person a new ticket's first email goes to, beside its contact.
+type ticketRecipient struct {
+	ContactID string `json:"contact_id,omitempty" doc:"A contact of this workspace with an email address"`
+	Email     string `json:"email,omitempty" maxLength:"254"`
+}
+
 type ticketCreateBody struct {
 	Subject       string              `json:"subject,omitempty" maxLength:"500" doc:"Required, except for a chat, which is named after its first message when empty"`
 	ContactID     string              `json:"contact_id,omitempty"`
@@ -166,6 +172,7 @@ type ticketCreateBody struct {
 	BrandID       string              `json:"brand_id,omitempty" doc:"Default: the mailbox's brand, else the default brand"`
 	Tags          []string            `json:"tags,omitempty" maxItems:"50"`
 	Status        string              `json:"status,omitempty" enum:"open,pending,on_hold,solved,closed"`
+	To            []ticketRecipient   `json:"to,omitempty" maxItems:"19" doc:"Email replies: more people the first email goes to, after the contact. Each is contact_id or email"`
 	Cc            []string            `json:"cc,omitempty" maxItems:"20"`
 	Bcc           []string            `json:"bcc,omitempty" maxItems:"20"`
 	AttachmentIDs []string            `json:"attachment_ids,omitempty" maxItems:"20"`
@@ -285,6 +292,52 @@ func cleanEmail(s string) (string, error) {
 		return "", httpx.Validation(fmt.Sprintf("%q is not a valid email address", hd.Truncate(s, 80)))
 	}
 	return s, nil
+}
+
+// moreRecipients is who else a new ticket's first email goes to: each a contact of the
+// workspace with an address, or an address, lowercased, leaving out the ticket's contact and
+// anyone named twice.
+func moreRecipients(ctx context.Context, q db.Querier, wid uuid.UUID, in []ticketRecipient, contactEmail *string) ([]string, error) {
+	seen := map[string]bool{}
+	if contactEmail != nil {
+		seen[strings.ToLower(*contactEmail)] = true
+	}
+	out := []string{}
+	for _, r := range in {
+		var email string
+		switch {
+		case r.ContactID != "" && r.Email != "":
+			return nil, httpx.Validation("each of to is a contact_id or an email, not both")
+		case r.ContactID != "":
+			id, err := hd.ParseRef(r.ContactID, "to.contact_id")
+			if err != nil {
+				return nil, err
+			}
+			var addr *string
+			err = q.QueryRow(ctx, `SELECT email FROM contacts WHERE workspace_id = $1 AND id = $2`, wid, id).Scan(&addr)
+			if db.IsNotFound(err) {
+				return nil, httpx.Validation("contact not found in this workspace")
+			}
+			if err != nil {
+				return nil, err
+			}
+			if addr == nil || *addr == "" {
+				return nil, httpx.Validation("a contact in to has no email address")
+			}
+			email = strings.ToLower(*addr)
+		default:
+			e, err := cleanEmail(r.Email)
+			if err != nil {
+				return nil, err
+			}
+			email = e
+		}
+		if !seen[email] {
+			seen[email] = true
+			out = append(out, email)
+		}
+	}
+	return out, nil
 }
 
 func cleanEmails(in []string) ([]string, error) {
@@ -725,8 +778,8 @@ func createTicket(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principa
 			return domain.Ticket{}, httpx.Validation("an inbound message is a reply, not a note")
 		case nt.ContactID == nil:
 			return domain.Ticket{}, httpx.Validation("an inbound message needs a contact to speak for")
-		case len(b.Cc)+len(b.Bcc) > 0:
-			return domain.Ticket{}, httpx.Validation("cc and bcc are for messages sent")
+		case len(b.To)+len(b.Cc)+len(b.Bcc) > 0:
+			return domain.Ticket{}, httpx.Validation("to, cc and bcc are for messages sent")
 		case nt.Channel == domain.ChannelChat:
 			return domain.Ticket{}, httpx.Validation("a chat's visitor writes their own messages in the widget")
 		}
@@ -746,6 +799,13 @@ func createTicket(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principa
 		if kind == "reply" && !inbound && (contactEmail == nil || *contactEmail == "") {
 			return domain.Ticket{}, httpx.Validation("an email reply needs a contact with an email address")
 		}
+	}
+	if len(b.To) > 0 && (nt.Channel != domain.ChannelEmail || kind != "reply" || inbound) {
+		return domain.Ticket{}, httpx.Validation("to applies to an email ticket's first reply")
+	}
+	moreTo, err := moreRecipients(ctx, tx, wid, b.To, contactEmail)
+	if err != nil {
+		return domain.Ticket{}, err
 	}
 
 	if b.AssigneeID != "" {
@@ -928,7 +988,8 @@ func createTicket(ctx context.Context, tx pgx.Tx, d *deps.Deps, p *auth.Principa
 			nm.AuthorType = "api"
 		}
 		if kind == "reply" && nt.Channel == domain.ChannelEmail {
-			nm.To, nm.Cc, nm.Bcc = []string{*contactEmail}, cc, bcc
+			// The contact first, then the others it went to: later replies and Reply all read them here.
+			nm.To, nm.Cc, nm.Bcc = append([]string{*contactEmail}, moreTo...), cc, bcc
 			nm.FromEmail, nm.FromName = mailboxEmail, mailboxName
 			nm.MailboxID = nt.MailboxID
 			nm.DeliveryStatus = "pending"
@@ -1212,8 +1273,8 @@ func checkChatStart(b ticketCreateBody, kind string) error {
 	if kind != "reply" {
 		return httpx.Validation("a chat starts with a reply, not a note")
 	}
-	if b.MailboxID != "" || len(b.Cc) > 0 || len(b.Bcc) > 0 {
-		return httpx.Validation("mailbox_id, cc and bcc are for email")
+	if b.MailboxID != "" || len(b.To) > 0 || len(b.Cc) > 0 || len(b.Bcc) > 0 {
+		return httpx.Validation("mailbox_id, to, cc and bcc are for email")
 	}
 	return nil
 }

@@ -203,6 +203,23 @@ describe("MessageItem's original recipient", () => {
     for (const n of shown) expect(n.parentElement!.closest("[data-ph-mask]")).not.toBeNull();
   });
 
+  it("lists every recipient of an email written to several people under its header, To then Cc", async () => {
+    const row = () => sp(document.querySelector("[data-recipients]")?.textContent);
+    const m = inbound({ to: ["other@partner.example", "support@new.example"], cc: ["third@partner.example"] });
+    expect(await line(m)).toBe("ada@example.com to support@new.example");
+    expect(row()).toBe("To other@partner.example, support@new.example · Cc third@partner.example");
+    expect(document.querySelector("[data-recipients]")!.closest("[data-ph-mask]")).not.toBeNull();
+    await act(async () => root!.unmount());
+    await line(inbound({ to: ["orders@old.example"], cc: ["support@new.example"] }));
+    expect(row()).toBe("To orders@old.example · Cc support@new.example");
+    await act(async () => root!.unmount());
+    await line(inbound({ to: ["support@new.example"] }));
+    expect(document.querySelector("[data-recipients]")).toBeNull();
+    await act(async () => root!.unmount());
+    await line(inbound({ to: ["other@partner.example", "support@new.example"], direction: "outbound" }));
+    expect(document.querySelector("[data-recipients]")).toBeNull();
+  });
+
   it("leaves outbound mail, and mail with no recorded receiving address, alone", () => {
     expect(originalRecipients(inbound({ to: ["orders@old.example"] }))).toEqual({ to: ["orders@old.example"], address: "support@new.example" });
     expect(originalRecipients(inbound({ to: ["orders@old.example"], received_at: "" }))).toBeNull();

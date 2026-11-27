@@ -72,7 +72,8 @@ func TestListSearchSources(t *testing.T) {
 }
 
 // Each source of the q search is its own lookup that reads its index: the search indexes of
-// tickets, their fields, messages and contacts, the number key and the alias key. With one
+// tickets, their fields, messages and contacts, the number key, the alias key and, for one
+// address-like word, the address indexes of messages, contacts and their extra addresses. With one
 // OR over the ticket's columns and correlated EXISTS, Postgres could use none of them and
 // read every ticket of the workspace.
 func TestListSearchUsesIndexes(t *testing.T) {
@@ -88,14 +89,20 @@ func TestListSearchUsesIndexes(t *testing.T) {
 		FROM contacts c WHERE c.workspace_id = $1 AND c.email LIKE 'person%'`, ws.ID)
 	e.Exec(`INSERT INTO messages (workspace_id, ticket_id, author_type, kind, direction, body_text)
 		SELECT workspace_id, id, 'contact', 'reply', 'inbound', 'Hello, about ticket ' || number FROM tickets WHERE workspace_id = $1`, ws.ID)
-	e.Exec(`VACUUM ANALYZE tickets, messages, contacts`)
+	e.Exec(`INSERT INTO contact_emails (workspace_id, contact_id, email)
+		SELECT workspace_id, id, 'other' || substr(email::text, 7) FROM contacts WHERE workspace_id = $1 AND email LIKE 'person%'`, ws.ID)
+	e.Exec(`VACUUM ANALYZE tickets, messages, contacts, contact_emails`)
 
 	search := []string{"tickets_search_idx", "tickets_fields_search_idx", "messages_search_idx", "contacts_search_idx"}
+	addresses := []string{"messages_addresses_idx", "contacts_address_idx", "contact_emails_address_idx"}
 	for _, c := range []struct {
 		q       string
 		indexes []string
 	}{
-		{"refund", search},
+		{"refund", append(addresses, search...)},
+		{"person12@example.com", append(addresses, search...)},
+		{"person123", append(addresses, search...)},
+		{"refund order", search},
 		{"#123", append([]string{"tickets_workspace_id_number_key"}, search...)},
 		{"PO-7781", append([]string{"tickets_ws_alias_key"}, search...)},
 	} {

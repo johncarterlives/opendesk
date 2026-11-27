@@ -5,9 +5,22 @@ import { cn } from "@/lib/cn";
 import { Morph } from "@/components/motion";
 import { Tooltip } from "./tooltip";
 
-export async function copyText(text: string) {
+/**
+ * Copies text; false when the browser refused. Text still being worked out goes to the
+ * clipboard as a pending item, so a browser that allows a copy only during the click
+ * (Safari) still takes it once it is ready.
+ */
+export async function copyText(text: string | Promise<string>) {
+  if (typeof text !== "string" && typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "text/plain": text.then((s) => new Blob([s], { type: "text/plain" })) })]);
+      return true;
+    } catch {
+      // Not every browser takes a pending item; the plain copy below may still work.
+    }
+  }
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(await text);
     return true;
   } catch {
     return false;

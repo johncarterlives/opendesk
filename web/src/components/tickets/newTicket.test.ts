@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Contact } from "@/lib/api/types";
 import { createTicketBody, draftKey, emptyNewTicket, isDirty, newTicketDrafts, newTicketProblem, pageOnlyCount, type NewTicketDraft } from "./newTicket";
 
@@ -45,7 +45,32 @@ describe("the new ticket draft", () => {
 
   it("counts what only the full page shows, for the dialog to say it goes along", () => {
     expect(pageOnlyCount(draft({ to: { contact }, subject: "x", body: "y", priority: "high", team: "t1", assignee: null }))).toBe(0);
-    expect(pageOnlyCount(draft({ tags: ["bug", "hardware"], severity: "sev2", fields: { plan: "pro" }, cc: ["b@example.com"], bcc: ["c@example.com"] }))).toBe(6);
+    // The dialog shows Cc and Bcc itself.
+    expect(pageOnlyCount(draft({ tags: ["bug", "hardware"], severity: "sev2", fields: { plan: "pro" }, cc: ["b@example.com"], bcc: ["c@example.com"] }))).toBe(4);
+  });
+
+  it("comes back after a reload, until it is sent, discarded or its person signs out", async () => {
+    newTicketDrafts.patch(mine, { to: { contact }, moreTo: [{ email: "deputy@example.com" }], subject: "Lamp flickers", cc: ["b@example.com"] });
+    newTicketDrafts.patch(otherPerson, { subject: "Someone else's" });
+    const kept = JSON.parse(localStorage.getItem(`od:new-ticket:${mine}`)!);
+    expect(kept).toMatchObject({ subject: "Lamp flickers", moreTo: [{ email: "deputy@example.com" }], cc: ["b@example.com"] });
+    // A fresh page load reads it back.
+    vi.resetModules();
+    const fresh = await import("./newTicket");
+    expect(fresh.newTicketDrafts.get(mine)).toMatchObject({ subject: "Lamp flickers", to: { contact }, moreTo: [{ email: "deputy@example.com" }] });
+    // Defaults alone are not kept, and a broken entry is ignored.
+    fresh.newTicketDrafts.patch(otherWorkspace, { mailbox: "m1" });
+    expect(localStorage.getItem(`od:new-ticket:${otherWorkspace}`)).toBeNull();
+    localStorage.setItem(`od:new-ticket:${draftKey("u3", "w1")}`, "{not json");
+    expect(fresh.newTicketDrafts.get(draftKey("u3", "w1"))).toEqual(emptyNewTicket);
+    // Signing out takes the person's drafts with them, not another's.
+    fresh.newTicketDrafts.forget("u1");
+    expect(localStorage.getItem(`od:new-ticket:${mine}`)).toBeNull();
+    expect(fresh.newTicketDrafts.get(mine)).toEqual(emptyNewTicket);
+    expect(localStorage.getItem(`od:new-ticket:${otherPerson}`)).not.toBeNull();
+    fresh.newTicketDrafts.clear(otherPerson);
+    expect(localStorage.getItem(`od:new-ticket:${otherPerson}`)).toBeNull();
+    localStorage.clear();
   });
 
   it("asks for a recipient, a subject, a message, then an address that can send", () => {
@@ -124,6 +149,16 @@ describe("createTicketBody", () => {
       attachment_ids: ["a1", "a2"],
       status: "pending",
     });
+  });
+
+  it("sends the first email to the contact and everyone added after it", () => {
+    const d = draft({ to: { contact }, moreTo: [{ contact: { ...contact, id: "c2", email: "bob@example.com" } }, { email: "deputy@example.com" }], subject: "x", body: "y", mailbox: "m1" });
+    expect(wire(createTicketBody(d, o))).toMatchObject({ contact_id: "c1", to: [{ contact_id: "c2" }, { email: "deputy@example.com" }] });
+    expect(isDirty(draft({ moreTo: [{ email: "deputy@example.com" }] }))).toBe(true);
+    // A note, a logged request and a chat go to the contact alone.
+    expect(createTicketBody({ ...d, kind: "note" }, o)).not.toHaveProperty("to");
+    expect(createTicketBody({ ...d, channel: "log" }, o)).not.toHaveProperty("to");
+    expect(createTicketBody({ ...d, channel: "chat" }, o)).not.toHaveProperty("to");
   });
 
   it("sends copies only with an emailed reply", () => {

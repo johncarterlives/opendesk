@@ -2,7 +2,7 @@ import { AddToSidebarButton } from "@/components/collab/AddToSidebar";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams, useRouter, useSearch, type NavigateOptions } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { CircleCheck, CircleDashed, Clock, Inbox, ShieldAlert, User, Users } from "lucide-react";
+import { CircleCheck, CircleDashed, Clock, Inbox, Layers, ShieldAlert, User, Users } from "lucide-react";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { Team, Ticket, TicketStatus } from "@/lib/api/types";
@@ -51,6 +51,7 @@ const folderIcon: Record<FolderId, ReactNode> = {
   pending: <Clock />,
   solved: <CircleCheck />,
   spam: <ShieldAlert />,
+  all: <Layers />,
 };
 
 
@@ -160,8 +161,8 @@ export default function InboxPage() {
   const listKey = JSON.stringify(query);
   const teamCounts = teamId ? (teamId === "mine" ? counts?.my_teams : counts?.teams?.[teamId]) : undefined;
   const title = (folder ? tNav(folder.labelKey) : undefined) ?? (view && viewName(view)) ?? (teamId ? (teamId === "mine" ? tr("teams.myTeams") : (team?.name ?? tr("teams.team"))) : tr("list.view"));
-  // One ticket inbox (?mailbox=) counts its own folder; Solved and Spam are not counted per inbox.
-  const inboxCount = folder && search.mailbox && counts?.mailboxes && folder.id !== "solved" && folder.id !== "spam" ? (counts.mailboxes[search.mailbox]?.[folder.id] ?? 0) : undefined;
+  // One ticket inbox (?mailbox=) counts its own folder; Solved, Spam and All are not counted per inbox.
+  const inboxCount = folder && search.mailbox && counts?.mailboxes && folder.id !== "solved" && folder.id !== "spam" && folder.id !== "all" ? (counts.mailboxes[search.mailbox]?.[folder.id] ?? 0) : undefined;
   const count = folder
     ? search.mailbox
       ? (inboxCount ?? null)

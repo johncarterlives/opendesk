@@ -145,13 +145,19 @@ func registerScheduledReplies(d *deps.Deps, api huma.API) {
 				if err != nil {
 					return err
 				}
+				// Its recipients are the draft's too, so cancelling the schedule leaves them in the reply box.
+				r, err := parseDraftRecipients(ctx, tx, p, reply.To, reply.Cc, reply.Bcc, reply.MailboxID, reply.FromAccount)
+				if err != nil {
+					return err
+				}
 				if _, err := tx.Exec(ctx, `INSERT INTO ticket_reply_drafts (ticket_id, user_id, workspace_id, body_html, body_text, attachment_ids,
-						send_at, send_request, send_error)
-					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '')
+						send_at, send_request, send_error, to_addresses, cc, bcc, mailbox_id, from_account)
+					VALUES ($1, $2, $3, $4, $5, $6, $7, $8, '', $9, $10, $11, $12, $13)
 					ON CONFLICT (ticket_id, user_id) DO UPDATE SET body_html = EXCLUDED.body_html, body_text = EXCLUDED.body_text,
 						attachment_ids = EXCLUDED.attachment_ids, send_at = EXCLUDED.send_at, send_request = EXCLUDED.send_request,
-						send_error = '', updated_at = now()`,
-					tid, p.UserID, p.WorkspaceID, html, hd.HTMLToText(html), attIDs, in.Body.SendAt, stored); err != nil {
+						send_error = '', to_addresses = EXCLUDED.to_addresses, cc = EXCLUDED.cc, bcc = EXCLUDED.bcc,
+						mailbox_id = EXCLUDED.mailbox_id, from_account = EXCLUDED.from_account, updated_at = now()`,
+					tid, p.UserID, p.WorkspaceID, html, hd.HTMLToText(html), attIDs, in.Body.SendAt, stored, r.to, r.cc, r.bcc, r.mailboxID, r.fromAccount); err != nil {
 					return err
 				}
 				// A job at send_at; one for an earlier time finds the draft moved and does nothing.

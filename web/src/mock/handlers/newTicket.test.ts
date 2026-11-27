@@ -45,6 +45,22 @@ describe("mock new ticket", () => {
     expect(msgs[0].attachments.map((a) => a.filename)).toEqual(["invoice.pdf"]);
   });
 
+  it("sends the first email to the contact and everyone else in To, refusing a contact of nowhere", async () => {
+    const contacts = ((await call("GET", "/v1/contacts?limit=10")).body.data as Contact[]).filter((c) => c.email);
+    const [first, second] = contacts;
+    const box = ((await call("GET", "/v1/mailboxes")).body.data as Mailbox[]).find((m) => m.status === "active" && m.sending !== "system_off")!;
+    const base = { subject: "Two people", contact_id: first!.id, channel: "email", mailbox_id: box.id, body_html: "<p>Hello both</p>", kind: "reply" };
+    const created = await call("POST", "/v1/tickets", { ...base, to: [{ contact_id: second!.id }, { email: "Third@Example.com" }, { email: first!.email }] });
+    expect(created.status).toBe(201);
+    const t = created.body as Ticket;
+    expect(t.contact?.id).toBe(first!.id);
+    const msgs = (await call("GET", `/v1/tickets/${t.id}/messages`)).body.data as Message[];
+    expect(msgs[0]!.to).toEqual([first!.email, second!.email!.toLowerCase(), "third@example.com"]);
+    expect((await call("POST", "/v1/tickets", { ...base, to: [{ contact_id: "nope" }] })).status).toBe(422);
+    expect((await call("POST", "/v1/tickets", { ...base, to: [{ email: "not an address" }] })).status).toBe(422);
+    expect((await call("POST", "/v1/tickets", { ...base, kind: "note", to: [{ email: "x@example.com" }] })).status).toBe(422);
+  });
+
   it("logs a customer's request as their own message on the email ticket, sending nothing", async () => {
     const contact = ((await call("GET", "/v1/contacts?limit=5")).body.data as Contact[]).find((c) => c.email)!;
     const box = ((await call("GET", "/v1/mailboxes")).body.data as Mailbox[]).find((m) => m.status === "active" && m.sending !== "system_off")!;

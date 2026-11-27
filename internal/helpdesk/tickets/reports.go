@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -360,6 +362,9 @@ func overview(ctx context.Context, q db.Querier, wid uuid.UUID, fromS, toS strin
 	return o, err
 }
 
+// searchTickets is how many tickets GET /v1/search returns; the full list is GET /v1/tickets?q=.
+const searchTickets = 8
+
 // SearchResult is GET /v1/search.
 type SearchResults struct {
 	Tickets  []domain.Ticket  `json:"tickets"`
@@ -384,11 +389,28 @@ func search(ctx context.Context, q db.Querier, p *auth.Principal, query string, 
 		if err != nil {
 			return res, err
 		}
-		page, err := listTickets(ctx, q, p.WorkspaceID, p.ActorUserID(), lq, "", "", 5, "")
-		if err != nil {
-			return res, err
+		// For one address-like word, the tickets of that address come first: the customer's,
+		// and those it wrote or was written to, before others that only mention the word.
+		if domain.AddressQuery(query) != "" {
+			byAddress := lq
+			byAddress.byAddress = true
+			page, err := listTickets(ctx, q, p.WorkspaceID, p.ActorUserID(), byAddress, "", "", searchTickets, "")
+			if err != nil {
+				return res, err
+			}
+			res.Tickets = page.Data
 		}
-		res.Tickets = page.Data
+		if len(res.Tickets) < searchTickets {
+			page, err := listTickets(ctx, q, p.WorkspaceID, p.ActorUserID(), lq, "", "", searchTickets, "")
+			if err != nil {
+				return res, err
+			}
+			for _, t := range page.Data {
+				if len(res.Tickets) < searchTickets && !slices.ContainsFunc(res.Tickets, func(x domain.Ticket) bool { return x.ID == t.ID }) {
+					res.Tickets = append(res.Tickets, t)
+				}
+			}
+		}
 	}
 	if allowed(auth.ScopeContactsRead) {
 		args := []any{p.WorkspaceID, query, strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(strings.ToLower(query)) + "%"}
@@ -397,6 +419,10 @@ func search(ctx context.Context, q db.Querier, p *auth.Principal, query string, 
 		if pq := prefixQuery(query); pq != "" {
 			args = append(args, pq)
 			cond += ` OR ct.search @@ to_tsquery('simple', $4) OR ct.fields_search @@ to_tsquery('simple', $4)`
+		}
+		if aq := domain.AddressQuery(query); aq != "" {
+			args = append(args, aq)
+			cond += ` OR ` + domain.ContactAddressSQL("ct", "$"+strconv.Itoa(len(args)))
 		}
 		rows, err := q.Query(ctx, domain.ContactSelect+` WHERE ct.workspace_id = $1 AND (`+cond+`) ORDER BY ct.updated_at DESC, ct.id LIMIT 5`, args...)
 		if err != nil {
@@ -434,7 +460,7 @@ func search(ctx context.Context, q db.Querier, p *auth.Principal, query string, 
 func registerInsights(d *deps.Deps, api huma.API) {
 	huma.Register(api, huma.Operation{OperationID: "search", Method: http.MethodGet, Path: "/v1/search",
 		Summary: "Search tickets, contacts, articles and wiki pages", Tags: []string{"Search"},
-		Description: "Top 5 of each. API keys see only the kinds their scopes allow."},
+		Description: "The top 8 tickets and top 5 of each other kind. API keys see only the kinds their scopes allow."},
 		func(ctx context.Context, in *struct {
 			Q       string `query:"q" required:"true" minLength:"1" maxLength:"200"`
 			BrandID string `query:"brand_id" doc:"Articles of this brand and of every brand only"`

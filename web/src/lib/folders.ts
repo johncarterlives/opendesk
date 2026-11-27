@@ -1,7 +1,7 @@
 import type { TicketListQuery } from "./api/endpoints";
 import type { FieldFilter, TicketCounts } from "./api/types";
 
-export type FolderId = "unassigned" | "mine" | "open" | "pending" | "solved" | "spam";
+export type FolderId = "unassigned" | "mine" | "open" | "pending" | "solved" | "spam" | "all";
 
 export type Folder = { id: FolderId; labelKey: `folders.${FolderId}`; query: TicketListQuery; count: (c: TicketCounts) => number | null };
 
@@ -16,8 +16,14 @@ export const folders: Folder[] = [
   { id: "spam", labelKey: "folders.spam", query: { spam: true }, count: (c) => c.spam },
 ];
 
+/**
+ * Every ticket but spam, whatever its status: where search's "See all" lists what it found
+ * (?q=). Not a sidebar folder.
+ */
+export const allFolder: Folder = { id: "all", labelKey: "folders.all", query: {}, count: () => null };
+
 export function folderById(id: string): Folder | undefined {
-  return folders.find((f) => f.id === id);
+  return id === allFolder.id ? allFolder : folders.find((f) => f.id === id);
 }
 
 /** A team inbox's tabs (/teams/$teamId, where teamId may be "mine" for every team of the caller's). */

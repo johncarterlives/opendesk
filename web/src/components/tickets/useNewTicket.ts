@@ -7,11 +7,17 @@ import { api } from "@/lib/api/endpoints";
 import { errorMessage } from "@/lib/api/client";
 import { q, qk } from "@/lib/queries";
 import { patchTicketEverywhere } from "@/lib/ticketCache";
-import { useSession } from "@/lib/session";
+import { beforeSignOut, useSession } from "@/lib/session";
 import type { Contact } from "@/lib/api/types";
 import { shell } from "@/app/shellStore";
 import { useTeamsCtx } from "./teams";
 import { createTicketBody, draftKey, isChat, isDirty, isLog, newTicketDrafts, newTicketProblem, useNewTicketDraft, type NewTicketDraft } from "./newTicket";
+
+// A person signing out takes their unsent new tickets out of this browser.
+beforeSignOut(async () => {
+  const uid = useSession.getState().user?.id;
+  if (uid) newTicketDrafts.forget(uid);
+});
 
 /**
  * Writing a new ticket, in the dialog or on its page: the workspace's draft, the

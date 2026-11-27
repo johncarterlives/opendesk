@@ -207,5 +207,18 @@
     "automations": "Automatizace",
     "slaPolicies": "Pravidla SLA",
     "teams": "Týmy"
+  },
+  "attachments": {
+    "preview": "Náhled souboru {{name}}",
+    "download": "Stáhnout {{name}}",
+    "downloadShort": "Stáhnout",
+    "position": "{{n}} z {{total}}",
+    "previous": "Předchozí soubor",
+    "next": "Další soubor",
+    "loading": "Načítání náhledu",
+    "failed": "Náhled se nepodařilo načíst. Stáhněte si soubor a otevřete ho.",
+    "refused": "Tento soubor tady nelze zobrazit. Stáhněte si ho a otevřete ho v zařízení.",
+    "tooLarge": "Soubor je na náhled příliš velký. Stáhněte si ho a otevřete ho.",
+    "noViewer": "PDF tady nelze zobrazit. Stáhněte si soubor a otevřete ho."
   }
 }

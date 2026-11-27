@@ -1,6 +1,7 @@
 // Builds the mock database: the Margin workspace (rich) and Lumen Labs (small).
 
 import { seedPortalAccess } from "./handlers/portalInvites";
+import { samplePdf } from "./samplePdf";
 import { normalizeAliases, setGmailSendAs } from "./aliases";
 import { applyDecisions, severityFor } from "./decisions";
 import type {
@@ -95,6 +96,19 @@ function voiceWav(seconds = 4, rate = 8000): string {
   return `data:audio/wav;base64,${btoa(bin)}`;
 }
 
+const MOCK_PDF = samplePdf("Invoice INV-2026-0412", ["Example Co, 1 Example Street", "Billed to: customer@example.com", "", "Pro plan, 12 seats    $348.00", "Tax                   $0.00", "Total                 $348.00"]);
+const MOCK_LOG = `data:text/plain;charset=utf-8,${encodeURIComponent(
+  [
+    "2026-10-11 09:14:02.118 [main] INFO  app started, version 4.2.1",
+    "2026-10-11 09:14:05.402 [sync] WARN  retrying request to https://api.example.com (1 of 3)",
+    "2026-10-11 09:14:07.913 [sync] ERROR request failed: timeout after 2500 ms",
+    "Thread 0 Crashed: EXC_BAD_ACCESS (SIGSEGV)",
+    "0   libsystem_kernel.dylib   0x00000001a2b3c4d5 __pthread_kill + 8",
+    "1   Example                  0x0000000100a1b2c3 SyncEngine.flush() + 212",
+    "2   Example                  0x0000000100a1b9f0 AppDelegate.applicationWillTerminate + 48",
+  ].join("\n"),
+)}`;
+
 function makeAttachment(kind: "screenshot" | "screenshot2" | "pdf" | "log" | "voice"): Attachment {
   const a: Attachment =
     kind === "screenshot"
@@ -104,8 +118,8 @@ function makeAttachment(kind: "screenshot" | "screenshot2" | "pdf" | "log" | "vo
         : kind === "voice"
           ? { id: uuid(), filename: "Voice message.wav", content_type: "audio/wav", size_bytes: 32_044, inline: false, url: voiceWav() }
           : kind === "pdf"
-            ? { id: uuid(), filename: kind === "pdf" ? "document.pdf" : "file", content_type: "application/pdf", size_bytes: 1_204_118, inline: false, url: "data:text/plain;charset=utf-8,Mock%20PDF%20attachment" }
-            : { id: uuid(), filename: "crash-report.log", content_type: "text/plain", size_bytes: 48_220, inline: false, url: "data:text/plain;charset=utf-8,Thread%200%20Crashed%3A%20EXC_BAD_ACCESS" };
+            ? { id: uuid(), filename: "document.pdf", content_type: "application/pdf", size_bytes: 1_204_118, inline: false, url: MOCK_PDF }
+            : { id: uuid(), filename: "crash-report.log", content_type: "text/plain", size_bytes: 48_220, inline: false, url: MOCK_LOG };
   db.attachments.push(a);
   return a;
 }
@@ -880,6 +894,16 @@ function seedMargin(): WsData {
     if (chance(0.22) && t.priority !== "urgent") t.sla = null;
   });
 
+  // A customer answered a closed ticket: their email opened a follow-up (custom.previous_ticket_id).
+  const closedOne = ws.tickets.find((t) => t.status === "closed" && t.contact && !t.team_id);
+  if (closedOne) {
+    const c = ws.contacts.find((x) => x.id === closedOne.contact!.id)!;
+    const followUp = newTicket(ws, { subject: closedOne.subject, contact: closedOne.contact, channel: "email", mailbox_id: support.id, created_at: ago(90 * MIN) });
+    followUp.custom = { ...followUp.custom, previous_ticket_id: closedOne.id };
+    addMessage(ws, followUp, { kind: "reply", direction: "inbound", html: textToHtml(`Hi,\n\nThis came back again since we last spoke. Same order as before.\n\n${c.name.split(" ")[0]}`), user: null, at: ago(90 * MIN) }, { publish: false });
+    finalize(ws, followUp, "open");
+  }
+
   // Work for the private teams, Partnerships and the second brand.
   const extra: {
     subject: string;
@@ -934,6 +958,16 @@ function seedMargin(): WsData {
       addMessage(ws, t, { kind: "reply", direction: "outbound", html: textToHtml(`Hi ${c.name.split(" ")[0]},\n\nThanks, I'm on it and will get back to you shortly.\n\n${who}`), user: userRef(uid(x.assignee)), at: iso(Date.parse(t.created_at) + 40 * MIN) }, { publish: false });
     }
     finalize(ws, t, x.status);
+  }
+
+  // An email the customer also sent to a colleague and a Cc: the recipients row and Reply all.
+  {
+    const t = ws.tickets.find((x) => x.subject === "Reseller agreement for the Nordics");
+    const m = t && ws.messages.find((x) => x.ticket_id === t.id && x.direction === "inbound");
+    if (m) {
+      m.to = ["anna@nordicresellers.example", ...m.to];
+      m.cc = ["legal@nordicresellers.example"];
+    }
   }
 
   // Make one generated open, unassigned, high ticket close to its first-response deadline.
@@ -1019,6 +1053,55 @@ function seedMargin(): WsData {
       { publish: false },
     );
     bank.updated_at = bank.last_message_at;
+  }
+
+  // The workspace's own mail: Margin's billing system sent a customer their receipt with a copy
+  // to support. The ticket dates from before such mail named its customer, so the billing address
+  // was its contact until the customer answered (contracts/api.md "Inbound email").
+  {
+    const buyer = ws.contacts[5];
+    const own: Contact = {
+      ...buyer,
+      id: uuid(),
+      email: "billing@margin.app",
+      emails: [],
+      name: "Margin Billing",
+      phone: "",
+      avatar_url: null,
+      avatar_source: null,
+      company: null,
+      external_id: null,
+      notes: "",
+      custom: {},
+      tags: [],
+      fields: {},
+    };
+    ws.contacts.push(own);
+    const receipt = newTicket(ws, {
+      subject: "Your Margin receipt",
+      contact: contactRef(buyer),
+      channel: "email",
+      priority: "normal",
+      mailbox_id: support.id,
+      assignee: null,
+      team_id: teamId("Support"),
+      tags: [],
+      created_at: ago(2 * DAY),
+    });
+    addMessage(
+      ws,
+      receipt,
+      { kind: "reply", direction: "inbound", sender: contactRef(own), html: textToHtml("Thanks for your payment of 96.00 EUR for Margin Team (yearly).\n\nYour receipt is attached."), at: ago(2 * DAY) },
+      { publish: false },
+    );
+    addActivity(ws, receipt, "contact_changed", { from: { id: own.id, name: own.name }, to: { id: buyer.id, name: buyer.name }, reason: "customer_answered" }, null, ago(80 * MIN), false);
+    addMessage(
+      ws,
+      receipt,
+      { kind: "reply", direction: "inbound", html: textToHtml(`Hi,\n\nThe receipt still shows our old company name. Could you send one with the new name?\n\n${buyer.name.split(" ")[0]}`), at: ago(80 * MIN) },
+      { publish: false },
+    );
+    finalize(ws, receipt, "open");
   }
 
   // Spam.

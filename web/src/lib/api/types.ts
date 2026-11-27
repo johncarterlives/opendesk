@@ -2657,10 +2657,21 @@ export type ReplyDraft = {
   body_html: string;
   attachments: Attachment[];
   updated_at: string;
+  /** Who it goes to; null: the customer's reply address. */
+  to?: string[] | null;
+  cc?: string[];
+  bcc?: string[];
+  /** The address it goes from, when another was picked and it is still there. */
+  mailbox_id?: string | null;
+  /** One of my own Collab addresses it goes from, while I still see its account. */
+  from_account?: ReplyDraftFrom | null;
   schedule?: { send_at: string; cc: string[]; bcc: string[]; status: TicketStatus | null; mailbox_id: string } | null;
   /** Why the scheduled reply did not go out, or empty. */
   send_error?: ScheduledReplyError | "";
 };
+
+/** The Collab address a reply draft goes from, as `from_account` of a send. */
+export type ReplyDraftFrom = { account_id: string; email: string; reply_to: string };
 
 /** Why a scheduled reply did not go out (contracts/api.md "Reply drafts"). */
 export type ScheduledReplyError = "merged" | "not_visible" | "cannot_send_from" | "member_gone" | "refused" | "failed";

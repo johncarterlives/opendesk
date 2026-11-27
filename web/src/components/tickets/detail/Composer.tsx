@@ -43,6 +43,7 @@ import { backToNote, deliver, hold, undoSeconds as undoSecondsFor, useUnsent, ty
 import { EmailChips, SavedReplyButton, UploadChip, uploadFiles } from "./composerParts";
 import { mergeReplyActions, ReplyActionChips, replyActionLabels } from "./ReplyActions";
 import { NoFollowUpSender } from "./NoFollowUpSender";
+import { ReplyAllButton, useReplyAll } from "./ReplyAll";
 import { addressLabel, followUpMailbox, fromLine, replyAddresses, TeamDot, useTeamsCtx, type TeamsCtx } from "../teams";
 import { AccountDot } from "@/components/collab/bits";
 import { conversationMaxWidth, useConversationWidth } from "@/lib/conversationWidth";
@@ -78,6 +79,8 @@ type Draft = {
   threadForward?: string;
   /** The note this reply is written from: it is removed once the reply is sent. */
   fromNote?: string;
+  /** The Cc addresses Reply all added, taken out again by Reply. */
+  replyAll?: string[];
   /** Saved replies used: their actions apply to the ticket once the message is sent. */
   savedReplyIds?: string[];
 };
@@ -430,8 +433,12 @@ export const Composer = forwardRef<
     enabled: mode === "reply" && !disabled,
     html: draft.html,
     attachmentIds: uploads.filter((u) => u.status === "done" && u.attachment).map((u) => u.attachment!.id),
-    onRestore: (d) => {
-      setDraft({ mode: "reply", html: d.body_html });
+    recipients: draft,
+    ticketMailboxId: ticket.mailbox_id,
+    onRestore: (d, recipients) => {
+      // Its recipients and address come back with it; Cc opens when it holds any. Its Cc is its
+      // own: Reply all adds to it only when clicked again.
+      setDraft({ mode: "reply", html: d.body_html, ...recipients, replyAll: undefined, showCc: !!(recipients.to || recipients.cc.length || recipients.bcc.length) });
       editor.current?.setHtml(d.body_html);
       setUploads(d.attachments.map((a) => ({ key: a.id, file: new File([], a.filename, { type: a.content_type }), status: "done" as const, attachment: a })));
     },
@@ -440,7 +447,7 @@ export const Composer = forwardRef<
   const wasScheduled = useRef(false);
   useEffect(() => {
     if (wasScheduled.current && ownDraft.draft === null && mode === "reply") {
-      setDraft({ html: "", cc: [], bcc: [], savedReplyIds: undefined });
+      setDraft({ html: "", cc: [], bcc: [], replyAll: undefined, savedReplyIds: undefined });
       editor.current?.clear();
       setUploads([]);
     }
@@ -568,7 +575,7 @@ export const Composer = forwardRef<
       void backToNote(tempMessage({ kind: "note", body_html: draft.html }, `tmp-${Date.now().toString(36)}`), draft.fromNote, draft.html, attachments, me);
       uploads.forEach((u) => u.preview && URL.revokeObjectURL(u.preview));
       setUploads([]);
-      setDraft({ html: "", to: undefined, cc: [], bcc: [], showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, mode: "reply" });
+      setDraft({ html: "", to: undefined, cc: [], bcc: [], replyAll: undefined, showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, mode: "reply" });
       editor.current?.clear();
       ai.dismissSources();
       return;
@@ -610,7 +617,7 @@ export const Composer = forwardRef<
     setSentWith(status);
     setSent(true);
     setUploads([]);
-    setDraft({ html: "", to: undefined, cc: [], bcc: [], showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, ...(opts.as ? { mode: "reply" } : {}) });
+    setDraft({ html: "", to: undefined, cc: [], bcc: [], replyAll: undefined, showCc: false, mailboxId: undefined, fromAccount: undefined, fromNote: undefined, savedReplyIds: undefined, ...(opts.as ? { mode: "reply" } : {}) });
     editor.current?.clear();
     ai.dismissSources();
     // A held reply's toast says what it will do; it sets the status only once it is sent.
@@ -633,6 +640,14 @@ export const Composer = forwardRef<
   const note = mode === "note";
   const threadMode = mode === "thread";
   const defaultTo = ticket.contact?.email ? replyRecipient(ticket.contact.email, messages) : undefined;
+  // Reply all puts the latest email's other recipients in Cc: those the reply's To does not already reach.
+  const all = useReplyAll(ticket, ticket.channel === "email" && mode === "reply", {
+    to: draft.to ?? (defaultTo ? [defaultTo] : []),
+    contactEmail: ticket.contact?.email ?? "",
+    cc: draft.cc,
+    bcc: draft.bcc,
+    replyAll: draft.replyAll,
+  });
   const recipient = draft.to?.length ? draft.to.join(", ") : (defaultTo ?? ticket.contact?.name ?? t("composer.theCustomer"));
   // One click away in the To row: the customer's address and the Reply-To of their latest email.
   const toSuggestions = useMemo(() => {
@@ -809,7 +824,7 @@ export const Composer = forwardRef<
             note ? "border-dashed border-note-line bg-note" : threadMode ? cn(tone.cyan.line, "bg-surface") : "border-line bg-surface",
           )}
         >
-          <div className="flex h-10 items-center gap-2 border-b border-line-soft px-2">
+          <div className="@container/reply-head flex h-10 items-center gap-2 border-b border-line-soft px-2">
             <Segmented
               size="xs"
               value={mode}
@@ -855,6 +870,7 @@ export const Composer = forwardRef<
                 {t("composer.to")} <span className="mono text-fg-2" data-ph-mask>{recipient}</span>
               </button>
             )}
+            {ticket.channel === "email" && !note && !threadMode && <ReplyAllButton r={all} onChange={setDraft} />}
             {!note && !threadMode && (
               <button
                 type="button"

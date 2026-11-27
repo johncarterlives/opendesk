@@ -95,7 +95,11 @@
     "notFoundHint": "Il a peut-être été supprimé ou fusionné.",
     "loadError": "Impossible de charger ce ticket",
     "back": "Retour à la liste",
-    "movedPrivate": "Ce ticket a été déplacé vers une équipe privée"
+    "movedPrivate": "Ce ticket a été déplacé vers une équipe privée",
+    "followUpOf": "Suite de #{{number}}",
+    "followUpHidden": "Suite d’un ticket précédent",
+    "followUpHint": "Le client a réécrit après la clôture de #{{number}}",
+    "copyForAgent": "Copier le ticket pour un agent IA"
   },
   "commands": {
     "reply": "Répondre",
@@ -120,7 +124,9 @@
     "unspammed": "Retiré des indésirables",
     "deleted": "#{{number}} supprimé",
     "snoozed": "Mis en attente",
-    "linkCopied": "Lien copié"
+    "linkCopied": "Lien copié",
+    "copiedForAgent": "Copié. Collez-le dans votre agent IA.",
+    "copyFailed": "Impossible de copier. Réessayez."
   },
   "finish": {
     "close": {
@@ -276,6 +282,10 @@
       "description": "Les nouvelles conversations arrivent ici lorsqu’une adresse, un widget ou une règle de routage les envoie à cette équipe.",
       "seeOpen": "Voir les tickets ouverts",
       "seeUnassigned": "Voir les tickets non attribués"
+    },
+    "all": {
+      "title": "Aucun ticket pour l’instant",
+      "description": "Chaque ticket s’affiche ici, quel que soit son statut, sauf les indésirables."
     }
   },
   "error": {
@@ -514,6 +524,7 @@
     "unassigned": "<b>{{who}}</b> a retiré le responsable de ce ticket",
     "team": "<b>{{who}}</b> a déplacé ce ticket vers <b>{{team}}</b>",
     "contactChanged": "<b>{{who}}</b> a remplacé le contact <b>{{from}}</b> par <b>{{to}}</b>",
+    "contactAnswered": "<b>{{to}}</b> a répondu au message de <b>{{from}}</b> et est maintenant le contact",
     "noContact": "aucun contact",
     "teamRemoved": "<b>{{who}}</b> a retiré l’équipe",
     "tagged": "<b>{{who}}</b> a ajouté",
@@ -571,6 +582,9 @@
     "theCustomer": "le client",
     "noteHint": "Seule votre équipe voit les notes. Tapez @ pour mentionner quelqu’un.",
     "ccBcc": "Cc / Cci",
+    "replyAll": "Répondre à tous",
+    "replyAllHint": "Répondre à tous : envoyer aussi cette réponse à {{list}}, en Cc",
+    "replyAllOff": "Revenir à Répondre : retire {{list}} du Cc",
     "cc": "Cc",
     "bcc": "Cci",
     "replyPlaceholder": "Rédigez une réponse. Tapez / pour les réponses enregistrées, {{braces}} pour les détails de ce ticket.",
@@ -723,9 +737,6 @@
     "imagesHeld": "Les images distantes sont masquées pour protéger votre vie privée.",
     "loadImages": "Charger les images",
     "hideQuoted": "Masquer le texte cité",
-    "preview": "Aperçu de {{name}}",
-    "fullSize": "Ouvrir en taille réelle",
-    "download": "Télécharger {{name}}",
     "fromAddress": "de {{name}} <{{address}}>",
     "ownAddress": "Adresse personnelle",
     "ownAddressHint": "Envoyé depuis le compte de messagerie de son auteur plutôt que depuis l’adresse du ticket. Les réponses du client reviennent sur ce ticket.",
@@ -739,7 +750,8 @@
     "unverifiedHint": "Le domaine de l’expéditeur a échoué à la vérification d’authentification des e-mails. L’expéditeur n’est peut-être pas celui qu’il prétend être. Soyez prudent avec les liens et les demandes de ce message.",
     "viaForm": "Envoyé via le formulaire à l’adresse <m>{{address}}</m>",
     "forward": "Transférer",
-    "viewSource": "Afficher la source"
+    "viewSource": "Afficher la source",
+    "copyForAgent": "Copier pour un agent IA"
   },
   "merge": {
     "title": "Fusionner #{{number}} avec un autre ticket",
@@ -775,6 +787,8 @@
     "startTyping": "Commencez à écrire",
     "use": "Utiliser",
     "change": "Changer",
+    "addTo": "Ajouter quelqu’un",
+    "addCopies": "Ajouter Cc ou Cci",
     "noMailbox": "Aucune boîte mail",
     "bodyReply": "Rédigez votre message",
     "bodyNote": "Décrivez le problème",

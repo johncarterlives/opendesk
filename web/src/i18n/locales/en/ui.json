@@ -205,5 +205,18 @@
     "automations": "Automations",
     "slaPolicies": "SLA policies",
     "teams": "Teams"
+  },
+  "attachments": {
+    "preview": "Preview {{name}}",
+    "download": "Download {{name}}",
+    "downloadShort": "Download",
+    "position": "{{n}} of {{total}}",
+    "previous": "Previous file",
+    "next": "Next file",
+    "loading": "Loading preview",
+    "failed": "The preview couldn't be loaded. Download the file to open it.",
+    "refused": "This file can't be shown here. Download it to open it on your device.",
+    "tooLarge": "This file is too large to preview. Download it to open it.",
+    "noViewer": "PDFs can't be shown in this app. Download the file to open it."
   }
 }

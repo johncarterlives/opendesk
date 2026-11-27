@@ -237,7 +237,10 @@
     "shareWith": "Compartir con…",
     "moveTo": "Mover a…",
     "labelAs": "Etiquetar como…",
-    "newTab": "Abrir en una pestaña nueva"
+    "newTab": "Abrir en una pestaña nueva",
+    "copyForAgent": "Copiar para agente de IA",
+    "copiedForAgent": "Copiado. Pégalo en tu agente de IA.",
+    "copyFailed": "No se pudo copiar. Inténtalo de nuevo."
   },
   "drop": {
     "otherAccount": "Esas conversaciones están en otra cuenta.",
@@ -321,8 +324,6 @@
     "showQuoted": "Mostrar el texto citado",
     "hideQuoted": "Ocultar el texto citado",
     "download": "Descargar {{name}}",
-    "preview": "Vista previa de {{name}}",
-    "fullSize": "Abrir a tamaño completo",
     "readOnly": "Puedes leer esta conversación. Los agentes y los roles superiores pueden actuar sobre ella.",
     "showComments": "Mostrar comentarios",
     "replyOrComment": "Elige si respondes al remitente o comentas para tu equipo",

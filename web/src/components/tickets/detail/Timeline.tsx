@@ -195,7 +195,11 @@ function describe(a: Activity, t: TFunction<"inbox">, { teams, members, tags, fi
     case "contact_changed":
       return {
         icon: <Users />,
-        text: line("activity.contactChanged", { from: contactLabel(d.from, t), to: contactLabel(d.to, t) }),
+        // A ticket opened by the workspace's own mail goes to the person who answered it.
+        text: line(d.reason === "customer_answered" ? "activity.contactAnswered" : "activity.contactChanged", {
+          from: contactLabel(d.from, t),
+          to: contactLabel(d.to, t),
+        }),
       };
     case "tagged":
     case "untagged": {
@@ -405,6 +409,7 @@ export function Timeline({
   onToReply,
   onRetract,
   onForward,
+  onCopyForAgent,
   contactName,
   receivedAt,
   threads,
@@ -421,6 +426,8 @@ export function Timeline({
   onRetract?: (m: Message) => void;
   /** Starts a side conversation forwarding an email of the conversation. */
   onForward?: (m: Message) => void;
+  /** Copies a message as a prompt for an AI agent (copyForAgent.ts). */
+  onCopyForAgent?: (m: Message) => void;
   contactName?: string;
   /** The address the customer first wrote to, for inbound messages that don't say. */
   receivedAt?: string | null;
@@ -490,15 +497,15 @@ export function Timeline({
     return () => clearTimeout(id);
   });
 
-  // Open at the latest message and stay there while emails, images and the reply box
-  // settle; follow new ones only if already at the bottom (stickToBottom).
+  // Open on the latest message, from its first line, and stay there while emails, images and
+  // the reply box settle; follow new ones only if already at the bottom (stickToBottom).
   const liveLen = useRealtime((s) => {
     const l = s.live[ticketId];
     return l ? l.text.length + l.tools.length : 0;
   });
   useLayoutEffect(() => {
     const el = scroller.current!, box = content.current!;
-    // History after the latest message (triage, rules, API keys) never scrolls the message away on open.
+    // A long message reads from its top, and history after it (triage, rules, API keys) never scrolls it away.
     const s = stickToBottom(el, box, () => latestMessageFloor(el, box));
     stick.current = s;
     return () => {
@@ -563,6 +570,7 @@ export function Timeline({
                       onToReply={onToReply}
                       onRetract={onRetract}
                       onForward={onForward}
+                      onCopyForAgent={onCopyForAgent}
                       highlight={pointed.id === it.m.id}
                       receivedAt={receivedAt}
                       thread={it.m.thread_id ? threadById.get(it.m.thread_id) : undefined}

@@ -20,7 +20,7 @@ import { RichEditor, type RichEditorHandle } from "@/components/editor/RichEdito
 import { templateGroupLabel, useCatalog } from "@/components/templates/catalog";
 import { matchVars, refreshTags, templateExtension, VarSuggestPopup, type VarItem } from "@/components/templates/extension";
 import { useNewTicket } from "@/components/tickets/useNewTicket";
-import { isDirty, newTicketDrafts } from "@/components/tickets/newTicket";
+import { allTo, isDirty, isEmailed, newTicketDrafts, toAddress } from "@/components/tickets/newTicket";
 import { NewTicketFrom, NewTicketKind, NewTicketTo } from "@/components/tickets/NewTicketFields";
 import { NewTicketProperties } from "@/components/tickets/NewTicketProperties";
 import { AttachButton, EmailChips, SavedReplyButton, UploadChip, uploadFiles } from "@/components/tickets/detail/composerParts";
@@ -42,8 +42,8 @@ export default function NewTicketPage() {
   const [panel, setPanel] = useState(readPanel);
   const editor = useRef<RichEditorHandle>(null);
   const note = draft.kind === "note";
-  const emailed = draft.kind === "reply" && !!draft.mailbox && !s.chat && !s.log;
-  const recipient = draft.to?.contact?.email ?? draft.to?.email;
+  const emailed = isEmailed(draft);
+  const recipient = allTo(draft).map(toAddress).filter(Boolean).join(", ");
   useDocumentTitle(tr("newTicket.title"));
 
   // Leaving with nothing written drops the defaults picked here; a draft stays for its next opening.
@@ -58,7 +58,8 @@ export default function NewTicketPage() {
   );
 
   const dirty = s.dirty || uploads.length > 0;
-  const blocker = useBlocker({ shouldBlockFn: () => dirty && !created.current, enableBeforeUnload: () => dirty && !created.current, withResolver: true });
+  // A reload keeps what is written (newTicket.ts); only files picked here would be lost.
+  const blocker = useBlocker({ shouldBlockFn: () => dirty && !created.current, enableBeforeUnload: () => uploads.length > 0 && !created.current, withResolver: true });
   const discard = () => {
     s.discard();
     setUploads([]);

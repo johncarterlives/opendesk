@@ -221,7 +221,10 @@
     "shareWith": "Teilen mit…",
     "moveTo": "Verschieben nach…",
     "labelAs": "Label zuweisen…",
-    "newTab": "In neuem Tab öffnen"
+    "newTab": "In neuem Tab öffnen",
+    "copyForAgent": "Für KI-Agent kopieren",
+    "copiedForAgent": "Kopiert. Füge es in deinen KI-Agenten ein.",
+    "copyFailed": "Kopieren fehlgeschlagen. Versuch es noch einmal."
   },
   "drop": {
     "otherAccount": "Diese Unterhaltungen liegen in einem anderen Konto.",
@@ -289,8 +292,6 @@
     "showQuoted": "Zitierten Text anzeigen",
     "hideQuoted": "Zitierten Text ausblenden",
     "download": "{{name}} herunterladen",
-    "preview": "Vorschau von {{name}}",
-    "fullSize": "In voller Größe öffnen",
     "readOnly": "Du kannst diese Unterhaltung lesen. Bearbeiten können sie Agenten und höhere Rollen.",
     "showComments": "Kommentare anzeigen",
     "replyOrComment": "Wähle, ob du dem Absender antwortest oder für dein Team kommentierst",

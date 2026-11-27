@@ -255,6 +255,7 @@
     "docs": "Z dokumentace",
     "answer_item": "Odpovědět s {{name}}",
     "answering": "{{name}} čte dokumentaci",
-    "answer_error": "Teď nelze odpovědět. Pomoci mohou místa a dokumentace níže."
+    "answer_error": "Teď nelze odpovědět. Pomoci mohou místa a dokumentace níže.",
+    "contacts": "Kontakty"
   }
 }

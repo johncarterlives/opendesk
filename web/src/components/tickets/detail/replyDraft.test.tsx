@@ -7,7 +7,7 @@ import type { ReplyDraft } from "@/lib/api/types";
 const replyDraft = vi.hoisted(() => ({ get: vi.fn(), save: vi.fn(), discard: vi.fn() }));
 vi.mock("@/lib/api/endpoints", () => ({ api: { tickets: { replyDraft } } }));
 
-import { useReplyDraftSync } from "./replyDraft";
+import { draftRecipients, recipientsBody, useReplyDraftSync, type ReplyRecipients } from "./replyDraft";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -26,11 +26,12 @@ async function waitFor(check: () => void, ms = 3000) {
 }
 const wait = (ms: number) => act(async () => void (await new Promise((r) => setTimeout(r, ms))));
 
-type Props = { ticketId: string; html: string; enabled?: boolean };
+type Props = { ticketId: string; html: string; enabled?: boolean; recipients?: ReplyRecipients };
+const none: ReplyRecipients = { cc: [], bcc: [] };
 let root: Root | null = null;
 let settled = false;
-function Probe({ p, onRestore }: { p: Props; onRestore: (d: ReplyDraft) => void }) {
-  settled = useReplyDraftSync({ ticketId: p.ticketId, enabled: p.enabled ?? true, html: p.html, attachmentIds: [], onRestore }).settled;
+function Probe({ p, onRestore }: { p: Props; onRestore: (d: ReplyDraft, r: ReplyRecipients) => void }) {
+  settled = useReplyDraftSync({ ticketId: p.ticketId, enabled: p.enabled ?? true, html: p.html, attachmentIds: [], recipients: p.recipients ?? none, ticketMailboxId: "mb-ticket", onRestore }).settled;
   return null;
 }
 const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -126,6 +127,44 @@ describe("useReplyDraftSync", () => {
     await wait(200);
     await rerender({ ticketId: "other", html: "" });
     await waitFor(() => expect(replyDraft.save).toHaveBeenCalledWith("unsaved", { body_html: "<p>Half an answer</p>", attachment_ids: [] }));
+  });
+
+  it("brings back who the reply goes to and the address it goes from, and saves a change to them", async () => {
+    replyDraft.get.mockResolvedValue({ draft: { ...saved("<p>Half</p>"), to: ["a@example.com", "b@example.com"], cc: ["boss@example.com"], bcc: [], mailbox_id: "mb-other", from_account: null } });
+    const { onRestore, rerender } = await setup({ ticketId: "recipients", html: "" });
+    await waitFor(() => expect(onRestore).toHaveBeenCalledTimes(1));
+    const restored = onRestore.mock.calls[0]![1] as ReplyRecipients;
+    expect(restored).toEqual({ to: ["a@example.com", "b@example.com"], cc: ["boss@example.com"], bcc: [], mailboxId: "mb-other", fromAccount: null });
+    // Held as it came: nothing to save.
+    await rerender({ ticketId: "recipients", html: "<p>Half</p>", recipients: restored });
+    await wait(1100);
+    expect(replyDraft.save).not.toHaveBeenCalled();
+    // A copy added alone is saved.
+    await rerender({ ticketId: "recipients", html: "<p>Half</p>", recipients: { ...restored, bcc: ["audit@example.com"] } });
+    await waitFor(() =>
+      expect(replyDraft.save).toHaveBeenCalledWith("recipients", {
+        body_html: "<p>Half</p>",
+        attachment_ids: [],
+        to: ["a@example.com", "b@example.com"],
+        cc: ["boss@example.com"],
+        bcc: ["audit@example.com"],
+        mailbox_id: "mb-other",
+      }),
+    );
+  });
+
+  it("keeps the sending address through a save and back", () => {
+    const cases: ReplyRecipients[] = [
+      { cc: [], bcc: [] },
+      { cc: [], bcc: [], fromAccount: null },
+      { cc: [], bcc: [], mailboxId: "mb-other", fromAccount: null },
+      { cc: [], bcc: [], fromAccount: { accountId: "acc", email: "me@example.com", replyTo: "mailbox" } },
+    ];
+    for (const r of cases) {
+      const body = recipientsBody(r, "mb-ticket");
+      const back = draftRecipients({ ...saved(""), to: body.to ?? null, cc: body.cc ?? [], bcc: body.bcc ?? [], mailbox_id: body.mailbox_id ?? null, from_account: body.from_account ? { account_id: body.from_account.account_id, email: body.from_account.email ?? "", reply_to: body.from_account.reply_to ?? "" } : null }, "mb-ticket");
+      expect(back).toEqual({ to: undefined, cc: [], bcc: [], mailboxId: r.mailboxId, fromAccount: r.fromAccount });
+    }
   });
 
   it("does not autosave over a scheduled reply", async () => {

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
+  ClipboardCopy,
   Folder,
   Forward,
   Inbox,
@@ -69,6 +70,8 @@ import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@/compo
 import { Skeleton } from "@/components/ui/skeleton";
 import { Segmented } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
+import { copyText } from "@/components/ui/copy-button";
+import { mailThreadPrompt } from "@/lib/agentPrompt";
 import { Tooltip } from "@/components/ui/tooltip";
 import { AIDraftFeedbackDialog, UnusedAIDraft } from "./AIDraftFeedback";
 import { AccountDot, LabelPill } from "./bits";
@@ -718,6 +721,14 @@ export const ThreadView = forwardRef<ThreadViewHandle, ThreadViewProps>(function
                 }}
               >
                 {t("action.copyLink")}
+              </MenuItem>
+              <MenuItem
+                icon={<ClipboardCopy />}
+                onSelect={() => {
+                  void copyText(mailThreadPrompt(detail, location.origin)).then((ok) => (ok ? toast.success(t("action.copiedForAgent")) : toast.error(t("action.copyFailed"))));
+                }}
+              >
+                {t("action.copyForAgent")}
               </MenuItem>
               <MenuItem
                 icon={<RefreshCw />}

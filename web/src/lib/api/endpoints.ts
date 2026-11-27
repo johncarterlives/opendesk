@@ -132,11 +132,24 @@ export type CreateTicketBody = {
   tags?: string[];
   fields?: T.FieldValues;
   status?: T.TicketStatus;
+  /** An email reply: more people it goes to, after the contact. */
+  to?: ({ contact_id: string } | { email: string })[];
   /** An email reply's copies. */
   cc?: string[];
   bcc?: string[];
   /** Files on the first message (POST /v1/attachments). */
   attachment_ids?: string[];
+};
+
+/** PUT /v1/tickets/{id}/reply-draft: the reply as it is being written. */
+export type ReplyDraftBody = {
+  body_html: string;
+  attachment_ids: string[];
+  to?: string[];
+  cc?: string[];
+  bcc?: string[];
+  mailbox_id?: string;
+  from_account?: { account_id: string; email?: string; reply_to?: string };
 };
 
 export type SendMessageBody = {
@@ -632,7 +645,7 @@ export const api = {
     /** My own unsent reply on the ticket, saved as I type (contracts/api.md "Reply drafts"). */
     replyDraft: {
       get: (id: string) => http.get<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft`),
-      save: (id: string, b: { body_html: string; attachment_ids: string[] }) => http.put<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft`, b),
+      save: (id: string, b: ReplyDraftBody) => http.put<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft`, b),
       discard: (id: string) => http.del(`/v1/tickets/${id}/reply-draft`),
       schedule: (id: string, send_at: string, reply?: SendMessageBody) =>
         http.post<{ draft: T.ReplyDraft | null }>(`/v1/tickets/${id}/reply-draft/schedule`, { send_at, reply }),

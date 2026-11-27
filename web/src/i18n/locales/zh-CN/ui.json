@@ -204,5 +204,18 @@
     "automations": "自动化",
     "slaPolicies": "SLA 政策",
     "teams": "团队"
+  },
+  "attachments": {
+    "preview": "预览 {{name}}",
+    "download": "下载 {{name}}",
+    "downloadShort": "下载",
+    "position": "第 {{n}} 个，共 {{total}} 个",
+    "previous": "上一个文件",
+    "next": "下一个文件",
+    "loading": "正在加载预览",
+    "failed": "无法加载预览。请下载文件后打开。",
+    "refused": "此文件无法在此处显示。请下载后在设备上打开。",
+    "tooLarge": "文件太大，无法预览。请下载后打开。",
+    "noViewer": "此应用无法显示 PDF。请下载文件后打开。"
   }
 }

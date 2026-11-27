@@ -5,6 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppHit } from "@/lib/appSearch";
+import { ticket } from "@/lib/test/fixtures";
 import { AiResults } from "./PaletteAiResults";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -51,6 +52,7 @@ async function render(p: Props = {}) {
     data: { tickets: [], contacts: [], articles: [], wiki_pages: [] } as never,
     error: false,
     ticket: () => ({ href: "/t", onSelect: () => {} }),
+    contact: (id) => ({ href: `/contacts/${id}`, onSelect: () => {} }),
     article: () => ({ href: "/a", onSelect: () => {} }),
     onExample: () => {},
     places: [],
@@ -110,6 +112,19 @@ describe("Ask AI results", () => {
 
     await render({ places: [sidebar], answer: { pending: false, error: true } });
     expect(text()).toContain("Couldn't answer right now");
+  });
+
+  it("lists the contacts it found, linked to their pages, and marks a follow-up ticket", async () => {
+    const buyer = { id: "c1", name: "Bea Buyer", email: "buyer@example.com", avatar_url: null, company: null };
+    await render({
+      query: "buyer@example.com",
+      data: { tickets: [ticket({ id: "t2", number: 7, subject: "Where is my order", custom: { previous_ticket_id: "t1" } })], contacts: [buyer], articles: [] } as never,
+    });
+    expect(text()).not.toContain("Nothing related yet");
+    expect(text()).toContain("Contacts");
+    expect(text()).toContain("Bea Buyer");
+    expect(host.querySelector('a[href="/contacts/c1"]')?.textContent).toContain("buyer@example.com");
+    expect(host.querySelector("[data-follow-up]")?.closest("[cmdk-item]")?.textContent).toContain("Where is my order");
   });
 
   it("offers no answer when there is nothing to answer from", async () => {

@@ -54,7 +54,7 @@ import { kbBrandRef, recountCollections, sameCollection, uniqueSlug } from "./re
 import { canSeeTicket, roleIn, teamRole } from "../teams";
 import { findTicket } from "../tickets";
 import { ago, DAY, escapeHtml, HOUR, markdownToHtml, MIN, NOW, nowIso, parseUUID, slugify, stripHtml, uuid } from "../util";
-import { htmlToMarkdown } from "@/lib/procedures";
+import { htmlToMarkdown } from "@/lib/markdown";
 import { exportBaseName } from "@/lib/wiki/port";
 
 type Row = WikiPageSettings & {

@@ -71,6 +71,19 @@ func fuse(lists ...[]uuid.UUID) []uuid.UUID {
 	return out
 }
 
+// dedupe keeps the first of each id, in order.
+func dedupe(ids []uuid.UUID) []uuid.UUID {
+	seen := make(map[uuid.UUID]bool, len(ids))
+	out := ids[:0:0]
+	for _, id := range ids {
+		if !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
 func collectIDs(rows pgx.Rows, err error) ([]uuid.UUID, error) {
 	if err != nil {
 		return nil, err
@@ -127,9 +140,25 @@ func (s *Service) Search(ctx context.Context, p *auth.Principal, q string) (*AIS
 			WHERE 1 - dist >= $6 `+filter+` ORDER BY dist LIMIT $7`, wid, kind, qvec, s.embedder.Model(), dims, minSimRank, candidates)
 		return collectIDs(rows, err)
 	}
+	aq := domain.AddressQuery(q)
 	if allowed(auth.ScopeTicketsRead) && tsq != "" {
+		// A ticket's own words, its messages' and its customer's (name, email, phone).
+		match := `t.search @@ ` + tsq + `
+			OR t.id IN (SELECT m.ticket_id FROM messages m WHERE m.workspace_id = $1 AND m.deleted_at IS NULL AND m.search @@ ` + tsq + `)
+			OR t.contact_id IN (SELECT c.id FROM contacts c WHERE c.workspace_id = $1 AND c.search @@ ` + tsq + `)`
+		// One address-like word: the tickets of that address, by their customer's addresses and
+		// their messages' from, to and cc, newest first.
+		var byAddress []uuid.UUID
+		if aq != "" {
+			var err error
+			byAddress, err = collectIDs(pool.Query(ctx, `SELECT t.id FROM tickets t WHERE t.workspace_id = $1 AND t.deleted_at IS NULL AND NOT t.spam
+				AND t.id IN (`+domain.AddressTicketsSQL("$1", "$2")+`) ORDER BY t.last_message_at DESC LIMIT `+strconv.Itoa(candidates), wid, aq))
+			if err != nil {
+				return nil, err
+			}
+		}
 		fts, err := collectIDs(pool.Query(ctx, `SELECT t.id FROM tickets t WHERE t.workspace_id = $1 AND t.deleted_at IS NULL AND NOT t.spam
-			AND (t.search @@ `+tsq+` OR EXISTS (SELECT 1 FROM messages m WHERE m.workspace_id = $1 AND m.ticket_id = t.id AND m.deleted_at IS NULL AND m.search @@ `+tsq+`))
+			AND (`+match+`)
 			ORDER BY ts_rank(t.search, `+tsq+`) DESC, t.last_message_at DESC LIMIT `+strconv.Itoa(candidates), wid, args[0], args[1]))
 		if err != nil {
 			return nil, err
@@ -138,7 +167,7 @@ func (s *Service) Search(ctx context.Context, p *auth.Principal, q string) (*AIS
 		if err != nil {
 			return nil, err
 		}
-		if len(fts) == 0 && len(sem) == 0 {
+		if len(fts) == 0 && len(sem) == 0 && len(byAddress) == 0 {
 			fts, err = collectIDs(pool.Query(ctx, `SELECT t.id FROM tickets t WHERE t.workspace_id = $1 AND t.deleted_at IS NULL AND NOT t.spam
 				AND t.search @@ to_tsquery('simple', $2) ORDER BY ts_rank_cd(t.search, to_tsquery('simple', $2)) DESC LIMIT $3`,
 				wid, args[2], candidates))
@@ -146,7 +175,13 @@ func (s *Service) Search(ctx context.Context, p *auth.Principal, q string) (*AIS
 				return nil, err
 			}
 		}
-		for _, id := range fuse(sem, fts) {
+		// The address's own tickets lead; for an address or a domain, so do the full-text
+		// matches, before what only reads alike. Otherwise both rankings are fused.
+		ranked := fuse(sem, fts)
+		if domain.LooksLikeAddress(q) {
+			ranked = append(fts, sem...)
+		}
+		for _, id := range dedupe(append(byAddress, ranked...)) {
 			// A private team's ticket is left out for whoever may not see it.
 			t, err := domain.LoadVisibleTicket(ctx, pool, p, id)
 			if db.IsNotFound(err) {
@@ -197,8 +232,12 @@ func (s *Service) Search(ctx context.Context, p *auth.Principal, q string) (*AIS
 		cond := `ct.search @@ websearch_to_tsquery('simple', $2) OR lower(ct.email::text) LIKE $3 OR lower(ct.name) LIKE $3 OR ` + domain.ExtraEmailLikeSQL("$3")
 		cargs := []any{wid, q, like}
 		if tsq != "" {
-			cond += ` OR ct.search @@ to_tsquery('simple', $4)`
 			cargs = append(cargs, args[1])
+			cond += ` OR ct.search @@ to_tsquery('simple', $` + strconv.Itoa(len(cargs)) + `)`
+		}
+		if aq != "" {
+			cargs = append(cargs, aq)
+			cond += ` OR ` + domain.ContactAddressSQL("ct", "$"+strconv.Itoa(len(cargs)))
 		}
 		rows, err := pool.Query(ctx, domain.ContactSelect+` WHERE ct.workspace_id = $1 AND (`+cond+`) ORDER BY ct.updated_at DESC, ct.id LIMIT 5`, cargs...)
 		if err != nil {

@@ -95,7 +95,11 @@
     "notFoundHint": "它可能已被删除或合并。",
     "loadError": "无法加载这个工单",
     "back": "返回列表",
-    "movedPrivate": "这个工单已移到私有团队"
+    "movedPrivate": "这个工单已移到私有团队",
+    "followUpOf": "#{{number}} 的后续",
+    "followUpHidden": "之前工单的后续",
+    "followUpHint": "#{{number}} 关闭后客户再次来信",
+    "copyForAgent": "复制工单给 AI 智能体"
   },
   "commands": {
     "reply": "回复",
@@ -120,7 +124,9 @@
     "unspammed": "已移出垃圾邮件",
     "deleted": "已删除 #{{number}}",
     "snoozed": "已设为稍后处理",
-    "linkCopied": "链接已复制"
+    "linkCopied": "链接已复制",
+    "copiedForAgent": "已复制，请粘贴到你的 AI 智能体中。",
+    "copyFailed": "复制失败，请重试。"
   },
   "finish": {
     "close": {
@@ -264,6 +270,10 @@
       "description": "当地址、聊天组件或路由规则把新会话发给这个团队时，它们会显示在这里。",
       "seeOpen": "查看待处理工单",
       "seeUnassigned": "查看未分配"
+    },
+    "all": {
+      "title": "暂无工单",
+      "description": "这里显示所有状态的工单，垃圾邮件除外。"
     }
   },
   "error": {
@@ -470,6 +480,7 @@
     "unassigned": "<b>{{who}}</b> 取消了这个工单的分配",
     "team": "<b>{{who}}</b> 把工单移到了<b>{{team}}</b>",
     "contactChanged": "<b>{{who}}</b> 把联系人从<b>{{from}}</b>改为<b>{{to}}</b>",
+    "contactAnswered": "<b>{{to}}</b>回复了来自<b>{{from}}</b>的邮件，现在是联系人",
     "noContact": "无联系人",
     "teamRemoved": "<b>{{who}}</b> 移除了团队",
     "tagged": "<b>{{who}}</b> 添加了",
@@ -528,6 +539,9 @@
     "theCustomer": "客户",
     "noteHint": "只有你的团队能看到备注。输入 @ 可以提及某人。",
     "ccBcc": "抄送 / 密送",
+    "replyAll": "全部回复",
+    "replyAllHint": "全部回复：同时将此回复抄送给 {{list}}",
+    "replyAllOff": "返回回复：从抄送中移除 {{list}}",
     "cc": "抄送",
     "bcc": "密送",
     "replyPlaceholder": "写回复。输入 / 使用快捷回复，输入 {{braces}} 插入这个工单的详情。",
@@ -683,9 +697,6 @@
     "imagesHeld": "为保护你的隐私，远程图片已隐藏。",
     "loadImages": "加载图片",
     "hideQuoted": "隐藏引用内容",
-    "preview": "预览 {{name}}",
-    "fullSize": "打开原图",
-    "download": "下载 {{name}}",
     "fromAddress": "来自 {{name}} <{{address}}>",
     "ownAddress": "自己的地址",
     "ownAddressHint": "从发送人自己的邮箱发出，而不是工单的地址。客户的回复仍会回到这个工单。",
@@ -729,7 +740,8 @@
     "showReply": "显示回复",
     "showNote": "显示备注",
     "hideNote": "隐藏备注",
-    "forward": "转发"
+    "forward": "转发",
+    "copyForAgent": "复制给 AI 智能体"
   },
   "merge": {
     "title": "把 #{{number}} 合并到其他工单",
@@ -765,6 +777,8 @@
     "startTyping": "开始输入",
     "use": "使用",
     "change": "更改",
+    "addTo": "添加收件人",
+    "addCopies": "添加抄送或密送",
     "noMailbox": "没有邮箱",
     "bodyReply": "写你的消息",
     "bodyNote": "描述问题",

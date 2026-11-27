@@ -95,7 +95,11 @@
     "notFoundHint": "Es wurde vielleicht gelöscht oder zusammengeführt.",
     "loadError": "Dieses Ticket konnte nicht geladen werden",
     "back": "Zurück zur Liste",
-    "movedPrivate": "Dieses Ticket wurde in ein privates Team verschoben"
+    "movedPrivate": "Dieses Ticket wurde in ein privates Team verschoben",
+    "followUpOf": "Folgeanfrage zu #{{number}}",
+    "followUpHidden": "Folgeanfrage zu einem früheren Ticket",
+    "followUpHint": "Der Kunde hat erneut geschrieben, nachdem #{{number}} geschlossen wurde",
+    "copyForAgent": "Ticket für KI-Agent kopieren"
   },
   "commands": {
     "reply": "Antworten",
@@ -120,7 +124,9 @@
     "unspammed": "Aus Spam verschoben",
     "deleted": "#{{number}} gelöscht",
     "snoozed": "Zurückgestellt",
-    "linkCopied": "Link kopiert"
+    "linkCopied": "Link kopiert",
+    "copiedForAgent": "Kopiert. Füge es in deinen KI-Agenten ein.",
+    "copyFailed": "Kopieren fehlgeschlagen. Versuch es noch einmal."
   },
   "finish": {
     "close": {
@@ -270,6 +276,10 @@
       "description": "Neue Unterhaltungen landen hier, wenn eine Adresse, ein Widget oder eine Routing-Regel sie an dieses Team schickt.",
       "seeOpen": "Offene Tickets ansehen",
       "seeUnassigned": "Nicht zugewiesene ansehen"
+    },
+    "all": {
+      "title": "Noch keine Tickets",
+      "description": "Hier steht jedes Ticket, egal in welchem Status, außer Spam."
     }
   },
   "error": {
@@ -490,6 +500,7 @@
     "unassigned": "<b>{{who}}</b> hat die Zuweisung dieses Tickets aufgehoben",
     "team": "<b>{{who}}</b> hat dies nach <b>{{team}}</b> verschoben",
     "contactChanged": "<b>{{who}}</b> hat den Kontakt von <b>{{from}}</b> zu <b>{{to}}</b> geändert",
+    "contactAnswered": "<b>{{to}}</b> hat auf die E-Mail von <b>{{from}}</b> geantwortet und ist jetzt der Kontakt",
     "noContact": "kein Kontakt",
     "teamRemoved": "<b>{{who}}</b> hat das Team entfernt",
     "tagged": "<b>{{who}}</b> fügte hinzu",
@@ -550,6 +561,9 @@
     "theCustomer": "den Kunden",
     "noteHint": "Notizen sieht nur dein Team. Tippe @, um jemanden zu erwähnen.",
     "ccBcc": "Cc / Bcc",
+    "replyAll": "Allen antworten",
+    "replyAllHint": "Allen antworten: diese Antwort auch an {{list}} senden, in Cc",
+    "replyAllOff": "Zurück zu Antworten: nimmt {{list}} aus Cc heraus",
     "cc": "Cc",
     "bcc": "Bcc",
     "replyPlaceholder": "Schreib eine Antwort. Tippe / für Textbausteine, {{braces}} für die Details dieses Tickets.",
@@ -706,9 +720,6 @@
     "imagesHeld": "Externe Bilder sind zum Schutz deiner Privatsphäre ausgeblendet.",
     "loadImages": "Bilder laden",
     "hideQuoted": "Zitierten Text ausblenden",
-    "preview": "Vorschau von {{name}}",
-    "fullSize": "In voller Größe öffnen",
-    "download": "{{name}} herunterladen",
     "fromAddress": "von {{name}} <{{address}}>",
     "ownAddress": "Eigene Adresse",
     "ownAddressHint": "Vom eigenen E-Mail-Konto der schreibenden Person gesendet statt von der Adresse des Tickets. Die Antworten des Kunden kommen in dieses Ticket zurück.",
@@ -755,7 +766,8 @@
     "showNote": "Notiz anzeigen",
     "hideNote": "Notiz ausblenden",
     "forward": "Weiterleiten",
-    "viewSource": "Quelltext anzeigen"
+    "viewSource": "Quelltext anzeigen",
+    "copyForAgent": "Für KI-Agent kopieren"
   },
   "merge": {
     "title": "#{{number}} mit anderem Ticket zusammenführen",
@@ -791,6 +803,8 @@
     "startTyping": "Tippe los",
     "use": "Verwenden",
     "change": "Ändern",
+    "addTo": "Weitere Person hinzufügen",
+    "addCopies": "Cc oder Bcc hinzufügen",
     "noMailbox": "Kein Postfach",
     "bodyReply": "Schreib deine Nachricht",
     "bodyNote": "Beschreib das Problem",

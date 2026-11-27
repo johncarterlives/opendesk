@@ -37,6 +37,23 @@ describe("mock reply drafts", () => {
     expect((await call("DELETE", path)).status).toBe(204);
     expect((await call("GET", path)).body.draft).toBeNull();
   });
+  it("keeps who my reply goes to and its address, leaving out an address turned off", async () => {
+    const ws = db.workspaces[0]!;
+    const t = ws.tickets.find((x) => x.channel === "email" && x.mailbox_id)!;
+    const other = ws.mailboxes.find((m) => m.id !== t.mailbox_id && m.status !== "disabled")!;
+    const path = `/v1/tickets/${t.id}/reply-draft`;
+    const saved = await call("PUT", path, { body_html: "<p>Half</p>", to: ["A@example.com"], cc: ["boss@example.com"], bcc: ["audit@example.com"], mailbox_id: other.id });
+    expect(saved.body.draft).toMatchObject({ to: ["a@example.com"], cc: ["boss@example.com"], bcc: ["audit@example.com"], mailbox_id: other.id, from_account: null });
+    const was = other.status;
+    other.status = "disabled";
+    expect((await call("GET", path)).body.draft).toMatchObject({ cc: ["boss@example.com"], mailbox_id: null });
+    other.status = was;
+    expect((await call("PUT", path, { body_html: "<p>x</p>", cc: ["nope"] })).status).toBe(422);
+    expect((await call("PUT", path, { body_html: "<p>x</p>", mailbox_id: "nope" })).status).toBe(422);
+    expect((await call("PUT", path, { body_html: "<p>x</p>", from_account: { account_id: "nope" } })).status).toBe(422);
+    await call("DELETE", path);
+  });
+
   it("schedules, moves, preserves across another reply, cancels and sends now once", async () => {
     const ticket = db.workspaces[0]!.tickets.find((x) => x.channel === "email")!;
     const path = `/v1/tickets/${ticket.id}/reply-draft`;

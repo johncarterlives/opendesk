@@ -1,6 +1,7 @@
 // A new ticket being written: one draft per person and workspace, shared by the
 // quick dialog and the full page, so opening the page carries everything written.
-// Memory only, like the reply composer's drafts.
+// It is kept in this browser's storage too, so a reload brings it back; sending it,
+// discarding it or signing out removes it.
 
 import { create } from "zustand";
 import type { CreateTicketBody } from "@/lib/api/endpoints";
@@ -9,7 +10,10 @@ import type { Contact, FieldValues, Priority, Severity } from "@/lib/api/types";
 export type NewTicketTo = { contact?: Contact; email?: string };
 
 export type NewTicketDraft = {
+  /** The ticket's contact, the first the email goes to. */
   to: NewTicketTo | null;
+  /** Everyone else an emailed first reply goes to, after the contact. */
+  moreTo: NewTicketTo[];
   subject: string;
   body: string;
   kind: "reply" | "note";
@@ -35,6 +39,7 @@ export type NewTicketDraft = {
 
 export const emptyNewTicket: NewTicketDraft = {
   to: null,
+  moreTo: [],
   subject: "",
   body: "",
   kind: "reply",
@@ -52,33 +57,91 @@ const useDrafts = create<Record<string, NewTicketDraft>>(() => ({}));
 /** Whose draft: another account signed in on this browser never sees it. */
 export const draftKey = (uid: string, wid: string) => `${uid}:${wid}`;
 
+const STORAGE_PREFIX = "od:new-ticket:";
+
+/** A draft read back from storage once per key: null when there is none, or it is not a draft. */
+const stored = new Map<string, NewTicketDraft | null>();
+function fromStorage(key: string): NewTicketDraft | null {
+  if (!stored.has(key)) {
+    let d: NewTicketDraft | null = null;
+    try {
+      const raw = localStorage.getItem(STORAGE_PREFIX + key);
+      const v: unknown = raw ? JSON.parse(raw) : null;
+      if (v && typeof v === "object" && !Array.isArray(v)) {
+        const c = { ...emptyNewTicket, ...(v as Partial<NewTicketDraft>) };
+        const ok = [c.moreTo, c.tags, c.cc, c.bcc].every(Array.isArray) && typeof c.subject === "string" && typeof c.body === "string" && !!c.fields && typeof c.fields === "object";
+        d = ok && isDirty(c) ? c : null;
+      }
+    } catch {
+      // Storage blocked or the entry unreadable: start empty.
+    }
+    stored.set(key, d);
+  }
+  return stored.get(key)!;
+}
+function toStorage(key: string, d: NewTicketDraft | null) {
+  stored.set(key, d);
+  try {
+    if (d && isDirty(d)) localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(d));
+    else localStorage.removeItem(STORAGE_PREFIX + key);
+  } catch {
+    // Full or blocked: the draft stays in memory for this tab.
+  }
+}
+
+const current = (s: Record<string, NewTicketDraft>, key: string) => s[key] ?? fromStorage(key) ?? emptyNewTicket;
+
 export function useNewTicketDraft(key: string): NewTicketDraft {
-  return useDrafts((s) => s[key]) ?? emptyNewTicket;
+  return useDrafts((s) => current(s, key));
 }
 
 export const newTicketDrafts = {
-  get: (key: string): NewTicketDraft => useDrafts.getState()[key] ?? emptyNewTicket,
-  patch: (key: string, p: Partial<NewTicketDraft>) => useDrafts.setState((s) => ({ [key]: { ...(s[key] ?? emptyNewTicket), ...p } })),
-  clear: (key: string) =>
+  get: (key: string): NewTicketDraft => current(useDrafts.getState(), key),
+  patch: (key: string, p: Partial<NewTicketDraft>) => {
+    const next = { ...current(useDrafts.getState(), key), ...p };
+    useDrafts.setState({ [key]: next });
+    toStorage(key, next);
+  },
+  clear: (key: string) => {
     useDrafts.setState((s) => {
       const next = { ...s };
       delete next[key];
       return next;
-    }, true),
+    }, true);
+    toStorage(key, null);
+  },
+  /** Removes every draft of the person from this browser, as they sign out. */
+  forget: (uid: string) => {
+    for (const key of Object.keys(useDrafts.getState())) if (key.startsWith(`${uid}:`)) newTicketDrafts.clear(key);
+    try {
+      for (const k of Object.keys(localStorage)) if (k.startsWith(`${STORAGE_PREFIX}${uid}:`)) newTicketDrafts.clear(k.slice(STORAGE_PREFIX.length));
+    } catch {
+      // Storage blocked: nothing was kept there.
+    }
+  },
 };
 
 /** Something written that closing would lose (the address and defaults picked for it are not). */
 export function isDirty(d: NewTicketDraft): boolean {
-  return !!(d.to || d.subject || d.body || d.tags.length || Object.keys(d.fields).length || d.cc.length || d.bcc.length);
+  return !!(d.to || d.moreTo.length || d.subject || d.body || d.tags.length || Object.keys(d.fields).length || d.cc.length || d.bcc.length);
 }
 
 /**
- * What was set on the full page that the dialog has no field for: labels, severity,
- * fields and copies. The dialog says how many go with the ticket and opens the page.
+ * What was set on the full page that the dialog has no field for: labels, severity and
+ * fields. The dialog says how many go with the ticket and opens the page.
  */
 export function pageOnlyCount(d: NewTicketDraft): number {
-  return d.tags.length + (d.severity ? 1 : 0) + Object.keys(d.fields).length + d.cc.length + d.bcc.length;
+  return d.tags.length + (d.severity ? 1 : 0) + Object.keys(d.fields).length;
 }
+
+/** Whether the first message goes by email from an address: only then does it take more To, Cc and Bcc. */
+export const isEmailed = (d: NewTicketDraft) => d.kind === "reply" && !!d.mailbox && d.channel !== "chat" && d.channel !== "log";
+
+/** Everyone the first email goes to, the contact first. */
+export const allTo = (d: NewTicketDraft): NewTicketTo[] => (d.to ? [d.to, ...d.moreTo] : d.moreTo);
+
+/** The address a recipient is reached at. */
+export const toAddress = (r: NewTicketTo) => (r.contact?.email ?? r.email ?? "").toLowerCase();
 
 /** A reply that opens a chat in the contact's widget instead of going by email. */
 export const isChat = (d: NewTicketDraft) => d.kind === "reply" && d.channel === "chat";
@@ -132,7 +195,7 @@ export function createTicketBody(
   // A logged request is the customer's own message: stored as theirs and sent to no one, on a
   // ticket whose later replies go by email from its address like any other.
   const logged = isLog(d);
-  const emailed = d.kind === "reply" && !!d.mailbox && !logged;
+  const emailed = isEmailed(d);
   const body: CreateTicketBody = {
     subject: d.subject.trim(),
     contact_id: d.to?.contact?.id,
@@ -152,6 +215,7 @@ export function createTicketBody(
   if (d.severity) body.severity = d.severity;
   if (d.tags.length) body.tags = d.tags;
   if (Object.keys(d.fields).length) body.fields = d.fields;
+  if (emailed && d.moreTo.length) body.to = d.moreTo.map((r) => (r.contact ? { contact_id: r.contact.id } : { email: r.email! }));
   if (emailed && d.cc.length) body.cc = d.cc;
   if (emailed && d.bcc.length) body.bcc = d.bcc;
   if (o.attachmentIds?.length) body.attachment_ids = o.attachmentIds;

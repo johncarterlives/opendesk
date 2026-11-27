@@ -19,7 +19,7 @@ Every conversation in opendesk is a **ticket**. Email, live chat, the API and th
 1. **Folders**: Unassigned, My tickets, All open, Pending, Solved and Spam, each with a live count.
 2. **Views**: saved filters your team shares, like Urgent or Billing queue. See [Saved replies and views](/guides/saved-replies-and-views/).
 3. **Ticket list**: the tickets in the folder or view, with search, filter and sort at the top.
-4. **Ticket actions**: **Solve**, **Snooze**, and the **⋯** menu to assign to yourself, merge, copy a link, print or save as PDF, mark as spam or delete.
+4. **Ticket actions**: **Solve**, **Snooze**, and the **⋯** menu to assign to yourself, merge, copy a link, copy the ticket for an AI agent, print or save as PDF, mark as spam or delete.
 5. **Timeline**: the customer's messages, your replies, internal notes and every change, in order.
 6. **Reply box**: write to the customer, or switch to **Note** to write only for your team.
 7. **Details**: status, priority, severity, assignee, team, brand, the address replies go out from, and labels.
@@ -73,6 +73,7 @@ On an open ticket you see who else is viewing or replying, and on chat tickets t
 
 - <kbd>mod</kbd> is <kbd>⌘</kbd> on macOS and <kbd>Ctrl</kbd> elsewhere. Press <kbd>?</kbd> anywhere for every shortcut, or see [Keyboard shortcuts](/guides/keyboard-shortcuts/).
 - Attachments upload once and are linked to the message when it is sent. Click a file's name to open it in a new tab and check it before sending.
+- Click a picture, PDF or text file on a message to preview it without downloading it. <kbd>←</kbd> and <kbd>→</kbd> move between the message's files, **Download** saves the one you see, and <kbd>Esc</kbd> closes the preview. The same works for mail in Collab. Other files download when clicked.
 - In the reply box, <kbd>mod</kbd> click a link, or use the button beside its address in the link box, to open it in a new tab.
 - A new reply from the customer reopens a solved ticket.
 
@@ -119,6 +120,10 @@ Click **New ticket** and pick how it starts:
 
 Use **Log request** when the customer asked and the ticket should read that way; use **Log internally** for something you noticed yourself.
 
+An email can go to more than one person. The first in **To** is the ticket's customer; **Add someone** puts more people in **To**, and **Add Cc or Bcc** copies others. The first email keeps everyone it went to. Later replies go to the customer unless you change **To** in the reply box. A chat, a logged request and an internal note are for the customer alone.
+
+What you write is kept in this browser until you create the ticket or discard it, so a refresh or closing the tab does not lose it. Files you attach on the full page are the exception: add them again after a refresh. Signing out removes your unsent ticket from the browser.
+
 ## Snooze, merge, spam and delete
 
 **Snooze** hides a ticket until a time you pick: in an hour, in four hours, tomorrow, next week, or a date and time of your own. A snoozed ticket is on hold until then.
@@ -127,7 +132,7 @@ An admin can change the times the menu offers in **Settings → Workspace**, und
 
 <Screenshot src="/guides/inbox/snooze" alt="The Snooze button ringed as 1 and its menu ringed as 2: In 1 hour, In 4 hours, Tomorrow, Next week, or a date" />
 
-The **⋯** menu holds the rest: **Merge into another ticket**, **Copy link**, **Hide ticket history** (or **Show**), **Print or save as PDF**, **Mark as spam** and **Delete ticket**.
+The **⋯** menu holds the rest: **Merge into another ticket**, **Copy link**, **Copy ticket for AI agent**, **Hide ticket history** (or **Show**), **Print or save as PDF**, **Mark as spam** and **Delete ticket**.
 
 **Merge into another ticket** first offers the customer's other tickets, closed ones included, and leaves out those already merged elsewhere; type to search every ticket. Merging into a solved or closed ticket reopens it when the ticket you merge is still open, pending or on hold, so the customer's new message is not left in a finished conversation. Apart from changing its status, this is the only way a closed ticket opens again. If the ticket you pick was itself merged, the merge goes into the ticket it went into, and that is the ticket that opens.
 
@@ -167,6 +172,18 @@ Remote images in a customer's email stay hidden in the print view too, unless yo
 
 In the [desktop app](/guides/desktop-app/) the system's print dialog opens. To keep a PDF there, use **PDF → Save as PDF** on macOS, the **Microsoft Print to PDF** printer on Windows, or **Print to File** on Linux.
 
+## Copy for an AI agent
+
+To hand a bug report or a whole conversation to a coding or AI agent, such as Claude Code, Codex or ChatGPT, copy it as a ready prompt and paste it there. Any member can do this, viewers included.
+
+- **One message**: open the **⋯** menu on the message and choose **Copy for AI agent**. An email that quoted earlier mail is copied in full.
+- **The whole ticket**: open the **⋯** menu at the top of the ticket and choose **Copy ticket for AI agent**. Every message comes along oldest first, internal notes and side conversations included and labelled as such, so the agent knows what the customer never saw.
+- **A Mail conversation**: open the **⋯** menu above the conversation and choose **Copy for AI agent**. Its sent and received mail comes along, without drafts or the team's comments.
+
+The prompt is plain Markdown: a line telling the agent to work on what the conversation describes, then the ticket's number, subject, status, address, customer and link, and each message with its sender, recipients, date and text. Pictures in a message become a note like *[image: screenshot.png]*, and files are listed by name, type and size. Links to the files are left out, since they would let anyone with the text open them; the ticket's link opens them in opendesk. A very long message or conversation is shortened, keeping the first message and the newest.
+
+What you paste goes to that agent's provider, so paste only where your team allows customer data.
+
 ## Work on many tickets at once
 
 Hover a ticket and tick its box (or press <kbd>x</kbd>), then tick any others. The bar at the bottom of the list changes them all in one step: assignee, team, status, priority, severity, labels, spam, or delete.
@@ -183,7 +200,9 @@ The **sort** button beside it orders the list by last activity, creation date, p
 
 Press <kbd>mod</kbd> <kbd>k</kbd>, or click **Search** at the top, to search everything at once: tickets, contacts, articles and settings.
 
-Settings are searched down to each section and field, by any word in their names and hints, so *time zone*, *2fa* or *sidebar* finds the setting itself. Choose one and its page opens with that setting highlighted. **Search settings**, at the top of the settings menu, does the same. You only see the settings you can change. To find the matching pages of these docs too, ask your question with **Ask AI** (<kbd>tab</kbd>).
+Tickets are found by their number, their subject, any word of their conversation (the start of a word is enough) and their customer. Type an email address, or part of one such as the domain, to find everyone's mail from, to or copied to it: *buyer@example.com*, *example.com* and *example* all find the tickets of buyer@example.com, and those tickets come first. <kbd>enter</kbd> opens the highlighted result, the top one unless you move with the arrow keys. **See all tickets** opens every ticket the search finds, whatever its status, in a list of its own. A ticket that follows up a closed one is marked **Follow-up**.
+
+Settings are searched down to each section and field, by any word in their names and hints, so *time zone*, *2fa* or *sidebar* finds the setting itself. Choose one and its page opens with that setting highlighted. **Search settings**, at the top of the settings menu, does the same. You only see the settings you can change. To find the matching pages of these docs too, ask your question with **Ask AI** (<kbd>tab</kbd>, or the **Ask AI** item under the results).
 
 <Screenshot src="/guides/inbox/search" alt="The command menu searching for fingerprint, with a matching ticket listed" />
 
@@ -214,6 +233,8 @@ A ticket's timeline holds its messages and its activity:
 
 An email reply goes to the customer's address, or to the `Reply-To` their latest email asked for when that address is at their own organisation (`alerts@updates.example.com` asking for answers at `ana@example.com`). To send it somewhere else, click **To** above the reply box and change the addresses; the customer's address and the `Reply-To` they named are one click away. The ticket's contact stays the same.
 
+An email the customer sent to several people lists all of them, its **To** then its **Cc**, under its header. When their latest email named someone your reply would not reach, **Reply all** shows beside **Cc / Bcc**: it adds those people to **Cc**, leaving out your own addresses (forwarding addresses included), the ones the reply already goes to and those in **Bcc**. The sender counts at the address replies to them go to, and an email that failed sender checks adds nobody. Click it again to take out exactly what it added; a **Cc** you typed stays. The next reply starts as a plain reply again.
+
 On a busy ticket, **⋯ → Hide ticket history** keeps the messages and calls only; **Show ticket history** brings the activity back. It applies to the browser you set it in, and the history shows by default.
 
 To read a ticket like a chat, turn on **Conversation layout** in **Settings → Profile → Appearance**: the customer's messages sit on the left, and your team's replies and internal notes, Ollie's and automations' included, on the right. Activity stays full width, and on a narrow screen every message does. It applies to the browser you set it in.
@@ -226,7 +247,7 @@ An email you receive keeps its remote images hidden until you click **Load image
 
 ### Your unsent reply is saved
 
-What you write in the reply box is saved as you go, on the server. Close the tab, refresh, or open the same ticket on another device, and your reply is back in the box with its files. It is yours alone: teammates don't see it, and it is cleared when you send the reply or empty the box. A draft you don't touch for 30 days is removed. A reply a teammate or an AI agent staged for the ticket waits as a separate banner while you have your own text in the box.
+What you write in the reply box is saved as you go, on the server. Close the tab, refresh, or open the same ticket on another device, and your reply is back in the box with its files, who it goes to (To, Cc and Bcc) and the address it goes from. An address that was turned off or removed since is left out, and the reply goes from the ticket's address instead. It is yours alone: teammates don't see it, and it is cleared when you send the reply or empty the box. A draft you don't touch for 30 days is removed. A reply a teammate or an AI agent staged for the ticket waits as a separate banner while you have your own text in the box.
 
 ### Take back, turn into a note or delete
 

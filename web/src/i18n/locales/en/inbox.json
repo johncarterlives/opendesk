@@ -95,7 +95,11 @@
     "notFoundHint": "It may have been deleted or merged.",
     "loadError": "Couldn't load this ticket",
     "back": "Back to the list",
-    "movedPrivate": "This ticket moved to a private team"
+    "movedPrivate": "This ticket moved to a private team",
+    "followUpOf": "Follow-up of #{{number}}",
+    "followUpHidden": "Follow-up of an earlier ticket",
+    "followUpHint": "The customer wrote again after #{{number}} was closed",
+    "copyForAgent": "Copy ticket for AI agent"
   },
   "commands": {
     "reply": "Reply",
@@ -120,7 +124,9 @@
     "unspammed": "Moved out of spam",
     "deleted": "Deleted #{{number}}",
     "snoozed": "Snoozed",
-    "linkCopied": "Link copied"
+    "linkCopied": "Link copied",
+    "copiedForAgent": "Copied. Paste it into your AI agent.",
+    "copyFailed": "Couldn't copy. Try again."
   },
   "finish": {
     "close": {
@@ -270,6 +276,10 @@
       "description": "New conversations land here when an address, a widget or a routing rule sends them to this team.",
       "seeOpen": "See open tickets",
       "seeUnassigned": "See unassigned"
+    },
+    "all": {
+      "title": "No tickets yet",
+      "description": "Every ticket shows here, whatever its status, except spam."
     }
   },
   "error": {
@@ -494,6 +504,7 @@
     "unassigned": "<b>{{who}}</b> unassigned this ticket",
     "team": "<b>{{who}}</b> moved this to <b>{{team}}</b>",
     "contactChanged": "<b>{{who}}</b> changed the contact from <b>{{from}}</b> to <b>{{to}}</b>",
+    "contactAnswered": "<b>{{to}}</b> answered mail from <b>{{from}}</b> and is now the contact",
     "noContact": "no contact",
     "teamRemoved": "<b>{{who}}</b> removed the team",
     "tagged": "<b>{{who}}</b> added",
@@ -554,6 +565,9 @@
     "theCustomer": "the customer",
     "noteHint": "Only your team sees notes. Type @ to mention someone.",
     "ccBcc": "Cc / Bcc",
+    "replyAll": "Reply all",
+    "replyAllHint": "Reply all: also send this reply to {{list}}, in Cc",
+    "replyAllOff": "Back to Reply: takes {{list}} out of Cc",
     "cc": "Cc",
     "bcc": "Bcc",
     "replyPlaceholder": "Write a reply. Type / for saved replies, {{braces}} for this ticket's details.",
@@ -710,9 +724,6 @@
     "imagesHeld": "Remote images are hidden to protect your privacy.",
     "loadImages": "Load images",
     "hideQuoted": "Hide quoted text",
-    "preview": "Preview {{name}}",
-    "fullSize": "Open full size",
-    "download": "Download {{name}}",
     "fromAddress": "from {{name}} <{{address}}>",
     "ownAddress": "Own address",
     "ownAddressHint": "Sent from the writer's own mail account instead of the ticket's address. The customer's answers come back to this ticket.",
@@ -759,7 +770,8 @@
     "showNote": "Show note",
     "hideNote": "Hide note",
     "forward": "Forward",
-    "viewSource": "View source"
+    "viewSource": "View source",
+    "copyForAgent": "Copy for AI agent"
   },
   "merge": {
     "title": "Merge #{{number}} into another ticket",
@@ -795,6 +807,8 @@
     "startTyping": "Start typing",
     "use": "Use",
     "change": "Change",
+    "addTo": "Add someone",
+    "addCopies": "Add Cc or Bcc",
     "noMailbox": "No mailbox",
     "bodyReply": "Write your message",
     "bodyNote": "Describe the issue",

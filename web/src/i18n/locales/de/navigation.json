@@ -101,7 +101,8 @@
     "open": "Alle offenen",
     "pending": "Wartend",
     "solved": "Gelöst",
-    "spam": "Spam"
+    "spam": "Spam",
+    "all": "Alle Tickets"
   },
   "groups": {
     "account": "Konto",
@@ -197,7 +198,9 @@
     "docs": "Dokumentation",
     "searchSettings": "Einstellungen durchsuchen",
     "settingsNoResults": "Keine passende Einstellung",
-    "settingsNoResultsHelp": "Versuche andere Wörter oder durchsuche die Dokumentation im Befehlsmenü."
+    "settingsNoResultsHelp": "Versuche andere Wörter oder durchsuche die Dokumentation im Befehlsmenü.",
+    "seeAll": "Alle Tickets zu „{{query}}“ anzeigen",
+    "followUp": "Folgeanfrage"
   },
   "shortcuts": {
     "general": "Allgemein",

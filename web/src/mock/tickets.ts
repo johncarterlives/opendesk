@@ -5,6 +5,7 @@ import type {
   Activity,
   Attachment,
   Channel,
+  ContactRef,
   Mailbox,
   Message,
   Priority,
@@ -176,9 +177,50 @@ export function matches(ws: WsData, t: Ticket, raw: ListFilters, meId: string): 
   if (f.q) {
     const q = f.q.toLowerCase().trim().replace(/^#/, "");
     const hay = [t.subject, t.last_message_preview, t.contact?.name ?? "", t.contact?.email ?? "", String(t.number), t.alias ?? "", fieldsText(t.fields)].join(" ").toLowerCase();
-    if (!hay.includes(q)) return false;
+    if (!hay.includes(q) && !messageText(ws, t).includes(q) && !addressMatch(ws, t, f.q)) return false;
   }
   return true;
+}
+
+/** The words of a ticket's messages, lowercased. */
+function messageText(ws: WsData, t: Ticket): string {
+  return ws.messages
+    .filter((m) => m.ticket_id === t.id && !m.deleted_at)
+    .map((m) => m.body_text || stripHtml(m.body_html))
+    .join(" ")
+    .toLowerCase();
+}
+
+/** One address-like word (contracts/api.md "Search"): a whole address, its local part or its domain. */
+export function addressQuery(q: string): string | null {
+  const s = q.trim().toLowerCase();
+  return s.length >= 2 && s.length <= 254 && /^[\p{L}\p{N}@.+_-]+$/u.test(s) && /\p{L}/u.test(s) ? s : null;
+}
+
+/** An address the query finds: words split at @, dots, plus signs, underscores and hyphens; the query's words in order, the last a prefix. */
+export function addressHit(address: string, q: string): boolean {
+  const words = (x: string) => x.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+  const a = words(address);
+  const w = words(q);
+  if (!w.length) return false;
+  for (let i = 0; i + w.length <= a.length; i++) {
+    if (w.every((x, j) => (j === w.length - 1 ? a[i + j].startsWith(x) : a[i + j] === x))) return true;
+  }
+  return false;
+}
+
+/** A contact's addresses, primary and extra. */
+export function contactAddresses(ws: WsData, id: string | undefined): string[] {
+  const c = id ? ws.contacts.find((x) => x.id === id) : undefined;
+  return c ? [c.email ?? "", ...(c.emails ?? [])].filter(Boolean) : [];
+}
+
+/** The ticket's customer, or one of its messages' from, to or cc, has an address the query finds. */
+export function addressMatch(ws: WsData, t: Ticket, q: string): boolean {
+  if (!addressQuery(q)) return false;
+  const addrs = [t.contact?.email ?? "", ...contactAddresses(ws, t.contact?.id)];
+  for (const m of ws.messages) if (m.ticket_id === t.id && !m.deleted_at) addrs.push(m.from_email, ...m.to, ...m.cc);
+  return addrs.some((a) => a && addressHit(a, q));
 }
 
 /** Awaiting a reply (the customer wrote last), urgent, and overdue (past the due time that applies, or breached). */
@@ -527,6 +569,8 @@ export type NewMessage = {
   auth_failed?: boolean;
   /** Inbound email: the trusted contact form it came through (the contact is the visitor). */
   form_sender?: string;
+  /** Inbound email the workspace sent its customer, from one of its own addresses, with a copy here. */
+  sender?: ContactRef;
 };
 
 export function buildMessage(ws: WsData, t: Ticket, m: NewMessage): Message {
@@ -541,6 +585,9 @@ export function buildMessage(ws: WsData, t: Ticket, m: NewMessage): Message {
   // An AI reply is sent as the ticket's bot (its widget's or mailbox's, contracts/bots.md).
   const aiBot = m.bot ? botRefFor(ws, m.bot_id ?? botForTicket(ws, t).id, "") : null;
   const botLabel = aiBot?.name ?? m.bot;
+  // The workspace's own mail to its customer is written by its address, to the customer.
+  const author = inbound ? (m.sender ?? contact) : null;
+  const ownMail = inbound && !!m.sender;
   const msg: Message = {
     id: uuid(),
     ticket_id: t.id,
@@ -550,7 +597,7 @@ export function buildMessage(ws: WsData, t: Ticket, m: NewMessage): Message {
     kind: m.kind,
     direction: m.direction,
     author: inbound
-      ? { type: "contact", user: null, contact }
+      ? { type: "contact", user: null, contact: author }
       : m.bot
         ? { type: "system", user: null, contact: null, bot: aiBot }
         : { type: "user", user: m.user ?? null, contact: null },
@@ -558,13 +605,13 @@ export function buildMessage(ws: WsData, t: Ticket, m: NewMessage): Message {
     body_text: stripHtml(m.html),
     has_quoted: m.has_quoted ?? false,
     subject: inbound ? t.subject : `Re: ${t.subject}`,
-    from_email: inbound ? (contact?.email ?? "") : sentFrom ? sendAs(t, sentFrom) : "",
-    from_name: inbound ? (contact?.name ?? "") : sentFrom ? fromName(ws, t, sentFrom, botLabel ?? m.user?.name ?? null) : (botLabel ?? m.user?.name ?? brand),
+    from_email: inbound ? (author?.email ?? "") : sentFrom ? sendAs(t, sentFrom) : "",
+    from_name: inbound ? (author?.name ?? "") : sentFrom ? fromName(ws, t, sentFrom, botLabel ?? m.user?.name ?? null) : (botLabel ?? m.user?.name ?? brand),
     // Inbound: the address it was written to (an alias or the mailbox's own).
-    to: inbound ? (isEmail && (t.received_at || mailbox) ? [t.received_at || mailbox!.email] : []) : (m.to ?? (contact?.email ? [replyRecipient(contact.email, ws.messages.filter((x) => x.ticket_id === t.id))] : [])),
+    to: ownMail ? [contact?.email ?? ""] : inbound ? (isEmail && (t.received_at || mailbox) ? [t.received_at || mailbox!.email] : []) : (m.to ?? (contact?.email ? [replyRecipient(contact.email, ws.messages.filter((x) => x.ticket_id === t.id))] : [])),
     // Inbound: where it arrived (email only); outbound: the address it went from.
     mailbox_id: inbound ? (isEmail ? (t.origin_mailbox_id ?? t.mailbox_id) : null) : (sentFrom?.id ?? null),
-    cc: m.cc ?? [],
+    cc: m.cc ?? (ownMail && mailbox ? [t.received_at || mailbox.email] : []),
     bcc: m.bcc ?? [],
     attachments: m.attachments ?? [],
     delivery_status: m.kind === "note" || inbound || !isEmail ? "none" : (m.delivery ?? "sent"),

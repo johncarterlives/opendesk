@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -784,5 +786,60 @@ func TestTriageRespectsExclusiveGroups(t *testing.T) {
 	}
 	if n := e.count(`SELECT count(*) FROM activities WHERE ticket_id = $1 AND actor_type = 'ai' AND type = 'untagged'`, tk.ID); n != 1 {
 		t.Fatalf("untagged activities %d", n)
+	}
+}
+
+// An address or a domain finds its sender's tickets and contacts first, by the contact's
+// addresses and its messages' from, to and cc, ahead of tickets that only read alike.
+func TestSearchAddressesRankFirst(t *testing.T) {
+	for _, embed := range []bool{true, false} {
+		e := newEnv(t, opts{noEmbed: !embed})
+		if !embed {
+			e.S.vectors = false
+		} else if !e.S.vectors {
+			t.Skip("pgvector not available")
+		}
+		var cid uuid.UUID
+		var sender domain.Ticket
+		err := e.D.DB.Tx(e.Ctx, func(tx pgx.Tx) error {
+			var err error
+			if cid, _, err = domain.UpsertContactByEmail(e.Ctx, tx, e.WS.ID, "orders@tradeplace.example.net", "Order desk"); err != nil {
+				return err
+			}
+			if sender, err = domain.CreateTicket(e.Ctx, tx, domain.NewTicket{WorkspaceID: e.WS.ID, Subject: "Where is my parcel", Channel: domain.ChannelEmail, ContactID: &cid}); err != nil {
+				return err
+			}
+			_, err = domain.AddMessage(e.Ctx, tx, e.D.Jobs, domain.NewMessage{WorkspaceID: e.WS.ID, TicketID: sender.ID, Kind: "reply",
+				Direction: "inbound", AuthorType: "contact", AuthorContactID: &cid, BodyHTML: "<p>No sign of it yet</p>", BodyText: "No sign of it yet",
+				FromEmail: "orders@tradeplace.example.net"})
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Tickets that read like the address: semantic and prefix matches, never its sender's.
+		for i := range 6 {
+			tk := e.ticket("Orders net example "+strconv.Itoa(i), "tradeplace orders example net tradeplace orders")
+			if embed {
+				if err := e.S.Index(e.Ctx, e.WS.ID, "ticket", tk.ID); err != nil {
+					t.Fatal(err)
+				}
+			}
+		}
+		if embed {
+			if err := e.S.Index(e.Ctx, e.WS.ID, "ticket", sender.ID); err != nil {
+				t.Fatal(err)
+			}
+		}
+		for _, q := range []string{"orders@tradeplace.example.net", "tradeplace.example.net", "tradeplace"} {
+			var res AISearchResults
+			e.Do("GET", "/v1/ai/search?q="+url.QueryEscape(q), e.viewer(), nil).Want(t, 200).JSON(t, &res)
+			if len(res.Tickets) == 0 || res.Tickets[0].ID != sender.ID {
+				t.Errorf("embed %v %q: tickets %+v", embed, q, res.Tickets)
+			}
+			if len(res.Contacts) != 1 || res.Contacts[0].ID != cid {
+				t.Errorf("embed %v %q: contacts %+v", embed, q, res.Contacts)
+			}
+		}
 	}
 }

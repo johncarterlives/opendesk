@@ -255,6 +255,18 @@ Both take [template variables](/guides/email-templates/variables/), such as `{{ 
 
 <Fold>
 
+## Mail you send customers from your own addresses
+
+Your shop, billing or booking system may send a customer an order confirmation from one of your addresses, with a copy to a mailbox. That copy opens a ticket about the customer: the contact is the first address in **To**, then **Cc**, that isn't yours, and replies, automation emails, auto-replies and surveys go to them. The message still shows your address as its sender, and nothing automatic answers it. When the customer answers, the reply joins that ticket.
+
+It counts as your own mail when it comes from a mailbox address or an alias, or from another address at the domain of one of your mailboxes (not a public provider like gmail.com) when it passed DMARC and names none of your addresses in **To**. Mail written to your mailbox, like a colleague asking about a customer they copy, keeps the colleague as the contact.
+
+A ticket whose contact is one of your mailbox addresses or aliases, such as one opened by such mail before, moves to the first person from outside who answers it, as long as the conversation was written to them. The timeline says so.
+
+</Fold>
+
+<Fold>
+
 ## Fix a mailbox that needs attention
 
 A mailbox is **Active**, **Needs attention** (it last failed to receive or send), **Not sending** (it has no way to send replies) or **Disabled**. When it needs attention, its page shows the provider's last error and when it last worked.

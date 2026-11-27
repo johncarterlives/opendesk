@@ -126,6 +126,26 @@ func (pm *parsedMail) sender() (addr, name string) {
 	return pm.FromAddr, pm.FromName
 }
 
+// recipients are the To, then the Cc, addresses with their display names.
+func (pm *parsedMail) recipients() []mail.Address {
+	var out []mail.Address
+	if pm.env == nil {
+		return out
+	}
+	for _, key := range []string{"To", "Cc"} {
+		list, err := pm.env.AddressList(key)
+		if err != nil {
+			continue
+		}
+		for _, a := range list {
+			if addr := strings.ToLower(a.Address); validAddress(addr) {
+				out = append(out, mail.Address{Name: dropNUL(a.Name), Address: addr})
+			}
+		}
+	}
+	return out
+}
+
 // replyTo is the Reply-To address when it differs from From, else "".
 func (pm *parsedMail) replyTo() string {
 	if pm.ReplyTo == "" || strings.EqualFold(pm.ReplyTo, pm.FromAddr) || !validAddress(pm.ReplyTo) {

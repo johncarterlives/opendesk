@@ -101,7 +101,8 @@
     "open": "Všechny otevřené",
     "pending": "Čekající",
     "solved": "Vyřešené",
-    "spam": "Spam"
+    "spam": "Spam",
+    "all": "Všechny tikety"
   },
   "groups": {
     "account": "Účet",
@@ -197,7 +198,9 @@
     "docs": "Dokumentace",
     "searchSettings": "Hledat v nastavení",
     "settingsNoResults": "Žádné nastavení neodpovídá",
-    "settingsNoResultsHelp": "Zkuste jiná slova, nebo hledejte v dokumentaci z nabídky příkazů."
+    "settingsNoResultsHelp": "Zkuste jiná slova, nebo hledejte v dokumentaci z nabídky příkazů.",
+    "seeAll": "Zobrazit všechny tikety pro „{{query}}“",
+    "followUp": "Navazující"
   },
   "shortcuts": {
     "general": "Obecné",

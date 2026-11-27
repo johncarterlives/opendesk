@@ -3,12 +3,12 @@
 // renderer: sanitized again here, a designed email in its sandboxed frame without
 // scripts, and images from other sites (CSS url() too) held back until asked for.
 
-import { ChevronDown, Download, FileText, ImageOff, MoreHorizontal, Paperclip } from "lucide-react";
+import { ChevronDown, ImageOff, MoreHorizontal, Paperclip } from "lucide-react";
 import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MailAddress, MailAttachment, MailMessage } from "@/lib/api/types";
 import { formatAddress, normEmail } from "@/lib/collab/recipients";
-import { bytes, clock, fullDate, relShort } from "@/lib/format";
+import { clock, fullDate, relShort } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import { isDesignedEmail, sanitizeEmailHtml, sanitizeProse } from "@/lib/sanitize";
 import { useAlwaysShowImages } from "@/lib/alwaysShowImages";
@@ -16,9 +16,9 @@ import { escapeHtml } from "@/lib/collab/html";
 import { isForward, splitQuotedHtml, splitQuotedText } from "@/lib/collab/quote";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
 import { Tooltip } from "@/components/ui/tooltip";
 import { EmailFrame } from "@/components/tickets/detail/EmailFrame";
+import { AttachmentList } from "@/components/messages/Attachments";
 import { AIDraftFeedback } from "./AIDraftFeedback";
 import { DetailsTrigger, SenderWarning, useMessageDetails, Via } from "./MailDetails";
 
@@ -67,68 +67,12 @@ function HeldImages({ onLoad }: { onLoad: () => void }) {
   );
 }
 
-const isImage = (a: MailAttachment) => a.content_type.startsWith("image/");
 /** An image attachment shown in place (`?inline=1` on the signed URL). */
 const inlineUrl = (url: string) => (/^https?:|^\//i.test(url) ? `${url}${url.includes("?") ? "&" : "?"}inline=1` : url);
 
 export function MailAttachments({ items }: { items: MailAttachment[] }) {
-  const { t } = useTranslation("collab");
-  const [preview, setPreview] = useState<MailAttachment | null>(null);
-  const visible = items.filter((a) => !a.inline);
-  if (!visible.length) return null;
-  const images = visible.filter(isImage);
-  const files = visible.filter((a) => !isImage(a));
-  return (
-    <div className="mt-3 flex flex-col gap-2">
-      {images.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {images.map((a) => (
-            <button
-              key={a.id}
-              type="button"
-              onClick={() => setPreview(a)}
-              className="group relative h-[88px] w-[124px] overflow-hidden rounded-md border border-line bg-sunken outline-none focus-visible:shadow-[0_0_0_2px_var(--focus)]"
-              aria-label={t("thread.preview", { name: a.filename })}
-            >
-              <img src={inlineUrl(a.url)} alt="" loading="lazy" referrerPolicy="no-referrer" className="ph-no-capture size-full object-cover transition-transform duration-200 group-hover:scale-[1.03] motion-reduce:transition-none" />
-              <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/55 to-transparent px-1.5 pb-1 pt-4 text-left text-[10.5px] text-white">{a.filename}</span>
-            </button>
-          ))}
-        </div>
-      )}
-      {files.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {files.map((a) => (
-            <a
-              key={a.id}
-              href={a.url}
-              download={a.filename}
-              rel="noopener noreferrer"
-              aria-label={t("thread.download", { name: a.filename })}
-              className="group flex h-10 max-w-[260px] items-center gap-2.5 rounded-md border border-line bg-surface pl-2.5 pr-3 hover:border-line-strong"
-            >
-              <FileText className="size-4 shrink-0 text-fg-3" />
-              <span className="min-w-0">
-                <span className="block truncate text-[12.5px] text-fg">{a.filename}</span>
-                <span className="mono block text-[10.5px] text-fg-4">{bytes(a.size)}</span>
-              </span>
-              <Download className="ml-1 size-3.5 shrink-0 text-fg-4 group-hover:text-fg" />
-            </a>
-          ))}
-        </div>
-      )}
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)} title={preview?.filename ?? ""} size="xl">
-        {preview && (
-          <div className="flex flex-col items-center gap-3 pb-2">
-            <img src={inlineUrl(preview.url)} alt={preview.filename} referrerPolicy="no-referrer" className="ph-no-capture max-h-[60vh] max-w-full rounded-md border border-line" />
-            <a href={preview.url} download={preview.filename} className="text-xs text-fg-3 underline underline-offset-2 hover:text-fg">
-              {t("thread.download", { name: preview.filename })}
-            </a>
-          </div>
-        )}
-      </Dialog>
-    </div>
-  );
+  const files = items.filter((a) => !a.inline).map((a) => ({ ...a, imageUrl: inlineUrl(a.url) }));
+  return <AttachmentList files={files} />;
 }
 
 const list = (xs: MailAddress[]) => xs.map(formatAddress).join(", ");

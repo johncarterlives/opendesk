@@ -32,6 +32,9 @@ type listQuery struct {
 	// tickets are left out unless the caller is the assignee. nil applies no visibility
 	// (internal callers only).
 	Hidden []uuid.UUID
+	// byAddress narrows Q to its address matches alone (domain.AddressTicketsSQL): the search
+	// palette lists those first.
+	byAddress bool
 }
 
 // forCaller returns q with the caller's visibility applied.
@@ -229,14 +232,19 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 		b.add(hd.FieldClause(def, ff, "t.fields", b.arg, me))
 	}
 	if q := strings.TrimSpace(f.Q); q != "" {
-		b.add(searchClause(b, ws, q))
+		if f.byAddress {
+			b.add("t.id IN (" + domain.AddressTicketsSQL(ws, b.arg(domain.AddressQuery(q))) + ")")
+		} else {
+			b.add(searchClause(b, ws, q))
+		}
 	}
 	return nil
 }
 
 // searchClause is the q filter, ws the workspace's parameter: the ticket's number or alias,
-// its subject and fields (full words, and word prefixes), its messages, and its customer's
-// name, email and phone (contacts.search).
+// its subject and fields, its messages (full words, and word prefixes), its customer's name,
+// email and phone (contacts.search), and, for one address-like word, the addresses of its
+// customer and of its messages' senders and recipients (domain.AddressTicketsSQL).
 //
 // Each source is its own lookup of ticket ids, joined by UNION, so Postgres reads the search
 // indexes (GIN on tickets.search, tickets.fields_search, messages.search and contacts.search,
@@ -244,7 +252,8 @@ func applyFilters(b *sqlBuilder, wid uuid.UUID, me *uuid.UUID, f listQuery) erro
 // ticket's columns and correlated EXISTS on its messages and contact could use none of them.
 func searchClause(b *sqlBuilder, ws, q string) string {
 	var ids []string
-	if m := domain.TicketNumberRef.FindStringSubmatch(q); m != nil {
+	m := domain.TicketNumberRef.FindStringSubmatch(q)
+	if m != nil {
 		n, _ := strconv.ParseInt(m[1], 10, 64)
 		ids = append(ids, "SELECT nt.id FROM tickets nt WHERE nt.workspace_id = "+ws+" AND nt.number = "+b.arg(n))
 	}
@@ -254,16 +263,24 @@ func searchClause(b *sqlBuilder, ws, q string) string {
 	}
 	tsq := "websearch_to_tsquery('simple', " + b.arg(q) + ")"
 	own := "st.search @@ " + tsq + " OR st.fields_search @@ " + tsq
+	message := "fm.search @@ " + tsq
 	contact := "fc.search @@ " + tsq
 	if pq := prefixQuery(q); pq != "" {
 		ptsq := "to_tsquery('simple', " + b.arg(pq) + ")"
 		own += " OR st.search @@ " + ptsq + " OR st.fields_search @@ " + ptsq
+		// "#12" is a ticket's number, not the start of every number in every message.
+		if m == nil {
+			message += " OR fm.search @@ " + ptsq
+		}
 		contact += " OR fc.search @@ " + ptsq
 	}
 	ids = append(ids,
 		"SELECT st.id FROM tickets st WHERE st.workspace_id = "+ws+" AND ("+own+")",
-		"SELECT fm.ticket_id FROM messages fm WHERE fm.workspace_id = "+ws+" AND fm.deleted_at IS NULL AND fm.search @@ "+tsq,
+		"SELECT fm.ticket_id FROM messages fm WHERE fm.workspace_id = "+ws+" AND fm.deleted_at IS NULL AND ("+message+")",
 		"SELECT ct.id FROM contacts fc JOIN tickets ct ON ct.workspace_id = fc.workspace_id AND ct.contact_id = fc.id WHERE fc.workspace_id = "+ws+" AND ("+contact+")")
+	if aq := domain.AddressQuery(q); aq != "" {
+		ids = append(ids, domain.AddressTicketsSQL(ws, b.arg(aq)))
+	}
 	return "t.id IN (" + strings.Join(ids, " UNION ") + ")"
 }
 

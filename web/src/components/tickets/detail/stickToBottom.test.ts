@@ -157,29 +157,46 @@ describe("stickToBottom", () => {
   });
 });
 
-describe("stickToBottom with the latest message's floor", () => {
+describe("stickToBottom with the latest message", () => {
   beforeEach(() => {
     resized = [];
     vi.stubGlobal("ResizeObserver", FakeResizeObserver);
   });
   afterEach(() => vi.unstubAllGlobals());
+  const at = (top: number, count = 3) => () => ({ top, count });
 
   it("opens on the latest message when history after it is taller than the box", () => {
     // End at 1600; the latest message starts at 1216, so the hold stops at 1200.
     const b = box(2000);
-    stickToBottom(b.el, document.createElement("div"), () => 1200);
+    stickToBottom(b.el, document.createElement("div"), at(1200));
     expect(b.el.scrollTop).toBe(1200);
   });
 
-  it("opens at the end when the latest message is in view there", () => {
+  it("opens at the end when the latest message and what follows fit", () => {
     const b = box(2000);
-    stickToBottom(b.el, document.createElement("div"), () => 1700);
+    stickToBottom(b.el, document.createElement("div"), at(1700));
     expect(b.gap()).toBe(0);
+  });
+
+  it("opens at the top of a latest message taller than the box", () => {
+    // A 1500 px email starting at 516, ending the timeline at 2016.
+    const b = box(2100);
+    stickToBottom(b.el, document.createElement("div"), at(500));
+    expect(b.el.scrollTop).toBe(500);
+  });
+
+  it("stays at the top of a tall message while its own frame grows", () => {
+    const b = box(1200);
+    const s = stickToBottom(b.el, document.createElement("div"), at(500));
+    b.size.scrollHeight = 4000;
+    resize();
+    expect(b.el.scrollTop).toBe(500);
+    expect(s.pinned).toBe(true);
   });
 
   it("keeps the message in view while more history arrives below it", () => {
     const b = box(2000);
-    const s = stickToBottom(b.el, document.createElement("div"), () => 1200);
+    const s = stickToBottom(b.el, document.createElement("div"), at(1200));
     b.size.scrollHeight = 2300;
     resize();
     s.follow();
@@ -190,16 +207,34 @@ describe("stickToBottom with the latest message's floor", () => {
   it("follows the message as content above it grows", () => {
     const b = box(2000);
     let floor = 1200;
-    stickToBottom(b.el, document.createElement("div"), () => floor);
+    stickToBottom(b.el, document.createElement("div"), () => ({ top: floor, count: 3 }));
     b.size.scrollHeight = 2500;
     floor = 1700;
     resize();
     expect(b.el.scrollTop).toBe(1700);
   });
 
+  it("lets go when the agent scrolls down into a tall message, and leaves them there as it grows", () => {
+    const b = box(3000);
+    const s = stickToBottom(b.el, document.createElement("div"), at(500));
+    b.scrollTo(900);
+    expect(s.pinned).toBe(false);
+    b.size.scrollHeight = 3600;
+    resize();
+    s.follow();
+    expect(b.el.scrollTop).toBe(900);
+  });
+
+  it("lets go when the agent scrolls down over an email's frame, where no wheel reaches the box", () => {
+    const b = box(3000);
+    const s = stickToBottom(b.el, document.createElement("div"), at(500));
+    b.moved(700);
+    expect(s.pinned).toBe(false);
+  });
+
   it("holds the end once the agent scrolls down past the message", () => {
     const b = box(2000);
-    const s = stickToBottom(b.el, document.createElement("div"), () => 1200);
+    const s = stickToBottom(b.el, document.createElement("div"), at(1200));
     b.scrollTo(1600);
     expect(s.pinned).toBe(true);
     b.size.scrollHeight = 2300;
@@ -209,12 +244,61 @@ describe("stickToBottom with the latest message's floor", () => {
 
   it("lets go when the agent scrolls up from the message", () => {
     const b = box(2000);
-    const s = stickToBottom(b.el, document.createElement("div"), () => 1200);
+    const s = stickToBottom(b.el, document.createElement("div"), at(1200));
     b.scrollTo(500);
     expect(s.pinned).toBe(false);
     b.size.scrollHeight = 2300;
     resize();
     expect(b.el.scrollTop).toBe(500);
+  });
+
+  it("brings a new message in at its top when it is taller than the box", () => {
+    const b = box(2000);
+    let latest = { top: 1200, count: 3 };
+    const s = stickToBottom(b.el, document.createElement("div"), () => latest);
+    b.scrollTo(1600);
+    // A 1200 px email arrives at the end.
+    b.size.scrollHeight = 3216;
+    latest = { top: 2000, count: 4 };
+    s.follow();
+    expect(b.el.scrollTop).toBe(2000);
+    // Its frame grows; the agent keeps reading from where it started.
+    b.size.scrollHeight = 3800;
+    resize();
+    expect(b.el.scrollTop).toBe(2000);
+  });
+
+  it("brings a short new message in at the end", () => {
+    const b = box(2000);
+    let latest = { top: 1200, count: 3 };
+    const s = stickToBottom(b.el, document.createElement("div"), () => latest);
+    b.scrollTo(1600);
+    b.size.scrollHeight = 2200;
+    latest = { top: 1984, count: 4 };
+    s.follow();
+    expect(b.gap()).toBe(0);
+  });
+
+  it("stays at the end when the message's own frame grows after the agent read down to it", () => {
+    const b = box(2000);
+    const s = stickToBottom(b.el, document.createElement("div"), at(1200));
+    b.scrollTo(1600);
+    b.size.scrollHeight = 2400;
+    resize();
+    expect(b.gap()).toBe(0);
+    expect(s.pinned).toBe(true);
+  });
+
+  it("leaves a new message alone while the agent reads further up", () => {
+    const b = box(2000);
+    let latest = { top: 1200, count: 3 };
+    const s = stickToBottom(b.el, document.createElement("div"), () => latest);
+    b.scrollTo(300);
+    b.size.scrollHeight = 3216;
+    latest = { top: 2000, count: 4 };
+    s.follow();
+    resize();
+    expect(b.el.scrollTop).toBe(300);
   });
 });
 
@@ -246,11 +330,11 @@ describe("latestMessageFloor", () => {
 
   it("puts a message that fits near the top of the box", () => {
     const { el, content } = timeline([[0, 300], [1200, 200]], 400, 50);
-    expect(latestMessageFloor(el, content)).toBe(1200 - FLOOR_PAD);
+    expect(latestMessageFloor(el, content)).toEqual({ top: 1200 - FLOOR_PAD, count: 2 });
   });
 
-  it("puts the end of a message taller than the box near its bottom", () => {
+  it("puts the top of a message taller than the box near its top, so it reads from its first line", () => {
     const { el, content } = timeline([[1000, 900]]);
-    expect(latestMessageFloor(el, content)).toBe(1900 - 400 + FLOOR_PAD);
+    expect(latestMessageFloor(el, content)).toEqual({ top: 1000 - FLOOR_PAD, count: 1 });
   });
 });

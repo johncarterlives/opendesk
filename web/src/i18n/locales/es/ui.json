@@ -206,5 +206,18 @@
     "automations": "Automatizaciones",
     "slaPolicies": "Políticas de SLA",
     "teams": "Equipos"
+  },
+  "attachments": {
+    "preview": "Vista previa de {{name}}",
+    "download": "Descargar {{name}}",
+    "downloadShort": "Descargar",
+    "position": "{{n}} de {{total}}",
+    "previous": "Archivo anterior",
+    "next": "Archivo siguiente",
+    "loading": "Cargando vista previa",
+    "failed": "No se pudo cargar la vista previa. Descarga el archivo para abrirlo.",
+    "refused": "Este archivo no se puede mostrar aquí. Descárgalo para abrirlo en tu dispositivo.",
+    "tooLarge": "Este archivo es demasiado grande para la vista previa. Descárgalo para abrirlo.",
+    "noViewer": "Los PDF no se pueden mostrar en esta app. Descarga el archivo para abrirlo."
   }
 }

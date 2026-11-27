@@ -253,6 +253,7 @@
     "docs": "Aus der Dokumentation",
     "answer_item": "Mit {{name}} beantworten",
     "answering": "{{name}} liest die Dokumentation",
-    "answer_error": "Gerade keine Antwort möglich. Die Orte und die Dokumentation unten helfen vielleicht weiter."
+    "answer_error": "Gerade keine Antwort möglich. Die Orte und die Dokumentation unten helfen vielleicht weiter.",
+    "contacts": "Kontakte"
   }
 }

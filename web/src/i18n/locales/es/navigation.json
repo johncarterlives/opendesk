@@ -101,7 +101,8 @@
     "open": "Todos los abiertos",
     "pending": "Pendientes",
     "solved": "Resueltos",
-    "spam": "Spam"
+    "spam": "Spam",
+    "all": "Todos los tickets"
   },
   "groups": {
     "account": "Cuenta",
@@ -197,7 +198,9 @@
     "docs": "Documentación",
     "searchSettings": "Buscar en los ajustes",
     "settingsNoResults": "Ningún ajuste coincide",
-    "settingsNoResultsHelp": "Prueba con otras palabras o busca en la documentación desde el menú de comandos."
+    "settingsNoResultsHelp": "Prueba con otras palabras o busca en la documentación desde el menú de comandos.",
+    "seeAll": "Ver todos los tickets de «{{query}}»",
+    "followUp": "Seguimiento"
   },
   "shortcuts": {
     "general": "General",

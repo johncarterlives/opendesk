@@ -101,7 +101,8 @@
     "open": "Tous les tickets ouverts",
     "pending": "En attente",
     "solved": "Résolus",
-    "spam": "Indésirables"
+    "spam": "Indésirables",
+    "all": "Tous les tickets"
   },
   "groups": {
     "account": "Compte",
@@ -197,7 +198,9 @@
     "docs": "Documentation",
     "searchSettings": "Rechercher dans les paramètres",
     "settingsNoResults": "Aucun paramètre ne correspond",
-    "settingsNoResultsHelp": "Essayez d’autres mots, ou cherchez dans la documentation depuis le menu de commandes."
+    "settingsNoResultsHelp": "Essayez d’autres mots, ou cherchez dans la documentation depuis le menu de commandes.",
+    "seeAll": "Voir tous les tickets pour « {{query}} »",
+    "followUp": "Suite"
   },
   "shortcuts": {
     "general": "Général",

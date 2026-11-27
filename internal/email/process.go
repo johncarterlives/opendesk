@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net/mail"
 	"strconv"
 	"strings"
 	"time"
@@ -179,6 +180,19 @@ func (s *service) processInbound(ctx context.Context, wid, inboundID uuid.UUID) 
 			sender, senderName = visitor, pm.ReplyName
 		}
 	}
+	// Mail the workspace sent someone else with a copy here (a shop's order confirmation, a
+	// teammate writing to a customer) is about that someone: they are the customer. It is
+	// the workspace's own mail when it is from one of its addresses, or passed DMARC from one
+	// of its own domains with none of its addresses in To and is written to someone outside.
+	customer, customerName := sender, senderName
+	if formSender == "" && !authFailed {
+		to := s.customerOf(pm, own)
+		ownCopy := verdict == authPass && !formSenderTrusted(m.TrustedFormSenders, sender) && s.copiedOwnMail(pm, own, sender, to.Address)
+		if to.Address != "" && (internal || ownCopy) {
+			internal = true
+			customer, customerName = to.Address, to.Name
+		}
+	}
 	receivedAt := receivedAddress(m, pm, rcpt)
 	var blocked bool
 	if err := s.d.DB.Pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM contacts c WHERE c.workspace_id = $1 AND c.blocked AND (c.email = $2
@@ -257,14 +271,22 @@ func (s *service) processInbound(ctx context.Context, wid, inboundID uuid.UUID) 
 			return err
 		}
 		if match != nil && internal {
-			// A teammate's mail threads only into a conversation they are the customer of.
-			if match, err = s.contactMatch(ctx, tx, wid, match, sender); err != nil {
+			// A teammate's mail threads only into a conversation whose customer is them or the
+			// customer it is written to.
+			if match, err = s.contactMatch(ctx, tx, wid, match, sender, customer); err != nil {
 				return err
 			}
 		}
-		contactID, _, err := domain.UpsertContactByEmail(ctx, tx, wid, sender, senderName)
+		// The sender wrote the message; the customer is who the ticket is with.
+		authorID, _, err := domain.UpsertContactByEmail(ctx, tx, wid, sender, senderName)
 		if err != nil {
 			return err
+		}
+		contactID := authorID
+		if customer != sender {
+			if contactID, _, err = domain.UpsertContactByEmail(ctx, tx, wid, customer, customerName); err != nil {
+				return err
+			}
 		}
 		attIDs, err := insertAttachments(ctx, tx, wid, atts)
 		if err != nil {
@@ -276,6 +298,12 @@ func (s *service) processInbound(ctx context.Context, wid, inboundID uuid.UUID) 
 			ticket.ID, ticket.Number = match.ticketID, match.number
 			if newcomer, err = newToConversation(ctx, tx, wid, ticket.ID, sender); err != nil {
 				return err
+			}
+			// The workspace's own mail names its customer, and someone it wrote to answers it.
+			if customer != sender || !newcomer && !internal && !authFailed {
+				if err := s.adoptCustomer(ctx, tx, wid, ticket.ID, contactID, own); err != nil {
+					return err
+				}
 			}
 		} else {
 			custom := map[string]any{}
@@ -336,6 +364,8 @@ func (s *service) processInbound(ctx context.Context, wid, inboundID uuid.UUID) 
 		switch {
 		case created:
 			trigger = jobs.TriggerTicketCreated
+		case customer != sender:
+			trigger = "none" // the workspace's own mail to its customer is not the customer replying
 		case authFailed:
 			trigger = "none" // no customer_replied automations for a sender that failed authentication
 		case newcomer:
@@ -349,7 +379,7 @@ func (s *service) processInbound(ctx context.Context, wid, inboundID uuid.UUID) 
 		// (status_changed with reason "sender_unverified" records it).
 		msg, err := domain.AddMessage(ctx, tx, s.d.Jobs, domain.NewMessage{
 			WorkspaceID: wid, TicketID: ticket.ID, Kind: "reply", Direction: "inbound", AuthorType: "contact",
-			AuthorContactID: &contactID, BodyHTML: body.html, BodyText: body.text, FullHTML: body.full,
+			AuthorContactID: &authorID, BodyHTML: body.html, BodyText: body.text, FullHTML: body.full,
 			Subject: pm.Subject, FromEmail: sender, FromName: displayname.Clean(senderName, displayname.Person),
 			To: pm.To, Cc: pm.Cc, EmailMessageID: msgID, InReplyTo: pm.InReplyTo, References: pm.References,
 			InboundEmailID: &inboundID, AttachmentIDs: attIDs, Trigger: trigger, MailboxID: &m.ID,
@@ -537,8 +567,8 @@ func msgIDOf(pm *parsedMail, taken bool) *string {
 	return &pm.MessageID
 }
 
-// contactMatch keeps a thread match only when sender is the ticket's contact.
-func (s *service) contactMatch(ctx context.Context, tx pgx.Tx, wid uuid.UUID, t *threadMatch, sender string) (*threadMatch, error) {
+// contactMatch keeps a thread match only when the ticket's contact is sender or customer.
+func (s *service) contactMatch(ctx context.Context, tx pgx.Tx, wid uuid.UUID, t *threadMatch, sender, customer string) (*threadMatch, error) {
 	var contactEmail *string
 	err := tx.QueryRow(ctx, `SELECT c.email FROM tickets t LEFT JOIN contacts c ON c.id = t.contact_id AND c.workspace_id = t.workspace_id
 		WHERE t.workspace_id = $1 AND t.id = $2`, wid, t.ticketID).Scan(&contactEmail)
@@ -548,10 +578,89 @@ func (s *service) contactMatch(ctx context.Context, tx pgx.Tx, wid uuid.UUID, t 
 	if err != nil {
 		return nil, err
 	}
-	if contactEmail == nil || !strings.EqualFold(*contactEmail, sender) {
+	if contactEmail == nil || !strings.EqualFold(*contactEmail, sender) && !strings.EqualFold(*contactEmail, customer) {
 		return nil, nil
 	}
 	return t, nil
+}
+
+// workspaceAddress reports one of the workspace's addresses (own) or a forwarding address.
+func (s *service) workspaceAddress(addr string, own []string) bool {
+	return slicesContainsFold(own, addr) || strings.EqualFold(emailDomain(addr), s.inboundDomain())
+}
+
+// customerOf is who the workspace's own mail is written to: the first address in To, then
+// Cc, that is not a workspace address.
+func (s *service) customerOf(pm *parsedMail, own []string) mail.Address {
+	for _, a := range pm.recipients() {
+		if !s.workspaceAddress(a.Address, own) {
+			return a
+		}
+	}
+	return mail.Address{}
+}
+
+// copiedOwnMail reports mail from another address at one of the workspace's own domains
+// (the registrable domain of a mailbox address or alias, never a public provider's) that
+// names none of the workspace's addresses in To and is written to customer outside that
+// domain: the organisation wrote to them and the workspace got a copy.
+func (s *service) copiedOwnMail(pm *parsedMail, own []string, sender, customer string) bool {
+	org := domain.OrgDomain(sender)
+	if org == "" || publicMailDomains[org] || domain.OrgDomain(customer) == org {
+		return false
+	}
+	ours := false
+	for _, a := range own {
+		ours = ours || domain.OrgDomain(a) == org
+	}
+	if !ours {
+		return false
+	}
+	for _, a := range pm.To {
+		if s.workspaceAddress(a, own) {
+			return false
+		}
+	}
+	return true
+}
+
+// adoptCustomer makes contactID the customer of an email ticket whose customer is a
+// workspace address (opened by the workspace's own mail before that mail named who it was
+// written to): the person answering from outside is who the conversation is with. The
+// change is on the timeline as contact_changed with reason "customer_answered".
+func (s *service) adoptCustomer(ctx context.Context, tx pgx.Tx, wid, ticketID, contactID uuid.UUID, own []string) error {
+	var cur uuid.UUID
+	var email *string
+	var from string
+	err := tx.QueryRow(ctx, `SELECT c.id, c.email, COALESCE(NULLIF(c.name, ''), c.email::text, '') FROM tickets t
+		JOIN contacts c ON c.id = t.contact_id AND c.workspace_id = t.workspace_id
+		WHERE t.workspace_id = $1 AND t.id = $2 AND t.channel = $3`, wid, ticketID, domain.ChannelEmail).Scan(&cur, &email, &from)
+	if db.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if cur == contactID || email == nil || !s.workspaceAddress(*email, own) {
+		return nil
+	}
+	var to string
+	if err := tx.QueryRow(ctx, `SELECT COALESCE(NULLIF(name, ''), email::text, '') FROM contacts WHERE workspace_id = $1 AND id = $2`,
+		wid, contactID).Scan(&to); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE tickets SET contact_id = $3, updated_at = now() WHERE workspace_id = $1 AND id = $2`,
+		wid, ticketID, contactID); err != nil {
+		return err
+	}
+	if _, err := domain.LogActivity(ctx, tx, wid, ticketID, "system", nil, "contact_changed", map[string]any{
+		"from":   map[string]any{"id": cur.String(), "name": from},
+		"to":     map[string]any{"id": contactID.String(), "name": to},
+		"reason": "customer_answered",
+	}); err != nil {
+		return err
+	}
+	return domain.PublishTicketUpdated(ctx, tx, wid, ticketID, []string{"contact_id"})
 }
 
 // newToConversation reports a sender who is neither the ticket's customer nor someone the

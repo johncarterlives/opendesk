@@ -10,7 +10,7 @@ import { SidebarRow, useRowEdit } from "@/components/collab/SidebarRow";
 import { useBuiltinSectionEdit } from "@/components/collab/SectionMenu";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BarChart3, BookOpen, Check, ChevronRight, ChevronsUpDown, CircleCheck, CircleDashed, Clock, Copy, EyeOff, Inbox, Keyboard, Lock, LogOut, Monitor, Moon, NotebookText, PanelLeftClose, PanelLeftOpen, Pencil, PencilRuler, Plus, Server, Settings, ShieldAlert, SlidersHorizontal, Sun, User, UserPlus, Users } from "lucide-react";
+import { BarChart3, BookOpen, Check, ChevronRight, ChevronsUpDown, CircleCheck, CircleDashed, Clock, Copy, EyeOff, Inbox, Layers, Keyboard, Lock, LogOut, Monitor, Moon, NotebookText, PanelLeftClose, PanelLeftOpen, Pencil, PencilRuler, Plus, Server, Settings, ShieldAlert, SlidersHorizontal, Sun, User, UserPlus, Users } from "lucide-react";
 import { DropdownMenu as M } from "radix-ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
@@ -83,6 +83,7 @@ const folderIcons: Record<FolderId, ReactNode> = {
   pending: <Clock />,
   solved: <CircleCheck />,
   spam: <ShieldAlert />,
+  all: <Layers />,
 };
 
 /**

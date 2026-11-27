@@ -205,5 +205,18 @@
     "automations": "Automatisierungen",
     "slaPolicies": "SLA-Richtlinien",
     "teams": "Teams"
+  },
+  "attachments": {
+    "preview": "Vorschau von {{name}}",
+    "download": "{{name}} herunterladen",
+    "downloadShort": "Herunterladen",
+    "position": "{{n}} von {{total}}",
+    "previous": "Vorherige Datei",
+    "next": "Nächste Datei",
+    "loading": "Vorschau wird geladen",
+    "failed": "Die Vorschau konnte nicht geladen werden. Lade die Datei herunter, um sie zu öffnen.",
+    "refused": "Diese Datei kann hier nicht angezeigt werden. Lade sie herunter, um sie auf deinem Gerät zu öffnen.",
+    "tooLarge": "Diese Datei ist zu groß für die Vorschau. Lade sie herunter, um sie zu öffnen.",
+    "noViewer": "PDFs können in dieser App nicht angezeigt werden. Lade die Datei herunter, um sie zu öffnen."
   }
 }

@@ -101,7 +101,8 @@
     "open": "全部待处理",
     "pending": "等待中",
     "solved": "已解决",
-    "spam": "垃圾邮件"
+    "spam": "垃圾邮件",
+    "all": "全部工单"
   },
   "groups": {
     "account": "账户",
@@ -197,7 +198,9 @@
     "docs": "文档",
     "searchSettings": "搜索设置",
     "settingsNoResults": "没有匹配的设置",
-    "settingsNoResultsHelp": "换个说法试试，或在命令菜单中搜索文档。"
+    "settingsNoResultsHelp": "换个说法试试，或在命令菜单中搜索文档。",
+    "seeAll": "查看“{{query}}”的全部工单",
+    "followUp": "后续"
   },
   "shortcuts": {
     "general": "常规",

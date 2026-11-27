@@ -233,12 +233,16 @@ func (h *handler) download(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, r, http.StatusNotFound, "not_found", "Attachment not found")
 		return
 	}
-	if signed, err := h.d.Storage.SignedURL(ctx, a.Key, a.Filename, 5*time.Minute); err == nil && signed != "" {
-		w.Header().Set("Cache-Control", "private, no-store")
-		http.Redirect(w, r, signed, http.StatusFound)
-		return
-	} else if err != nil {
-		h.d.Log.Warn("sign attachment url", "err", err)
+	// stream=1 sends the bytes from here instead of redirecting to the store, for the app's
+	// preview: a script cannot follow a redirect to another origin. The file is served alike.
+	if r.URL.Query().Get("stream") != "1" {
+		if signed, err := h.d.Storage.SignedURL(ctx, a.Key, a.Filename, 5*time.Minute); err == nil && signed != "" {
+			w.Header().Set("Cache-Control", "private, no-store")
+			http.Redirect(w, r, signed, http.StatusFound)
+			return
+		} else if err != nil {
+			h.d.Log.Warn("sign attachment url", "err", err)
+		}
 	}
 	body, err := h.d.Storage.Get(ctx, a.Key)
 	if err != nil {

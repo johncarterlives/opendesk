@@ -58,6 +58,10 @@ func TestEmbedFrameSourcesAgree(t *testing.T) {
 		if frame == nil {
 			t.Fatalf("no frame-src in %s", csp)
 		}
+		// The attachment preview shows a PDF from a blob: URL the app made.
+		if !slices.Contains(strings.Fields(frame[1]), "blob:") {
+			t.Errorf("frame-src lacks blob: %s", frame[1])
+		}
 		for _, o := range embedFrameSources {
 			if !slices.Contains(strings.Fields(frame[1]), o) {
 				t.Errorf("frame-src lacks %s: %s", o, frame[1])

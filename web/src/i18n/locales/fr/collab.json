@@ -227,7 +227,10 @@
     "shareWith": "Partager avec…",
     "moveTo": "Déplacer vers…",
     "labelAs": "Ajouter l’étiquette…",
-    "newTab": "Ouvrir dans un nouvel onglet"
+    "newTab": "Ouvrir dans un nouvel onglet",
+    "copyForAgent": "Copier pour un agent IA",
+    "copiedForAgent": "Copié. Collez-le dans votre agent IA.",
+    "copyFailed": "Impossible de copier. Réessayez."
   },
   "drop": {
     "otherAccount": "Ces conversations sont dans un autre compte.",
@@ -311,8 +314,6 @@
     "showQuoted": "Afficher le texte cité",
     "hideQuoted": "Masquer le texte cité",
     "download": "Télécharger {{name}}",
-    "preview": "Aperçu de {{name}}",
-    "fullSize": "Ouvrir en taille réelle",
     "readOnly": "Vous pouvez lire cette conversation. Les agents et les rôles supérieurs peuvent agir dessus.",
     "showComments": "Afficher les commentaires",
     "replyOrComment": "Choisir entre répondre à l’expéditeur ou commenter pour l’équipe",

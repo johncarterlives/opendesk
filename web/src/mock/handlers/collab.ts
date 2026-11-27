@@ -28,6 +28,7 @@ import type {
 } from "@/lib/api/types";
 import { firstLine } from "@/lib/collab/html";
 import { collabFromName } from "@/lib/collab/identities";
+import { samplePdf } from "../samplePdf";
 import { LABEL_TONES, toneHex, type LabelTone } from "@/lib/collab/labelTones";
 import { defaultSidebarPrefs, normalizePrefs, SECTION_IDS } from "@/lib/collab/sidebarPrefs";
 import { COLLAB_FROM_VARS, fromNameProblem, hasFromVars } from "@/lib/fromname";
@@ -355,7 +356,7 @@ function seedState(ws: WsData): State {
       const attachments: MailAttachment[] =
         story.attach && !fromUs && k === 0
           ? [
-              { id: "0", filename: "document.pdf", content_type: "application/pdf", size: 240_118, inline: false, content_id: "", url: "data:text/plain;charset=utf-8,Mock%20PDF" },
+              { id: "0", filename: "document.pdf", content_type: "application/pdf", size: 240_118, inline: false, content_id: "", url: samplePdf(story.subject, ["Attached to the email from " + person.email + "."]) },
               { id: "1", filename: "photo.png", content_type: "image/png", size: 88_210, inline: false, content_id: "", url: fileSvg(story.subject) },
             ]
           : [];
@@ -824,6 +825,9 @@ function seesAccount(ws: WsData, a: Account, uid: string) {
   if (a.ownerId === uid) return true;
   return a.visibility === "shared" && inAudience(ws, a.shared_with, uid);
 }
+
+/** Whether I see this Collab account: a reply draft keeps it as its address only then. */
+export const canSeeAccount = (ws: WsData, id: string) => visibleAccounts(ws).some((a) => a.id === id);
 
 function visibleAccounts(ws: WsData): Account[] {
   const s = state(ws);

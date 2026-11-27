@@ -101,7 +101,8 @@
     "open": "All open",
     "pending": "Pending",
     "solved": "Solved",
-    "spam": "Spam"
+    "spam": "Spam",
+    "all": "All tickets"
   },
   "groups": {
     "account": "Account",
@@ -197,7 +198,9 @@
     "docs": "Docs",
     "searchSettings": "Search settings",
     "settingsNoResults": "No settings match",
-    "settingsNoResultsHelp": "Try other words, or search the docs from the command menu."
+    "settingsNoResultsHelp": "Try other words, or search the docs from the command menu.",
+    "seeAll": "See all tickets for “{{query}}”",
+    "followUp": "Follow-up"
   },
   "shortcuts": {
     "general": "General",

@@ -19,7 +19,7 @@ When no AI provider is configured, `GET /v1/ai/config` reports `enabled: false` 
 | `POST` | `/v1/ai/translate` | agent | $0.01 | Translate HTML or text |
 | `POST` | `/v1/wiki/ai/write` | agent | $0.01 (a selection), $0.03 (from a page) | Ollie edits wiki text or writes from a page (not saved). See [Wiki](/api/resources/wiki/#ollie-writing) |
 | `POST` | `/v1/kb/articles/ai/draft` | agent | $0.05 | Draft an article (not saved) |
-| `GET` | `/v1/ai/search?q=` | viewer | $0 | Semantic search, same shape as `/v1/search` |
+| `GET` | `/v1/ai/search?q=` | viewer | $0 | Semantic search with full-text and address matches, same shape as `/v1/search` |
 | `POST` | `/v1/ai/app-help` | viewer, signed-in people only | $0.005 | A few sentences on using opendesk, from the places in the app and docs sections the command menu found for the question; API keys get `403` |
 
 Each call is charged on its real cost on the workspace's chosen model: the provider's cost times the instance markup (1.5 on opendesk Cloud). The typical cost column is what a call is charged when that cost is unknown. `costs` in [`GET /v1/ai/config`](#config) gives a typical call of each feature on the workspace's chosen models. A failed call costs nothing, and calls on the workspace's own provider key cost $0.

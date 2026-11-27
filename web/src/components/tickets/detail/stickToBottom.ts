@@ -1,22 +1,27 @@
-// Keeps the ticket timeline at its latest message (Timeline.tsx). It opens there, and stays
-// there while what it shows settles: emails drawn in their own frames grow once loaded,
-// images arrive, activity and side conversations come in after the messages, the reply box
-// grows and shrinks below. Only the agent scrolling up lets go; scrolling back down to the
-// end, or a new message while there, holds it again.
+// Holds the ticket timeline where the agent reads (Timeline.tsx). It opens on the latest message,
+// its first line in view however long it is, and stays there while what it shows settles: emails
+// drawn in their own frames grow once loaded, images arrive, activity and side conversations come
+// in after the messages, the reply box grows and shrinks below. A new message while the agent is
+// at the end comes into view the same way. Only the agent scrolling lets go; scrolling back down
+// to the end holds it again.
 
 /** How close to the end still counts as at the end, in pixels. */
 export const STICK_SLACK = 80;
-/** How long after the agent's wheel, touch, key or pointer a scroll up counts as theirs, in ms,
+/** How long after the agent's wheel, touch, key or pointer a scroll counts as theirs, in ms,
  * even while the content changes size. */
 const INTENT_MS = 1000;
 const UP_KEYS = new Set(["ArrowUp", "PageUp", "Home"]);
 
+/** The latest message: the scroll position that puts its top at the top of the box, and how many
+ * messages there are (a new one is a new latest message; a sent one swapping its id is not). */
+export type Latest = { readonly top: number; readonly count: number };
+
 export type Stick = {
-  /** Whether the box is held at its end. */
+  /** Whether the box is held. */
   readonly pinned: boolean;
-  /** Goes to the end if held there (new items, a live reply growing). */
+  /** Goes where the hold is if held (new items, a live reply growing). */
   follow(): void;
-  /** Lets go of the end, for a jump to a message further up (showInTimeline). */
+  /** Lets go, for a jump to a message further up (showInTimeline). */
   release(): void;
   stop(): void;
 };
@@ -24,27 +29,30 @@ export type Stick = {
 /**
  * Holds `el` (the scrolling box) at its end while it or `content` (what scrolls in it) changes size.
  *
- * `floor`, when given, says how far down the hold may go and still keep the latest message in view
- * (latestMessageFloor): history after it (triage, rules, API keys setting a status or a tag) is no
- * reason to scroll the message itself away. The hold goes to the end, or to that floor if it is
- * higher, until the agent scrolls themselves; from then on it is the end, as without one.
+ * `latest`, when given, keeps the hold from going past the latest message's top (latestMessageFloor):
+ * a message taller than the box is read from its first line, and history after it (triage, rules,
+ * API keys setting a status or a tag) is no reason to scroll it away. The hold goes to the end, or
+ * to that top if it is higher, until the agent scrolls themselves, and again for each new message
+ * that arrives while they are at the end.
  */
-export function stickToBottom(el: HTMLElement, content: Element, floor?: () => number | null): Stick {
+export function stickToBottom(el: HTMLElement, content: Element, latest?: () => Latest | null): Stick {
   let pinned = true;
-  // Whether the hold stops at `floor`: from the opening until the agent scrolls.
-  let capped = !!floor;
+  // How many messages there were when the agent last scrolled: the latest message then has been
+  // read past, and holds no longer; a newer one does.
+  let passed = 0;
   let last = el.scrollTop;
   let height = el.scrollHeight;
-  /** Where the hold is: the end, or higher up, where the latest message stays in view. */
+  const count = () => latest?.()?.count ?? 0;
+  /** Where the hold is: the end, or higher up, at the top of a latest message not read past yet. */
   const target = () => {
     const end = el.scrollHeight - el.clientHeight;
-    const f = capped ? floor?.() : null;
-    return f == null ? end : Math.max(0, Math.min(end, f));
+    const l = latest?.();
+    return l && l.count > passed ? Math.max(0, Math.min(end, l.top)) : end;
   };
-  // When the agent last reached for the scroll. A scroll up while the content changed size
-  // (a frame shrinking and growing again within a frame, the browser clamping) is the
-  // layout's, unless they just did; a wheel over an email's frame never reaches the box,
-  // but leaves the content as it was.
+  // When the agent last reached for the scroll. A scroll while the content changed size (a frame
+  // shrinking and growing again within a frame, the browser clamping or anchoring the scroll) is
+  // the layout's, unless they just did; a wheel over an email's frame never reaches the box, but
+  // leaves the content as it was.
   let input = Number.NEGATIVE_INFINITY;
   const reach = () => {
     input = performance.now();
@@ -64,16 +72,12 @@ export function stickToBottom(el: HTMLElement, content: Element, floor?: () => n
     const resized = el.scrollHeight !== height;
     const theirs = performance.now() - input < INTENT_MS;
     height = el.scrollHeight;
-    // The agent scrolling down past the latest message reads what came after it: the end
-    // holds from then on.
-    if (capped && theirs && el.scrollTop > last) capped = false;
-    // Content growing or shrinking moves the end, not the agent: only the agent scrolling
-    // up away from the end lets go of it.
-    if (gap < STICK_SLACK || (capped && Math.abs(el.scrollTop - target()) < STICK_SLACK)) pinned = true;
-    else if (el.scrollTop < last && (!resized || theirs)) {
-      pinned = false;
-      capped = false;
-    }
+    // Content growing or shrinking moves the end, not the agent. The agent scrolling, up or down,
+    // reads on from where they put it: only the end holds again.
+    if (el.scrollTop !== last && (theirs || !resized)) {
+      passed = count();
+      pinned = gap < STICK_SLACK;
+    } else if (gap < STICK_SLACK) pinned = true;
     last = el.scrollTop;
   };
   el.addEventListener("scroll", onScroll, { passive: true });
@@ -90,7 +94,7 @@ export function stickToBottom(el: HTMLElement, content: Element, floor?: () => n
     follow,
     release: () => {
       pinned = false;
-      capped = false;
+      passed = count();
     },
     stop: () => {
       el.removeEventListener("scroll", onScroll);
@@ -101,21 +105,18 @@ export function stickToBottom(el: HTMLElement, content: Element, floor?: () => n
   };
 }
 
-/** Room kept between the latest message and the box's edge when the hold stops at it, in pixels. */
+/** Room kept above the latest message when the hold stops at it, in pixels. */
 export const FLOOR_PAD = 16;
 
 /**
- * The lowest scroll position of `el` that keeps the latest message in `content` (the last
- * `article[id^="m-"]`, as MessageItem draws them) in view: its top near the top of the box when
- * it fits, else its end near the bottom. Null when there is no message yet.
+ * The latest message in `content` (the last `article[id^="m-"]`, as MessageItem draws them): the
+ * scroll position of `el` that puts its top just below the top of the box, so it reads from its
+ * first line whatever its height. Null when there is no message yet.
  */
-export function latestMessageFloor(el: HTMLElement, content: Element): number | null {
+export function latestMessageFloor(el: HTMLElement, content: Element): Latest | null {
   const messages = content.querySelectorAll('article[id^="m-"]');
   const m = messages[messages.length - 1];
   if (!m) return null;
-  const box = el.getBoundingClientRect();
-  const r = m.getBoundingClientRect();
-  const top = r.top - box.top + el.scrollTop;
-  const bottom = r.bottom - box.top + el.scrollTop;
-  return Math.max(top - FLOOR_PAD, bottom - el.clientHeight + FLOOR_PAD);
+  const top = m.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop;
+  return { top: top - FLOOR_PAD, count: messages.length };
 }

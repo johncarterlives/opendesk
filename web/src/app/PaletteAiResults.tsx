@@ -2,7 +2,9 @@ import { Command } from "cmdk";
 import { ArrowRight, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { AiIcon, useCostLabel } from "@/components/ai/bits";
+import { Avatar } from "@/components/ui/avatar";
 import { StatusIcon } from "@/components/tickets/bits";
+import { FollowUpHint } from "@/components/tickets/followUp";
 import { Requester } from "@/components/tickets/requester";
 import { Kbd } from "@/components/ui/kbd";
 import type { SearchResults } from "@/lib/api/types";
@@ -15,7 +17,7 @@ import { groupCls, HitItem, Item } from "./paletteItems";
 /**
  * Ask AI: places in the app and docs sections that answer a question about opendesk (the
  * app's own search, no AI), Ollie's short answer from them on request (POST /v1/ai/app-help),
- * and tickets and articles related by meaning (GET /v1/ai/search).
+ * and tickets, contacts and articles related by meaning or matching an address (GET /v1/ai/search).
  */
 export function AiResults({
   query,
@@ -23,6 +25,7 @@ export function AiResults({
   data,
   error,
   ticket,
+  contact,
   article,
   onExample,
   places,
@@ -44,8 +47,9 @@ export function AiResults({
   /** Ollie's answer to this query, once asked. */
   answer: { pending: boolean; text?: string; error: boolean } | null;
   onAnswer: () => void;
-  /** A ticket's and an article's link (CommandPalette's link()). */
+  /** A ticket's, a contact's and an article's link (CommandPalette's link()). */
   ticket: (id: string) => { href: string; onSelect: () => void };
+  contact: (id: string) => { href: string; onSelect: () => void };
   article: (id: string) => { href: string; onSelect: () => void };
 }) {
   const { t } = useTranslation("ai");
@@ -83,8 +87,9 @@ export function AiResults({
       </div>
     );
   const tickets = data?.tickets ?? [];
+  const contacts = data?.contacts ?? [];
   const articles = data?.articles ?? [];
-  if (!inApp && (error || (!tickets.length && !articles.length)))
+  if (!inApp && (error || (!tickets.length && !contacts.length && !articles.length)))
     return <p className="px-6 py-10 text-center text-[13px] text-fg-3">{error ? t("palette.error") : t("palette.empty")}</p>;
   const heading = (label: string) => (
     <span className="flex items-center gap-1.5">
@@ -146,7 +151,22 @@ export function AiResults({
               <span className="truncate" data-ph-mask>
                 {x.subject}
               </span>
+              <FollowUpHint ticket={x} />
               <Requester contact={x.contact} className="ml-auto" />
+            </Item>
+          ))}
+        </Command.Group>
+      )}
+      {contacts.length > 0 && (
+        <Command.Group heading={heading(t("palette.contacts"))} className={groupCls}>
+          {contacts.map((c) => (
+            <Item key={c.id} value={`ai contact ${c.id}`} icon={<Avatar name={c.name || c.email || "?"} src={c.avatar_url} size="sm" />} hint={c.company?.name} {...contact(c.id)}>
+              <span className="truncate" data-ph-mask>
+                {c.name}
+              </span>
+              <span className="truncate text-xs text-fg-3" data-ph-mask>
+                {c.email}
+              </span>
             </Item>
           ))}
         </Command.Group>

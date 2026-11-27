@@ -126,6 +126,7 @@ export const ticketFolderIcons: Record<FolderId, ReactNode> = {
   pending: <Clock />,
   solved: <CircleCheck />,
   spam: <ShieldAlert />,
+  all: <Layers />,
 };
 
 export const pageIcons: Record<SpacePage, ReactNode> = { contacts: <Users />, knowledge: <BookOpen />, wiki: <NotebookText />, reports: <BarChart3 /> };

@@ -15,7 +15,8 @@ import { toast } from "@/components/ui/toast";
 import { Counter } from "@/components/agent/bits";
 import { api } from "@/lib/api/endpoints";
 import type { Procedure, ProcedureBody, ProcedureChannel } from "@/lib/api/types";
-import { htmlToMarkdown, PROCEDURE_INSTRUCTIONS_MAX, PROCEDURE_NAME_MAX, PROCEDURE_WHEN_MAX, procedureProblems } from "@/lib/procedures";
+import { htmlToMarkdown } from "@/lib/markdown";
+import { PROCEDURE_INSTRUCTIONS_MAX, PROCEDURE_NAME_MAX, PROCEDURE_WHEN_MAX, procedureProblems } from "@/lib/procedures";
 import { q, qk, upsertInList } from "@/lib/queries";
 import { cn } from "@/lib/cn";
 

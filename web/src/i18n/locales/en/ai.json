@@ -253,6 +253,7 @@
     "docs": "From the docs",
     "answer_item": "Answer with {{name}}",
     "answering": "{{name}} is reading the docs",
-    "answer_error": "Couldn't answer right now. The places and docs below may help."
+    "answer_error": "Couldn't answer right now. The places and docs below may help.",
+    "contacts": "Contacts"
   }
 }

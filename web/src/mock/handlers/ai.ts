@@ -5,6 +5,8 @@
 import type { AIConfig, AIModels, AISettings, AssistantAutoTool, DecisionEngine, KbArticle, KBArticleDraft, SearchResults, Ticket } from "@/lib/api/types";
 import { ASSISTANT_AUTO_TOOLS } from "@/lib/api/types";
 import { db, userRef, type WsData } from "../db";
+import { addressHit, addressMatch, addressQuery, contactAddresses } from "../tickets";
+import { canSeeTicket } from "../teams";
 import { configCosts, effectiveModels, offeredModels, offersModel, reserve, spend } from "../aiBalance";
 import { aiKeyOf, decisionsOnOwnKey } from "../aiKey";
 import { registerAiProvider } from "./aiProvider";
@@ -133,20 +135,29 @@ function ticketText(ws: WsData, t: Ticket) {
 }
 
 export function semanticSearch(ws: WsData, query: string): SearchResults {
-  const tickets = ws.tickets
-    .filter((t) => !ws.deletedTickets.has(t.id) && !t.spam)
+  const visible = ws.tickets.filter((t) => !ws.deletedTickets.has(t.id) && !t.spam && canSeeTicket(ws, t, db.meId));
+  // One address-like word: that address's tickets lead, newest first (contracts/api.md "Search").
+  const byAddress = addressQuery(query)
+    ? visible.filter((t) => addressMatch(ws, t, query)).sort((a, b) => Date.parse(b.last_message_at) - Date.parse(a.last_message_at))
+    : [];
+  const related = visible
+    .filter((t) => !byAddress.includes(t))
     .map((t) => ({ t, s: score(query, t.subject, `${t.last_message_preview} ${ticketText(ws, t)}`) }))
     .filter((x) => x.s >= 0.35)
     .sort((a, b) => b.s - a.s || Date.parse(b.t.last_message_at) - Date.parse(a.t.last_message_at))
-    .slice(0, 6)
     .map((x) => x.t);
+  const tickets = [...byAddress, ...related].slice(0, 6);
+  const lower = query.toLowerCase();
+  const contacts = ws.contacts
+    .filter((c) => [c.name, ...contactAddresses(ws, c.id)].join(" ").toLowerCase().includes(lower) || (!!addressQuery(query) && contactAddresses(ws, c.id).some((a) => addressHit(a, query))))
+    .slice(0, 5);
   const articles = ws.articles
     .map((a) => ({ a, s: score(query, a.title, `${a.excerpt} ${stripHtml(a.body_html)}`) }))
     .filter((x) => x.s >= 0.4)
     .sort((a, b) => b.s - a.s)
     .slice(0, 4)
     .map((x) => x.a);
-  return { tickets, contacts: [], articles };
+  return { tickets, contacts, articles };
 }
 
 // ─── KB article draft ───────────────────────────────────────────────────────

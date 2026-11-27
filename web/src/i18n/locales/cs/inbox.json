@@ -95,7 +95,11 @@
     "notFoundHint": "Mohl být smazán nebo sloučen.",
     "loadError": "Tento tiket se nepodařilo načíst",
     "back": "Zpět na seznam",
-    "movedPrivate": "Tento tiket byl přesunut do soukromého týmu"
+    "movedPrivate": "Tento tiket byl přesunut do soukromého týmu",
+    "followUpOf": "Navazuje na #{{number}}",
+    "followUpHidden": "Navazuje na dřívější tiket",
+    "followUpHint": "Zákazník napsal znovu po uzavření #{{number}}",
+    "copyForAgent": "Kopírovat tiket pro AI agenta"
   },
   "commands": {
     "reply": "Odpovědět",
@@ -120,7 +124,9 @@
     "unspammed": "Přesunuto ze spamu",
     "deleted": "Tiket #{{number}} smazán",
     "snoozed": "Odloženo",
-    "linkCopied": "Odkaz zkopírován"
+    "linkCopied": "Odkaz zkopírován",
+    "copiedForAgent": "Zkopírováno. Vložte to do svého AI agenta.",
+    "copyFailed": "Kopírování se nezdařilo. Zkuste to znovu."
   },
   "finish": {
     "close": {
@@ -282,6 +288,10 @@
       "description": "Nové konverzace se zde objeví, když je do tohoto týmu nasměruje adresa, widget nebo pravidlo směrování.",
       "seeOpen": "Zobrazit otevřené tikety",
       "seeUnassigned": "Zobrazit nepřiřazené"
+    },
+    "all": {
+      "title": "Zatím žádné tikety",
+      "description": "Zde jsou všechny tikety bez ohledu na stav, kromě spamu."
     }
   },
   "error": {
@@ -542,6 +552,7 @@
     "unassigned": "Přiřazení tiketu zrušeno uživatelem <b>{{who}}</b>",
     "team": "Přesunuto do týmu <b>{{team}}</b> uživatelem <b>{{who}}</b>",
     "contactChanged": "Kontakt změněn z <b>{{from}}</b> na <b>{{to}}</b> uživatelem <b>{{who}}</b>",
+    "contactAnswered": "Kontaktem je teď <b>{{to}}</b>, z odpovědi na e-mail od <b>{{from}}</b>",
     "noContact": "žádný kontakt",
     "teamRemoved": "Tým odebrán uživatelem <b>{{who}}</b>",
     "tagged": "Přidáno uživatelem <b>{{who}}</b>",
@@ -606,6 +617,9 @@
     "theCustomer": "zákazník",
     "noteHint": "Poznámky vidí pouze váš tým. Znakem @ můžete někoho zmínit.",
     "ccBcc": "Kopie / Skrytá kopie",
+    "replyAll": "Odpovědět všem",
+    "replyAllHint": "Odpovědět všem: poslat tuto odpověď také {{list}}, v kopii",
+    "replyAllOff": "Zpět na Odpovědět: odebere {{list}} z kopie",
     "cc": "Kopie",
     "bcc": "Skrytá kopie",
     "replyPlaceholder": "Napište odpověď. Znakem / vložíte připravené odpovědi, pomocí {{braces}} podrobnosti tohoto tiketu.",
@@ -764,9 +778,6 @@
     "imagesHeld": "Vzdálené obrázky jsou skryté kvůli ochraně vašeho soukromí.",
     "loadImages": "Načíst obrázky",
     "hideQuoted": "Skrýt citovaný text",
-    "preview": "Náhled souboru {{name}}",
-    "fullSize": "Otevřít v plné velikosti",
-    "download": "Stáhnout {{name}}",
     "fromAddress": "od {{name}} <{{address}}>",
     "ownAddress": "Vlastní adresa",
     "ownAddressHint": "Odesláno z vlastního e-mailového účtu autora místo adresy tiketu. Odpovědi zákazníka se vracejí do tohoto tiketu.",
@@ -810,7 +821,8 @@
     "showReply": "Zobrazit odpověď",
     "showNote": "Zobrazit poznámku",
     "hideNote": "Skrýt poznámku",
-    "forward": "Přeposlat"
+    "forward": "Přeposlat",
+    "copyForAgent": "Kopírovat pro AI agenta"
   },
   "merge": {
     "title": "Sloučit #{{number}} s jiným tiketem",
@@ -846,6 +858,8 @@
     "startTyping": "Začněte psát",
     "use": "Použít",
     "change": "Změnit",
+    "addTo": "Přidat dalšího",
+    "addCopies": "Přidat kopii nebo skrytou kopii",
     "noMailbox": "Žádná schránka",
     "bodyReply": "Napište zprávu",
     "bodyNote": "Popište problém",

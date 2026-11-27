@@ -252,6 +252,7 @@
     "docs": "来自文档",
     "answer_item": "让 {{name}} 回答",
     "answering": "{{name}} 正在阅读文档",
-    "answer_error": "暂时无法回答。下面的位置和文档或许有帮助。"
+    "answer_error": "暂时无法回答。下面的位置和文档或许有帮助。",
+    "contacts": "联系人"
   }
 }
